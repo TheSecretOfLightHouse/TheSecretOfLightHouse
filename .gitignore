@@ -114,6 +114,9 @@ _ReSharper*/
 CLAUDE.local.md
 .claude/settings.local.json
 
+# 개인 문서 (공용 문서는 Docs/)
+/Docs.local/
+
 # 서명 키 · 시크릿 (절대 커밋 금지)
 *.keystore
 *.jks

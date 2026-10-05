@@ -16,8 +16,11 @@ Claude Code는 아래 파일을 이름·위치로 자동 인식한다. 따로 �
 | `.claude/agents/` | 팀 공용 서브에이전트 | O |
 | `CLAUDE.local.md` | 내 PC에서만 읽히는 개인 지침 | **X** (gitignore) |
 | `.claude/settings.local.json` | 내 PC에서만 쓰는 개인 설정 | **X** (gitignore) |
+| `Docs/` | 팀 공용 문서 | O |
+| `Docs.local/` | 개인 문서 (작업 기록 · 메모 등) | **X** (gitignore) |
 
 - 개인 취향 · 로컬 경로 · 실험 중인 규칙은 `*.local.*` 파일에 적는다.
+- 문서도 같다. 팀이 봐야 하면 `Docs/`, 나만 보면 `Docs.local/`.
 - 팀 전체가 따라야 하는 규칙만 공용 파일에 올린다.
 - 하위 폴더에 `CLAUDE.md`를 두면 그 폴더 작업 시 함께 읽힌다. 더 구체적인 쪽이 우선한다.
 
