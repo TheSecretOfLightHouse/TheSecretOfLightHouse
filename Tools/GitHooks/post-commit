@@ -1,0 +1,4 @@
+#!/bin/sh
+# 기존 LFS 파일(Mirror 등) 처리용. git lfs install 이 .git/hooks 에 만들던 것과 같다.
+command -v git-lfs >/dev/null 2>&1 || { echo >&2 "git-lfs 가 없습니다. Tools/GitSetup/setup_git.bat 을 실행하세요."; exit 2; }
+git lfs post-commit "$@"

@@ -2,7 +2,7 @@
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
 Write-Host "=========================================================" -ForegroundColor Cyan
-Write-Host "       Unity Git 환경 설정 (SmartMerge & Git LFS)        " -ForegroundColor Cyan
+Write-Host "     Unity Git 환경 설정 (SmartMerge & Git 훅)" -ForegroundColor Cyan
 Write-Host "=========================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -11,10 +11,10 @@ try {
     $gitVersion = git --version
     Write-Host "[✓] Git 확인됨: $gitVersion" -ForegroundColor Green
     
-    # Git LFS 설치 및 훅 등록
-    git lfs install
+    # Git LFS 필터만 등록 (기존 LFS 파일을 받기 위해 필요. 훅은 Tools/GitHooks 것을 쓴다)
+    git lfs install --skip-repo
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "[✓] Git LFS 활성화 완료 (git lfs install)" -ForegroundColor Green
+        Write-Host "[✓] Git LFS 필터 등록 완료 (기존 LFS 파일용)" -ForegroundColor Green
     } else {
         Write-Host "[!] Git LFS 설치 상태를 확인해주세요." -ForegroundColor Yellow
     }
@@ -31,6 +31,10 @@ if (-not $gitRoot) {
 }
 $gitRoot = $gitRoot.Trim()
 Write-Host "[✓] Git 저장소: $gitRoot" -ForegroundColor Green
+
+# 2-1. 팀 공용 Git 훅 연결 (큰 파일 경고·차단 + 기존 LFS 처리) — Docs/LARGE_FILES.md
+git -C $gitRoot config --local core.hooksPath Tools/GitHooks
+Write-Host "[✓] Git 훅 연결 완료 (core.hooksPath = Tools/GitHooks)" -ForegroundColor Green
 
 # 3. 프로젝트 Unity 버전 파싱
 $projectVersionFile = Join-Path $gitRoot "ProjectSettings\ProjectVersion.txt"
@@ -207,7 +211,8 @@ Write-Host ""
 Write-Host "=========================================================" -ForegroundColor Green
 Write-Host "      ★ Git 환경 설정이 완료되었습니다! ★              " -ForegroundColor Green
 Write-Host "=========================================================" -ForegroundColor Green
-Write-Host "• Git LFS: 활성화 완료 (git lfs install)" -ForegroundColor Cyan
+Write-Host "• Git LFS: 필터 등록 완료 (기존 LFS 파일용, 새 파일은 LFS 안 씀)" -ForegroundColor Cyan
+Write-Host "• Git 훅: Tools/GitHooks (50MB 초과 경고 · 100MB 초과 커밋 차단)" -ForegroundColor Cyan
 Write-Host "• 적용된 UnityYAMLMerge: $escapedPath" -ForegroundColor Cyan
 Write-Host "• Global 설정 파일: $globalGitConfigFile" -ForegroundColor Cyan
 Write-Host "• Local 설정 파일: $gitRoot\.git\config" -ForegroundColor Cyan

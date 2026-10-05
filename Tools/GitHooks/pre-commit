@@ -1,0 +1,42 @@
+#!/bin/sh
+# 큰 파일 검사 — 규칙: Docs/LARGE_FILES.md
+# GitHub 기준과 같다: 50MB 초과 경고(푸시는 됨), 100MB 초과 거부(푸시 불가).
+# 푸시 때 알면 이미 커밋된 뒤라 고치기 번거로워서, 커밋 직전에 미리 알려준다.
+
+WARN_MB=50
+BLOCK_MB=100
+
+list_over() {
+  limit=$(($1 * 1024 * 1024))
+  git -c core.quotepath=off diff --cached --name-only --diff-filter=ACMR |
+  while IFS= read -r f; do
+    size=$(git cat-file -s ":$f" 2>/dev/null) || continue
+    if [ "$size" -gt "$limit" ]; then
+      awk -v s="$size" -v f="$f" 'BEGIN { printf "  %7.1fMB  %s\n", s / 1048576, f }'
+    fi
+  done
+}
+
+blocked=$(list_over $BLOCK_MB)
+if [ -n "$blocked" ]; then
+  echo ""
+  echo "[커밋 차단] ${BLOCK_MB}MB를 넘는 파일이 있습니다. GitHub가 푸시를 거부하는 크기입니다."
+  echo "$blocked"
+  echo ""
+  echo "  → SVN으로 옮기거나, 다시 만들 수 있는 파일이면 .gitignore에 추가하세요."
+  echo "  → 자세한 방법: Docs/LARGE_FILES.md"
+  echo ""
+  exit 1
+fi
+
+warned=$(list_over $WARN_MB)
+if [ -n "$warned" ]; then
+  echo ""
+  echo "[경고] ${WARN_MB}MB를 넘는 파일이 있습니다. 커밋은 진행됩니다."
+  echo "$warned"
+  echo ""
+  echo "  → git은 모든 버전을 영구 보관합니다. 자주 수정할 파일이면 SVN을 고려하세요."
+  echo ""
+fi
+
+exit 0
