@@ -110,6 +110,10 @@ nunit-*.xml
 _ReSharper*/
 *.DotSettings.user
 
+# Claude Code 개인 설정 (공용은 CLAUDE.md · .claude/settings.json 만 커밋)
+CLAUDE.local.md
+.claude/settings.local.json
+
 # 서명 키 · 시크릿 (절대 커밋 금지)
 *.keystore
 *.jks
