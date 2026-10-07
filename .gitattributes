@@ -180,3 +180,7 @@ Assets/TutorialInfo/Icons/URP.png lfs
 
 # Exceptions for .asset files such as lightning pre-baking
 LightingData.asset     binary
+# 바이너리로 저장된 .asset (eol=lf 변환이 CRLF 바이트를 지워 파일이 깨진다)
+TerrainData*.asset     binary
+NavMesh.asset          binary
+NavMesh-*.asset        binary
