@@ -1,40 +1,34 @@
-# TheSecretOfLightHouse — 프로젝트 규칙
+# TheSecretOfLightHouse
 
-팀 전원이 공유하는 Claude Code 지침. 프로젝트 공통 규칙만 적는다.
+Unity 6000.0.83f1 · URP 17 · Mirror 96 (멀티플레이) · Input System. 등대 배경 마피아류 게임.
 
----
+## 응답
+- 한국어로 답한다. 코드 식별자·주석은 영어.
+- 작업 전 관련 코드를 먼저 읽는다. API·필드명을 추측으로 만들지 않는다.
 
-## Claude 파일 구조
+## 코드 구조 (Assets/01_Scripts)
+- 어셈블리: `_Net`(Lighthouse.Net) ← `_Game`, `_Local`. Game ↔ Local 서로 참조 금지.
+  - `_Net`: Mirror 동기화·네트워크 메시지
+  - `_Game`: 서버 권한 게임 규칙
+  - `_Local`: 클라이언트 전용 (입력·카메라·연출·URP)
+- 그 밖의 폴더(`Managers` `Player` `Utils` 등)는 asmdef 없음 → Assembly-CSharp. asmdef 쪽에서 참조 불가.
+- asmdef 추가·참조 변경이 필요하면 먼저 묻는다.
 
-Claude Code는 아래 파일을 이름·위치로 자동 인식한다. 따로 불러올 필요 없다.
+## Unity
+- `.meta`는 에셋과 항상 같이 이동·삭제·이름변경. GUID 직접 수정 금지.
+- `.unity` `.prefab` `.asset` YAML은 직접 편집하지 않는다. 에디터 스크립트나 수동 작업 안내로 대신한다.
+- `Library/` `Temp/` `Logs/` `UserSettings/` 는 다루지 않는다.
+- `Assets/ThirdParty/` 는 SVN 관리(git 제외) — 산 에셋·데모(`_Demo/<이름>/`)는 여기에. 외부 코드라 수정 금지.
+- `Assets/Mirror/` 는 외부 코드 — 수정 금지.
+- 에디터를 실행할 수 없으므로, 컴파일·동작을 확인 못 한 부분은 그렇다고 명시한다.
 
-| 파일 | 범위 | 커밋 |
-|---|---|---|
-| `CLAUDE.md` | 팀 공용 지침 (이 파일) | O |
-| `.claude/settings.json` | 팀 공용 설정 (권한 · 훅 등) | O |
-| `.claude/skills/` | 팀 공용 스킬 (`/스킬명` 으로 호출) | O |
-| `.claude/agents/` | 팀 공용 서브에이전트 | O |
-| `CLAUDE.local.md` | 내 PC에서만 읽히는 개인 지침 | **X** (gitignore) |
-| `.claude/settings.local.json` | 내 PC에서만 쓰는 개인 설정 | **X** (gitignore) |
-| `Docs/` | 팀 공용 문서 | O |
-| `Docs.local/` | 개인 문서 (작업 기록 · 메모 등) | **X** (gitignore) |
+## 문서
+- `Docs/AI/`: 작업용 문서. 아래 표에서 해당 상황일 때만 읽는다.
+- `Docs/Human/`: 사람용. 요청받지 않으면 읽지 않는다.
+- 문서 작성 위치: AI용 → `Docs/AI/` (추가 시 아래 표에 등록), 사람용 → `Docs/Human/`, 개인 → `Docs.local/`.
+- 개인 지침·설정은 `CLAUDE.local.md`, `.claude/settings.local.json` 에.
 
-- 개인 취향 · 로컬 경로 · 실험 중인 규칙은 `*.local.*` 파일에 적는다.
-- 문서도 같다. 팀이 봐야 하면 `Docs/`, 나만 보면 `Docs.local/`.
-- 팀 전체가 따라야 하는 규칙만 공용 파일에 올린다.
-- 하위 폴더에 `CLAUDE.md`를 두면 그 폴더 작업 시 함께 읽힌다. 더 구체적인 쪽이 우선한다.
-
----
-
-## 파일 위치 — 본편은 git, 데모는 ThirdParty
-
-| 무엇 | 어디 |
+| 상황 | 읽을 문서 |
 |---|---|
-| 게임 본편 (코드 · 씬 · 에셋) | git |
-| 데모 (씬 · 데모 전용 스크립트 · 데이터 전부) | `Assets/ThirdParty/_Demo/<이름>/` (SVN) |
-| 산 에셋 | `Assets/ThirdParty/<에셋명>/` (SVN) |
-
-- 본편 코드는 데모를 참조하지 않는다. 데모 코드를 본편에 쓰려면 `01_Scripts/`로 옮긴다.
-- 커밋 시 50MB 초과 경고, 100MB 초과 차단. Git LFS는 새로 쓰지 않는다. → `Docs/LARGE_FILES.md`
-- clone 후 `Tools/GitSetup/setup_git.bat`을 한 번 실행해야 검사가 켜진다.
-- 군도 맵 데모: `ThirdParty/_Demo/Jihun/LighthouseArchipelago/` (메뉴 `TheLightHouse > Build Archipelago Map`)
+| C# 스크립트 작성·수정 | `Docs/AI/CODE_CONVENTION.md` |
+| 게임 시스템(규칙·수치·흐름) 구현·수정 | `Docs/AI/SYSTEM_DESIGN.md` |
