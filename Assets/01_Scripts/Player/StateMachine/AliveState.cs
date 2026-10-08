@@ -3,67 +3,60 @@ using UnityEngine;
 
 public sealed class AliveState : State
 {
-    private readonly StateMachine _movementStateMachine;
+    private readonly StateMachine _modeStateMachine;
 
-    private readonly IdleState _idleState;
-    private readonly WalkState _walkState;
-    //private readonly DashState _dashState;
-    private readonly UseAbilityState _useAbilityState;
+    private readonly OnFootState _onFootState;
+    private readonly OnBoatState _onBoatState;
 
-    public AliveState(Func<bool> hasMoveInput,Func<bool> dashPressed,float dashDuration,Func<bool> isUsingAbility, Func<MoveConfig> getAbilityMoveConfig)
+    private readonly Func<bool> _isOnBoat;
+
+    public State CurrentModeState => _modeStateMachine.CurrentState;
+
+    public State CurrentMovementState
     {
-        _movementStateMachine = new StateMachine();
+        get
+        {
+            if (_modeStateMachine.CurrentState == _onBoatState)
+            {
+                return _onBoatState.CurrentMovementState;
+            }
 
-        _idleState = new IdleState();
-        _walkState = new WalkState();
-        //_dashState = new DashState(dashDuration);
-        _useAbilityState = new UseAbilityState(getAbilityMoveConfig);
-
-        ConfigureTransitions(hasMoveInput,dashPressed, isUsingAbility);
+            return _onFootState.CurrentMovementState;
+        }
     }
 
-    private void ConfigureTransitions(Func<bool> hasMoveInput,Func<bool> dashPressed,Func<bool> isUsingAbility)
+    public override MoveConfig MoveConfig => _modeStateMachine.CurrentConfig;
+
+    public AliveState(Func<bool> isOnBoat, Func<bool> hasMoveInput, Func<bool> runHeld, float runMultiplier)
     {
-        _movementStateMachine.AddTransition(_idleState, _useAbilityState, isUsingAbility);
-        _movementStateMachine.AddTransition(_walkState, _useAbilityState, isUsingAbility);
-        //_movementStateMachine.AddTransition(_idleState,_dashState,dashPressed);
+        _modeStateMachine = new StateMachine();
+        _isOnBoat = isOnBoat;
+        _onFootState = new OnFootState(hasMoveInput, runHeld, runMultiplier);
+        _onBoatState = new OnBoatState(hasMoveInput);
 
-        //_movementStateMachine.AddTransition(_walkState,_dashState,dashPressed);
-
-        _movementStateMachine.AddTransition(_idleState,_walkState,hasMoveInput);
-
-        _movementStateMachine.AddTransition(_walkState,_idleState,() => !hasMoveInput());
-
-        //_movementStateMachine.AddTransition(_dashState,_walkState,() =>_dashState.IsFinished &&hasMoveInput());
-
-        //_movementStateMachine.AddTransition(_dashState,_idleState,() =>_dashState.IsFinished &&!hasMoveInput());
-
-        _movementStateMachine.AddTransition(_useAbilityState,_walkState,() => !isUsingAbility() && hasMoveInput());
-
-        _movementStateMachine.AddTransition(_useAbilityState,_idleState,() => !isUsingAbility() && !hasMoveInput());
+        _modeStateMachine.AddTransition(_onFootState, _onBoatState, isOnBoat);
+        _modeStateMachine.AddTransition(_onBoatState, _onFootState, () => !isOnBoat());
     }
-
-    public bool CanUseAbility => _movementStateMachine.CurrentState == _idleState || _movementStateMachine.CurrentState == _walkState;
 
     public override void Enter()
     {
-        _movementStateMachine.SetInitialState(_idleState);
+        State initialState = _isOnBoat() ? (State)_onBoatState : _onFootState;
+
+        _modeStateMachine.SetInitialState(initialState);
     }
 
     public override void Tick(float deltaTime)
     {
-        _movementStateMachine.Tick(deltaTime);
+        _modeStateMachine.Tick(deltaTime);
     }
 
     public override void FixedTick(float fixedDeltaTime)
     {
-        _movementStateMachine.FixedTick(fixedDeltaTime);
+        _modeStateMachine.FixedTick(fixedDeltaTime);
     }
 
     public override void Exit()
     {
-        _movementStateMachine.ExitCurrentState();
+        _modeStateMachine.ExitCurrentState();
     }
-
-    public override MoveConfig MoveConfig => _movementStateMachine.CurrentState?.MoveConfig ?? default;
 }

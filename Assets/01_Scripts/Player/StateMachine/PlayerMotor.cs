@@ -39,7 +39,7 @@ public sealed class PlayerMotor : MonoBehaviour
 
         // Vertical velocity belongs to gravity and collision response, not walking input.
         direction.y = 0f;
-        Vector3 targetVelocity = direction.normalized * _speed * config.SpeedMultiplier;
+        Vector3 targetVelocity = Vector3.ClampMagnitude(direction, 1f) * _speed * config.SpeedMultiplier;
         float acceleration = _originAcceleration * config.AccelerationMultiplier;
         Vector3 velocity = _rb.linearVelocity;
         Vector3 horizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);

@@ -19,4 +19,15 @@ public struct MoveConfig
         AccelerationMultiplier = 1f,
         InputLocked = true
     };
+    public static MoveConfig Combine(MoveConfig movement,MoveConfig modifier)
+    {
+        return new MoveConfig
+        {
+            SpeedMultiplier = movement.SpeedMultiplier * modifier.SpeedMultiplier,
+
+            AccelerationMultiplier = movement.AccelerationMultiplier * modifier.AccelerationMultiplier,
+
+            InputLocked = movement.InputLocked || modifier.InputLocked
+        };
+    }
 }

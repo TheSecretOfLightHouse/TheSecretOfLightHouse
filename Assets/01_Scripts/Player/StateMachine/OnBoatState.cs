@@ -1,12 +1,13 @@
+using NUnit.Framework.Interfaces;
 using System;
 using UnityEngine;
 
 public sealed class OnBoatState : State
 {
-    private readonly StateMachine _movementMachine = new();
+    private readonly StateMachine _movementMachine;
 
-    private readonly IdleState _idleState = new();
-    private readonly BoatMoveState _moveState = new();
+    private readonly IdleState _idleState;
+    private readonly BoatMoveState _moveState;
 
     public State CurrentMovementState =>_movementMachine.CurrentState;
 
@@ -14,8 +15,12 @@ public sealed class OnBoatState : State
 
     public OnBoatState(Func<bool> hasMoveInput)
     {
-        _movementMachine.AddTransition(_idleState,_moveState,hasMoveInput);
+        _movementMachine = new StateMachine();
 
+        _idleState = new IdleState();
+        _moveState = new BoatMoveState();
+
+        _movementMachine.AddTransition(_idleState,_moveState,hasMoveInput);
         _movementMachine.AddTransition(_moveState,_idleState,() => !hasMoveInput());
     }
 

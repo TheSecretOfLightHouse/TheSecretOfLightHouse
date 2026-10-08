@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public sealed class PlayerHFSM
 {
@@ -8,25 +9,25 @@ public sealed class PlayerHFSM
     private readonly DownedState _downedState;
 
     private Vector3 _moveDirection;
-    private bool _dashPressed;
-
+    private bool _runHeld;
+    private bool _isOnBoat;
     private bool _isDowned;
-    private bool _isUsingAbility;
-    private MoveConfig _abilityMoveConfig;
 
     public Vector3 MoveDirection => _moveDirection;
+    public bool IsOnBoat => _isOnBoat;
+    public bool IsDowned => _isDowned;
 
-    public MoveConfig CurrentMoveConfig => _stateMachine.CurrentState?.MoveConfig ?? default;
+    public State CurrentLifeState => _stateMachine.CurrentState;
+    public State CurrentModeState => _isDowned ? null : _aliveState.CurrentModeState;
+    public State CurrentMovementState => _isDowned ? null : _aliveState.CurrentMovementState;
 
-    public bool IsDowned => _stateMachine.CurrentState == _downedState;
-    public bool CanUseAbility => !_isDowned && !_isUsingAbility && _stateMachine.CurrentState == _aliveState && _aliveState.CanUseAbility;
+    public MoveConfig CurrentMoveConfig => _stateMachine.CurrentConfig;
 
-    public PlayerHFSM(float dashDuration)
+    public PlayerHFSM(float runMultiplier)
     {
         _stateMachine = new StateMachine();
         _downedState = new DownedState();
-
-        _aliveState = new AliveState(HasMoveInput,IsDashPressed,dashDuration, ()=>_isUsingAbility, ()=> _abilityMoveConfig);
+        _aliveState = new AliveState(() => _isOnBoat, HasMoveInput, () => _runHeld, Mathf.Max(1f, runMultiplier));
 
         _stateMachine.AddTransition(_aliveState,_downedState,() => _isDowned);
 
@@ -35,45 +36,21 @@ public sealed class PlayerHFSM
         _stateMachine.SetInitialState(_aliveState);
     }
 
-    public void SetInput(Vector3 direction,bool dash)
+    public void SetInput(Vector3 direction,bool runHeld)
     {
-        _moveDirection = direction;
-        _dashPressed = dash;
+        _moveDirection = Vector3.ClampMagnitude(direction, 1f);
+        _runHeld = runHeld;
     }
 
     public void SetDowned(bool value)
     {
         _isDowned = value;
-
-        if (_isDowned)
-        {
-            _isUsingAbility = false;
-        }
     }
 
-    public void SetAbilityStatus(bool usingAbility,MoveConfig moveConfig)
+    public void SetOnBoat(bool value)
     {
-        if (!usingAbility)
-        {
-            _isUsingAbility = false;
-            return;
-        }
-
-        if (_isDowned)
-
-        {
-
-            return;
-
-        }
-        if (!_isUsingAbility && !CanUseAbility)
-        {
-            return;
-        }
-        _abilityMoveConfig = moveConfig;
-        _isUsingAbility = true;
+        _isOnBoat = value;
     }
-
     public void Tick(float deltaTime)
     {
         _stateMachine.Tick(deltaTime);
@@ -87,9 +64,5 @@ public sealed class PlayerHFSM
     private bool HasMoveInput()
     {
         return _moveDirection.sqrMagnitude > 0.01f;
-    }
-    private bool IsDashPressed()
-    {
-        return _dashPressed;
     }
 }
