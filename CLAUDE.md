@@ -35,3 +35,4 @@ Unity 6000.0.83f1 · URP 17 · Mirror 96 (멀티플레이) · Input System. 등�
 | C# 스크립트 작성·수정 | `Docs/AI/CODE_CONVENTION.md` |
 | 게임 시스템(규칙·수치·흐름) 구현·수정 | `Docs/AI/SYSTEM_DESIGN.md` |
 | 데모 만들기·수정 (`_Demo/`) | `Docs/AI/DEMO_GUIDE.md` |
+| 커밋·PR 메시지 작성 | `Docs/AI/GIT_CONVENTION.md` |
