@@ -18,10 +18,10 @@ Unity 6000.0.83f1 · URP 17 · Mirror 96 (멀티플레이) · Input System. 등�
 - `.meta`는 에셋과 항상 같이 이동·삭제·이름변경. GUID 직접 수정 금지.
 - `.unity` `.prefab` `.asset` YAML은 직접 편집하지 않는다. 에디터 스크립트나 수동 작업 안내로 대신한다.
 - `Library/` `Temp/` `Logs/` `UserSettings/` 는 다루지 않는다.
-- `Assets/ThirdParty/` 는 SVN 관리(git 제외). 체크아웃 루트는 `ThirdParty/1조 Unity Asset/`.
-  - `ThirdParty/<에셋명>/`: 산 에셋 — 외부 코드라 수정 금지.
-  - `_Demo/<사람>/<주제>/`: 데모 — 아래 표의 `DEMO_GUIDE.md` 참고.
-- `Assets/Mirror/` 는 외부 코드 — 수정 금지.
+- `Assets/ThirdParty/` 는 SVN 체크아웃 루트(저장소 경로 `1조 Unity Asset/`), git 제외.
+  - `Assets/ThirdParty/ThirdParty/<에셋명>/`: 산 에셋 — 외부 코드라 수정 금지.
+  - `Assets/ThirdParty/_Demo/<사람>/<주제>/`: 데모 — 아래 표의 `DEMO_GUIDE.md` 참고.
+- `Assets/Mirror/`, `Assets/Plugins/ParrelSync/`(멀티 클라 테스트용 에디터 복제) 는 외부 코드 — 수정 금지.
 - 에디터를 실행할 수 없으므로, 컴파일·동작을 확인 못 한 부분은 그렇다고 명시한다.
 
 ## 문서
