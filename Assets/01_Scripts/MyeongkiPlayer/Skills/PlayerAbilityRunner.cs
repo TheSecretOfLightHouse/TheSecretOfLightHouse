@@ -1,33 +1,41 @@
 using System;
 using UnityEngine;
 
-public sealed class PlayerAbilityRunner : MonoBehaviour
+public sealed class PlayerAbilityRunner : MonoBehaviour, IPlayerAbilitySource
 {
     private IPlayerAbility _activeAbility;
 
     public bool IsExecuting => IsAvailable(_activeAbility);
-
+    public IPlayerAbility CurrentAbility => IsExecuting ? _activeAbility : null;
     public MoveConfig MovementModifier => IsExecuting ? _activeAbility.MovementModifier : MoveConfig.Normal;
 
     public event Action<IPlayerAbility> AbilityStarted;
 
     public event Action<IPlayerAbility, bool> AbilityEnded;
 
-    public bool TryExecute(IPlayerAbility ability,PlayerController player)
+    public bool TryExecute(IPlayerAbility ability, IPlayerAbilityContext context)
     {
-        if (!IsAvailable(ability)|| !player|| IsExecuting|| player.IsDowned)
+        if (!IsAvailable(ability) ||context == null ||!isActiveAndEnabled ||IsExecuting ||context.IsDowned)
         {
             return false;
         }
-
-        if (!ability.CanExecute(player))
+        if (!ability.CanExecute(context))
         {
             return false;
         }
 
         _activeAbility = ability;
 
-        ability.Begin(player);
+        ability.Begin(context);
+
+        if (!ReferenceEquals(_activeAbility, ability))
+            return true;
+
+        if (!IsAvailable(ability))
+        {
+            Finish(true);
+            return true;
+        }
         AbilityStarted?.Invoke(ability);
 
         if (ReferenceEquals(_activeAbility, ability) && IsAvailable(ability) && ability.IsFinished)

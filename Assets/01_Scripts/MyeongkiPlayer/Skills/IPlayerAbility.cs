@@ -6,9 +6,9 @@ public interface IPlayerAbility
 
     MoveConfig MovementModifier { get; }
 
-    bool CanExecute(PlayerController player);
+    bool CanExecute(IPlayerAbilityContext context);
 
-    void Begin(PlayerController player);
+    void Begin(IPlayerAbilityContext context);
 
     void TickAbility(float deltaTime);
 

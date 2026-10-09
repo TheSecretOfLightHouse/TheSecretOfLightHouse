@@ -1,7 +1,8 @@
+using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public sealed class PlayerHFSM
+public sealed class PlayerHFSM : IPlayerStateSource
 {
     private readonly StateMachine _stateMachine;
 
@@ -23,6 +24,9 @@ public sealed class PlayerHFSM
 
     public MoveConfig CurrentMoveConfig => _stateMachine.CurrentConfig;
 
+    public PlayerMotionState CurrentMotion { get; private set; }
+    public event Action<PlayerMotionState> MotionChanged;
+
     public PlayerHFSM(float runMultiplier)
     {
         _stateMachine = new StateMachine();
@@ -34,6 +38,7 @@ public sealed class PlayerHFSM
         _stateMachine.AddTransition(_downedState,_aliveState,() => !_isDowned);
 
         _stateMachine.SetInitialState(_aliveState);
+        CurrentMotion = ReadMotionState();
     }
 
     public void SetInput(Vector3 direction,bool runHeld)
@@ -59,10 +64,37 @@ public sealed class PlayerHFSM
     public void FixedTick(float fixedDeltaTime)
     {
         _stateMachine.FixedTick(fixedDeltaTime);
+        PublishMotionIfChanged();
     }
 
     private bool HasMoveInput()
     {
         return _moveDirection.sqrMagnitude > 0.01f;
+    }
+    private PlayerMotionState ReadMotionState()
+    {
+        if (_isDowned)
+            return PlayerMotionState.Downed;
+
+        if (_isOnBoat)
+            return PlayerMotionState.OnBoat;
+
+        return CurrentMovementState switch
+        {
+            RunState _ => PlayerMotionState.Run,
+            WalkState _ => PlayerMotionState.Walk,
+            _ => PlayerMotionState.Idle
+        };
+    }
+
+    private void PublishMotionIfChanged()
+    {
+        PlayerMotionState next = ReadMotionState();
+
+        if (CurrentMotion == next)
+            return;
+
+        CurrentMotion = next;
+        MotionChanged?.Invoke(next);
     }
 }

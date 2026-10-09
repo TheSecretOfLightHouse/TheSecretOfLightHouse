@@ -6,9 +6,9 @@ public abstract class PlayerAbility : MonoBehaviour, IPlayerAbility
 
     public virtual MoveConfig MovementModifier =>MoveConfig.Normal;
 
-    public abstract bool CanExecute(PlayerController player);
+    public abstract bool CanExecute(IPlayerAbilityContext context);
 
-    public abstract void Begin(PlayerController player);
+    public abstract void Begin(IPlayerAbilityContext context);
 
     public abstract void TickAbility(float deltaTime);
     public abstract void Cancel();

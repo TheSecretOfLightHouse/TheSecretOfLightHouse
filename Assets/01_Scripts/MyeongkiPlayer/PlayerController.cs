@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 [RequireComponent(typeof(PlayerInputReader), typeof(PlayerMotor), typeof(PlayerAbilityRunner))]
-public sealed class PlayerController : MonoBehaviour
+public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
 {
     [SerializeField]
     private PlayerInputReader _inputReader;
@@ -15,6 +15,8 @@ public sealed class PlayerController : MonoBehaviour
 
     [SerializeField]
     private PlayerAbility _jobAbility;
+    [SerializeField]
+    private PlayerAnimationDriver _animationDriver;
 
     [SerializeField, Min(1f)]
     private float _runMultiplier = 1.5f;
@@ -26,6 +28,8 @@ public sealed class PlayerController : MonoBehaviour
     private Rigidbody _rb;
     private BoatController _boatController;
 
+    private PlayerAnimationSource _animationSource;
+
     private bool _savedIsKinematic;
     private bool _savedDetectCollisions;
 
@@ -33,6 +37,8 @@ public sealed class PlayerController : MonoBehaviour
     private bool _fireRequested;
     private bool _abilityRequested;
     private float _heading;
+
+    public Transform Actor => transform;
 
     public bool IsDowned => _hfsm.IsDowned;
     public bool IsOnBoat => _boatController != null;
@@ -50,6 +56,11 @@ public sealed class PlayerController : MonoBehaviour
         ResolveReferences();
         _rb = GetComponent<Rigidbody>();
         _hfsm = new PlayerHFSM(_runMultiplier);
+
+        _animationSource = new PlayerAnimationSource(_hfsm,_abilityRunner);
+        
+        if (_animationDriver)
+            _animationDriver.Initialize(_animationSource);
     }
 
     private void OnEnable()
@@ -79,6 +90,10 @@ public sealed class PlayerController : MonoBehaviour
         if (!_abilityRunner)
         {
             _abilityRunner = GetComponent<PlayerAbilityRunner>();
+        }
+        if (!_animationDriver)
+        {
+            _animationDriver = GetComponent<PlayerAnimationDriver>();
         }
     }
 
