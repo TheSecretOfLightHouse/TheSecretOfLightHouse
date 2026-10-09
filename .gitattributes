@@ -66,7 +66,7 @@ Assets/Plugins/**           linguist-generated
 Packages/packages-lock.json linguist-generated
 
 # 바이너리 (일반 git으로 저장, 줄바꿈 변환 없음)
-# LFS는 쓰지 않는다. 큰 파일은 pre-commit 훅이 막는다 → Docs/Human/LARGE_FILES.md
+# LFS는 쓰지 않는다. 큰 파일은 pre-commit 훅이 막는다 → docs/unity/LARGE_FILES.md
 *.cubemap               binary
 *.unitypackage          binary
 

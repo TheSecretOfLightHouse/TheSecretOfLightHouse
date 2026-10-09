@@ -3,13 +3,14 @@
 범위: C# 스크립트 작성·수정 시 따르는 네이밍 · 구조 · Unity/Mirror 규칙. (임시안 — 팀 합의로 갱신)
 
 ## 파일 · 네임스페이스
-- asmdef는 `_Net` `_Game` `_Local` 세 개뿐. 그 밖의 폴더(`Managers` `Player` `Utils` 등)는 Assembly-CSharp.
-- Assembly-CSharp → asmdef 참조는 가능, 반대는 불가. `_Net` `_Game` `_Local` 코드가 써야 하는 타입은 그 밖에 두지 않는다.
-- asmdef 추가·참조 변경은 먼저 묻는다.
+- 코드 배치와 담당 경계는 [아키텍처](04-architecture.md)와 [담당표](CODE_OWNERSHIP.md)를 따른다. 기능별로 나누고 각 담당자가 자기 서버·클라이언트·동기화 코드를 함께 맡는다.
+- `Assets/01.Scripts/Lighthouse.Runtime.asmdef`가 도메인 런타임을 포함한다. 참조는 Unity.InputSystem과 Mirror다. 리슨 서버 판정도 동일한 일반 빌드에 포함한다.
+- asmdef에서 Assembly-CSharp의 타입을 참조하지 않는다. 에디터·테스트를 추가할 때는 별도 asmdef로 런타임에서 제외한다.
+- asmdef 추가·참조 변경은 영향받는 담당자와 먼저 합의한다. 이미 사용자 요청에 포함된 구조 변경은 반복 승인받지 않는다.
 - 파일 하나에 public 타입 하나. 파일명 = 타입명.
-- 네임스페이스 = `Lighthouse.` + 폴더 경로 (`_` 제거). 예: `_Game/Roles/RoleData.cs` → `Lighthouse.Game.Roles`, `Managers/GameManager.cs` → `Lighthouse.Managers`
+- 신규 네임스페이스는 `Lighthouse.{도메인}.{기능}[.{층}]`으로 두며 숫자 폴더 접두와 담당자 이름을 넣지 않는다. 예: `02.World/Weather/Net/WeatherState.cs` → `Lighthouse.World.Weather.Net`.
+- 기존 타입·네임스페이스·직렬화 필드는 이번 경계 이관에서 유지한다. 특히 기존 전역 Player 타입과 `Lighthouse.Map.Net.*` 계약은 파일 위치만으로 이름을 바꾸지 않는다. 이름 이관은 소비자·직렬화 영향을 확인하는 별도 작업이다.
 - 에디터 전용 코드는 `Editor/` 폴더 + 별도 Editor asmdef. 런타임 코드에 `#if UNITY_EDITOR` 남발 금지.
-
 ## 네이밍
 | 대상 | 규칙 | 예 |
 |---|---|---|

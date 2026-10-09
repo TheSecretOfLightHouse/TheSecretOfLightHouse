@@ -32,7 +32,7 @@ if (-not $gitRoot) {
 $gitRoot = $gitRoot.Trim()
 Write-Host "[✓] Git 저장소: $gitRoot" -ForegroundColor Green
 
-# 2-1. 팀 공용 Git 훅 연결 (큰 파일 경고·차단 + 기존 LFS 처리) — Docs/Human/LARGE_FILES.md
+# 2-1. 팀 공용 Git 훅 연결 (큰 파일 경고·차단 + 기존 LFS 처리) — docs/unity/LARGE_FILES.md
 git -C $gitRoot config --local core.hooksPath Tools/GitHooks
 Write-Host "[✓] Git 훅 연결 완료 (core.hooksPath = Tools/GitHooks)" -ForegroundColor Green
 

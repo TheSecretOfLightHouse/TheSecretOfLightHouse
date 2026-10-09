@@ -114,9 +114,6 @@ _ReSharper*/
 CLAUDE.local.md
 .claude/settings.local.json
 
-# 개인 문서 (공용 문서는 Docs/)
-/Docs.local/
-
 # 서명 키 · 시크릿 (절대 커밋 금지)
 *.keystore
 *.jks
@@ -145,3 +142,7 @@ $RECYCLE.BIN/
 
 # Assets 폴더 라이선스 대비 제외, SVN으로 관리
 /[Aa]ssets/[Tt]hird[Pp]arty/
+
+# 개인 세션 및 전달 기록
+/.claude/docs/
+/.claude/handover/
