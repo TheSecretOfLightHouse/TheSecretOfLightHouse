@@ -6,7 +6,7 @@
 
 게임 내용과 수치의 의도는 [기획서](../design/references/game-design-v4.md)를 유지한다. 문서 정리를 이유로 수치나 데이터 구조를 바꾸지 않는다. 실제 값이 코드·인스펙터·에셋 중 어디에 있는지 먼저 확인하고 변경한다.
 
-현재 `Assets/01.Scripts/02.World/Resources/Rules/ResourceDefinition.cs`는 ID·이름·아이콘·희귀도·획득 프리팹을 담는 ScriptableObject다. `05.Player/Movement/Rules/MoveConfig.cs`는 이동 배율과 입력 잠금을 담는 struct이며 SO가 아니다. 통합 데이터베이스나 모든 밸런스 SO가 이미 존재한다고 가정하지 않는다. 배치와 구현 규칙은 [아키텍처](../04-architecture.md)와 [코딩 컨벤션](../coding-convention.md)을 따른다.
+현재 `Assets/01.Scripts/02.World/Harvest/Rules/ResourceDefinition.cs`는 ID·이름·아이콘·희귀도·획득 프리팹을 담는 ScriptableObject다. `05.Player/Movement/Rules/MoveConfig.cs`는 이동 배율과 입력 잠금을 담는 struct이며 SO가 아니다. 통합 데이터베이스나 모든 밸런스 SO가 이미 존재한다고 가정하지 않는다. 배치와 구현 규칙은 [아키텍처](../04-architecture.md)와 [코딩 컨벤션](../coding-convention.md)을 따른다.
 
 ## 2. 데이터 책임 기록
 

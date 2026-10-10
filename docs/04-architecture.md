@@ -57,9 +57,9 @@ Unity 루트의 `Assets/00.Scenes`, `02.Prefabs`~`07.Materials`, `Packages/`, `P
 | 상태 | `05.Player/State/Rules/` — PlayerHFSM·StateMachine·상태 타입 |
 | 능력 | `05.Player/Abilities/` — PlayerAbility·Runner, `Rules/`의 능력 계약 |
 | 애니메이션 | `05.Player/Animation/View/` — Driver·Source·인터페이스 |
-| 섬·바다 계약 | `02.World/Islands/Net/IslandHandle.cs`, `Ocean/Rules/SeaZone.cs` |
-| 배치 계약 | `02.World/Spawning/Net/SpawnerPoint.cs` — 실제 스폰 실행은 Monsters 담당 |
-| 자원 계약·정의 | `02.World/Resources/Net/SpotInfo.cs`, `Resources/Rules/ResourceDefinition.cs`, `ResourceRarity.cs` |
+| 섬·바다 계약 | `02.World/Islands/Rules/IslandHandle.cs`, `Ocean/Rules/SeaZone.cs` |
+| 배치 계약 | `02.World/Spawning/Rules/SpawnerPoint.cs` — 실제 스폰 실행은 Monsters 담당 |
+| 자원 계약·정의 | `02.World/Harvest/Rules/SpotInfo.cs`, `ResourceDefinition.cs`, `ResourceRarity.cs` |
 | 상호작용 계약 | `03.Interaction/Requests/Net/InteractionRequest.cs`, `InteractionAction.cs` |
 
 StateMachine·State·Transition은 현재 MoveConfig에 의존하므로 Player 안에 둔다. ShipPhysicsProfile은 배 물리 정의로 Player가 관리하며 World에서 소비할 때 합의한다.
@@ -68,7 +68,7 @@ StateMachine·State·Transition은 현재 MoveConfig에 의존하므로 Player �
 
 ## 5. 기존 참조 보존
 
-기존 스크립트 파일명·타입명·네임스페이스·직렬화 필드를 유지한다. Map 계약의 `Lighthouse.Map.Net.*`와 전역 Player 타입 이름도 폴더 이동으로 변경하지 않는다. 신규 코드의 네임스페이스는 도메인을 따른다.
+기존 스크립트 파일명·타입명·직렬화 필드를 유지한다. 전역 Player 타입 이름도 폴더 이동으로 변경하지 않는다. 신규 코드의 네임스페이스는 도메인을 따른다. 기존 `Lighthouse.Map.Net.*` 계약 9개는 소비하는 코드가 없는 것을 확인하고 도메인 네임스페이스로 이관했다: World 6개(`IslandHandle`, `SeaZone`, `SpotInfo`, `SpawnerPoint`, `ResourceDefinition`, `ResourceRarity`)는 `Lighthouse.World.{기능}.Rules`, `InteractionRequest`·`InteractionAction`은 `Lighthouse.Interaction.Requests.Net`, `ShipPhysicsProfile`은 `Lighthouse.Player.Boat.Rules`.
 
 씬·프리팹 YAML을 직접 변경하지 않는다. 파일과 meta를 함께 이관하고 GUID를 보존한다. 기존 Player 씬의 다섯 스크립트 참조를 대조한다. 어셈블리가 Assembly-CSharp에서 Lighthouse.Runtime으로 바뀌므로 GUID 대조와 별개로 지정 Unity 버전의 컴파일·MonoScript 타입 복원·씬 로드 검증이 필요하다.
 

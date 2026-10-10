@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Lighthouse.Map.Net.Contracts
+namespace Lighthouse.Player.Boat.Rules
 {
     public struct ShipPhysicsProfile
     {
