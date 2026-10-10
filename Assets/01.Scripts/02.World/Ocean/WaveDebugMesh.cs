@@ -349,8 +349,8 @@ namespace Lighthouse.World.Ocean
                 }
             }
 
-            WaveModifierData[] tooMany = new WaveModifierData[WaveModel.MaxModifiers + 1];
-            bool isValidityOk = WaveModel.AreModifiersValid(bump) && !WaveModel.AreModifiersValid(tooMany);
+            WaveModifierData[] tooMany = new WaveModifierData[WaveModifierModel.MaxModifiers + 1];
+            bool isValidityOk = WaveModifierModel.AreValid(bump) && !WaveModifierModel.AreValid(tooMany);
 
             bool isPassed = isCenterOk && outsideMismatches == 0 && insideMismatches == 0 && isValidityOk;
             Report(
@@ -423,7 +423,7 @@ namespace Lighthouse.World.Ocean
                     Vector3 displacement = WaveModel.DisplacementAt(waves, origin.x + localX, origin.z + localZ, _time);
                     float worldX = origin.x + localX + displacement.x;
                     float worldZ = origin.z + localZ + displacement.z;
-                    float height = displacement.y + WaveModel.ModifierHeightAt(modifiers, worldX, worldZ);
+                    float height = displacement.y + WaveModifierModel.HeightAt(modifiers, worldX, worldZ);
                     _vertices[iz * side + ix] = new Vector3(localX + displacement.x, height, localZ + displacement.z);
                 }
             }
