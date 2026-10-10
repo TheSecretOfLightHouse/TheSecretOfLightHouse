@@ -42,7 +42,14 @@ Command 인자의 권한·범위·쿨타임은 서버에서 검증한다. 비밀
 - `Assets/01.Scripts/03.Interaction/Requests/Net/InteractionAction.cs`: 상호작용 종류를 정의한다.
 - `Assets/01.Scripts/02.World/Harvest/Rules/ResourceDefinition.cs`: 자원 ID·표시명·아이콘·희귀도·픽업 프리팹의 ScriptableObject 정의다.
 
-이 타입의 존재는 요청 전송·검증·실제 데이터 연결의 완료를 의미하지 않는다. 요청 처리기를 작성할 때 송신자와 ActorId의 관계 및 타임스탬프 검증 방식을 명시해야 한다. 아직 구체적인 전송·실패 응답 계약은 이 문서에서 새로 확정하지 않는다.
+이 타입의 존재는 요청 전송·검증·실제 데이터 연결의 완료를 의미하지 않는다. 아직 구체적인 전송·실패 응답 계약은 이 문서에서 새로 확정하지 않는다.
+
+송신자와 ActorId의 관계는 JH01에서 다음과 같이 구현했다. 상세 설계는 [지훈 시스템 설계 §5.1·§8](design/jihun-system-design.md)을 따른다.
+
+- ActorId는 서버가 플레이어 생성(`OnServerAddPlayer`) 때 1부터 발급한다. 0은 무효다. 연결 번호(connectionId)·객체 번호(netId)와 분리된 주체 번호다.
+- 서버 코드는 Command 인자나 `InteractionRequest.ActorId`처럼 클라이언트가 보낸 ActorId를 신뢰하지 않는다. `LighthouseNetworkManager.Instance.Connections.TryGetActorId(connectionToClient, out actorId)`로 송신자를 조회하거나 `IsSender`로 대조한다.
+- 플레이어 객체의 `NetworkActor.ActorId`는 모든 클라이언트에 공개된다. 역할 등 비밀 정보와 연결되지 않는다.
+- 타임스탬프(`ServerTime`) 검증과 요청 번호·연결 세대는 JH02에서 정한다. 나간 사람의 ActorId 보존·재결합은 JH07 범위이며 현재는 해제 시 명단에서 제거한다.
 
 ## 6. 상태와 실행값
 

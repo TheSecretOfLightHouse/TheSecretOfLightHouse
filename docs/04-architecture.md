@@ -64,7 +64,7 @@ Unity 루트의 `Assets/00.Scenes`, `02.Prefabs`~`07.Materials`, `Packages/`, `P
 
 StateMachine·State·Transition은 현재 MoveConfig에 의존하므로 Player 안에 둔다. ShipPhysicsProfile은 배 물리 정의로 Player가 관리하며 World에서 소비할 때 합의한다.
 
-현 코드의 PlayerController 등은 MonoBehaviour 기반이다. 현재 34개 C# 본문에는 Mirror 권위·동기화 구현이 없다. 빈 기능 폴더는 작업 위치를 표시하며 구현 완료를 뜻하지 않는다. NetworkManager·재접속 등 할당된 범위도 별도 구현·실행 검증이 필요하다.
+현 코드의 PlayerController 등은 MonoBehaviour 기반이다. Mirror 구현은 `01.Network/`의 JH01 접속·ActorId 식별(`LighthouseNetworkManager`, `ConnectionDirectory`, `NetworkActor`)뿐이며, 기능별 권위·동기화는 아직 없다. 구현 기록은 [담당자별 작업 §6](06-owner-work-plan.md#6-처음-함께-맞출-일과-작업-기록)을 따른다. 빈 기능 폴더는 작업 위치를 표시하며 구현 완료를 뜻하지 않는다. NetworkManager·재접속 등 할당된 범위도 별도 구현·실행 검증이 필요하다.
 
 ## 5. 기존 참조 보존
 

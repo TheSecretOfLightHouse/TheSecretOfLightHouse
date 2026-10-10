@@ -42,6 +42,7 @@ ParrelSync는 `Packages/manifest.json`의 Git 의존성이다. `Assets/Plugins/P
 | 씬 경로 | 검증 대상 | 초기 상태·데이터 | 빌드 포함 여부 | 검증 결과 |
 |---|---|---|---|---|
 | {{실제 경로}} | {{기능}} | {{재현 조건}} | {{확인 값}} | {{결과 또는 미검증}} |
+| `Assets/00.Scenes/Jihun/JH01TestScene.unity` | JH01 접속·ActorId 식별·정원·해제 | `LighthouseNetworkManager`+KCP+HUD, `NetworkStartPosition` 4개(RoundRobin), 시험용 플레이어 `Assets/02.Prefabs/_Net/NetworkTestPlayer.prefab` | 포함. **빌드 0번(시작 씬)은 4인 테스트용 임시 설정이며 통합 씬이 정해지면 바꾼다** | 2026-10-11 같은 PC 에디터 호스트 1 + 빌드 클라이언트 3(M2·총 4인) 통과: Actor 1~4 접속, 위조 ActorId 거부, 5번째 접속 거부, 해제 1회. 다른 PC(M3) 미검증 |
 
 기존 씬 목록은 [아키텍처](../04-architecture.md)와 실제 `Assets/00.Scenes/`를 확인한다. 씬 이름만으로 통합·멀티플레이 테스트 가능 여부를 판정하지 않는다.
 
