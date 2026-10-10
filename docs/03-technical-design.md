@@ -40,7 +40,7 @@ Command 인자의 권한·범위·쿨타임은 서버에서 검증한다. 비밀
 
 - `Assets/01.Scripts/03.Interaction/Requests/Net/InteractionRequest.cs`: ActorId, TargetId, Action, Arg0, Arg1, ServerTime을 가진 읽기 전용 구조체다.
 - `Assets/01.Scripts/03.Interaction/Requests/Net/InteractionAction.cs`: 상호작용 종류를 정의한다.
-- `Assets/01.Scripts/02.World/Resources/Rules/ResourceDefinition.cs`: 자원 ID·표시명·아이콘·희귀도·픽업 프리팹의 ScriptableObject 정의다.
+- `Assets/01.Scripts/02.World/Harvest/Rules/ResourceDefinition.cs`: 자원 ID·표시명·아이콘·희귀도·픽업 프리팹의 ScriptableObject 정의다.
 
 이 타입의 존재는 요청 전송·검증·실제 데이터 연결의 완료를 의미하지 않는다. 요청 처리기를 작성할 때 송신자와 ActorId의 관계 및 타임스탬프 검증 방식을 명시해야 한다. 아직 구체적인 전송·실패 응답 계약은 이 문서에서 새로 확정하지 않는다.
 

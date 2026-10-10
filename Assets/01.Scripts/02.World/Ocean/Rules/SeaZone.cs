@@ -1,6 +1,6 @@
 using System;
 
-namespace Lighthouse.Map.Net.Contracts
+namespace Lighthouse.World.Ocean.Rules
 {
     [Flags]
     public enum SeaZone

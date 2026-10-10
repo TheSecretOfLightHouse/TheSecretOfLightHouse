@@ -1,4 +1,4 @@
-namespace Lighthouse.Map.Net.Contracts
+namespace Lighthouse.Interaction.Requests.Net
 {
     public readonly struct InteractionRequest
     {

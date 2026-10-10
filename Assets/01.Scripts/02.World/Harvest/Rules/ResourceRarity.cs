@@ -1,4 +1,4 @@
-namespace Lighthouse.Map.Net.Definitions
+namespace Lighthouse.World.Harvest.Rules
 {
     public enum ResourceRarity
     {

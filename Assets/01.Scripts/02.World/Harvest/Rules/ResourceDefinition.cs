@@ -1,8 +1,8 @@
 using UnityEngine;
 
-namespace Lighthouse.Map.Net.Definitions
+namespace Lighthouse.World.Harvest.Rules
 {
-    [CreateAssetMenu(fileName = "Resource_New", menuName = "TheLightHouse/Map/ResourceDefinition")]
+    [CreateAssetMenu(fileName = "Resource_New", menuName = "TheLightHouse/World/ResourceDefinition")]
     public class ResourceDefinition : ScriptableObject
     {
         [SerializeField] private int _id;

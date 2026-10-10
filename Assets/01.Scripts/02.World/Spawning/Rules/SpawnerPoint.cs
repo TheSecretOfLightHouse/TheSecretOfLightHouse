@@ -1,6 +1,7 @@
+using Lighthouse.World.Ocean.Rules;
 using UnityEngine;
 
-namespace Lighthouse.Map.Net.Contracts
+namespace Lighthouse.World.Spawning.Rules
 {
     public readonly struct SpawnerPoint
     {
