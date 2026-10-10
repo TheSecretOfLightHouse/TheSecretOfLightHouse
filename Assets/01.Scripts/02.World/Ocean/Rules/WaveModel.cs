@@ -12,6 +12,7 @@ namespace Lighthouse.World.Ocean.Rules
 
         private const float TwoPi = Mathf.PI * 2f;
         private const float DirectionTolerance = 0.01f;
+        private const float FalloffGradientFactor = 4f;
 
         public static float HeightAt(
             ReadOnlySpan<WaveParams> waves,
@@ -22,7 +23,7 @@ namespace Lighthouse.World.Ocean.Rules
         {
             FindRestPosition(waves, x, z, time, out float restX, out float restZ);
             Vector3 displacement = DisplacementAt(waves, restX, restZ, time);
-            return displacement.y;
+            return displacement.y + ModifierHeightAt(modifiers, x, z);
         }
 
         public static Vector3 NormalAt(
@@ -34,9 +35,11 @@ namespace Lighthouse.World.Ocean.Rules
         {
             FindRestPosition(waves, x, z, time, out float restX, out float restZ);
 
-            float normalX = 0f;
-            float normalY = 1f;
-            float normalZ = 0f;
+            float slopeX = 0f;
+            float slopeZ = 0f;
+            float stretchXX = 0f;
+            float stretchZZ = 0f;
+            float stretchXZ = 0f;
 
             for (int i = 0; i < waves.Length; i++)
             {
@@ -49,11 +52,22 @@ namespace Lighthouse.World.Ocean.Rules
                 float waveNumber = TwoPi / wave.Wavelength;
                 float phase = waveNumber * (wave.Direction.x * restX + wave.Direction.y * restZ - wave.Speed * time);
                 float slope = waveNumber * wave.Amplitude * Mathf.Cos(phase);
+                float stretch = wave.Steepness * Mathf.Sin(phase);
 
-                normalX -= wave.Direction.x * slope;
-                normalZ -= wave.Direction.y * slope;
-                normalY -= wave.Steepness * Mathf.Sin(phase);
+                slopeX += wave.Direction.x * slope;
+                slopeZ += wave.Direction.y * slope;
+                stretchXX += wave.Direction.x * wave.Direction.x * stretch;
+                stretchZZ += wave.Direction.y * wave.Direction.y * stretch;
+                stretchXZ += wave.Direction.x * wave.Direction.y * stretch;
             }
+
+            float normalY = (1f - stretchXX) * (1f - stretchZZ) - stretchXZ * stretchXZ;
+            float normalX = -(slopeX * (1f - stretchZZ) + stretchXZ * slopeZ);
+            float normalZ = -(slopeZ * (1f - stretchXX) + stretchXZ * slopeX);
+
+            ModifierSlopeAt(modifiers, x, z, out float modifierSlopeX, out float modifierSlopeZ);
+            normalX -= modifierSlopeX * normalY;
+            normalZ -= modifierSlopeZ * normalY;
 
             return new Vector3(normalX, normalY, normalZ).normalized;
         }
@@ -82,6 +96,35 @@ namespace Lighthouse.World.Ocean.Rules
             }
 
             return new Vector3(displacementX, displacementY, displacementZ);
+        }
+
+        public static float ModifierHeightAt(ReadOnlySpan<WaveModifierData> modifiers, float x, float z)
+        {
+            float height = 0f;
+
+            for (int i = 0; i < modifiers.Length; i++)
+            {
+                ref readonly WaveModifierData modifier = ref modifiers[i];
+                int sign = GetSign(modifier.Kind);
+                if (sign == 0 || modifier.Radius <= 0f)
+                {
+                    continue;
+                }
+
+                float offsetX = x - modifier.Center.x;
+                float offsetZ = z - modifier.Center.y;
+                float radiusSqr = modifier.Radius * modifier.Radius;
+                float distanceSqr = offsetX * offsetX + offsetZ * offsetZ;
+                if (distanceSqr >= radiusSqr)
+                {
+                    continue;
+                }
+
+                float inside = 1f - distanceSqr / radiusSqr;
+                height += sign * modifier.Strength * inside * inside;
+            }
+
+            return height;
         }
 
         public static bool IsValid(ReadOnlySpan<WaveParams> waves)
@@ -116,6 +159,78 @@ namespace Lighthouse.World.Ocean.Rules
             }
 
             return totalSteepness <= MaxTotalSteepness;
+        }
+
+        public static bool AreModifiersValid(ReadOnlySpan<WaveModifierData> modifiers)
+        {
+            if (modifiers.Length > MaxModifiers)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < modifiers.Length; i++)
+            {
+                ref readonly WaveModifierData modifier = ref modifiers[i];
+                if (modifier.Kind == WaveModifierKind.None)
+                {
+                    continue;
+                }
+
+                if (modifier.Radius <= 0f || modifier.Strength < 0f)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static void ModifierSlopeAt(
+            ReadOnlySpan<WaveModifierData> modifiers,
+            float x,
+            float z,
+            out float slopeX,
+            out float slopeZ)
+        {
+            slopeX = 0f;
+            slopeZ = 0f;
+
+            for (int i = 0; i < modifiers.Length; i++)
+            {
+                ref readonly WaveModifierData modifier = ref modifiers[i];
+                int sign = GetSign(modifier.Kind);
+                if (sign == 0 || modifier.Radius <= 0f)
+                {
+                    continue;
+                }
+
+                float offsetX = x - modifier.Center.x;
+                float offsetZ = z - modifier.Center.y;
+                float radiusSqr = modifier.Radius * modifier.Radius;
+                float distanceSqr = offsetX * offsetX + offsetZ * offsetZ;
+                if (distanceSqr >= radiusSqr)
+                {
+                    continue;
+                }
+
+                float inside = 1f - distanceSqr / radiusSqr;
+                float scale = -FalloffGradientFactor * sign * modifier.Strength * inside / radiusSqr;
+                slopeX += scale * offsetX;
+                slopeZ += scale * offsetZ;
+            }
+        }
+
+        private static int GetSign(WaveModifierKind kind)
+        {
+            switch (kind)
+            {
+                case WaveModifierKind.Bump:
+                    return 1;
+                case WaveModifierKind.Vortex:
+                    return -1;
+                default:
+                    return 0;
+            }
         }
 
         private static void FindRestPosition(
