@@ -105,5 +105,6 @@ AX가 개발자의 테스트를 대행 완료 처리하거나 게임 수치를 �
 
 | 작업 ID | 실제 담당 | 상태 | 구현 파일/씬 | 실행 조건·결과·근거 | 남은 결정/다음 행동 |
 |---|---|---|---|---|---|
+| JH01 | 김지훈 | 검증 통과(같은 PC 4인, M2) | `01.Network/Session/Net/LighthouseNetworkManager.cs`, `01.Network/Connections/Server/ConnectionDirectory.cs`, `01.Network/Connections/Net/NetworkActor.cs`, `99.Dev/Network/ActorIdProbe.cs`, `00.Scenes/Jihun/JH01TestScene.unity`, `02.Prefabs/_Net/NetworkTestPlayer.prefab` | 2026-10-11, Unity 6000.0.83f1, 에디터 호스트 1 + 빌드 클라이언트 3. Actor 1~4 발급, 위조 ActorId 거부, 5번째 접속 거부, 해제 1회. 절차는 [테스트 씬 기록](ai/04_MULTIPLAYER_TEST_PROTOCOL.md#테스트-씬-기록) | 다른 PC 접속(M3) 미검증. 본편 Player 프리팹 연결은 MK01과 합의. 해제 시 ActorId 보존·재결합은 JH07(N11·N12 결정 대기). 연결 세대·요청 번호는 JH02 |
 
 이 표의 상태가 기능 구현 현황의 갱신 지점이다. 새로운 요구는 먼저 게임 기획·담당 경계를 확인한 뒤 작업으로 추가한다.
