@@ -4,6 +4,9 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerInputReader), typeof(PlayerMotor), typeof(PlayerAbilityRunner))]
 public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
 {
+    private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
+    private static readonly int IsRunningHash = Animator.StringToHash("IsRunning");
+
     [SerializeField]
     private PlayerInputReader _inputReader;
 
@@ -16,7 +19,7 @@ public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
     [SerializeField]
     private PlayerAbility _jobAbility;
     [SerializeField]
-    private PlayerAnimationDriver _animationDriver;
+    private Animator _animator;
 
     [SerializeField, Min(1f)]
     private float _runMultiplier = 1.5f;
@@ -27,8 +30,6 @@ public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
     private PlayerHFSM _hfsm;
     private Rigidbody _rb;
     private BoatController _boatController;
-
-    private PlayerAnimationSource _animationSource;
 
     private bool _savedIsKinematic;
     private bool _savedDetectCollisions;
@@ -57,10 +58,8 @@ public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
         _rb = GetComponent<Rigidbody>();
         _hfsm = new PlayerHFSM(_runMultiplier);
 
-        _animationSource = new PlayerAnimationSource(_hfsm,_abilityRunner);
-        
-        if (_animationDriver)
-            _animationDriver.Initialize(_animationSource);
+        _hfsm.MotionChanged += HandleMotionChanged;
+        HandleMotionChanged(_hfsm.CurrentMotion);
     }
 
     private void OnEnable()
@@ -91,9 +90,9 @@ public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
         {
             _abilityRunner = GetComponent<PlayerAbilityRunner>();
         }
-        if (!_animationDriver)
+        if (!_animator)
         {
-            _animationDriver = GetComponent<PlayerAnimationDriver>();
+            _animator = GetComponent<Animator>();
         }
     }
 
@@ -181,6 +180,28 @@ public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
             LeaveBoat(transform.position);
         }
     }
+    private void OnDestroy()
+    {
+        if (_hfsm != null)
+        {
+            _hfsm.MotionChanged -= HandleMotionChanged;
+        }
+    }
+
+    private void HandleMotionChanged(PlayerMotionState state)
+    {
+        if (!_animator || !_animator.runtimeAnimatorController)
+        {
+            return;
+        }
+
+        bool isRunning = state == PlayerMotionState.Run;
+        bool isMoving = state == PlayerMotionState.Walk || isRunning;
+
+        _animator.SetBool(IsMovingHash, isMoving);
+        _animator.SetBool(IsRunningHash, isRunning);
+    }
+
     public bool TryBoard(BoatController boat)
     {
         if (!isActiveAndEnabled|| !boat|| IsOnBoat|| IsDowned)
