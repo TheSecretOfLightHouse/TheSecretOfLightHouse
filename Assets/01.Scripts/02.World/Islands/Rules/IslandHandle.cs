@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Lighthouse.Map.Net.Contracts
+namespace Lighthouse.World.Islands.Rules
 {
     public readonly struct IslandHandle
     {
