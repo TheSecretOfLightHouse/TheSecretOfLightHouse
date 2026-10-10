@@ -1,5 +1,6 @@
 using System;
 using Lighthouse.World.Ocean.Rules;
+using Lighthouse.World.Ocean.Sandbox;
 using UnityEngine;
 
 namespace Lighthouse.World.Ocean
@@ -172,7 +173,7 @@ namespace Lighthouse.World.Ocean
             isAllPassed &= CheckModifiers(waves);
             isAllPassed &= CheckNormals(waves);
 
-            Report("All", isAllPassed, "see lines above");
+            WaveCheckLog.Report("All", isAllPassed, "see lines above");
         }
 
         private ReadOnlySpan<WaveModifierData> GetModifiers()
@@ -195,7 +196,7 @@ namespace Lighthouse.World.Ocean
             }
 
             bool isPassed = WaveModel.IsValid(waves);
-            Report("Validity", isPassed, $"waves={waves.Length}, totalSteepness={totalSteepness:F3}, max={WaveModel.MaxTotalSteepness}");
+            WaveCheckLog.Report("Validity", isPassed, $"waves={waves.Length}, totalSteepness={totalSteepness:F3}, max={WaveModel.MaxTotalSteepness}");
             return isPassed;
         }
 
@@ -228,7 +229,7 @@ namespace Lighthouse.World.Ocean
             }
 
             bool isPassed = mismatches == 0;
-            Report("Determinism", isPassed, $"mismatches={mismatches}, modifier={_isModifierEnabled}");
+            WaveCheckLog.Report("Determinism", isPassed, $"mismatches={mismatches}, modifier={_isModifierEnabled}");
             return isPassed;
         }
 
@@ -241,7 +242,7 @@ namespace Lighthouse.World.Ocean
             Vector3 normal = WaveModel.NormalAt(none, ReadOnlySpan<WaveModifierData>.Empty, origin.x + 3f, origin.z - 7f, _time);
 
             bool isPassed = Mathf.Approximately(height, 0f) && Mathf.Approximately(normal.y, 1f);
-            Report("EmptyWaves", isPassed, $"height={height}, normal={normal}");
+            WaveCheckLog.Report("EmptyWaves", isPassed, $"height={height}, normal={normal}");
             return isPassed;
         }
 
@@ -268,7 +269,7 @@ namespace Lighthouse.World.Ocean
             }
 
             bool isPassed = maxAbsHeight <= amplitudeSum + BoundEpsilon;
-            Report("AmplitudeBound", isPassed, $"maxAbsHeight={maxAbsHeight:F4}, amplitudeSum={amplitudeSum:F4}");
+            WaveCheckLog.Report("AmplitudeBound", isPassed, $"maxAbsHeight={maxAbsHeight:F4}, amplitudeSum={amplitudeSum:F4}");
             return isPassed;
         }
 
@@ -296,7 +297,7 @@ namespace Lighthouse.World.Ocean
             }
 
             bool isPassed = maxError <= _inverseTolerance;
-            Report("Inverse", isPassed, $"maxError={maxError:F5}, tolerance={_inverseTolerance}, iterations={WaveModel.InverseIterations}");
+            WaveCheckLog.Report("Inverse", isPassed, $"maxError={maxError:F5}, tolerance={_inverseTolerance}, iterations={WaveModel.InverseIterations}");
             return isPassed;
         }
 
@@ -353,7 +354,7 @@ namespace Lighthouse.World.Ocean
             bool isValidityOk = WaveModifierModel.AreValid(bump) && !WaveModifierModel.AreValid(tooMany);
 
             bool isPassed = isCenterOk && outsideMismatches == 0 && insideMismatches == 0 && isValidityOk;
-            Report(
+            WaveCheckLog.Report(
                 "Modifiers",
                 isPassed,
                 $"bumpDelta={bumpDelta:F4}, vortexDelta={vortexDelta:F4}, outside={outsideCount} (mismatch {outsideMismatches}), insideMismatch={insideMismatches}, validity={isValidityOk}");
@@ -370,7 +371,7 @@ namespace Lighthouse.World.Ocean
             float minDotBump = MinNormalDot(waves, bump);
 
             bool isPassed = minDotWaves >= NormalDotThreshold && minDotBump >= NormalDotThreshold;
-            Report("Normals", isPassed, $"minDot(waves)={minDotWaves:F5}, minDot(waves+bump)={minDotBump:F5}, threshold={NormalDotThreshold}");
+            WaveCheckLog.Report("Normals", isPassed, $"minDot(waves)={minDotWaves:F5}, minDot(waves+bump)={minDotBump:F5}, threshold={NormalDotThreshold}");
             return isPassed;
         }
 
@@ -466,20 +467,6 @@ namespace Lighthouse.World.Ocean
             }
 
             return triangles;
-        }
-
-        private static void Report(string testName, bool isPassed, string detail)
-        {
-            string message = $"[{nameof(WaveDebugMesh)}] {testName}: {(isPassed ? "PASS" : "FAIL")} ({detail})";
-
-            if (isPassed)
-            {
-                Debug.Log(message);
-            }
-            else
-            {
-                Debug.LogError(message);
-            }
         }
     }
 }
