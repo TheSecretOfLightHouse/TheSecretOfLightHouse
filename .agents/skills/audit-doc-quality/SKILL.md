@@ -13,7 +13,7 @@ description: TheSecretOfLightHouse의 CLAUDE.md·AGENTS.md와 docs/·스킬·Git
 
 - [문서 분류와 현재성 기준](../../../docs/DOCUMENTATION_POLICY.md): 위치·자립성·현재 규칙과 계획의 분리·금지 잔재. 이 스킬의 `현재성`, `자립성`, `금지 잔재` 점수는 이 문서를 근거로 한다.
 - [AI 작업 문서](../../../docs/ai/README.md): 문서 지도와 스킬 목록. 새 문서는 [읽기 안내](../../../docs/00-reading-guide.md)·이 문서의 문서 지도에서 도달할 수 있는지, 새 스킬은 이 문서의 스킬 표에 있는지 본다. [지식 맵](../../../docs/ai/07_PROJECT_KNOWLEDGE_MAP.md)은 기능별 코드 진입점 지도이므로 문서·스킬마다 항목이 있어야 하지는 않는다.
-- 규칙 우선순위는 최신 사용자 결정 → [제공된 v4](../../../docs/design/references/game-design-v4.md)다. 02 문서가 v4와 다른 것은 결함이 아니라 [문제 대장](../../../docs/07-design-issue-register.md)의 버전 차이일 수 있으니 대장을 확인한 뒤 판정한다.
+- 규칙 우선순위는 최신 사용자 결정 → [제공된 v4](../../../docs/design/references/game-design-v4.md)다. 보존 자료(`docs/design/archive/`)가 v4와 다른 것은 결함이 아니라 [문제 대장](../../../docs/07-design-issue-register.md)의 버전 차이일 수 있으니 대장을 확인한 뒤 판정한다.
 - 한 규칙의 단일 기준은 기획서·코딩 컨벤션·커밋 컨벤션 등 해당 문서다. 다른 문서가 같은 규칙을 다시 정의하면 중복으로 본다.
 
 ## 1. 발견

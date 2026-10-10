@@ -19,7 +19,7 @@
 | `08.Systems/`, `09.UI/` | 최명기 | 기존 시스템&UI 범위 및 각 기능의 서버·클라이언트·동기화 |
 | `99.Dev/` | 관련 기능 담당 | 공용 개발·검증 도구, 4인 테스트는 김지훈 리드 |
 
-Unity 루트의 `Assets/00.Scenes`, `02.Prefabs`~`07.Materials`, `Packages/`, `ProjectSettings/` 구성은 유지한다. 번호 폴더의 구분자는 점으로 통일한다. 기존 개발 씬의 사람별 디렉터리는 CODEOWNERS로 연결한다. 문서·자동화·스킬은 AX 영역이며 김민성을 게임 코드 담당으로 지정하지 않는다.
+Unity 루트의 `Assets/00.Scenes`, `02.Prefabs`~`07.Materials`, `Packages/`, `ProjectSettings/` 구성은 유지한다. 번호 폴더의 구분자는 점으로 통일한다. `Assets/00.Scenes/` 아래 사람별 개발 씬 폴더(Minseo, Jihun, Myeongki, TaeWook)는 이동·개명하지 않고, [CODEOWNERS](../.github/CODEOWNERS)에서 폴더 주인을 리뷰 담당으로 지정한다. 문서·자동화·스킬은 AX 영역이며 김민성을 게임 코드 담당으로 지정하지 않는다.
 
 ## 2. 기능 내부의 책임
 

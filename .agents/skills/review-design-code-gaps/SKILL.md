@@ -12,7 +12,7 @@ description: TheSecretOfLightHouse의 기능 구현·수정 요청, 해야 할 �
 ## 기준과 범위
 
 - [시스템 디자인](../../../docs/01-system-design.md): 게임 목적·코어 루프·시스템 연결·범위.
-- [제공된 게임 기획 v4](../../../docs/design/references/game-design-v4.md): 최신 제공 원문. 확정·가안·미정 구분을 유지한다. [기존 게임 디자인](../../../docs/02-game-design.md)은 v4 이전 문서이므로 버전 차이를 대조한다.
+- [제공된 게임 기획 v4](../../../docs/design/references/game-design-v4.md): 최신 제공 원문. 확정·가안·미정 구분을 유지한다. v4 이전 기획은 [보존 자료](../../../docs/design/archive/game-design-2026-10-08.md)이며 현행 규칙이 아니다. 버전 차이는 대장 V01~V10에서 확인한다.
 - [설계 문제 대장](../../../docs/07-design-issue-register.md): 기능별 색인, 원문 71개 ID, 부분 해결과 V01~V10 버전 차이. 관련 항목의 [검토 원문](../../../docs/design/references/v4-design-review.md)에는 문제·미승인 제안·시험이 있다.
 - [테크니컬 디자인](../../../docs/03-technical-design.md): 권위·데이터·통신·실패 경로.
 - [아키텍처](../../../docs/04-architecture.md), [로드맵](../../../docs/05-implementation-roadmap.md), [지식 맵](../../../docs/ai/07_PROJECT_KNOWLEDGE_MAP.md): 실제 구현을 찾는 출발점. 문서의 완료 표기만으로 구현 완료를 단정하지 않는다.
