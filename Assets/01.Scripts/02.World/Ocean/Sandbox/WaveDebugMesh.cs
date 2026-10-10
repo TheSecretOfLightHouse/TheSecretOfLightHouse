@@ -1,9 +1,8 @@
 using System;
 using Lighthouse.World.Ocean.Rules;
-using Lighthouse.World.Ocean.Sandbox;
 using UnityEngine;
 
-namespace Lighthouse.World.Ocean
+namespace Lighthouse.World.Ocean.Sandbox
 {
     [RequireComponent(typeof(MeshFilter))]
     public class WaveDebugMesh : MonoBehaviour
@@ -126,12 +125,13 @@ namespace Lighthouse.World.Ocean
             }
 
             int cells = Mathf.Clamp(_gridCells, MinGridCells, MaxGridCells);
+            WaveGrid grid = CreateGrid(cells);
             bool isStructureChanged = _vertices == null || _builtCells != cells;
 
             if (isStructureChanged)
             {
                 _builtCells = cells;
-                _vertices = new Vector3[(cells + 1) * (cells + 1)];
+                _vertices = new Vector3[grid.VertexCount];
             }
 
             FillVertices();
@@ -140,7 +140,7 @@ namespace Lighthouse.World.Ocean
             {
                 _mesh.Clear();
                 _mesh.SetVertices(_vertices);
-                _mesh.SetTriangles(BuildTriangles(cells), 0);
+                _mesh.SetTriangles(WaveMeshBuilder.BuildTriangles(grid), 0);
                 _mesh.RecalculateNormals();
                 _mesh.RecalculateBounds();
             }
@@ -159,7 +159,7 @@ namespace Lighthouse.World.Ocean
                 return;
             }
 
-            WaveGrid grid = new WaveGrid(Mathf.Clamp(_gridCells, MinGridCells, MaxGridCells), _cellSize, transform.position);
+            WaveGrid grid = CreateGrid(Mathf.Clamp(_gridCells, MinGridCells, MaxGridCells));
             WaveCheckContext context = new WaveCheckContext(
                 _waves,
                 GetModifiers(),
@@ -175,6 +175,11 @@ namespace Lighthouse.World.Ocean
             WaveCheckLog.Report("All", isAllPassed, "see lines above");
         }
 
+        private WaveGrid CreateGrid(int cells)
+        {
+            return new WaveGrid(cells, _cellSize, transform.position);
+        }
+
         private WaveModifierData[] GetModifiers()
         {
             if (!_isModifierEnabled)
@@ -188,24 +193,7 @@ namespace Lighthouse.World.Ocean
 
         private void FillVertices()
         {
-            ReadOnlySpan<WaveParams> waves = _waves;
-            ReadOnlySpan<WaveModifierData> modifiers = GetModifiers();
-            Vector3 origin = transform.position;
-            int side = _builtCells + 1;
-
-            for (int iz = 0; iz < side; iz++)
-            {
-                for (int ix = 0; ix < side; ix++)
-                {
-                    float localX = (ix - _builtCells * Half) * _cellSize;
-                    float localZ = (iz - _builtCells * Half) * _cellSize;
-                    Vector3 displacement = WaveModel.DisplacementAt(waves, origin.x + localX, origin.z + localZ, _time);
-                    float worldX = origin.x + localX + displacement.x;
-                    float worldZ = origin.z + localZ + displacement.z;
-                    float height = displacement.y + WaveModifierModel.HeightAt(modifiers, worldX, worldZ);
-                    _vertices[iz * side + ix] = new Vector3(localX + displacement.x, height, localZ + displacement.z);
-                }
-            }
+            WaveMeshBuilder.FillVertices(_vertices, CreateGrid(_builtCells), _time, _waves, GetModifiers());
         }
 
         private void ApplyVertices()
@@ -222,29 +210,6 @@ namespace Lighthouse.World.Ocean
             mesh.hideFlags = HideFlags.HideAndDontSave;
             mesh.MarkDynamic();
             return mesh;
-        }
-
-        private static int[] BuildTriangles(int cells)
-        {
-            int side = cells + 1;
-            int[] triangles = new int[cells * cells * 6];
-            int index = 0;
-
-            for (int iz = 0; iz < cells; iz++)
-            {
-                for (int ix = 0; ix < cells; ix++)
-                {
-                    int corner = iz * side + ix;
-                    triangles[index++] = corner;
-                    triangles[index++] = corner + side;
-                    triangles[index++] = corner + 1;
-                    triangles[index++] = corner + 1;
-                    triangles[index++] = corner + side;
-                    triangles[index++] = corner + side + 1;
-                }
-            }
-
-            return triangles;
         }
     }
 }
