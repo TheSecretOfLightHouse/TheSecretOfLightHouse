@@ -6,7 +6,7 @@ body:
     id: target
     attributes:
       label: 대상
-      placeholder: 배 무전 지속 시간 / 이동 속도 / 상호작용 거리
+      placeholder: 자동 구조 시간 / 이동 속도 / 상호작용 거리
     validations:
       required: true
 
@@ -29,7 +29,7 @@ body:
     attributes:
       label: 근거
       description: 플레이 테스트에서 관찰한 것을 구체적으로
-      placeholder: "예: 배 무전 1회 5초 가안으로 구조 요청을 전달하기 어려웠다면 실제 플레이 테스트 상황과 관찰 결과를 기록"
+      placeholder: "예: 자동 구조 90초 가안이 길어 동료가 구조하러 오기 전에 판이 늘어졌다면 실제 플레이 테스트 상황과 관찰 결과를 기록"
     validations:
       required: true
 
