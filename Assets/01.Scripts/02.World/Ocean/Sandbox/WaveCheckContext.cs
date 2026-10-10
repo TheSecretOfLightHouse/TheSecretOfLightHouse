@@ -6,6 +6,8 @@ namespace Lighthouse.World.Ocean.Sandbox
 {
     public sealed class WaveCheckContext
     {
+        public const float BoundEpsilon = 0.0001f;
+
         public WaveCheckContext(
             WaveParams[] waves,
             WaveModifierData[] modifiers,
