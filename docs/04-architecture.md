@@ -59,7 +59,7 @@ Unity 루트의 `Assets/00.Scenes`, `02.Prefabs`~`07.Materials`, `Packages/`, `P
 | 애니메이션 | `05.Player/Animation/View/` — Driver·Source·인터페이스 |
 | 섬·바다 계약 | `02.World/Islands/Net/IslandHandle.cs`, `Ocean/Rules/SeaZone.cs` |
 | 배치 계약 | `02.World/Spawning/Net/SpawnerPoint.cs` — 실제 스폰 실행은 Monsters 담당 |
-| 자원 계약·정의 | `02.World/Resources/Net/SpotInfo.cs`, `Resources/Rules/ResourceDefinition.cs`, `ResourceRarity.cs` |
+| 자원 계약·정의 | `02.World/Harvest/Net/SpotInfo.cs`, `Harvest/Rules/ResourceDefinition.cs`, `ResourceRarity.cs` |
 | 상호작용 계약 | `03.Interaction/Requests/Net/InteractionRequest.cs`, `InteractionAction.cs` |
 
 StateMachine·State·Transition은 현재 MoveConfig에 의존하므로 Player 안에 둔다. ShipPhysicsProfile은 배 물리 정의로 Player가 관리하며 World에서 소비할 때 합의한다.

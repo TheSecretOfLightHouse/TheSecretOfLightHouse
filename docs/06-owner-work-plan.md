@@ -10,7 +10,7 @@
 
 ## 1. 강민서 — 월드
 
-계정 `ri-ver-1`, 코드 `Assets/01.Scripts/02.World/`. 현재 재사용 출발점은 Islands/Net/IslandHandle, Ocean/Rules/SeaZone, Spawning/Net/SpawnerPoint, Resources의 데이터 정의다. 생성·배치·동기화 완료를 뜻하지 않는다. 기획은 v4 2·8·11·13장과 연결한다. 마피아 방해 관련 02 5.2~5.3(02 기준)은 v4 4장에서 대조한다.
+계정 `ri-ver-1`, 코드 `Assets/01.Scripts/02.World/`. 현재 재사용 출발점은 Islands/Net/IslandHandle, Ocean/Rules/SeaZone, Spawning/Net/SpawnerPoint, Harvest의 데이터 정의다. 생성·배치·동기화 완료를 뜻하지 않는다. 기획은 v4 2·8·11·13장과 연결한다. 마피아 방해 관련 02 5.2~5.3(02 기준)은 v4 4장에서 대조한다.
 
 | ID | 구체적으로 할 일 | 결정·계약 상대 | 완료 기준 |
 |---|---|---|---|
