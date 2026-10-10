@@ -1,0 +1,91 @@
+# 파일 경로별 리뷰 담당. 마지막으로 일치한 패턴을 적용한다.
+# 각 기능의 Rules/Net/Server/View는 같은 담당자다. 전역 Net/Server 소유권 덮어쓰기는 하지 않는다.
+# 강민서: @ri-ver-1 — 월드
+# 김지훈: @zhun0922 — 네트워크·상호작용·등대
+# 최명기: @cmg6991 — 플레이어·배·인벤토리·채집·시스템&UI
+# 박태욱: @awe46566 — 몬스터·투표·심해
+# 김민성: @AidenKim923 — 다른 팀에서 온 일시 AX 지원. 게임 코드 소유자 아님.
+# 시스템&UI도 최명기 @cmg6991 담당. 포괄 코드 기본 담당은 두지 않는다.
+
+# AX: 문서·작업 절차·템플릿 (게임 코드와 기획 결정 권한은 부여하지 않음)
+/docs/                              @AidenKim923
+/AGENTS.md                          @AidenKim923
+/CLAUDE.md                          @AidenKim923
+/README.md                          @AidenKim923
+/.agents/                           @AidenKim923
+/.claude/skills/                    @AidenKim923
+/.github/                           @AidenKim923
+/Tools/                             @AidenKim923
+/.gitignore                         @AidenKim923
+/.gitattributes                     @AidenKim923
+
+# 공용 실행 기반과 설정. 도메인 내부 네트워크는 아래 각 도메인 담당자가 유지한다.
+/Assets/01.Scripts/00.Common/        @zhun0922
+/Assets/01.Scripts/00.Common.meta    @zhun0922
+/Assets/01.Scripts/01.Network/       @zhun0922
+/Assets/01.Scripts/01.Network.meta   @zhun0922
+/Assets/01.Scripts/Lighthouse.Runtime.asmdef       @zhun0922
+/Assets/01.Scripts/Lighthouse.Runtime.asmdef.meta  @zhun0922
+/Packages/                          @zhun0922
+/ProjectSettings/                   @zhun0922
+
+# 강민서
+/Assets/01.Scripts/02.World/         @ri-ver-1
+/Assets/01.Scripts/02.World.meta     @ri-ver-1
+/Assets/00.Scenes/Minseo/            @ri-ver-1
+/Assets/00.Scenes/Minseo.meta        @ri-ver-1
+
+# 김지훈
+/Assets/01.Scripts/03.Interaction/      @zhun0922
+/Assets/01.Scripts/03.Interaction.meta  @zhun0922
+/Assets/01.Scripts/04.Lighthouse/       @zhun0922
+/Assets/01.Scripts/04.Lighthouse.meta   @zhun0922
+/Assets/00.Scenes/Jihun/                @zhun0922
+/Assets/00.Scenes/Jihun.meta            @zhun0922
+
+# 최명기
+/Assets/01.Scripts/05.Player/        @cmg6991
+/Assets/01.Scripts/05.Player.meta    @cmg6991
+/Assets/00.Scenes/Myeongki/          @cmg6991
+/Assets/00.Scenes/Myeongki.meta      @cmg6991
+
+# 박태욱
+/Assets/01.Scripts/06.Monsters/      @awe46566
+/Assets/01.Scripts/06.Monsters.meta  @awe46566
+/Assets/01.Scripts/07.Mafia/         @awe46566
+/Assets/01.Scripts/07.Mafia.meta     @awe46566
+/Assets/00.Scenes/TaeWook/           @awe46566
+/Assets/00.Scenes/TaeWook.meta       @awe46566
+
+# 최명기: 시스템&UI
+/Assets/01.Scripts/08.Systems/       @cmg6991
+/Assets/01.Scripts/08.Systems.meta   @cmg6991
+/Assets/01.Scripts/09.UI/            @cmg6991
+/Assets/01.Scripts/09.UI.meta        @cmg6991
+# 공유 개발·검증 도구: 해당 기능 작성자가 구현하고 김지훈이 통합 시험을 조율한다.
+/Assets/01.Scripts/99.Dev/           @ri-ver-1 @zhun0922 @cmg6991 @awe46566
+/Assets/01.Scripts/99.Dev.meta       @ri-ver-1 @zhun0922 @cmg6991 @awe46566
+
+# 구조/담당 문서는 AX 유지관리와 관련 기능 담당 검토를 함께 요청한다.
+/docs/CODE_OWNERSHIP.md             @AidenKim923 @ri-ver-1 @zhun0922 @cmg6991 @awe46566
+/.github/CODEOWNERS                 @AidenKim923 @ri-ver-1 @zhun0922 @cmg6991 @awe46566
+
+# 게임 기획·코드 계약 문서는 기능 담당자가 검토하며 AX가 단독 승인하지 않는다.
+/docs/02-game-design.md  @ri-ver-1 @zhun0922 @cmg6991 @awe46566
+/docs/03-technical-design.md  @ri-ver-1 @zhun0922 @cmg6991 @awe46566
+/docs/04-architecture.md  @ri-ver-1 @zhun0922 @cmg6991 @awe46566
+/docs/05-implementation-roadmap.md  @ri-ver-1 @zhun0922 @cmg6991 @awe46566
+/docs/06-owner-work-plan.md  @ri-ver-1 @zhun0922 @cmg6991 @awe46566
+/docs/coding-convention.md  @ri-ver-1 @zhun0922 @cmg6991 @awe46566
+/docs/unity/NETWORK_AUTHORITY.md  @ri-ver-1 @zhun0922 @cmg6991 @awe46566
+/docs/unity/SERVER_CLIENT_WORKFLOW.md  @ri-ver-1 @zhun0922 @cmg6991 @awe46566
+
+# 최명기: Player 씬에서 사용하는 입력 에셋
+/Assets/InputSystem_Actions.inputactions  @cmg6991
+/Assets/InputSystem_Actions.inputactions.meta  @cmg6991
+
+# 게임 개요와 보존 기획 자료
+/docs/01-system-design.md  @ri-ver-1 @zhun0922 @cmg6991 @awe46566
+/docs/design/              @ri-ver-1 @zhun0922 @cmg6991 @awe46566
+
+/docs/07-design-issue-register.md  @ri-ver-1 @zhun0922 @cmg6991 @awe46566
