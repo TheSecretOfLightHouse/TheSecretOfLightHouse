@@ -10,6 +10,9 @@ namespace Lighthouse.Mafia.Voting.Rules
         CannotVoteForSelf,
         VotingLocked,
         NoVotesRemaining,
-        GameEnded
+        GameEnded,
+        NotInitialized,
+        InvalidSender,
+        StateRetrieved
     }
 }

@@ -7,22 +7,22 @@ namespace Lighthouse.Mafia.Voting.Rules
     {
         public const int MaxVoteCount = 2;
 
-        private readonly Dictionary<int, VoteRecord> _votes = new();
-        private readonly HashSet<int> _participantIds;
-        private readonly int _mafiaId;
-        private readonly Dictionary<int, int> _usedVoteCounts = new();
+        private readonly Dictionary<uint, VoteRecord> _votes = new();
+        private readonly HashSet<uint> _participantIds;
+        private readonly uint _mafiaId;
+        private readonly Dictionary<uint, int> _usedVoteCounts = new();
 
         public bool IsLocked { get; private set; }
         public bool IsEnded { get; private set; }
 
-        public VoteService(IEnumerable<int> participantIds, int mafiaId)
+        public VoteService(IEnumerable<uint> participantIds, uint mafiaId)
         {
             if (participantIds == null)
             {
                 throw new ArgumentNullException(nameof(participantIds));
             }
 
-            _participantIds = new HashSet<int>(participantIds);
+            _participantIds = new HashSet<uint>(participantIds);
 
             if (!_participantIds.Contains(mafiaId))
             {
@@ -32,7 +32,7 @@ namespace Lighthouse.Mafia.Voting.Rules
             _mafiaId = mafiaId;
         }
 
-        public VoteChangeResult ChangeVote(int voterId, int targetId, double serverTime)
+        public VoteChangeResult ChangeVote(uint voterId, uint targetId, double serverTime)
         {
             if (IsEnded)
             {
@@ -61,7 +61,7 @@ namespace Lighthouse.Mafia.Voting.Rules
 
             if (_votes.TryGetValue(voterId, out VoteRecord record) && record.TargetId == targetId)
             {
-                // 변경되지 않은 투표는 그대로 유지되므로, 투표 변경 결과를 Unchanged로 반환
+                // 이미 같은 대상에게 투표한 경우, 투표 변경이 없음을 나타냄
                 return VoteChangeResult.Unchanged;
             }
 
@@ -94,12 +94,14 @@ namespace Lighthouse.Mafia.Voting.Rules
             IsLocked = true;
         }
 
-        public bool TryGetVote(int voterId, out VoteRecord record)
+        // 투표 기록을 가져오는 메서드
+        // 다른 서버 기능이 투표 기록을 확인할 수 있도록 제공
+        public bool TryGetVote(uint voterId, out VoteRecord record)
         {
             return _votes.TryGetValue(voterId, out record);
         }
-
-        public int GetRemainingVoteCount(int voterId)
+       
+        public int GetRemainingVoteCount(uint voterId)
         {
             if (!_participantIds.Contains(voterId) || voterId == _mafiaId)
             {
