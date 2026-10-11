@@ -5,7 +5,7 @@
 ## 프로젝트
 
 - 저장소 루트가 Unity 프로젝트 루트다. Unity 6000.0.83f1, URP 17.0.4, Input System 1.19.0, Mirror 기반이다.
-- PC 3인칭 4인 리슨 서버(호스트 1 + 원격 클라이언트 3) 등대 마피아 게임이다. [문서 읽기 안내](docs/00-reading-guide.md)와 [제공된 게임 기획 v4](docs/design/references/game-design-v4.md)와 최신 사용자 결정을 따른다.
+- PC 3인칭 4인 리슨 서버(호스트 1 + 원격 클라이언트 3) 등대 마피아 게임이다. [문서 읽기 안내](docs/00-reading-guide.md), [승패·투표 결정](docs/design/win-vote-decisions.md), [제공된 게임 기획 v4](docs/design/references/game-design-v4.md)와 최신 사용자 결정을 따른다. 새 결정이 v4와 충돌하면 해당 결정이 우선하며 미변경 범위는 v4를 따른다.
 - 계획, 코드 존재, 실제 실행 검증을 구분한다. 파일·API·테스트·담당자를 추측하지 않는다.
 
 ## 작업별 필독
@@ -13,7 +13,7 @@
 | 상황 | 문서 |
 |---|---|
 | C# 작성·수정 | [코딩 컨벤션](docs/coding-convention.md) — 기존 프로젝트의 유일한 코드 스타일 기준 |
-| 게임 규칙·수치·흐름 | [게임 기획 v4](docs/design/references/game-design-v4.md), [문제 대장](docs/07-design-issue-register.md) |
+| 게임 규칙·수치·흐름 | [승패·투표 결정](docs/design/win-vote-decisions.md), [게임 기획 v4](docs/design/references/game-design-v4.md), [문제 대장](docs/07-design-issue-register.md) |
 | 네트워크·서버 판정 | [네트워크 권위](docs/unity/NETWORK_AUTHORITY.md), [서버·클라이언트 협업](docs/unity/SERVER_CLIENT_WORKFLOW.md) |
 | 씬·프리팹·에셋·메타 | [씬·에셋 안전](docs/unity/SCENE_AND_ASSET_SAFETY.md) |
 | 데모 제작 | [데모 가이드](docs/unity/DEMO_GUIDE.md) |
@@ -25,7 +25,7 @@
 
 기능 구현·수정 또는 해야 할 일·남은 일·다음 작업·우선순위·일정·진척을 요청받으면 `review-design-code-gaps` 스킬을 먼저 적용한다. Codex는 [Codex 스킬](.agents/skills/review-design-code-gaps/SKILL.md), Claude는 [Claude 스킬](.claude/skills/review-design-code-gaps/SKILL.md)을 읽는다. 요청 범위의 시스템 디자인·게임 기획·기술설계와 실제 코드를 비교해 빠진 결정, 불일치, 그대로 진행할 때 예상되는 문제를 근거와 함께 설명한다. 구현 요청은 검토 뒤 결정된 범위의 구현까지 이어가고, 현황 질문은 분석만 수행한다.
 
-관련 기능의 설명·규칙·대안·버그 대화에서도 위 스킬을 적용한다. [설계 문제 대장](docs/07-design-issue-register.md)의 관련 ID와 현재 상태를 확인해 근거·예상 영향·필요한 결정을 설명한다. 최신 제공 기획은 [v4 원문](docs/design/references/game-design-v4.md)이며 기존 문서와의 차이는 대장 V01~V10에서 확인하며, 목록 밖 차이도 최신 사용자 결정과 v4가 우선한다. 검토 보고서의 개선안은 사용자 승인이나 확정 규칙이 아니다.
+관련 기능의 설명·규칙·대안·버그 대화에서도 위 스킬을 적용한다. [설계 문제 대장](docs/07-design-issue-register.md)의 관련 ID와 현재 상태를 확인해 근거·예상 영향·필요한 결정을 설명한다. [승패·투표 결정](docs/design/win-vote-decisions.md)은 해당 범위에서 [v4 원문](docs/design/references/game-design-v4.md)보다 우선한다. 기존 문서와의 차이는 대장 V01~V10과 새 결정 반영 상태에서 확인하며, 목록 밖 차이도 최신 사용자 결정이 우선한다. 검토 보고서의 개선안은 사용자 승인이나 확정 규칙이 아니다.
 
 ## 담당과 실행 구조
 

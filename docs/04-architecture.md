@@ -1,6 +1,6 @@
 # 등대 소프트웨어 아키텍처
 
-기준일: 2026-10-09. 게임은 리슨 서버(호스트 1 + 원격 클라이언트 3)를 사용한다. 기능별 담당자가 서버·클라이언트를 함께 구현한다. [담당표](CODE_OWNERSHIP.md)가 소유권 기준이며 [코딩 컨벤션](coding-convention.md)이 코드 스타일 기준이다.
+기준일: 2026-10-11. 게임은 리슨 서버(호스트 1 + 원격 클라이언트 3)를 사용한다. 기능별 담당자가 서버·클라이언트를 함께 구현한다. [담당표](CODE_OWNERSHIP.md)가 소유권 기준이며 [코딩 컨벤션](coding-convention.md)이 코드 스타일 기준이다. 게임 규칙은 [승패·투표 결정](design/win-vote-decisions.md)이 충돌하는 [v4](design/references/game-design-v4.md) 규칙보다 우선하며, 기술 연결은 [기술설계](03-technical-design.md)를 따른다.
 
 ## 1. 폴더와 담당
 
@@ -9,7 +9,7 @@
 | 폴더 | 담당 | 기능 |
 |---|---|---|
 | `00.Common/` | 김지훈 조율, 관련 담당 합의 | 기능 간 공용 계약·기반. 기능 전용 타입은 각 도메인에 둠 |
-| `01.Network/` | 김지훈 | 세션·NetworkManager·스폰 등록·연결 조회·재접속 |
+| `01.Network/` | 김지훈 | 세션·NetworkManager·스폰 등록·연결 조회·단절 캐릭터/참가자 상태 보존 기반, 재접속은 후순위 검토 |
 | `02.World/` | 강민서 | 바다·날씨·시간·안개·맵·섬·파밍·배치·특수 섬·유령선·환영 섬·토네이도 |
 | `03.Interaction/` | 김지훈 | 요청·Relay·Router·Validator·기록·유령선 힌트 |
 | `04.Lighthouse/` | 김지훈 | 작업대·모듈·부식 낙하·등대 |
@@ -40,13 +40,13 @@ Unity 루트의 `Assets/00.Scenes`, `02.Prefabs`~`07.Materials`, `Packages/`, `P
 - `autoReferenced: true`, `noEngineReferences: false`. 플랫폼 제한·서버 전용 define constraint는 없다.
 - 리슨 호스트 실행에 필요한 `Server/`도 일반 플레이어 빌드에 포함한다. 전용 서버 어셈블리·`UNITY_SERVER` 전용 제외를 도입하지 않는다.
 - 에디터와 테스트를 도메인 아래에 추가할 때는 Editor/Test 전용 asmdef로 분리한다. `Editor/`라는 이름만으로 부모 Runtime asmdef의 참조 경계를 해결했다고 보지 않는다.
-- `99.Dev/`의 개발 전용 기능은 `UNITY_EDITOR || DEVELOPMENT_BUILD` 조건으로 감싸 릴리스에서 제외한다. 에디터 전용 API는 별도 Editor asmdef로 분리한다. 현재 이 폴더에는 구현 코드가 없다.
+- `99.Dev/`의 개발 전용 기능은 `UNITY_EDITOR || DEVELOPMENT_BUILD` 조건으로 감싸 릴리스에서 제외한다. 에디터 전용 API는 별도 Editor asmdef로 분리한다. 현재 `Network/ActorIdProbe.cs`에 JH01 송신자·ActorId 대조용 개발 코드가 있다.
 - URP·uGUI·TMP 등 추가 참조는 실제 소비 코드가 생길 때 김지훈과 해당 기능 담당자가 영향 범위를 확인한 뒤 Runtime asmdef에 등록한다.
 - 폴더 소유권은 코드 리뷰 경계다. 단일 asmdef가 도메인 간 의존을 컴파일러에서 금지하지는 않으므로 공용 계약과 의존 방향은 담당자 합의로 검토한다.
 
 ## 4. 현재 코드의 배치
 
-표의 경로는 `Assets/01.Scripts/` 기준이다. 기존 34개 C#과 입력 에셋을 기능별로 배치한다.
+표의 경로는 `Assets/01.Scripts/` 기준이다. 기존 Player 코드와 추가된 기능 계약·접속 기반을 기능별로 배치한다.
 
 | 기능 | 위치·현재 상태 |
 |---|---|
@@ -61,10 +61,12 @@ Unity 루트의 `Assets/00.Scenes`, `02.Prefabs`~`07.Materials`, `Packages/`, `P
 | 배치 계약 | `02.World/Spawning/Rules/SpawnerPoint.cs` — 실제 스폰 실행은 Monsters 담당 |
 | 자원 계약·정의 | `02.World/Harvest/Rules/SpotInfo.cs`, `ResourceDefinition.cs`, `ResourceRarity.cs` |
 | 상호작용 계약 | `03.Interaction/Requests/Net/InteractionRequest.cs`, `InteractionAction.cs` |
+| 접속·참가자 식별 | `01.Network/Session/Net/LighthouseNetworkManager.cs`, `Connections/Server/ConnectionDirectory.cs`, `Connections/Net/NetworkActor.cs` — JH01의 4인 접속과 송신자/ActorId 식별. 현재 해제 시 명단에서 제거하고 Mirror 기본 해제를 실행하며, 단절 객체·참가자 상태 보존은 미구현 |
+| 투표 규칙 | `07.Mafia/Voting/Rules/VoteService.cs`, `VoteRecord.cs` — 참가자·횟수·같은 대상 재클릭 처리. 새 결정의 역할/자기 투표 제한·의식 잠금·서버 전송 통합은 완료 상태가 아님 |
 
 StateMachine·State·Transition은 현재 MoveConfig에 의존하므로 Player 안에 둔다. ShipPhysicsProfile은 배 물리 정의로 Player가 관리하며 World에서 소비할 때 합의한다.
 
-현 코드의 PlayerController 등은 MonoBehaviour 기반이다. Mirror 구현은 `01.Network/`의 JH01 접속·ActorId 식별(`LighthouseNetworkManager`, `ConnectionDirectory`, `NetworkActor`)뿐이며, 기능별 권위·동기화는 아직 없다. 구현 기록은 [담당자별 작업 §6](06-owner-work-plan.md#6-처음-함께-맞출-일과-작업-기록)을 따른다. 빈 기능 폴더는 작업 위치를 표시하며 구현 완료를 뜻하지 않는다. NetworkManager·재접속 등 할당된 범위도 별도 구현·실행 검증이 필요하다.
+현 코드의 PlayerController 등은 MonoBehaviour 기반이다. Mirror 기반은 JH01의 공용 접속·ActorId 식별과 개발용 검사 코드이며, 게임 기능별 권위·동기화 통합은 아직 완료 상태가 아니다. 구현 기록은 [담당자별 작업 §6](06-owner-work-plan.md#6-처음-함께-맞출-일과-작업-기록)을 따른다. 빈 기능 폴더는 작업 위치를 표시하며 구현 완료를 뜻하지 않는다. 새 결정의 단절 객체·ActorId 기반 상태 보존을 별도 구현·검증하고 재접속은 후순위로 검토한다.
 
 ## 5. 기존 참조 보존
 
@@ -75,6 +77,8 @@ StateMachine·State·Transition은 현재 MoveConfig에 의존하므로 Player �
 ## 6. 기능 간 통합
 
 스포너 배치/실행, 자원 지점/채집 행동, 유령선 연출/힌트처럼 둘 이상의 담당자가 만나는 계약은 [기능별 경계](CODE_OWNERSHIP.md#2-기능-사이의-경계)를 따른다. 한쪽 폴더로 옮겨 상대 담당자의 기능을 통째로 인수하지 않는다. 김지훈은 접속 기반과 4인 테스트를 조율하고 각 담당자는 자기 기능의 복원·동기화를 책임진다.
+
+승패·투표 연결에서는 김지훈의 등대 상태, 박태욱의 투표·소환/공격력 판정, 강민서의 월드 시간·아침 이벤트를 최명기의 게임 단계·최종 승패 및 UI가 소비한다. 숨은 수리도·최후 전투 수리 진행도·현재/최대 HP를 구분하고, 연결 객체와 참가자 ID 기반 게임 상태도 구분한다. 게임 기한 정지/제거를 World 시간 전체 정지로 확대하지 않는다. 이 의미 계약의 반영은 API 합의·코드 연결·4인 실행 검증 완료를 뜻하지 않는다([기술설계 §6·§7](03-technical-design.md#6-상태와-실행값)).
 
 ## 7. 검증 경계
 

@@ -13,7 +13,7 @@ PR 생성·수정 요청에 적용한다. [AGENTS.md](../../../AGENTS.md)와 [�
 2. base는 통합 브랜치 `develop`이다. 사용자가 다른 base를 지시하면 따르고, 원격에 `develop`이 없으면 만들지 말고 알린다. base가 확정되면 `git log <base>..HEAD --oneline`, `git diff <base>...HEAD --stat`과 diff를 읽는다.
 3. 커밋되지 않은 작업과 push되지 않은 커밋을 구분한다. 무관한 파일을 임의로 커밋하지 않는다. 추가 커밋이 요청 범위에 포함되면 [가이드 커밋](../guided-commit/SKILL.md)을 따른다. push도 허용된 브랜치·범위에서만 수행한다.
 4. 씬·`.meta`·네트워크 권위·밸런스 상수·대용량 바이너리를 확인한다. PR 크기·분할 기준은 [커밋·PR 컨벤션](../../../docs/commit-convention.md)의 커밋 단위(4장)와 `.github/PULL_REQUEST_TEMPLATE.md`에 있는 것만 적용하고, 서로 무관한 변경이 섞였으면 나눌 경계를 알린다. 없는 기준을 강제하지 않는다.
-5. [review-design-code-gaps](../review-design-code-gaps/SKILL.md) 스킬로 변경 내용이 기획·문서와 일치하는지 확인한다. 문서와 코드가 다르면 최신 사용자 결정과 [v4 원문](../../../docs/design/references/game-design-v4.md)을 기준으로 어느 쪽이 낡았는지 확인해 PR 본문에 알린다. 문서에 없는 변경은 근거를 확인하고, 근거가 없으면 PR 본문에 알린다.
+5. [review-design-code-gaps](../review-design-code-gaps/SKILL.md) 스킬로 변경 내용이 기획·문서와 일치하는지 확인한다. 문서와 코드가 다르면 최신 사용자 결정 → [승패·투표 결정](../../../docs/design/win-vote-decisions.md) → 미변경 범위의 [v4 원문](../../../docs/design/references/game-design-v4.md) 순으로 어느 쪽이 낡았는지 확인해 PR 본문에 알린다. 문서에 없는 변경은 근거를 확인하고, 근거가 없으면 PR 본문에 알린다.
 
 ## 제목·본문·검증
 
