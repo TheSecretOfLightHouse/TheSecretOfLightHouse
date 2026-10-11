@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Lighthouse.Mafia.AbyssGauge.Rules;
 using Lighthouse.Mafia.Voting.Net;
 using Lighthouse.Network.Session.Net;
 using Mirror;
@@ -21,6 +22,10 @@ namespace Lighthouse.Dev.Voting
         private bool _hasInitialized;
         private Vector2 _scroll;
         private Font _font;
+        private int _completedDays;
+        private double _lastMorningAt;
+        private bool _hasSummoned;
+        private bool _hasEnded;
 
         public IReadOnlyList<uint> ServerParticipants => _serverParticipants;
         public bool HasInitialized => _hasInitialized;
@@ -157,6 +162,37 @@ namespace Lighthouse.Dev.Voting
             if (NetworkServer.active && _hasInitialized)
             {
                 _voting.EndGame();
+                _hasEnded = true;
+            }
+        }
+
+        public void SettleTestMorning()
+        {
+            if (NetworkServer.active && _hasInitialized && !_hasSummoned && !_hasEnded)
+            {
+                double now = NetworkTime.time;
+                if (_voting.SettleMorning(_completedDays + 1, now))
+                {
+                    _completedDays++;
+                    _lastMorningAt = now;
+                }
+            }
+        }
+
+        public void RepeatTestMorning()
+        {
+            if (NetworkServer.active && _hasInitialized && _completedDays > 0)
+            {
+                _voting.SettleMorning(_completedDays, _lastMorningAt);
+            }
+        }
+
+        public void FreezeTestSummon()
+        {
+            if (NetworkServer.active && _hasInitialized && !_hasEnded)
+            {
+                _voting.FreezeAbyssForApprovedSummon();
+                _hasSummoned = true;
             }
         }
 
@@ -215,6 +251,35 @@ namespace Lighthouse.Dev.Voting
             }
             GUILayout.EndHorizontal();
             GUI.enabled = true;
+            DrawAbyssControls();
+        }
+
+        private void DrawAbyssControls()
+        {
+            GUILayout.Space(8);
+            GUILayout.Label("서버 전용 정산 진단 · 시험용 아침/승인 소환 입력");
+            GUI.enabled = _hasInitialized && !_hasSummoned && !_hasEnded;
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("완료한 하루를 가정: 아침 정산"))
+            {
+                SettleTestMorning();
+            }
+            if (GUILayout.Button("직전 아침 재전달 (중복 시험)"))
+            {
+                RepeatTestMorning();
+            }
+            GUILayout.EndHorizontal();
+            GUI.enabled = _hasInitialized && !_hasEnded;
+            if (GUILayout.Button("승인 소환을 가정: 공격력 고정"))
+            {
+                FreezeTestSummon();
+            }
+            GUI.enabled = true;
+            if (_hasInitialized && _voting.TryGetAbyssSnapshot(out AbyssGaugeSnapshot snapshot))
+            {
+                GUILayout.Label($"완료일 {_completedDays} / 기본 {snapshot.BaseAbyss:F2} / 봉인 {snapshot.TotalSeal:F2} / 오투표 {snapshot.TotalWrong:F2}");
+                GUILayout.Label($"심해 {snapshot.Abyss:F2} / 공격력 {snapshot.AttackPower:F2} / 소환 고정 {_hasSummoned}");
+            }
         }
 
         private void DrawVoteControls()
@@ -268,6 +333,10 @@ namespace Lighthouse.Dev.Voting
             _history.Clear();
             _selectedMafiaId = 0;
             _hasInitialized = false;
+            _completedDays = 0;
+            _lastMorningAt = 0;
+            _hasSummoned = false;
+            _hasEnded = false;
         }
 
         private void HandleActorJoined(uint actorId, NetworkConnectionToClient connection)
