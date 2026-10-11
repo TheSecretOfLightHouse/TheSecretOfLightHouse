@@ -13,7 +13,7 @@ description: TheSecretOfLightHouse의 문서와 실제 코드가 어디서 얼�
 - 이 보고서는 **참고 지표**다. [검증 플레이북](../../../docs/ai/03_VERIFICATION_PLAYBOOK.md)의 `PASS/CONDITIONAL/REJECT` 판정이나 완료 상태를 대신하지 않고, 새 코딩 규칙이나 일괄 오류 등급을 만들지 않는다. 기능 결함의 심각도는 재현과 영향으로 따로 판단한다.
 - 점수·비율은 표본과 가정을 함께 적는다. 정적 분석(Grep·읽기)으로 얻은 값이며 Unity 컴파일·Play Mode·4인 접속은 실행하지 않았다면 `런타임 미검증`으로 명시한다. 파일·타입이 존재한다는 이유로 기능 구현이나 동작을 인정하지 않는다([지식 맵](../../../docs/ai/07_PROJECT_KNOWLEDGE_MAP.md)의 확인 기준).
 - 코드는 `Assets/01.Scripts/`만 대상으로 한다. `Assets/Mirror/`, `Assets/Plugins/`, `Assets/ThirdParty/`, `Library/`, `Temp/`, 생성 파일은 제외한다. 제외한 범위를 보고서에 적는다.
-- 기준 우선순위는 최신 사용자 결정 → [제공된 v4](../../../docs/design/references/game-design-v4.md)다. 문서와 코드가 다를 때 어느 쪽이 맞는지 임의로 정하지 않고 [문제 대장](../../../docs/07-design-issue-register.md)의 버전 차이와 담당을 근거로 양쪽을 보고한다. 다른 담당의 코드를 평가한 결과를 전달하는 것은 괜찮지만 수정은 [소유권 확인](../check-code-ownership/SKILL.md)을 따른다.
+- 기준 우선순위는 최신 사용자 결정 → [승패·투표 결정](../../../docs/design/win-vote-decisions.md) → 미변경 범위의 [제공된 v4](../../../docs/design/references/game-design-v4.md)다. 문서와 코드가 다를 때 어느 쪽이 맞는지 임의로 정하지 않고 [문제 대장](../../../docs/07-design-issue-register.md)의 버전 차이와 담당을 근거로 양쪽을 보고한다. 다른 담당의 코드를 평가한 결과를 전달하는 것은 괜찮지만 수정은 [소유권 확인](../check-code-ownership/SKILL.md)을 따른다.
 
 ## 부분 1. 문서–코드 일치도
 
@@ -27,7 +27,7 @@ description: TheSecretOfLightHouse의 문서와 실제 코드가 어디서 얼�
 | [지식 맵](../../../docs/ai/07_PROJECT_KNOWLEDGE_MAP.md), [코드 소유권](../../../docs/CODE_OWNERSHIP.md) | 진입점 경로, 담당 폴더, `.github/CODEOWNERS` |
 | [코딩 컨벤션](../../../docs/coding-convention.md) | 문서가 말하는 구조·규칙을 기존 코드가 따르는지 |
 | [구현 로드맵](../../../docs/05-implementation-roadmap.md), [담당자별 작업](../../../docs/06-owner-work-plan.md) | 완료·진행 표기와 실제 구현 |
-| [기술설계서](../../../docs/03-technical-design.md), [시스템 디자인](../../../docs/01-system-design.md), [게임 기획 v4](../../../docs/design/references/game-design-v4.md) | 코드에 구현된 범위의 규칙·수치·상태 전이·권위. 아직 구현하지 않은 규칙은 불일치로 세지 않는다 |
+| [기술설계서](../../../docs/03-technical-design.md), [시스템 디자인](../../../docs/01-system-design.md), [승패·투표 결정](../../../docs/design/win-vote-decisions.md), [게임 기획 v4](../../../docs/design/references/game-design-v4.md) | 코드에 구현된 범위의 규칙·수치·상태 전이·권위. 아직 구현하지 않은 규칙은 불일치로 세지 않는다 |
 
 ### 1-2. 주장 추출과 판정
 
