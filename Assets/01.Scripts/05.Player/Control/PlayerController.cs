@@ -1,8 +1,10 @@
+using Mirror;
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(PlayerInputReader), typeof(PlayerMotor), typeof(PlayerAbilityRunner))]
-public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
+public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 {
     private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
     private static readonly int IsRunningHash = Animator.StringToHash("IsRunning");
@@ -27,10 +29,23 @@ public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
     [SerializeField, Min(0f)]
     private float _mouseSensitivity = 0.15f;
 
+    [SerializeField]
+    private bool _allowOfflineControl = true;
+
+    [SerializeField]
+    private Transform _cameraAnchor;
+
     private PlayerHFSM _hfsm;
     private Rigidbody _rb;
+    private PlayerInput _playerInput;
     private BoatController _boatController;
 
+    private Transform _attachedCamera;
+    private Transform _originalCameraParent;
+    private Vector3 _originalCameraPosition;
+    private Quaternion _originalCameraRotation;
+
+    private bool _initialIsKinematic;
     private bool _savedIsKinematic;
     private bool _savedDetectCollisions;
 
@@ -47,6 +62,19 @@ public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
     public BoatController CurrentBoat => _boatController;
     public PlayerHFSM StateMachine => _hfsm;
 
+    private bool CanProcessLocalInput
+    {
+        get
+        {
+            if (NetworkClient.active || NetworkServer.active)
+            {
+                return isLocalPlayer;
+            }
+
+            return _allowOfflineControl;
+        }
+    }
+
     public event Action<PlayerController> InteractionRequested;
     public event Action<BoatController> Boarded;
     public event Action<BoatController> Disembarked;
@@ -56,6 +84,8 @@ public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
     {
         ResolveReferences();
         _rb = GetComponent<Rigidbody>();
+        _initialIsKinematic = _rb.isKinematic;
+        _playerInput = GetComponent<PlayerInput>();
         _hfsm = new PlayerHFSM(_runMultiplier);
 
         _hfsm.MotionChanged += HandleMotionChanged;
@@ -69,6 +99,16 @@ public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
         _inputReader.InteractRequested += HandleInteractRequested;
         _inputReader.FireRequested += HandleFireRequested;
         _inputReader.AbilityRequested += HandleAbilityRequested;
+
+        RefreshLocalControl();
+    }
+
+    private void Start()
+    {
+        if (!NetworkClient.active&& !NetworkServer.active&& _allowOfflineControl)
+        {
+            AttachCamera();
+        }
     }
 
     private void Reset()
@@ -98,6 +138,11 @@ public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
 
     private void Update()
     {
+        if (!CanProcessLocalInput)
+        {
+            return;
+        }
+
         if (_hfsm.IsOnBoat && !IsOnBoat)
         {
             LeaveBoat(transform.position);
@@ -126,6 +171,10 @@ public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
 
     private void FixedUpdate()
     {
+        if (!CanProcessLocalInput)
+        {
+            return;
+        }
         float fixedDeltaTime = Time.fixedDeltaTime;
         _hfsm.FixedTick(fixedDeltaTime);
 
@@ -149,7 +198,7 @@ public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
 
     private void LateUpdate()
     {
-        if (!IsOnBoat)
+        if (!CanProcessLocalInput || !IsOnBoat)
         {
             return;
         }
@@ -186,6 +235,39 @@ public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
         {
             _hfsm.MotionChanged -= HandleMotionChanged;
         }
+    }
+
+    public override void OnStartServer()
+    {
+        base.OnStartServer();
+        RefreshLocalControl();
+    }
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        RefreshLocalControl();
+    }
+
+    public override void OnStartLocalPlayer()
+    {
+        base.OnStartLocalPlayer();
+
+        _heading = transform.eulerAngles.y;
+        RefreshLocalControl();
+        AttachCamera();
+    }
+
+    public override void OnStopLocalPlayer()
+    {
+        ReleaseCamera();
+        base.OnStopLocalPlayer();
+    }
+
+    public override void OnStopClient()
+    {
+        ReleaseCamera();
+        base.OnStopClient();
     }
 
     private void HandleMotionChanged(PlayerMotionState state)
@@ -386,5 +468,69 @@ public sealed class PlayerController : MonoBehaviour, IPlayerAbilityContext
         _interactRequested = false;
         _fireRequested = false;
         _abilityRequested = false;
+    }
+    private void RefreshLocalControl()
+    {
+        bool canControl = CanProcessLocalInput;
+
+        if (_playerInput)
+        {
+            _playerInput.enabled = canControl;
+        }
+
+        _inputReader.enabled = canControl;
+
+        if (!IsOnBoat)
+        {
+            _rb.isKinematic = canControl ? _initialIsKinematic : true;
+        }
+
+        if (!canControl)
+        {
+            ClearActionRequests();
+        }
+    }
+
+    private void AttachCamera()
+    {
+        if (_attachedCamera)
+        {
+            return;
+        }
+
+        if (!_cameraAnchor)
+        {
+            return;
+        }
+
+        Camera mainCamera = Camera.main;
+
+        if (!mainCamera)
+        {
+            return;
+        }
+
+        _attachedCamera = mainCamera.transform;
+        _originalCameraParent = _attachedCamera.parent;
+        _originalCameraPosition = _attachedCamera.position;
+        _originalCameraRotation = _attachedCamera.rotation;
+
+        _attachedCamera.SetParent(_cameraAnchor, false);
+        _attachedCamera.localPosition = Vector3.zero;
+        _attachedCamera.localRotation = Quaternion.identity;
+    }
+
+    private void ReleaseCamera()
+    {
+        if (!_attachedCamera)
+        {
+            return;
+        }
+
+        _attachedCamera.SetParent(_originalCameraParent, true);
+        _attachedCamera.SetPositionAndRotation(_originalCameraPosition,_originalCameraRotation);
+
+        _attachedCamera = null;
+        _originalCameraParent = null;
     }
 }
