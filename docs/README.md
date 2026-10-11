@@ -3,7 +3,8 @@
 [문서 읽기 안내](00-reading-guide.md)에서 시작한다.
 
 - [시스템 개요](01-system-design.md)
-- [게임 기획서 v4 (현행 기준)](design/references/game-design-v4.md)
+- [승패·투표 결정 (해당 범위에서 v4보다 우선)](design/win-vote-decisions.md)
+- [게임 기획서 v4 (새 결정의 미변경 범위 기준·원문 보존)](design/references/game-design-v4.md)
 - [기술설계서](03-technical-design.md)
 - [아키텍처](04-architecture.md)
 - [김지훈 담당 시스템 설계·구조도](design/jihun-system-design.md)

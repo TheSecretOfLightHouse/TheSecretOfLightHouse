@@ -1,6 +1,6 @@
 # AI 작업 문서
 
-규칙 우선순위는 최신 사용자 결정 → [제공된 v4](../design/references/game-design-v4.md)다. [설계 문제 대장](../07-design-issue-register.md)은 차이와 미결 항목을 안내한다. v4 이전 기획은 [보존 자료](../design/archive/game-design-2026-10-08.md)이며 현행 규칙이 아니다.
+규칙 우선순위는 최신 사용자 결정 → [승패·투표 결정](../design/win-vote-decisions.md) → [제공된 v4](../design/references/game-design-v4.md)다. 새 결정이 바꾸지 않은 규칙은 v4를 따른다. [설계 문제 대장](../07-design-issue-register.md)은 차이와 미결 항목을 안내한다. v4 이전 기획은 [보존 자료](../design/archive/game-design-2026-10-08.md)이며 현행 규칙이 아니다.
 
 TheSecretOfLightHouse의 작업 브리프, 검증, 인수인계와 협업 절차를 관리한다. 필요한 문서만 읽고 게임 규칙과 구현 상태를 구분한다.
 
@@ -8,7 +8,7 @@ TheSecretOfLightHouse의 작업 브리프, 검증, 인수인계와 협업 절차
 
 | 상황 | 읽을 것 |
 |---|---|
-| 게임 규칙과 구현 방향 | [읽기 안내](../00-reading-guide.md) → [기획서](../design/references/game-design-v4.md) · [기술설계서](../03-technical-design.md) |
+| 게임 규칙과 구현 방향 | [읽기 안내](../00-reading-guide.md) → [승패·투표 결정](../design/win-vote-decisions.md) · [v4](../design/references/game-design-v4.md) · [기술설계서](../03-technical-design.md) |
 | AI에게 작업 요청 | [작업 브리프](02_TASK_BRIEF_TEMPLATE.md) |
 | 완료 여부 확인 | [검증 플레이북](03_VERIFICATION_PLAYBOOK.md) |
 | 네트워크 코드 수정 | [네트워크 권위](../unity/NETWORK_AUTHORITY.md) · [서버·클라이언트 협업](../unity/SERVER_CLIENT_WORKFLOW.md) |
@@ -49,6 +49,7 @@ Codex는 [`.agents/skills/`](../../.agents/skills/), Claude Code는 [`.claude/sk
 |---|---|
 | [00 읽기 안내](../00-reading-guide.md) | 역할별 읽기 순서 |
 | [01 시스템 개요](../01-system-design.md) | 게임 루프와 범위 |
+| [승패·투표 결정](../design/win-vote-decisions.md) | v4 이후 결정·미정 경계·팀원별 연결 계약 |
 | [게임 기획 v4](../design/references/game-design-v4.md) | 확정·가안·미정 규칙 |
 | [03 기술설계서](../03-technical-design.md) | 권위와 데이터 경계 |
 | [코드 소유권](../CODE_OWNERSHIP.md) | 기능별 담당·계정·협업 경계의 단일 기준 |
@@ -95,4 +96,4 @@ Codex는 [`.agents/skills/`](../../.agents/skills/), Claude Code는 [`.claude/sk
 
 개인 설정과 도구별 지침 위치는 [도구 설정 안내](TOOL_SETUP.md)에서 확인한다.
 
-기능 구현·관련 논의에는 [설계 문제 대장](../07-design-issue-register.md)의 해당 ID를 확인한다. 보고서의 제안과 v4의 실제 규칙을 구분한다.
+기능 구현·관련 논의에는 [설계 문제 대장](../07-design-issue-register.md)의 해당 ID를 확인한다. 보고서의 제안과 승패·투표 결정 및 v4의 실제 규칙을 구분한다. 문서 갱신 검수는 [검증 플레이북](03_VERIFICATION_PLAYBOOK.md)에 따라 새 결정별 반영 위치·상호 계약·링크와 미정/미구현/미검증 상태를 확인한다.

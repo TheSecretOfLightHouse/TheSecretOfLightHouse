@@ -6,7 +6,7 @@
 ## 시작하기
 
 1. [Unity 첫 실행](docs/unity/UNITY_START_HERE.md)에서 엔진·패키지·Git/SVN 준비를 확인한다.
-2. [문서 읽기 안내](docs/00-reading-guide.md)에서 맡은 작업에 필요한 기획과 기술 문서를 찾는다.
+2. [문서 읽기 안내](docs/00-reading-guide.md)에서 맡은 작업에 필요한 기획과 기술 문서를 찾는다. [승패·투표 결정](docs/design/win-vote-decisions.md)은 해당 범위에서 v4보다 우선한다.
 3. 작업 전 [공통 지침](AGENTS.md), [코딩 컨벤션](docs/coding-convention.md), [커밋·PR 컨벤션](docs/commit-convention.md)을 확인한다.
 
 ## 폴더

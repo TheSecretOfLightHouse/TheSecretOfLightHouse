@@ -1,6 +1,6 @@
 # 프로젝트 지식 맵
 
-규칙 우선순위와 v4·문제 대장 안내는 [AI 작업 문서](README.md)를 따른다.
+규칙 우선순위와 승패·투표 결정·v4·문제 대장 안내는 [AI 작업 문서](README.md)를 따른다. [승패·투표 결정](../design/win-vote-decisions.md)은 해당 범위에서 v4보다 우선한다.
 
 실제 코드·설정의 진입점을 찾기 위한 지도다. 아래 기존 문서 경로는 구현 탐색용이며 구규칙을 우선하지 않는다. 파일 존재와 동작 검증은 구분하며, 구현 근거와 미검증 항목은 [구현 로드맵](../05-implementation-roadmap.md)을 함께 확인한다.
 
@@ -10,20 +10,20 @@
 
 | 찾는 것 | 공유 문서 | 실제 진입점 | 확인할 것 |
 |---|---|---|---|
-| 게임 규칙·미정 항목 | [기획서](../design/references/game-design-v4.md), [시스템 개요](../01-system-design.md) | `docs/design/references/game-design-v4.md` | 시민 3 vs 마피아 1, 4인 호스트, 확정·가안·미정 구분 |
+| 게임 규칙·미정 항목 | [승패·투표 결정](../design/win-vote-decisions.md), [v4](../design/references/game-design-v4.md), [시스템 개요](../01-system-design.md) | `docs/design/win-vote-decisions.md`, `docs/design/references/game-design-v4.md` | 시민 3 vs 마피아 1, 4인 호스트, 결정 우선순위·확정/가안/미정 구분 |
 | 기술 방향 | [기술설계서](../03-technical-design.md), [아키텍처](../04-architecture.md) | `Assets/01.Scripts/` | 기존 구현을 조사하고 후속 계획과 구분 |
 | 첫 실행·패키지 | [Unity 시작](../unity/UNITY_START_HERE.md) | `ProjectSettings/ProjectVersion.txt`, `Packages/manifest.json` | Unity 6000.0.83f1, 실제 패키지 버전 |
 | 코드 스타일 | [코딩 컨벤션](../coding-convention.md) | 현재 변경 파일 | 기존 스타일 유지 |
 | 폴더·어셈블리 | [아키텍처](../04-architecture.md) | `Assets/01.Scripts/`, `Lighthouse.Runtime` | 단일 런타임, Unity.InputSystem·Mirror 참조. 구조 변경과 런타임 검증은 구분 |
 | 담당자·업무 경계 | [코드 소유권](../CODE_OWNERSHIP.md) | 기능별 담당·계정·수정 합의 | 다른 담당 영역 수정은 [AGENTS.md](../../AGENTS.md)의 담당 경계 확인을 따른다 |
 | 공통 계약 | [코드 소유권](../CODE_OWNERSHIP.md), [아키텍처](../04-architecture.md) | `Assets/01.Scripts/00.Common/` | 공통 계약 조율과 기능 담당의 사용 범위 |
-| 연결·스폰 등록·재접속 | [지훈 시스템 설계](../design/jihun-system-design.md), [네트워크 권위](../unity/NETWORK_AUTHORITY.md), [협업](../unity/SERVER_CLIENT_WORKFLOW.md) | `Assets/01.Scripts/01.Network/` (`LighthouseNetworkManager`, `ConnectionDirectory`, `NetworkActor`) | 호스트 1 + 원격 클라이언트 3, 실제 지원 계약과 검증 상태. 구현 기록은 [담당자별 작업 §6](../06-owner-work-plan.md#6-처음-함께-맞출-일과-작업-기록) |
+| 연결·스폰 등록·단절 보존 | [지훈 시스템 설계](../design/jihun-system-design.md), [단절 결정](../design/win-vote-decisions.md#disconnection), [네트워크 권위](../unity/NETWORK_AUTHORITY.md), [협업](../unity/SERVER_CLIENT_WORKFLOW.md) | `Assets/01.Scripts/01.Network/` (`LighthouseNetworkManager`, `ConnectionDirectory`, `NetworkActor`) | 호스트 1 + 원격 클라이언트 3. 단절 객체/참가자 상태 보존은 구현 반영 필요, 재접속은 후순위. 구현 기록은 [담당자별 작업 §6](../06-owner-work-plan.md#6-처음-함께-맞출-일과-작업-기록) |
 | 바다·날씨·시간·섬·월드 배치 | [아키텍처](../04-architecture.md), [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/02.World/` | 파밍 스포너 배치와 플레이어 채집 행동 구분, Ghost 등장·경로·연출과 힌트 판정 구분 |
 | 상호작용 라우팅·검증·기록 | [지훈 시스템 설계](../design/jihun-system-design.md), [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/03.Interaction/` | Relay·Router·Validator·기록·GhostShipHints |
 | 등대·작업대·모듈 | [지훈 시스템 설계](../design/jihun-system-design.md), [기획서](../design/references/game-design-v4.md), [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/04.Lighthouse/` | 모듈·부식 낙하·등대 포함, 기획값 변경 없이 구현 근거 확인 |
 | 플레이어·배·능력·인벤토리 | [아키텍처](../04-architecture.md), [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/05.Player/` | 배 조작·내구도·채집 행동, 이동된 파일의 정확한 위치는 아키텍처에서 확인 |
 | 몬스터 | [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/06.Monsters/` | AI·스폰 실행과 월드 배치 경계 |
-| 마피아 | [기획서](../design/references/game-design-v4.md), [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/07.Mafia/` | 투표·심해 및 비밀 정보 수신 경계 |
+| 마피아 | [승패·투표 결정](../design/win-vote-decisions.md), [v4](../design/references/game-design-v4.md), [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/07.Mafia/` (`Voting/Rules/VoteService.cs`) | 시민 표·확인권·누적/공격력 및 비밀 정보 수신 경계. 현재 Rules와 새 규칙의 차이는 로드맵에서 확인 |
 | 시스템·UI·개발 도구 | [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/08.Systems/`, `09.UI/`, `99.Dev/` (같은 루트) | Systems·UI는 최명기, Dev는 관련 기능 담당 공유 |
 | 개발 씬 | [씬·에셋 안전](../unity/SCENE_AND_ASSET_SAFETY.md) | `Assets/00.Scenes/SampleScene.unity`, `Assets/00.Scenes/Myeongki/Player.unity`, `Assets/00.Scenes/Jihun/JH01TestScene.unity`(빌드 0번, 임시) | 씬 소유·역할·빌드 포함 여부는 실제 설정에서 확인 |
 | 에셋 데모 | [데모 가이드](../unity/DEMO_GUIDE.md) | `Assets/ThirdParty/_Demo/` | 실제 로컬 체크아웃 존재와 공유 절차 확인 |
