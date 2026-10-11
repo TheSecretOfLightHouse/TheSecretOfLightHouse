@@ -1,6 +1,6 @@
 # AI 작업 문서
 
-규칙 우선순위는 최신 사용자 결정 → [제공된 v4](../design/references/game-design-v4.md)다. [설계 문제 대장](../07-design-issue-register.md)은 차이와 미결 항목을 안내하며, 02 문서는 v4 이전 참고 자료다.
+규칙 우선순위는 최신 사용자 결정 → [제공된 v4](../design/references/game-design-v4.md)다. [설계 문제 대장](../07-design-issue-register.md)은 차이와 미결 항목을 안내한다. v4 이전 기획은 [보존 자료](../design/archive/game-design-2026-10-08.md)이며 현행 규칙이 아니다.
 
 TheSecretOfLightHouse의 작업 브리프, 검증, 인수인계와 협업 절차를 관리한다. 필요한 문서만 읽고 게임 규칙과 구현 상태를 구분한다.
 

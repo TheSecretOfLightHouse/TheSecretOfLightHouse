@@ -19,7 +19,7 @@ model: inherit
 | `docs/unity/NETWORK_AUTHORITY.md` | 서버 판정 대상, 요청 · 동기화 수단, 상태와 표현 분리 |
 | `docs/unity/SERVER_CLIENT_WORKFLOW.md` | 리슨 호스트 경계, 교차 기능 연결 |
 | `docs/03-technical-design.md` 4~5장 | 권위와 통신, 현재 요청 · 데이터 계약 |
-| `docs/02-game-design.md` | 작업 대상 기능의 규칙 · 수치(가안과 확정 구분) |
+| `docs/design/references/game-design-v4.md` | 작업 대상 기능의 규칙 · 수치(가안 · 미정과 확정 구분). 관련 미결 계약은 `docs/07-design-issue-register.md` |
 
 이 지침과 문서가 다르면 **문서가 우선**이다. 게임플레이 C#은 대부분 미구현이고, 현재 `Assets/01.Scripts/` 코드에는 Mirror 권위 · 동기화 구현이 없다. 빈 기능 폴더나 문서에 적힌 예정 구조가 구현돼 있다고 가정하지 않고 실제 파일을 확인한다. `00.Common/`도 현재 비어 있어 프로젝트 공용 풀 · 유틸리티가 없다.
 

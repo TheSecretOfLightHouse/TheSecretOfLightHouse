@@ -1,6 +1,6 @@
 # 김지훈 담당 시스템 설계와 아키텍처
 
-기준일: 2026-10-10. 담당: 김지훈(`zhun0922`). 상태: **설계 제안·게임 코드 미구현**. 이 문서는 JH01~JH08의 구현 구조를 구체화한다. 새 타입·메서드 이름은 제안이며 현재 존재하는 API가 아니다. 게임 규칙의 미정을 해소하거나 다른 담당자의 구현을 승인하지 않는다.
+기준일: 2026-10-10. 담당: 김지훈(`zhun0922`). 상태: **설계 제안. JH01 접속·ActorId 식별만 구현(2026-10-11, 같은 PC 4인 검증), 나머지 미구현**. 구현 기록은 [담당자별 작업 §6](../06-owner-work-plan.md#6-처음-함께-맞출-일과-작업-기록). 이 문서는 JH01~JH08의 구현 구조를 구체화한다. 새 타입·메서드 이름은 제안이며 현재 존재하는 API가 아니다. 게임 규칙의 미정을 해소하거나 다른 담당자의 구현을 승인하지 않는다.
 
 ## 1. 범위와 근거
 
@@ -114,6 +114,7 @@ Assets/01.Scripts/
   01.Network/
     Session/{Net,Server}/           LighthouseNetworkManager, SessionCoordinator
     Connections/Server/             ConnectionDirectory
+    Connections/Net/                NetworkActor (플레이어 객체의 공개 ActorId)
     SpawnRegistry/{Rules,Server}/   NetworkPrefabCatalog, SpawnRegistration
     Reconnect/{Rules,Server,Net}/    ReconnectCoordinator, SnapshotEnvelope
   03.Interaction/
@@ -290,7 +291,7 @@ NetworkManager는 연결 콜백과 프리팹 등록 진입점, ConnectionDirecto
 
 본편 플레이어 프리팹·NetworkIdentity 및 PlayerController 연결은 최명기와 합의한다. 지훈은 자신의 InteractionRelay 컴포넌트와 등록/AddPlayer 경로를 제공한다. 프리팹에 Relay를 붙이는 수정은 최명기 영역 안내·합의 대상이다. IdentityValidated 뒤 OnServerAddPlayer 경로에서 플레이어 한 개만 생성/연결하고, ActorId 매핑·소유권 설정을 완료한 뒤 Systems의 직군/역할 초기화와 준비 확인을 거친다. 복귀자는 새 역할 배정/새 플레이어 생성을 타지 않는다.
 
-A단계에서 본편 플레이어가 준비되지 않았다면 `99.Dev`의 시험용 NetworkIdentity+Relay 플레이어와 테스트 진입 씬을 별도 범위로 구현한다. 지훈의 테스트 쓰기 범위를 배타적으로 배정하고 자신의 Jihun 개발 씬만 수정한다. 이는 본편 Player 연결 완료가 아니며 최명기의 프리팹 연동 검증을 별도로 남긴다. 이번 문서 작업에서는 시험 코드/씬도 만들지 않는다.
+A단계에서 본편 플레이어가 준비되지 않았다면 `99.Dev`의 시험용 NetworkIdentity+Relay 플레이어와 테스트 진입 씬을 별도 범위로 구현한다. 지훈의 테스트 쓰기 범위를 배타적으로 배정하고 자신의 Jihun 개발 씬만 수정한다. 이는 본편 Player 연결 완료가 아니며 최명기의 프리팹 연동 검증을 별도로 남긴다. JH01 구현에서 시험 스크립트는 `99.Dev/Network/ActorIdProbe.cs`, 시험용 플레이어 프리팹은 `Assets/02.Prefabs/_Net/NetworkTestPlayer.prefab`, 진입 씬은 `Assets/00.Scenes/Jihun/JH01TestScene.unity`다. Relay는 JH02에서 붙인다.
 
 ### 8.2 해제·보존·재결합
 

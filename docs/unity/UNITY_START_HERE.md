@@ -34,7 +34,7 @@ PR·이슈 게시 권한은 계정의 저장소 접근 권한을 따르며, 접�
 ## 3. 프로젝트 설정과 첫 실행
 
 1. Visible Meta Files와 Force Text를 확인한다. 저장소 설정 파일에서 `ProjectSettings/EditorSettings.asset`의 `m_SerializationMode`는 2(Force Text), `ProjectSettings/VersionControlSettings.asset`의 `m_Mode`는 `Visible Meta Files`다. 에디터 화면에서는 확인하지 않았다.
-2. 담당 씬과 변경 범위를 확인한다. 현재 확인한 씬은 `Assets/00.Scenes/SampleScene.unity`, `Assets/00.Scenes/Myeongki/Player.unity`다. 이름만으로 통합 시작 씬이나 담당자를 확정하지 않는다.
+2. 담당 씬과 변경 범위를 확인한다. 현재 확인한 씬은 `Assets/00.Scenes/SampleScene.unity`, `Assets/00.Scenes/Myeongki/Player.unity`, `Assets/00.Scenes/Jihun/JH01TestScene.unity`다. 빌드 0번(시작 씬)은 4인 접속 테스트용 `JH01TestScene`이며 통합 씬이 정해지면 바뀐다([테스트 씬 기록](../ai/04_MULTIPLAYER_TEST_PROTOCOL.md#테스트-씬-기록)). 이름만으로 통합 시작 씬이나 담당자를 확정하지 않는다.
 3. Console의 컴파일·임포트 오류를 확인한 뒤 해당 씬에서 Play 검증을 한다.
 4. 오류가 생기면 로그와 재현 경로를 보존하고 환경 문제·코드 문제를 구분한다.
 

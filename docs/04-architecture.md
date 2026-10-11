@@ -19,7 +19,7 @@
 | `08.Systems/`, `09.UI/` | 최명기 | 기존 시스템&UI 범위 및 각 기능의 서버·클라이언트·동기화 |
 | `99.Dev/` | 관련 기능 담당 | 공용 개발·검증 도구, 4인 테스트는 김지훈 리드 |
 
-Unity 루트의 `Assets/00.Scenes`, `02.Prefabs`~`07.Materials`, `Packages/`, `ProjectSettings/` 구성은 유지한다. 번호 폴더의 구분자는 점으로 통일한다. 기존 개발 씬의 사람별 디렉터리는 CODEOWNERS로 연결한다. 문서·자동화·스킬은 AX 영역이며 김민성을 게임 코드 담당으로 지정하지 않는다.
+Unity 루트의 `Assets/00.Scenes`, `02.Prefabs`~`07.Materials`, `Packages/`, `ProjectSettings/` 구성은 유지한다. 번호 폴더의 구분자는 점으로 통일한다. `Assets/00.Scenes/` 아래 사람별 개발 씬 폴더(Minseo, Jihun, Myeongki, TaeWook)는 이동·개명하지 않고, [CODEOWNERS](../.github/CODEOWNERS)에서 폴더 주인을 리뷰 담당으로 지정한다. 문서·자동화·스킬은 AX 영역이며 김민성을 게임 코드 담당으로 지정하지 않는다.
 
 ## 2. 기능 내부의 책임
 
@@ -64,7 +64,7 @@ Unity 루트의 `Assets/00.Scenes`, `02.Prefabs`~`07.Materials`, `Packages/`, `P
 
 StateMachine·State·Transition은 현재 MoveConfig에 의존하므로 Player 안에 둔다. ShipPhysicsProfile은 배 물리 정의로 Player가 관리하며 World에서 소비할 때 합의한다.
 
-현 코드의 PlayerController 등은 MonoBehaviour 기반이다. 현재 34개 C# 본문에는 Mirror 권위·동기화 구현이 없다. 빈 기능 폴더는 작업 위치를 표시하며 구현 완료를 뜻하지 않는다. NetworkManager·재접속 등 할당된 범위도 별도 구현·실행 검증이 필요하다.
+현 코드의 PlayerController 등은 MonoBehaviour 기반이다. Mirror 구현은 `01.Network/`의 JH01 접속·ActorId 식별(`LighthouseNetworkManager`, `ConnectionDirectory`, `NetworkActor`)뿐이며, 기능별 권위·동기화는 아직 없다. 구현 기록은 [담당자별 작업 §6](06-owner-work-plan.md#6-처음-함께-맞출-일과-작업-기록)을 따른다. 빈 기능 폴더는 작업 위치를 표시하며 구현 완료를 뜻하지 않는다. NetworkManager·재접속 등 할당된 범위도 별도 구현·실행 검증이 필요하다.
 
 ## 5. 기존 참조 보존
 
