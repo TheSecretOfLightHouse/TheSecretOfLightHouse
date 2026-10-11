@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Lighthouse.Mafia.AbyssGauge.Rules;
 using Lighthouse.Mafia.Voting.Rules;
 using Lighthouse.Network.Session.Net;
 using Mirror;
@@ -11,6 +12,8 @@ namespace Lighthouse.Mafia.Voting.Net
     [RequireComponent(typeof(NetworkIdentity))]
     public sealed class VotingNetworkController : NetworkBehaviour
     {
+        [SerializeField] private AbyssBalanceSettings _abyssSettings;
+
         private LighthouseNetworkManager _manager;
         private VoteService _votes;
         private uint[] _participantIds;
@@ -86,7 +89,11 @@ namespace Lighthouse.Mafia.Voting.Net
                 throw new ArgumentException("Actor ids must be nonzero and unique.", nameof(participantIds));
             }
 
-            var votes = new VoteService(roster, mafiaActorId);
+            if (_abyssSettings == null)
+            {
+                throw new InvalidOperationException("Assign AbyssBalanceSettings before initializing voting.");
+            }
+            var votes = new VoteService(roster, mafiaActorId, _abyssSettings.CreateSnapshot(), NetworkTime.time);
             _participantIds = roster.ToArray();
             _votes = votes;
             SendOwnStates();
@@ -107,9 +114,46 @@ namespace Lighthouse.Mafia.Voting.Net
         {
             if (_votes != null)
             {
+                _votes.AbyssGauge.EndGame(NetworkTime.time);
                 _votes.EndGame();
                 SendOwnStates();
             }
+        }
+
+        [Server]
+        public bool SettleMorning(int completedDaySerial, double boundaryTime)
+        {
+            return _votes != null && _votes.AbyssGauge.SettleMorning(completedDaySerial, boundaryTime);
+        }
+
+        // 스냅샷을 생성하여 현재 심연 게이지 상태를 반환.
+        [Server]
+        public AbyssGaugeSnapshot FreezeAbyssForApprovedSummon()
+        {
+            if (_votes == null)
+            {
+                throw new InvalidOperationException("Voting has not been initialized.");
+            }
+            return _votes.AbyssGauge.FreezeForSummon(NetworkTime.time);
+        }
+
+        [Server]
+        public bool TryGetAbyssSnapshot(out AbyssGaugeSnapshot snapshot)
+        {
+            snapshot = default;
+            if (_votes == null)
+            {
+                return false;
+            }
+            snapshot = _votes.AbyssGauge.GetSnapshot(NetworkTime.time);
+            return true;
+        }
+
+        [Server]
+        public bool TryGetCitizenAbyss(uint actorId, out CitizenAbyssSnapshot snapshot)
+        {
+            snapshot = default;
+            return _votes != null && _votes.AbyssGauge.TryGetCitizen(actorId, NetworkTime.time, out snapshot);
         }
 
         [Server]

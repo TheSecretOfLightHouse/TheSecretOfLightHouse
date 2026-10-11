@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Lighthouse.Mafia.AbyssGauge.Rules;
 
 namespace Lighthouse.Mafia.Voting.Rules
 {
@@ -11,6 +12,8 @@ namespace Lighthouse.Mafia.Voting.Rules
         private readonly HashSet<uint> _participantIds;
         private readonly uint _mafiaId;
         private readonly Dictionary<uint, int> _usedVoteCounts = new();
+
+        public AbyssGaugeService AbyssGauge { get; }
 
         public bool IsLocked { get; private set; }
         public bool IsEnded { get; private set; }
@@ -30,6 +33,12 @@ namespace Lighthouse.Mafia.Voting.Rules
             }
 
             _mafiaId = mafiaId;
+        }
+
+        public VoteService(IEnumerable<uint> participantIds, uint mafiaId, AbyssBalance balance, double startedAt)
+            : this(participantIds, mafiaId)
+        {
+            AbyssGauge = new AbyssGaugeService(_participantIds, mafiaId, balance, startedAt);
         }
 
         public VoteChangeResult ChangeVote(uint voterId, uint targetId, double serverTime)
@@ -75,6 +84,11 @@ namespace Lighthouse.Mafia.Voting.Rules
                 return VoteChangeResult.NoVotesRemaining;
             }
 
+            // 투표 변경을 수행하고, AbyssGauge가 존재하면 해당 투표 변경을 반영
+            if (AbyssGauge != null)
+            {
+                AbyssGauge.ChangeVote(voterId, targetId, serverTime);
+            }
             _votes[voterId] = new VoteRecord(voterId, targetId, serverTime);
 
             _usedVoteCounts.TryGetValue(voterId, out int usedCount);
