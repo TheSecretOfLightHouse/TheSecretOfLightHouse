@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Lighthouse.World.Clock.Rules;
 using Lighthouse.World.Query.Rules;
 using UnityEngine;
 
@@ -20,6 +21,7 @@ namespace Lighthouse.World.Ocean.Rules
         private readonly List<IWaterSampleSource> _sources = new List<IWaterSampleSource>();
         private readonly WaveInputs _inputs = new WaveInputs();
         private WaterSampler _sampler;
+        private IClock _clock;
 
         public WaveInputs Inputs => _inputs;
 
@@ -38,6 +40,15 @@ namespace Lighthouse.World.Ocean.Rules
             WorldServices.Register(this);
         }
 
+        private void Start()
+        {
+            if (!WorldServices.TryGet<IClock>(out _clock))
+            {
+                Debug.LogError($"[{nameof(WaterSamplerHost)}] IClock is not registered. Add a GameClock to the scene.");
+                enabled = false;
+            }
+        }
+
         private void OnDestroy()
         {
             WorldServices.Unregister(this);
@@ -50,7 +61,12 @@ namespace Lighthouse.World.Ocean.Rules
 
         private void FixedUpdate()
         {
-            CurrentTime = Time.fixedTimeAsDouble;
+            if (_clock == null)
+            {
+                return;
+            }
+
+            CurrentTime = _clock.Now;
 
             for (int i = 0; i < _sources.Count; i++)
             {
