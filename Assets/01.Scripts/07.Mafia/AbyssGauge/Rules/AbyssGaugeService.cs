@@ -18,15 +18,16 @@ namespace Lighthouse.Mafia.AbyssGauge.Rules
         public bool IsFrozen { get; private set; }
         public bool IsEnded { get; private set; }
 
-        public AbyssGaugeService(IEnumerable<uint> participantIds, uint mafiaId,
-            AbyssBalance balance, double startedAt)
+        public AbyssGaugeService(IEnumerable<uint> participantIds, uint mafiaId, AbyssBalance balance, double startedAt)
         {
             if (participantIds == null)
             {
                 throw new ArgumentNullException(nameof(participantIds));
             }
+
             ValidateFiniteTime(startedAt);
             _participantIds = new HashSet<uint>();
+
             foreach (uint id in participantIds)
             {
                 if (id == 0 || !_participantIds.Add(id))
@@ -34,13 +35,16 @@ namespace Lighthouse.Mafia.AbyssGauge.Rules
                     throw new ArgumentException("Actor ids must be nonzero and unique.", nameof(participantIds));
                 }
             }
+
             if (!_participantIds.Contains(mafiaId))
             {
                 throw new ArgumentException("The mafia must be a participant.", nameof(mafiaId));
             }
+
             _mafiaId = mafiaId;
             _balance = balance;
             _lastProcessedAt = startedAt;
+
             foreach (uint id in _participantIds)
             {
                 if (id != mafiaId)
@@ -49,35 +53,42 @@ namespace Lighthouse.Mafia.AbyssGauge.Rules
                 }
             }
         }
-
+      
         public bool SettleMorning(int completedDaySerial, double boundaryTime)
         {
             if (IsFrozen || IsEnded)
             {
                 return false;
             }
+
             ValidateFiniteTime(boundaryTime);
+
             if (completedDaySerial <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(completedDaySerial));
             }
+
             if (completedDaySerial <= LastCompletedDaySerial)
             {
                 if (completedDaySerial == LastCompletedDaySerial && boundaryTime != _lastMorningAt)
                 {
                     throw new ArgumentException("A completed day cannot have two boundary times.", nameof(boundaryTime));
                 }
+
                 return false;
             }
+
             if (completedDaySerial != LastCompletedDaySerial + 1)
             {
                 throw new ArgumentException("Deliver each completed day in order.", nameof(completedDaySerial));
             }
+
             ValidateTime(boundaryTime);
             SettleAll(boundaryTime);
             BaseAbyss += _balance.DailyBaseGain;
             LastCompletedDaySerial = completedDaySerial;
             _lastMorningAt = boundaryTime;
+
             return true;
         }
 
@@ -87,14 +98,17 @@ namespace Lighthouse.Mafia.AbyssGauge.Rules
             {
                 return _finalSnapshot;
             }
+
             if (IsEnded)
             {
                 throw new InvalidOperationException("Cannot summon after the match ended.");
             }
+
             ValidateTime(serverTime);
             SettleAll(serverTime);
             _finalSnapshot = BuildSnapshot(serverTime);
             IsFrozen = true;
+
             return _finalSnapshot;
         }
 
@@ -104,12 +118,14 @@ namespace Lighthouse.Mafia.AbyssGauge.Rules
             {
                 return;
             }
+
             if (!IsFrozen)
             {
                 ValidateTime(serverTime);
                 SettleAll(serverTime);
                 _finalSnapshot = BuildSnapshot(serverTime);
             }
+
             IsEnded = true;
         }
 
@@ -119,38 +135,45 @@ namespace Lighthouse.Mafia.AbyssGauge.Rules
             {
                 return _finalSnapshot;
             }
+
             ValidateTime(serverTime);
+
             return BuildSnapshot(serverTime);
         }
-
+      
         public bool TryGetCitizen(uint actorId, double serverTime, out CitizenAbyssSnapshot snapshot)
         {
             snapshot = default;
+
             if (!_citizens.TryGetValue(actorId, out CitizenRecord record))
             {
                 return false;
             }
+
             double time = IsFrozen || IsEnded ? _finalSnapshot.RecordedAt : serverTime;
             ValidateTime(time);
             GetPending(record, time, out double sealSeconds, out double wrongSeconds);
-            snapshot = new CitizenAbyssSnapshot(actorId, record.TargetId, record.SettledSeal,
-                record.SettledWrong, sealSeconds, wrongSeconds);
+            snapshot = new CitizenAbyssSnapshot(actorId, record.TargetId, record.SettledSeal, record.SettledWrong, sealSeconds, wrongSeconds);
+
             return true;
         }
 
-        
+        // 시민이 투표를 바꾸는 경우, 이전 투표에 대한 pending 시간을 정산하고 새로운 투표로 갱신
         internal void ChangeVote(uint actorId, uint targetId, double serverTime)
         {
             if (IsFrozen || IsEnded)
             {
                 return;
             }
+
             ValidateTime(serverTime);
+
             if (!_citizens.TryGetValue(actorId, out CitizenRecord record)
                 || !_participantIds.Contains(targetId) || actorId == targetId)
             {
                 throw new ArgumentException("The ledger requires an accepted citizen vote.");
             }
+
             GetPending(record, serverTime, out double sealSeconds, out double wrongSeconds);
             record.PendingWrongSeconds = wrongSeconds;            
             record.SettledSeal = 0;
@@ -160,6 +183,7 @@ namespace Lighthouse.Mafia.AbyssGauge.Rules
             _lastProcessedAt = serverTime;
         }
 
+        // 모든 시민들의 pending 시간을 정산하고 settled에 반영
         private void SettleAll(double serverTime)
         {
             foreach (CitizenRecord record in _citizens.Values)
@@ -171,47 +195,52 @@ namespace Lighthouse.Mafia.AbyssGauge.Rules
                 record.PendingWrongSeconds = 0;
                 record.LastRecordedAt = serverTime;
             }
+
             _lastProcessedAt = serverTime;
         }
-
+        
         private AbyssGaugeSnapshot BuildSnapshot(double serverTime)
         {
             double seal = 0;
             double wrong = 0;
+
             foreach (CitizenRecord record in _citizens.Values)
             {
                 GetPending(record, serverTime, out double sealSeconds, out double wrongSeconds);
                 seal += record.SettledSeal + sealSeconds * _balance.SealGainPerSecond;
                 wrong += record.SettledWrong + wrongSeconds * _balance.WrongGainPerSecond;
             }
+
             return new AbyssGaugeSnapshot(serverTime, BaseAbyss, seal, wrong, _balance.MinimumAttackPower);
         }
 
-        private void GetPending(CitizenRecord record, double serverTime,
-            out double sealSeconds, out double wrongSeconds)
+        private void GetPending(CitizenRecord record, double serverTime, out double sealSeconds, out double wrongSeconds)
         {
             sealSeconds = record.PendingSealSeconds;
             wrongSeconds = record.PendingWrongSeconds;
             double elapsed = serverTime - record.LastRecordedAt;
+
             if (record.TargetId == _mafiaId)
             {
                 sealSeconds += elapsed;
             }
+
             else if (record.TargetId != 0)
             {
                 wrongSeconds += elapsed;
             }
         }
-
+       
         private void ValidateTime(double serverTime)
         {
             ValidateFiniteTime(serverTime);
+
             if (serverTime < _lastProcessedAt)
             {
                 throw new ArgumentOutOfRangeException(nameof(serverTime), "Server events must be chronological.");
             }
         }
-
+       
         private static void ValidateFiniteTime(double serverTime)
         {
             if (double.IsNaN(serverTime) || double.IsInfinity(serverTime) || serverTime < 0)
