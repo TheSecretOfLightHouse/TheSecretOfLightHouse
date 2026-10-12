@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acce9235091d96e499b23d576f78d0ae, type: 3}
+  m_Name: WeatherCatalog
+  m_EditorClassIdentifier: 
+  _layout: {fileID: 11400000, guid: ba5f649c1d397564fb047a3010973aa3, type: 2}
+  _entries:
+  - _type: 0
+    _profile: {fileID: 11400000, guid: 82c9b1a6cb7543442a43da5335cccc33, type: 2}
+  - _type: 1
+    _profile: {fileID: 11400000, guid: 0c9ffcdcb6979b24cac6b4057729c432, type: 2}
+  - _type: 2
+    _profile: {fileID: 11400000, guid: ef12a42afa2bfa64084e77860ff4183d, type: 2}
+  - _type: 3
+    _profile: {fileID: 11400000, guid: 065537ba3345e7e43a31f3593102c7a5, type: 2}
+  - _type: 4
+    _profile: {fileID: 11400000, guid: dfeadb33d53dc694688dcb412fe22431, type: 2}
