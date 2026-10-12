@@ -21,10 +21,11 @@ public class PlayerInputReader : MonoBehaviour
         LookInput = value.Get<Vector2>();
     }
 
-    public void OnRun(InputValue value)
+    public void OnDash(InputValue value)
     {
         RunHeld = value.isPressed;
     }
+
     public void OnInteract(InputValue value)
     {
         if (value.isPressed)
