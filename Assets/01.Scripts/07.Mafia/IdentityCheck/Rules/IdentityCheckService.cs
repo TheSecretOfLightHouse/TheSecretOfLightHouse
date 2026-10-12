@@ -31,6 +31,8 @@ namespace Lighthouse.Mafia.IdentityCheck.Rules
         public bool HasSummoned { get; private set; }
         public AbyssGaugeSnapshot SummonSnapshot { get; private set; }
         public IReadOnlyList<uint> RevealedCitizenIds => _revealedView;
+        internal ulong LastCheckRequestId => _lastCheckRequestId;
+        internal ulong LastSummonRequestId => _lastSummonRequestId;
 
         public IdentityCheckService(VoteService votes, IdentityCheckConfig config, double startedAt,
             Random random = null)

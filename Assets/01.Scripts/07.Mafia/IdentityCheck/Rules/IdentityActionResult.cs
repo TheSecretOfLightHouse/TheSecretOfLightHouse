@@ -16,6 +16,9 @@ namespace Lighthouse.Mafia.IdentityCheck.Rules
         NoSummonRight,
         SummonRightExpired,
         InvalidRequestId,
-        StaleRequest
+        StaleRequest,
+        NotInitialized,
+        InvalidSender,
+        StateRetrieved
     }
 }
