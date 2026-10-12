@@ -15,6 +15,7 @@ namespace Lighthouse.World.Clock.Sandbox
         {
             bool isPassed = RunFixedBoundaries();
             isPassed &= RunNoWarning();
+            isPassed &= RunTransitions();
             isPassed &= RunConfigCycles(config);
             return isPassed;
         }
@@ -44,6 +45,26 @@ namespace Lighthouse.World.Clock.Sandbox
                 && Matches(15.0, 10f, 5f, 0f, 2, DayPhase.Day);
 
             Report("NoWarning", isPassed, "10/5/0");
+            return isPassed;
+        }
+
+        private static bool RunTransitions()
+        {
+            var day1 = new DayCycleState(1, DayPhase.Day);
+            var dusk1 = new DayCycleState(1, DayPhase.Dusk);
+            var night1 = new DayCycleState(1, DayPhase.Night);
+            var day2 = new DayCycleState(2, DayPhase.Day);
+            var night2 = new DayCycleState(2, DayPhase.Night);
+
+            bool isPassed =
+                DayCycleTransitions.Detect(in day1, in dusk1) == DayCycleSignals.ReturnWarningIssued
+                && DayCycleTransitions.Detect(in dusk1, in night1) == DayCycleSignals.NightStarted
+                && DayCycleTransitions.Detect(in night1, in day2) == DayCycleSignals.DayStarted
+                && DayCycleTransitions.Detect(in day1, in day1) == DayCycleSignals.None
+                && DayCycleTransitions.Detect(in day1, in night2) == (DayCycleSignals.DayStarted | DayCycleSignals.NightStarted)
+                && DayCycleTransitions.Detect(in day2, in day1) == DayCycleSignals.None;
+
+            Report("Transitions", isPassed, "day/dusk/night/skip/backwards");
             return isPassed;
         }
 
