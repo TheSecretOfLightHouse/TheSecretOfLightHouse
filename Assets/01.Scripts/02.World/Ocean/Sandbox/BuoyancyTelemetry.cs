@@ -1,4 +1,3 @@
-// BuoyancyTelemetry.cs
 using Lighthouse.World.Ocean.Rules;
 using Lighthouse.World.Query.Rules;
 using UnityEngine;

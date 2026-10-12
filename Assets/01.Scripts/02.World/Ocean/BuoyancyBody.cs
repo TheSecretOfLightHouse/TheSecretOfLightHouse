@@ -88,6 +88,7 @@ namespace Lighthouse.World.Ocean
             float gravity = Physics.gravity.magnitude;
             float perPointMass = _ship.Mass / _localPoints.Length;
             float depthSum = 0f;
+            int submergedCount = 0;
 
             for (int i = 0; i < _worldPoints.Length; i++)
             {
@@ -104,8 +105,10 @@ namespace Lighthouse.World.Ocean
 
                 body.AddForceAtPosition(force, point);
                 depthSum += submerged;
+                submergedCount++;
             }
 
+            ApplyStability(body, gravity, submergedCount / (float)_worldPoints.Length);
             ReportSlam(depthSum / _worldPoints.Length);
             ApplyExternalForce(body);
         }
@@ -124,6 +127,25 @@ namespace Lighthouse.World.Ocean
                 _worldPoints[i] = bodyTransform.TransformPoint(_localPoints[i]);
                 _host.SetPoint(in _ticket, i, _worldPoints[i]);
             }
+        }
+
+        private void ApplyStability(Rigidbody body, float gravity, float submergedFraction)
+        {
+            if (submergedFraction <= 0f)
+            {
+                return;
+            }
+
+            Transform bodyTransform = body.transform;
+            Vector3 torque = RightingModel.GetTorque(
+                    bodyTransform.up,
+                    bodyTransform.forward,
+                    _ship.RightingStrength,
+                    _ship.Mass,
+                    gravity)
+                + _tuning.GetAngularDragTorque(body.angularVelocity, _ship.Mass);
+
+            body.AddTorque(torque * submergedFraction);
         }
 
         private void ReportSlam(float meanDepth)
