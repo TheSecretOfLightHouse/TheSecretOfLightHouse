@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using System.Collections;
 using Lighthouse.Mafia.Voting.Net;
@@ -114,3 +115,4 @@ namespace Lighthouse.Dev.Voting
         }
     }
 }
+#endif

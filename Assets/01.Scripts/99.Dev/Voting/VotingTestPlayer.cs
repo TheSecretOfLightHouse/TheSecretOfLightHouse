@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Collections.Generic;
 using Lighthouse.Network.Connections.Net;
 using Mirror;
@@ -48,3 +49,4 @@ namespace Lighthouse.Dev.Voting
         }
     }
 }
+#endif
