@@ -347,6 +347,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _manager: {fileID: 2110057126}
   _voting: {fileID: 1621655694}
+  _identitySettings: {fileID: 11400000, guid: b95929fea02909a4ab72bb4442b9796e, type: 2}
+  _ritualDuration: 60
 --- !u!4 &660936042
 Transform:
   m_ObjectHideFlags: 0

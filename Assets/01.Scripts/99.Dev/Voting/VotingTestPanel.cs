@@ -17,8 +17,7 @@ namespace Lighthouse.Dev.Voting
 
         [SerializeField] private LighthouseNetworkManager _manager;
         [SerializeField] private VotingNetworkController _voting;
-        [SerializeField, Min(1)] private int _identityCheckCount = 2;
-        [SerializeField, Min(1)] private int _identityRequiredVotes = 1;
+        [SerializeField] private IdentityCheckSettings _identitySettings = null;
         [SerializeField, Min(1)] private float _ritualDuration = 60;
 
         private readonly List<uint> _serverParticipants = new();
@@ -35,6 +34,7 @@ namespace Lighthouse.Dev.Voting
         private bool _hasSummoned;
         private bool _hasEnded;
         private bool _hasIdentity;
+        private IdentityCheckConfig _appliedIdentityConfig;
         private bool _isMafiaDowned;
         private bool _hasRitual;
         private double _ritualCompletesAt;
@@ -275,14 +275,30 @@ namespace Lighthouse.Dev.Voting
             {
                 return;
             }
-            if (_identityCheckCount > _serverParticipants.Count - 1
-                || _identityRequiredVotes > _serverParticipants.Count - 1)
+            if (_identitySettings == null)
             {
-                _status = "확인 횟수/기준표가 시민 수보다 큽니다. Inspector 설정 또는 시험 인원을 확인하세요.";
+                _status = "VotingTestPanel의 Identity Settings에 정체 확인 SO 에셋을 할당하세요.";
                 return;
             }
-            _voting.InitializeIdentityCheck(new IdentityCheckConfig(_identityCheckCount, _identityRequiredVotes));
+            IdentityCheckConfig config;
+            try
+            {
+                config = _identitySettings.CreateSnapshot();
+            }
+            catch (System.ArgumentOutOfRangeException)
+            {
+                _status = "정체 확인 SO의 횟수와 성공 기준표는 1 이상이어야 합니다.";
+                return;
+            }
+            if (config.MaxCheckCount > _serverParticipants.Count - 1
+                || config.RequiredVoteCount > _serverParticipants.Count - 1)
+            {
+                _status = "정체 확인 SO의 횟수/기준표가 시민 수보다 큽니다. SO 설정 또는 시험 인원을 확인하세요.";
+                return;
+            }
+            _voting.InitializeIdentityCheck(config);
             _voting.SetMafiaDowned(false);
+            _appliedIdentityConfig = config;
             _hasIdentity = true;
             _showHostControls = false;
             _scroll = Vector2.zero;
@@ -425,8 +441,12 @@ namespace Lighthouse.Dev.Voting
             GUI.enabled = true;
             GUILayout.Space(8);
             GUILayout.Label("2. 정체 확인과 상태 전환", _sectionStyle);
-            GUI.enabled = _hasInitialized && !_hasIdentity && !_hasSummoned && !_hasEnded;
-            if (GUILayout.Button($"정체 확인 초기화 · {_identityCheckCount}회 / {_identityRequiredVotes}표", _buttonStyle))
+            GUILayout.Label(_hasIdentity
+                ? $"적용 설정: 확인 {_appliedIdentityConfig.MaxCheckCount}회 / 성공 {_appliedIdentityConfig.RequiredVoteCount}표"
+                : _identitySettings != null ? "설정 SO: " + _identitySettings.name : "정체 확인 SO 에셋을 할당하세요.", _mutedStyle);
+            GUI.enabled = _hasInitialized && !_hasIdentity && !_hasSummoned && !_hasEnded
+                && _identitySettings != null;
+            if (GUILayout.Button("정체 확인 초기화 · SO 설정 사용", _buttonStyle))
             {
                 InitializeTestIdentity();
             }
@@ -611,6 +631,7 @@ namespace Lighthouse.Dev.Voting
             _hasSummoned = false;
             _hasEnded = false;
             _hasIdentity = false;
+            _appliedIdentityConfig = default;
             _isMafiaDowned = false;
             _hasRitual = false;
             _ritualCompletesAt = 0;
