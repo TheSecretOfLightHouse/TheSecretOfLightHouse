@@ -13,6 +13,8 @@ namespace Lighthouse.World.Ocean
         [SerializeField] private float _slamCooldown = 0.5f;
 
         private readonly SlamReporter _slam = new SlamReporter();
+        private readonly ExternalForceApplier _externalForce = new ExternalForceApplier();
+        private ShipStabilizer _stabilizer;
         private WaterSamplerHost _host;
         private IShipBody _ship;
         private SamplerTicket _ticket;
@@ -43,6 +45,8 @@ namespace Lighthouse.World.Ocean
             {
                 _localPoints[i] = _ship.BuoyancyPoints[i];
             }
+
+            _stabilizer = new ShipStabilizer(_tuning);
         }
 
         private void OnEnable()
@@ -108,9 +112,9 @@ namespace Lighthouse.World.Ocean
                 submergedCount++;
             }
 
-            ApplyStability(body, gravity, submergedCount / (float)_worldPoints.Length);
+            _stabilizer.Apply(_ship, gravity, submergedCount / (float)_worldPoints.Length);
             ReportSlam(depthSum / _worldPoints.Length);
-            ApplyExternalForce(body);
+            _externalForce.Apply(_ship, _host.CurrentTime);
         }
 
         public void SubmitPoints()
@@ -129,40 +133,11 @@ namespace Lighthouse.World.Ocean
             }
         }
 
-        private void ApplyStability(Rigidbody body, float gravity, float submergedFraction)
-        {
-            if (submergedFraction <= 0f)
-            {
-                return;
-            }
-
-            Transform bodyTransform = body.transform;
-            Vector3 torque = RightingModel.GetTorque(
-                    bodyTransform.up,
-                    bodyTransform.forward,
-                    _ship.RightingStrength,
-                    _ship.Mass,
-                    gravity)
-                + _tuning.GetAngularDragTorque(body.angularVelocity, _ship.Mass);
-
-            body.AddTorque(torque * submergedFraction);
-        }
-
         private void ReportSlam(float meanDepth)
         {
             _slam.Threshold = _slamThreshold;
             _slam.Cooldown = _slamCooldown;
             _slam.Track(meanDepth, Time.fixedDeltaTime, _host.CurrentTime, _ship.Body.worldCenterOfMass, _ship.ShipId);
-        }
-
-        private void ApplyExternalForce(Rigidbody body)
-        {
-            if (!WorldServices.TryGet(out IForceFieldProvider provider))
-            {
-                return;
-            }
-
-            body.AddForce(provider.AccumulateForce(body.worldCenterOfMass, _host.CurrentTime));
         }
     }
 }
