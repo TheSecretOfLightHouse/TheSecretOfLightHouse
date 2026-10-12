@@ -11,6 +11,7 @@ namespace Lighthouse.World.Weather.Sandbox
         private void RunAllTests()
         {
             bool isAllPassed = WeatherSnapshotChecks.RunAll();
+            isAllPassed &= WeatherSystemChecks.RunAll();
 
             if (_catalog != null)
             {
