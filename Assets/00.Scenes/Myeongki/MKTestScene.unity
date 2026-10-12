@@ -296,6 +296,7 @@ GameObject:
   - component: {fileID: 880961171}
   - component: {fileID: 880961170}
   - component: {fileID: 880961169}
+  - component: {fileID: 880961173}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -379,6 +380,7 @@ MonoBehaviour:
   - {fileID: 8375325095906199928, guid: 20bbc2d52a02f5d42afd76d700c93fac, type: 3}
   - {fileID: 7202960708064065502, guid: 7e7a5979545a88949abc621f51f21a07, type: 3}
   - {fileID: 1960931523156572305, guid: 404158c362e6f4a4286781c16b99b66c, type: 3}
+  - {fileID: 4257653208653849673, guid: b30e1fbdd842f4d46a8535e5b5da4674, type: 3}
   exceptionsDisconnect: 1
   snapshotSettings:
     bufferTimeMultiplier: 2
@@ -409,6 +411,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &880961173
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 880961168}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3792ab6ad33d9114185e3e827bb526eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _networkManager: {fileID: 880961171}
+  _boatPrefab: {fileID: 3100090438404496623, guid: b30e1fbdd842f4d46a8535e5b5da4674, type: 3}
+  _spawnOffset: {x: 1.5, y: -0.2, z: 0}
+  _landLayers:
+    serializedVersion: 2
+    m_Bits: 1
 --- !u!1 &1104298687
 GameObject:
   m_ObjectHideFlags: 0

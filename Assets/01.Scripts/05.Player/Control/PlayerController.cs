@@ -35,9 +35,16 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     [SerializeField]
     private Transform _cameraAnchor;
 
+    [SyncVar]
+    private BoatController _ownedBoat;
+    private BoatController _offlineOwnedBoat;
+
     private PlayerHFSM _hfsm;
     private Rigidbody _rb;
     private PlayerInput _playerInput;
+    private InputAction _lookAction;
+    private NetworkBehaviour _playerNetworkTransform;
+    private bool _savedNetworkTransformEnabled;
     private BoatController _boatController;
 
     private Transform _attachedCamera;
@@ -59,7 +66,9 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     public bool IsDowned => _hfsm.IsDowned;
     public bool IsOnBoat => _boatController != null;
 
+    public BoatController OwnedBoat => NetworkClient.active || NetworkServer.active ? _ownedBoat : _offlineOwnedBoat;
     public BoatController CurrentBoat => _boatController;
+    public bool CanProcessBoatInput => CanProcessLocalInput;
     public PlayerHFSM StateMachine => _hfsm;
 
     private bool CanProcessLocalInput
@@ -86,6 +95,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _rb = GetComponent<Rigidbody>();
         _initialIsKinematic = _rb.isKinematic;
         _playerInput = GetComponent<PlayerInput>();
+        CacheNetworkTransform();
         _hfsm = new PlayerHFSM(_runMultiplier);
 
         _hfsm.MotionChanged += HandleMotionChanged;
@@ -114,6 +124,25 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private void Reset()
     {
         ResolveReferences();
+    }
+
+    private void CacheNetworkTransform()
+    {
+        // Keep the runtime assembly independent of Mirror.Components.
+        foreach (NetworkBehaviour behaviour in GetComponents<NetworkBehaviour>())
+        {
+            Type type = behaviour.GetType();
+            while (type != null)
+            {
+                if (type.Name == "NetworkTransformBase")
+                {
+                    _playerNetworkTransform = behaviour;
+                    return;
+                }
+
+                type = type.BaseType;
+            }
+        }
     }
 
     private void ResolveReferences()
@@ -151,7 +180,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         if (!IsDowned)
         {
-            _heading = Mathf.Repeat(_heading+ _inputReader.LookInput.x * _mouseSensitivity,360f);
+            Vector2 look = _lookAction != null ? _lookAction.ReadValue<Vector2>() : Vector2.zero;
+            _heading = Mathf.Repeat(_heading + look.x * _mouseSensitivity, 360f);
         }
 
         Vector2 input = _inputReader.MoveInput;
@@ -198,13 +228,12 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void LateUpdate()
     {
-        if (!CanProcessLocalInput || !IsOnBoat)
+        if (!IsOnBoat)
         {
             return;
         }
 
         Transform anchor = _boatController.BoardingAnchor;
-
         transform.SetPositionAndRotation(anchor.position, anchor.rotation);
     }
 
@@ -284,21 +313,32 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _animator.SetBool(IsRunningHash, isRunning);
     }
 
+    #region Boat
+
     public bool TryBoard(BoatController boat)
     {
-        if (!isActiveAndEnabled|| !boat|| IsOnBoat|| IsDowned)
+        return boat && boat.RequestBoard(this);
+    }
+
+    public bool ApplyBoarding(BoatController boat)
+    {
+        if (!isActiveAndEnabled || !boat || boat.Owner != this || !boat.IsOccupied)
         {
             return false;
         }
 
-        if (!boat.TryBoard(this))
+        if (_boatController == boat)
+        {
+            return true;
+        }
+
+        if (IsOnBoat)
         {
             return false;
         }
 
         _abilityRunner.Cancel();
         ClearActionRequests();
-
         _savedIsKinematic = _rb.isKinematic;
         _savedDetectCollisions = _rb.detectCollisions;
 
@@ -311,31 +351,137 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _rb.isKinematic = true;
         _rb.detectCollisions = false;
 
+        if (_playerNetworkTransform)
+        {
+            _savedNetworkTransformEnabled = _playerNetworkTransform.enabled;
+            _playerNetworkTransform.enabled = false;
+        }
+
         _boatController = boat;
         _heading = boat.transform.eulerAngles.y;
-
         Transform anchor = boat.BoardingAnchor;
-
         _rb.position = anchor.position;
         _rb.rotation = anchor.rotation;
-
+        transform.SetPositionAndRotation(anchor.position, anchor.rotation);
         _hfsm.SetOnBoat(true);
         RefreshState();
-
         Boarded?.Invoke(boat);
         return true;
     }
 
+    public void ApplyDisembarking(BoatController boat, Vector3 position)
+    {
+        if (_boatController != boat)
+        {
+            return;
+        }
+
+        _heading = boat.transform.eulerAngles.y;
+        LeaveBoat(position);
+    }
+
     public bool TryDisembark(Vector3 landingPosition)
     {
-        if (!isActiveAndEnabled || !IsOnBoat || IsDowned)
+        return _boatController && _boatController.RequestDisembark(this);
+    }
+
+    [Server]
+    public bool TryAssignOwnedBoat(BoatController boat)
+    {
+        return AssignOwnedBoat(boat);
+    }
+
+    public bool TryAssignOfflineOwnedBoat(BoatController boat)
+    {
+        return !NetworkClient.active && !NetworkServer.active && AssignOwnedBoat(boat);
+    }
+
+    private bool AssignOwnedBoat(BoatController boat)
+    {
+        if (!boat || boat.Owner != this)
         {
             return false;
         }
 
-        LeaveBoat(landingPosition);
+        if (OwnedBoat)
+        {
+            return OwnedBoat == boat;
+        }
+
+        if (NetworkClient.active || NetworkServer.active)
+        {
+            _ownedBoat = boat;
+        }
+        else
+        {
+            _offlineOwnedBoat = boat;
+        }
         return true;
     }
+
+    public void SetBoatHeading(Vector3 direction)
+    {
+        if (!CanProcessLocalInput || !IsOnBoat || IsDowned)
+        {
+            return;
+        }
+
+        direction.y = 0f;
+        if (direction.sqrMagnitude < 0.0001f)
+        {
+            return;
+        }
+
+        Quaternion rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+        if (_boatController.TrySetHeading(this, rotation))
+        {
+            _heading = rotation.eulerAngles.y;
+        }
+    }
+
+    private void LeaveBoat(Vector3 landingPosition)
+    {
+        BoatController previousBoat = _boatController;
+
+        if (_abilityRunner)
+        {
+            _abilityRunner.Cancel();
+        }
+
+        ClearActionRequests();
+
+        if (previousBoat)
+        {
+            previousBoat.Disembark(this);
+        }
+
+        _boatController = null;
+
+        _rb.position = landingPosition;
+        _rb.rotation = Quaternion.Euler(0f, _heading, 0f);
+        transform.SetPositionAndRotation(_rb.position, _rb.rotation);
+
+        _rb.isKinematic = CanProcessLocalInput ? _savedIsKinematic : true;
+        _rb.detectCollisions = _savedDetectCollisions;
+
+        if (!_rb.isKinematic)
+        {
+            _rb.linearVelocity = Vector3.zero;
+            _rb.angularVelocity = Vector3.zero;
+        }
+
+        if (_playerNetworkTransform)
+        {
+            _playerNetworkTransform.enabled = _savedNetworkTransformEnabled;
+        }
+
+        _hfsm.SetOnBoat(false);
+        RefreshState();
+
+        Disembarked?.Invoke(previousBoat);
+    }
+
+    #endregion
 
     public void SetDowned(bool value)
     {
@@ -406,42 +552,6 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         }
     }
 
-    private void LeaveBoat(Vector3 landingPosition)
-    {
-        BoatController previousBoat = _boatController;
-
-        if (_abilityRunner)
-        {
-            _abilityRunner.Cancel();
-        }
-
-        ClearActionRequests();
-
-        if (previousBoat)
-        {
-            previousBoat.Disembark(this);
-        }
-
-        _boatController = null;
-
-        _rb.position = landingPosition;
-        _rb.rotation = Quaternion.Euler(0f, _heading, 0f);
-
-        _rb.isKinematic = _savedIsKinematic;
-        _rb.detectCollisions = _savedDetectCollisions;
-
-        if (!_rb.isKinematic)
-        {
-            _rb.linearVelocity = Vector3.zero;
-            _rb.angularVelocity = Vector3.zero;
-        }
-
-        _hfsm.SetOnBoat(false);
-        RefreshState();
-
-        Disembarked?.Invoke(previousBoat);
-    }
-
     private void RefreshState()
     {
         _hfsm.SetInput(Vector3.zero, false);
@@ -476,6 +586,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         if (_playerInput)
         {
             _playerInput.enabled = canControl;
+            _lookAction = _playerInput.actions ? _playerInput.actions.FindAction("Look", false) : null;
         }
 
         _inputReader.enabled = canControl;
@@ -533,4 +644,5 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _attachedCamera = null;
         _originalCameraParent = null;
     }
+
 }
