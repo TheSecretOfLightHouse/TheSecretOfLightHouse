@@ -17,6 +17,7 @@ namespace Lighthouse.Mafia.Voting.Rules
 
         public bool IsLocked { get; private set; }
         public bool IsEnded { get; private set; }
+        internal uint MafiaId => _mafiaId;
 
         public VoteService(IEnumerable<uint> participantIds, uint mafiaId)
         {
@@ -124,6 +125,32 @@ namespace Lighthouse.Mafia.Voting.Rules
 
             _usedVoteCounts.TryGetValue(voterId, out int usedCount);
             return MaxVoteCount - usedCount;
+        }
+
+        internal List<uint> GetCitizenIds()
+        {
+            var citizens = new List<uint>();
+            foreach (uint id in _participantIds)
+            {
+                if (id != _mafiaId)
+                {
+                    citizens.Add(id);
+                }
+            }
+            return citizens;
+        }
+
+        internal int CountCurrentMafiaVotes()
+        {
+            int count = 0;
+            foreach (VoteRecord record in _votes.Values)
+            {
+                if (record.TargetId == _mafiaId)
+                {
+                    count++;
+                }
+            }
+            return count;
         }
     }
 }
