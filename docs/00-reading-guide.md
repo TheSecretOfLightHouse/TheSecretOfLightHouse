@@ -25,7 +25,7 @@
 | 게임 구현 | 승패·투표 결정 → v4 → 07 관련 ID → 03 → 04 → 코딩 컨벤션 |
 | 씬·맵·에셋 | 04 → Unity 씬·에셋 안전 → 데모 가이드 |
 | 테스트·검수 | 05 → AI 검증 플레이북 → 멀티플레이 테스트 |
-| AI 작업 요청 | [작업 브리프](ai/02_TASK_BRIEF_TEMPLATE.md) |
+| AI 협업 시작·작업 요청 | [협업 범위와 사용 안내](ai/00_AI_COLLABORATION_GUIDE.md) → [작업 브리프](ai/02_TASK_BRIEF_TEMPLATE.md) |
 
 ## 3. 문서 간 기준
 

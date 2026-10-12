@@ -16,8 +16,10 @@
 - [기능별 담당과 코드 경계](CODE_OWNERSHIP.md)
 - [코드 컨벤션](coding-convention.md)
 - [커밋·PR 컨벤션](commit-convention.md)
+- [AI 협업 범위와 사용 안내](ai/00_AI_COLLABORATION_GUIDE.md)
 - [AI 작업 문서와 양식](ai/README.md)
 - [문서 분류](DOCUMENTATION_POLICY.md)
+- [담당자별 작업 pointer](WORK_POINTER.md)
 
 ## Unity 작업 문서
 

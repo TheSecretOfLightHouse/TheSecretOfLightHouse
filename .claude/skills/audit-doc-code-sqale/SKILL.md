@@ -9,7 +9,7 @@ description: TheSecretOfLightHouse의 문서와 실제 코드가 어디서 얼�
 
 ## 지킬 것
 
-- 읽기 전용이다. 코드·문서·씬·프리팹·`.meta`를 수정하지 않는다. 수정은 사용자가 보고서를 보고 별도로 요청한다. 보고서 저장을 요청받으면 Git 제외 `.claude/docs/{처음 쓴 날짜}/`에 두고 이어지는 평가는 원본을 갱신한다.
+- 읽기 전용이다. 코드·문서·씬·프리팹·`.meta`를 수정하지 않는다. 수정은 사용자가 보고서를 보고 별도로 요청한다. 보고서 저장을 요청받으면 `docs/{이름}/{날짜}/{내용}.md`에 두고 [작업 기록과 재개](../../../docs/ai/11_WORK_RECORDS.md)에 따라 원문과 담당자 pointer를 갱신한다.
 - 이 보고서는 **참고 지표**다. [검증 플레이북](../../../docs/ai/03_VERIFICATION_PLAYBOOK.md)의 `PASS/CONDITIONAL/REJECT` 판정이나 완료 상태를 대신하지 않고, 새 코딩 규칙이나 일괄 오류 등급을 만들지 않는다. 기능 결함의 심각도는 재현과 영향으로 따로 판단한다.
 - 점수·비율은 표본과 가정을 함께 적는다. 정적 분석(Grep·읽기)으로 얻은 값이며 Unity 컴파일·Play Mode·4인 접속은 실행하지 않았다면 `런타임 미검증`으로 명시한다. 파일·타입이 존재한다는 이유로 기능 구현이나 동작을 인정하지 않는다([지식 맵](../../../docs/ai/07_PROJECT_KNOWLEDGE_MAP.md)의 확인 기준).
 - 코드는 `Assets/01.Scripts/`만 대상으로 한다. `Assets/Mirror/`, `Assets/Plugins/`, `Assets/ThirdParty/`, `Library/`, `Temp/`, 생성 파일은 제외한다. 제외한 범위를 보고서에 적는다.

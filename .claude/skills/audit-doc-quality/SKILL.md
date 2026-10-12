@@ -7,7 +7,7 @@ description: TheSecretOfLightHouse의 CLAUDE.md·AGENTS.md와 docs/·스킬·Git
 
 [claude-md-improver](https://github.com/anthropics/claude-plugins-official/blob/main/plugins/claude-md-management/skills/claude-md-improver/SKILL.md)의 `발견 → 평가 → 보고서 → 제안 → 승인 후 적용` 흐름과 A~F 등급을 따르되, 이 저장소의 문서 규칙에 맞게 기준과 배점을 다시 정했다. 문서와 코드의 일치도·코드 품질은 [문서–코드 일치도·SQALE 평가](../audit-doc-code-sqale/SKILL.md)가 맡는다.
 
-평가는 읽기 전용이다. 보고서까지는 파일을 수정하지 않는다. 수정은 사용자가 항목을 승인한 뒤 그 항목만 적용하고, 커밋·푸시·게시는 요청 범위에 없으면 하지 않는다. 사용자가 보고서 저장을 요청하면 Git 제외 `.claude/docs/{처음 쓴 날짜}/`에 두고 이어지는 평가는 원본을 갱신한다.
+평가는 읽기 전용이다. 보고서까지는 파일을 수정하지 않는다. 수정은 사용자가 항목을 승인한 뒤 그 항목만 적용하고, 커밋·푸시·게시는 요청 범위에 없으면 하지 않는다. 사용자가 보고서 저장을 요청하면 `docs/{이름}/{날짜}/{내용}.md`에 두고 [작업 기록과 재개](../../../docs/ai/11_WORK_RECORDS.md)에 따라 원문과 담당자 pointer를 갱신한다.
 
 ## 기준 문서
 

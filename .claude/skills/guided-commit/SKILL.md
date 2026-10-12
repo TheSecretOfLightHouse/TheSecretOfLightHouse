@@ -35,4 +35,4 @@ description: TheSecretOfLightHouse 변경을 커밋할 때 변경 범위와 코�
 2. 파일 경로를 지정해 stage한다. `git add .`로 무관한 변경을 포함하지 않는다. `git diff --cached --check`와 staged diff로 실제 커밋 범위를 확인한다.
 3. 확정한 메시지로 커밋하고 해시·포함 범위·검증 결과를 보고한다. 여러 줄 메시지는 임시 파일과 `--file`을 사용한다. push는 별도로 허용된 경우에만 수행한다.
 
-다른 파트가 이어서 할 일이 생기면 [인수인계](../write-handoff/SKILL.md) 스킬로 전달 문서를 준비한다. 다른 담당자에게 전달할 문서는 `.claude/handover/{날짜}/{내용}.md`(Git 제외)에 쓰고, 연락은 명시적으로 요청받은 경우에만 한다.
+다른 파트가 이어서 할 일이 생기면 [인수인계](../write-handoff/SKILL.md) 스킬로 전달 문서를 준비한다. 다른 담당자에게 전달할 문서는 `docs/handover/{이름}/{날짜}/{내용}.md`에 쓰고 [작업 기록과 재개](../../../docs/ai/11_WORK_RECORDS.md)에 따라 담당자 pointer에서 연결한다. 연락은 명시적으로 요청받은 경우에만 한다.

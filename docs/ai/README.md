@@ -4,10 +4,13 @@
 
 TheSecretOfLightHouse의 작업 브리프, 검증, 인수인계와 협업 절차를 관리한다. 필요한 문서만 읽고 게임 규칙과 구현 상태를 구분한다.
 
+처음 AI와 협업한다면 [AI 협업 범위와 사용 안내](00_AI_COLLABORATION_GUIDE.md)부터 읽는다. 맡길 수 있는 일, 요청 예시, 결과 저장과 다음 대화에서 이어가는 방법을 설명한다.
+
 ## 처음이라면
 
 | 상황 | 읽을 것 |
 |---|---|
+| AI 협업을 처음 시작 | [협업 범위와 사용 안내](00_AI_COLLABORATION_GUIDE.md) |
 | 게임 규칙과 구현 방향 | [읽기 안내](../00-reading-guide.md) → [승패·투표 결정](../design/win-vote-decisions.md) · [v4](../design/references/game-design-v4.md) · [기술설계서](../03-technical-design.md) |
 | AI에게 작업 요청 | [작업 브리프](02_TASK_BRIEF_TEMPLATE.md) |
 | 완료 여부 확인 | [검증 플레이북](03_VERIFICATION_PLAYBOOK.md) |
@@ -64,6 +67,7 @@ Codex는 [`.agents/skills/`](../../.agents/skills/), Claude Code는 [`.claude/sk
 
 | 문서 | 용도 |
 |---|---|
+| [00 AI 협업 안내](00_AI_COLLABORATION_GUIDE.md) | 협업 범위·요청 예시·저장·공유·재개 |
 | [01 실행 정책](01_AGENT_EXECUTION_POLICY.md) | 실행·승인·중단 경계 |
 | [02 작업 브리프](02_TASK_BRIEF_TEMPLATE.md) | 요청 범위와 완료 조건 |
 | [03 검증 플레이북](03_VERIFICATION_PLAYBOOK.md) | 증거와 완료 상태 |
@@ -74,6 +78,7 @@ Codex는 [`.agents/skills/`](../../.agents/skills/), Claude Code는 [`.claude/sk
 | [08 병렬 작업 분업](08_SUBAGENT_ORCHESTRATION.md) | 배타적 쓰기와 통합 |
 | [09 기획 문서 → 구현](09_DOCUMENT_ANALYSIS_WORKFLOW.md) | 요구사항과 구현 근거 추적 |
 | [10 응답 스타일](10_RESPONSE_STYLE_GUIDE.md) | 결과 보고 형식 |
+| [11 작업 기록과 재개](11_WORK_RECORDS.md) | 담당자별 기록·pointer·세션 시작 보고 |
 
 ## 프로젝트 전제
 
@@ -84,7 +89,7 @@ Codex는 [`.agents/skills/`](../../.agents/skills/), Claude Code는 [`.claude/sk
 | 게임 | PC 3인칭 등대 배경 마피아류 게임, 시민 3 vs 마피아 1 |
 | 코드 | `Assets/01.Scripts/` 기능별 폴더, 단일 `Lighthouse.Runtime` (`Unity.InputSystem`·`Mirror` 참조) |
 | 담당 경계 | [코드 소유권](../CODE_OWNERSHIP.md), 기능마다 Rules·Net·Server·View 전체 책임 |
-| 개인 기록 | `.claude/docs/YYYY-MM-DD/`, `.claude/handover/YYYY-MM-DD/` |
+| 작업 기록·인수인계 | [작업 pointer](../WORK_POINTER.md) → [저장·재개 절차](11_WORK_RECORDS.md) |
 
 ## 유지보수
 

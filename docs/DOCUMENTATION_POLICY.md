@@ -12,7 +12,9 @@
 | 스킬·에이전트 정의 | `.claude/skills/`·`.claude/agents/`(Claude), `.agents/skills/`(Codex). 스킬 목록은 [AI 작업 문서](ai/README.md)가 관리 |
 | 문서 색인 | `docs/README.md` |
 | 실행 도구 사용 안내 | 해당 도구 옆 README |
-| 개인 세션·시행착오·원시 검증 기록 | 루트 AGENTS.md의 Git 제외 개인 기록 영역 |
+| 본인 작업 과정·결과 | `docs/{이름}/{날짜}/{내용}.md`, `docs/{이름}/POINTER.md` |
+| 인수인계 | `docs/handover/{이름}/{날짜}/{내용}.md` |
+| 세션 시작 진입점 | [작업 pointer](WORK_POINTER.md), [저장·재개 절차](ai/11_WORK_RECORDS.md) |
 
 ## 팀 문서가 자립하려면
 
