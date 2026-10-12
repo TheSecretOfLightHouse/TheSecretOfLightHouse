@@ -9,6 +9,8 @@ namespace Lighthouse.World.Ocean.Sandbox
         {
             bool isAllPassed = ForceFieldChecks.RunAll();
 
+            isAllPassed &= WindFieldChecks.RunAll();
+
             Debug.Log($"[{nameof(ForceFieldCheck)}] {(isAllPassed ? "ALL PASS" : "FAILED")}");
         }
     }
