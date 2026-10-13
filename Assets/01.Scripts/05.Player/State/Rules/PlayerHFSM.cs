@@ -13,6 +13,8 @@ public sealed class PlayerHFSM : IPlayerStateSource
     private bool _isOnBoat;
     private bool _isDowned;
 
+    private bool _isJumping;
+
     public Vector3 MoveDirection => _moveDirection;
     public bool IsOnBoat => _isOnBoat;
     public bool IsDowned => _isDowned;
@@ -30,7 +32,7 @@ public sealed class PlayerHFSM : IPlayerStateSource
     {
         _stateMachine = new StateMachine();
         _downedState = new DownedState();
-        _aliveState = new AliveState(() => _isOnBoat, HasMoveInput, () => _runHeld, Mathf.Max(1f, runMultiplier));
+        _aliveState = new AliveState(() => _isOnBoat, HasMoveInput, () => _runHeld,()=>_isJumping, Mathf.Max(1f, runMultiplier));
 
         _stateMachine.AddTransition(_aliveState,_downedState,() => _isDowned);
 
@@ -55,9 +57,14 @@ public sealed class PlayerHFSM : IPlayerStateSource
     {
         _isOnBoat = value;
     }
+    public void SetJumping(bool value)
+    {
+        _isJumping = value;
+    }
     public void Tick(float deltaTime)
     {
         _stateMachine.Tick(deltaTime);
+        PublishMotionIfChanged();
     }
 
     public void FixedTick(float fixedDeltaTime)
@@ -80,6 +87,7 @@ public sealed class PlayerHFSM : IPlayerStateSource
 
         return CurrentMovementState switch
         {
+            JumpState _ => PlayerMotionState.Jump,
             RunState _ => PlayerMotionState.Run,
             WalkState _ => PlayerMotionState.Walk,
             _ => PlayerMotionState.Idle

@@ -2,13 +2,11 @@ using Mirror;
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Lighthouse.Network.Connections.Net;
 
 [RequireComponent(typeof(PlayerInputReader), typeof(PlayerMotor), typeof(PlayerAbilityRunner))]
 public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 {
-    private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
-    private static readonly int IsRunningHash = Animator.StringToHash("IsRunning");
-
     [SerializeField]
     private PlayerInputReader _inputReader;
 
@@ -20,8 +18,14 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     [SerializeField]
     private PlayerAbility _jobAbility;
+
     [SerializeField]
-    private Animator _animator;
+    private PlayerAnimationDriver _animationDriver;
+
+    [SerializeField]
+    private PlayerCamera _camera;
+
+    private PlayerAnimationSource _animationSource;
 
     [SerializeField, Min(1f)]
     private float _runMultiplier = 1.5f;
@@ -31,9 +35,6 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     [SerializeField]
     private bool _allowOfflineControl = true;
-
-    [SerializeField]
-    private Transform _cameraAnchor;
 
     [SyncVar]
     private BoatController _ownedBoat;
@@ -47,11 +48,6 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private bool _savedNetworkTransformEnabled;
     private BoatController _boatController;
 
-    private Transform _attachedCamera;
-    private Transform _originalCameraParent;
-    private Vector3 _originalCameraPosition;
-    private Quaternion _originalCameraRotation;
-
     private bool _initialIsKinematic;
     private bool _savedIsKinematic;
     private bool _savedDetectCollisions;
@@ -59,6 +55,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private bool _interactRequested;
     private bool _fireRequested;
     private bool _abilityRequested;
+    private bool _jumpRequested;
     private float _heading;
 
     public Transform Actor => transform;
@@ -89,6 +86,9 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     public event Action<BoatController> Disembarked;
     public event Action<bool> DownedChanged;
 
+    private NetworkActor _networkActor;
+    public uint ActorID => _networkActor ? _networkActor.ActorId : 0;
+
     private void Awake()
     {
         ResolveReferences();
@@ -97,9 +97,13 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _playerInput = GetComponent<PlayerInput>();
         CacheNetworkTransform();
         _hfsm = new PlayerHFSM(_runMultiplier);
+        _networkActor = GetComponent<NetworkActor>();
 
-        _hfsm.MotionChanged += HandleMotionChanged;
-        HandleMotionChanged(_hfsm.CurrentMotion);
+        if (_animationDriver)
+        {
+            _animationSource = new PlayerAnimationSource(_hfsm, _abilityRunner);
+            _animationDriver.Initialize(_animationSource);
+        }
     }
 
     private void OnEnable()
@@ -109,6 +113,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _inputReader.InteractRequested += HandleInteractRequested;
         _inputReader.FireRequested += HandleFireRequested;
         _inputReader.AbilityRequested += HandleAbilityRequested;
+        _inputReader.JumpRequested += HandleJumpRequested;
 
         RefreshLocalControl();
     }
@@ -117,7 +122,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     {
         if (!NetworkClient.active&& !NetworkServer.active&& _allowOfflineControl)
         {
-            AttachCamera();
+            _camera?.Attach();
         }
     }
 
@@ -128,7 +133,6 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void CacheNetworkTransform()
     {
-        // Keep the runtime assembly independent of Mirror.Components.
         foreach (NetworkBehaviour behaviour in GetComponents<NetworkBehaviour>())
         {
             Type type = behaviour.GetType();
@@ -159,9 +163,13 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         {
             _abilityRunner = GetComponent<PlayerAbilityRunner>();
         }
-        if (!_animator)
+        if (!_animationDriver)
         {
-            _animator = GetComponent<Animator>();
+            _animationDriver = GetComponent<PlayerAnimationDriver>();
+        }
+        if (!_camera)
+        {
+            _camera = GetComponent<PlayerCamera>();
         }
     }
 
@@ -189,6 +197,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         Vector3 direction = Quaternion.Euler(0f, _heading, 0f) * new Vector3(input.x, 0f, input.y);
 
         _hfsm.SetInput(direction, _inputReader.RunHeld);
+        _hfsm.SetJumping(_motor.IsJumping);
         _hfsm.Tick(Time.deltaTime);
 
         ProcessActionRequests();
@@ -210,6 +219,9 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         MoveConfig config = MoveConfig.Combine(_hfsm.CurrentMoveConfig,_abilityRunner.MovementModifier);
 
+        bool jumpRequested = _jumpRequested;
+        _jumpRequested = false;
+
         Quaternion rotation = Quaternion.Euler(0f, _heading, 0f);
 
         if (IsOnBoat)
@@ -224,6 +236,11 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         }
 
         _motor.Move(_hfsm.MoveDirection, config,fixedDeltaTime);
+
+        if (jumpRequested && !IsDowned && !config.InputLocked)
+        {
+            _motor.TryJump();
+        }
     }
 
     private void LateUpdate()
@@ -244,6 +261,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
             _inputReader.InteractRequested -= HandleInteractRequested;
             _inputReader.FireRequested -= HandleFireRequested;
             _inputReader.AbilityRequested -= HandleAbilityRequested;
+            _inputReader.JumpRequested -= HandleJumpRequested;
         }
 
         ClearActionRequests();
@@ -260,10 +278,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     }
     private void OnDestroy()
     {
-        if (_hfsm != null)
-        {
-            _hfsm.MotionChanged -= HandleMotionChanged;
-        }
+        _animationSource?.Dispose();
+        _animationSource = null;
     }
 
     public override void OnStartServer()
@@ -284,33 +300,19 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         _heading = transform.eulerAngles.y;
         RefreshLocalControl();
-        AttachCamera();
+        _camera?.Attach();
     }
 
     public override void OnStopLocalPlayer()
     {
-        ReleaseCamera();
+        _camera.Release();
         base.OnStopLocalPlayer();
     }
 
     public override void OnStopClient()
     {
-        ReleaseCamera();
+        _camera.Release();
         base.OnStopClient();
-    }
-
-    private void HandleMotionChanged(PlayerMotionState state)
-    {
-        if (!_animator || !_animator.runtimeAnimatorController)
-        {
-            return;
-        }
-
-        bool isRunning = state == PlayerMotionState.Run;
-        bool isMoving = state == PlayerMotionState.Walk || isRunning;
-
-        _animator.SetBool(IsMovingHash, isMoving);
-        _animator.SetBool(IsRunningHash, isRunning);
     }
 
     #region Boat
@@ -519,7 +521,9 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         bool fireRequested = _fireRequested;
         bool abilityRequested = _abilityRequested;
 
-        ClearActionRequests();
+        _interactRequested = false;
+        _fireRequested = false;
+        _abilityRequested = false;
 
         if (IsDowned)
         {
@@ -578,7 +582,17 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _interactRequested = false;
         _fireRequested = false;
         _abilityRequested = false;
+        _jumpRequested = false;
     }
+
+    private void HandleJumpRequested()
+    {
+        if (CanProcessLocalInput && !IsDowned && !IsOnBoat)
+        {
+            _jumpRequested = true;
+        }
+    }
+
     private void RefreshLocalControl()
     {
         bool canControl = CanProcessLocalInput;
@@ -601,48 +615,4 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
             ClearActionRequests();
         }
     }
-
-    private void AttachCamera()
-    {
-        if (_attachedCamera)
-        {
-            return;
-        }
-
-        if (!_cameraAnchor)
-        {
-            return;
-        }
-
-        Camera mainCamera = Camera.main;
-
-        if (!mainCamera)
-        {
-            return;
-        }
-
-        _attachedCamera = mainCamera.transform;
-        _originalCameraParent = _attachedCamera.parent;
-        _originalCameraPosition = _attachedCamera.position;
-        _originalCameraRotation = _attachedCamera.rotation;
-
-        _attachedCamera.SetParent(_cameraAnchor, false);
-        _attachedCamera.localPosition = Vector3.zero;
-        _attachedCamera.localRotation = Quaternion.identity;
-    }
-
-    private void ReleaseCamera()
-    {
-        if (!_attachedCamera)
-        {
-            return;
-        }
-
-        _attachedCamera.SetParent(_originalCameraParent, true);
-        _attachedCamera.SetPositionAndRotation(_originalCameraPosition,_originalCameraRotation);
-
-        _attachedCamera = null;
-        _originalCameraParent = null;
-    }
-
 }
