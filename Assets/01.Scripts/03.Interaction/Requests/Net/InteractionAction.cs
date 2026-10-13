@@ -11,6 +11,8 @@ namespace Lighthouse.Interaction.Requests.Net
         RepairModule = 6,
         PickUp = 7,
         UseSpecialIsland = 8,
-        InspectGhostShip = 9
+        InspectGhostShip = 9,
+        RepairBoat = 10,
+        Rescue = 11
     }
 }
