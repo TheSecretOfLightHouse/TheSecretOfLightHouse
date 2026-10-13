@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Lighthouse.Monsters.AI.Server
 {
     [Serializable]
-    [NodeDescription(name: "Patrol Until Boat Detected", story: "[Self] patrols until detecting [TargetBoat]",
+    [NodeDescription(name: "Patrol Until Boat Detected", story: "[TargetBoat]를 탐지할 때까지 [Self]가 순찰한다",
         category: "Action/Lighthouse/Monsters", id: "6db73531b36140d194b3326bd0b011a1")]
     public sealed class PatrolUntilBoatDetectedAction : MonsterAction
     {

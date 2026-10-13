@@ -4,7 +4,7 @@ using Unity.Behavior;
 namespace Lighthouse.Monsters.AI.Server
 {
     [Serializable]
-    [NodeDescription(name: "Return To Patrol Origin", story: "[Self] returns home and clears [TargetBoat]",
+    [NodeDescription(name: "Return To Patrol Origin", story: "[Self]가 Patrol Origin으로 돌아감",
         category: "Action/Lighthouse/Monsters", id: "e2e306d7b4824859a83fe5dba8c9d4ea")]
     public sealed class ReturnToPatrolAction : MonsterAction
     {

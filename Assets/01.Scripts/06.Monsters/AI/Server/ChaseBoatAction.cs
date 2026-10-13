@@ -4,7 +4,7 @@ using Unity.Behavior;
 namespace Lighthouse.Monsters.AI.Server
 {
     [Serializable]
-    [NodeDescription(name: "Chase Boat Until Lost", story: "[Self] chases [TargetBoat] until it leaves the test sea",
+    [NodeDescription(name: "Chase Boat Until Lost", story: "[Self]가 [TargetBoat]이 활동 범위를 벗어날 때까지 추격",
         category: "Action/Lighthouse/Monsters", id: "8d3747fc1ce14644b834fe20f9a63b25")]
     public sealed class ChaseBoatAction : MonsterAction
     {

@@ -15,7 +15,7 @@ namespace Lighthouse.Monsters.AI.Server
         [NonSerialized] private MonsterMotion _motion;
         [NonSerialized] private SeaMonsterTestSensor _sensor;
 
-        // Behavior's authoring processor binds public properties to private serialized variables.
+        // Behavior 그래프 생성 과정에서 공개 프로퍼티를 비공개 직렬화 변수에 연결한다.
         public BlackboardVariable<GameObject> Self { get => _self; set => _self = value; }
         public BlackboardVariable<GameObject> TargetBoat { get => _targetBoat; set => _targetBoat = value; }
 
