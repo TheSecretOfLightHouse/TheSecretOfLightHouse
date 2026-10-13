@@ -83,6 +83,11 @@ namespace Lighthouse.World.Clock.Rules
             WorldServices.Unregister<IGameClock>(this);
         }
 
+        public void Stop()
+        {
+            _isRunning = false;
+        }
+
         public void UseSource(IClock source)
         {
             if (_source == null)
