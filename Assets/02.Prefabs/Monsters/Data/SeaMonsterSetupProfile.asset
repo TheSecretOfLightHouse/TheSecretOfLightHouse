@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: SeaMonsterSetupProfile
   m_EditorClassIdentifier: 
   _maxHealth: 1
-  _patrolSpeed: 0
-  _chaseSpeed: 0
-  _detectionRadius: 0
-  _maxChaseDistance: 0
+  _patrolSpeed: 3
+  _chaseSpeed: 5
+  _detectionRadius: 6
+  _maxChaseDistance: 18
   _attackDamage: 0
   _attackCooldown: 0

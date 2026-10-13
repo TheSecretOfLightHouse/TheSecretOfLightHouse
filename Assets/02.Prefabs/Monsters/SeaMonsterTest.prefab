@@ -15,6 +15,9 @@ GameObject:
   - component: {fileID: 6453132504025948035}
   - component: {fileID: 2596441198417314096}
   - component: {fileID: 5184414651575492754}
+  - component: {fileID: 5754997001789400900}
+  - component: {fileID: 3474646970971366724}
+  - component: {fileID: 1838645690151098544}
   m_Layer: 0
   m_Name: SeaMonsterTest
   m_TagString: Untagged
@@ -176,3 +179,69 @@ MonoBehaviour:
   syncInterval: 0
   _profile: {fileID: 11400000, guid: 401d5af0da4fb084585e5bb84db3cec0, type: 2}
   _behaviorAgent: {fileID: 2596441198417314096}
+--- !u!114 &5754997001789400900
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8138977063570569910}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2f8a3c05eecb134c8ef8cbaf2931e5a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _patrolOffsets:
+  - {x: -3, y: 0, z: 0}
+  - {x: -3, y: 0, z: 6}
+  - {x: 3, y: 0, z: 6}
+  - {x: 3, y: 0, z: 0}
+  _arrivalDistance: 0.15
+  _chaseStoppingDistance: 1.5
+--- !u!114 &3474646970971366724
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8138977063570569910}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa72eb5a20b3cf844b361d04fdb08b6b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _targets: []
+--- !u!114 &1838645690151098544
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8138977063570569910}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ff3ba0becae47b8b9381191598957c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  target: {fileID: 8747881861409234955}
+  syncPosition: 1
+  syncRotation: 1
+  syncScale: 0
+  onlySyncOnChange: 1
+  compressRotation: 1
+  interpolatePosition: 1
+  interpolateRotation: 1
+  interpolateScale: 1
+  coordinateSpace: 0
+  timelineOffset: 1
+  showGizmos: 0
+  showOverlay: 0
+  overlayColor: {r: 0, g: 0, b: 0, a: 0.5}
+  onlySyncOnChangeCorrectionMultiplier: 2
+  useFixedUpdate: 0
+  rotationSensitivity: 0.01
+  positionPrecision: 0.01
+  scalePrecision: 0.01
