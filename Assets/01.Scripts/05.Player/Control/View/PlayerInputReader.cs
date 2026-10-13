@@ -10,6 +10,7 @@ public class PlayerInputReader : MonoBehaviour
     public event Action InteractRequested;
     public event Action FireRequested;
     public event Action AbilityRequested;
+    public event Action JumpRequested;
 
     public void OnMove(InputValue value)
     {
@@ -47,6 +48,14 @@ public class PlayerInputReader : MonoBehaviour
         if (value.isPressed)
         {
             AbilityRequested?.Invoke();
+        }
+    }
+
+    public void OnJump(InputValue value)
+    {
+        if (value.isPressed)
+        {
+            JumpRequested?.Invoke();
         }
     }
     private void OnDisable()

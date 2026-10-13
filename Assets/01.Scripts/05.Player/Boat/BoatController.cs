@@ -65,9 +65,7 @@ public sealed class BoatController : NetworkBehaviour
         {
             _contact.RefreshDepartureContacts();
         }
-        // Retry presentation if an observer receives references later.
-        if (Owner && ((_isOccupied && Owner.CurrentBoat != this)
-            || (!_isOccupied && Owner.CurrentBoat == this)))
+        if (Owner && ((_isOccupied && Owner.CurrentBoat != this) || (!_isOccupied && Owner.CurrentBoat == this)))
         {
             ApplyOccupiedState();
         }
@@ -159,8 +157,7 @@ public sealed class BoatController : NetworkBehaviour
         }
     }
 
-    public void Move(PlayerController player, Vector3 direction,
-        Quaternion rotation, MoveConfig config, float fixedDeltaTime)
+    public void Move(PlayerController player, Vector3 direction, Quaternion rotation, MoveConfig config, float fixedDeltaTime)
     {
         if (!CanControl(player))
         {
@@ -173,12 +170,10 @@ public sealed class BoatController : NetworkBehaviour
         }
 
         direction.y = 0f;
-        Vector3 targetVelocity = Vector3.ClampMagnitude(direction, 1f)
-            * _speed * config.SpeedMultiplier;
+        Vector3 targetVelocity = Vector3.ClampMagnitude(direction, 1f) * _speed * config.SpeedMultiplier;
         Vector3 velocity = _rb.linearVelocity;
         Vector3 horizontal = new Vector3(velocity.x, 0f, velocity.z);
-        horizontal = Vector3.MoveTowards(horizontal, targetVelocity,
-            _acceleration * config.AccelerationMultiplier * fixedDeltaTime);
+        horizontal = Vector3.MoveTowards(horizontal, targetVelocity, _acceleration * config.AccelerationMultiplier * fixedDeltaTime);
         _rb.linearVelocity = new Vector3(horizontal.x, velocity.y, horizontal.z);
 
         if (!config.InputLocked)
@@ -299,8 +294,7 @@ public sealed class BoatController : NetworkBehaviour
             bool newlyBoarded = Owner.CurrentBoat != this;
             if (Owner.ApplyBoarding(this) && newlyBoarded && (isOwned || !IsNetworkActive))
             {
-                Owner.SetBoatHeading(
-                    Quaternion.Euler(0f, _departureHeading, 0f) * Vector3.forward);
+                Owner.SetBoatHeading(Quaternion.Euler(0f, _departureHeading, 0f) * Vector3.forward);
             }
         }
         else
@@ -319,8 +313,7 @@ public sealed class BoatController : NetworkBehaviour
 
     private bool CanAcceptRequest()
     {
-        if (!Owner || !Owner.isActiveAndEnabled || Owner.IsDowned
-            || connectionToClient == null
+        if (!Owner || !Owner.isActiveAndEnabled || Owner.IsDowned || connectionToClient == null
             || Owner.connectionToClient != connectionToClient
             || connectionToClient.identity != Owner.netIdentity
             || Time.time < _nextServerRequestTime)
@@ -353,8 +346,7 @@ public sealed class BoatController : NetworkBehaviour
 
     public bool TrySetOfflineOwner(PlayerController player)
     {
-        if (IsNetworkActive || !player || !player.CanProcessBoatInput
-            || (Owner && Owner != player))
+        if (IsNetworkActive || !player || !player.CanProcessBoatInput || (Owner && Owner != player))
         {
             return false;
         }
@@ -365,7 +357,7 @@ public sealed class BoatController : NetworkBehaviour
         {
             return true;
         }
-
+       
         _offlineOwner = previousOwner;
         return false;
     }
