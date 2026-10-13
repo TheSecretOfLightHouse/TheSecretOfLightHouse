@@ -9,7 +9,7 @@ namespace Lighthouse.World.Clock.Rules
         [SerializeField] private DayCycleConfig _config;
         [SerializeField] private bool _isStartedOnStart = true;
 
-        private IClock _source;
+        private SwitchableClock _source;
         private DayCycleState _state = new DayCycleState(1, DayPhase.Day);
         private double _gameStartTime;
         private bool _isRunning;
@@ -32,7 +32,7 @@ namespace Lighthouse.World.Clock.Rules
                 return;
             }
 
-            _source = new LocalClock();
+            _source = new SwitchableClock(new LocalClock());
             WorldServices.Register<IClock>(_source);
             WorldServices.Register<IGameClock>(this);
         }
@@ -83,6 +83,16 @@ namespace Lighthouse.World.Clock.Rules
             WorldServices.Unregister<IGameClock>(this);
         }
 
+        public void UseSource(IClock source)
+        {
+            if (_source == null)
+            {
+                return;
+            }
+
+            _source.Use(source);
+        }
+
         public void Begin()
         {
             if (_source == null)
@@ -90,7 +100,17 @@ namespace Lighthouse.World.Clock.Rules
                 return;
             }
 
-            Resync(_source.Now);
+            BeginAt(_source.Now);
+        }
+
+        public void BeginAt(double gameStartTime)
+        {
+            if (_source == null)
+            {
+                return;
+            }
+
+            Resync(gameStartTime);
             DayStarted?.Invoke(_state.DayIndex);
         }
 
