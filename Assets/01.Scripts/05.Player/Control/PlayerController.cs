@@ -190,6 +190,10 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         {
             Vector2 look = _lookAction != null ? _lookAction.ReadValue<Vector2>() : Vector2.zero;
             _heading = Mathf.Repeat(_heading + look.x * _mouseSensitivity, 360f);
+            if (_camera)
+            {
+                _camera.ApplyVerticalLook(look.y * _mouseSensitivity);
+            }
         }
 
         Vector2 input = _inputReader.MoveInput;

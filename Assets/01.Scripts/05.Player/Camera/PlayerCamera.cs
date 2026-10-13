@@ -10,6 +10,16 @@ public sealed class PlayerCamera : MonoBehaviour
     private Vector3 _originalCameraPosition;
     private Quaternion _originalCameraRotation;
 
+    [SerializeField]
+    private float _minPitch = -60f;
+    [SerializeField]
+    private float _maxPitch = 70f;
+
+    [SerializeField]
+    private Transform _cameraPivot;
+
+    private float _pitch;
+
     public void Attach()
     {
         if (_attachedCamera || !_cameraAnchor)
@@ -32,6 +42,12 @@ public sealed class PlayerCamera : MonoBehaviour
         _attachedCamera.SetParent(_cameraAnchor, false);
         _attachedCamera.localPosition = Vector3.zero;
         _attachedCamera.localRotation = Quaternion.identity;
+        _pitch = 0f;
+
+        if (_cameraPivot)
+        {
+            _cameraPivot.localRotation = Quaternion.identity;
+        }
     }
 
     public void Release()
@@ -56,5 +72,15 @@ public sealed class PlayerCamera : MonoBehaviour
     private void OnDestroy()
     {
         Release();
+    }
+
+    public void ApplyVerticalLook(float delta)
+    {
+        if(!_attachedCamera||!_cameraPivot)
+        {
+            return;
+        }
+        _pitch = Mathf.Clamp(_pitch - delta, _minPitch, _maxPitch);
+        _cameraPivot.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
     }
 }
