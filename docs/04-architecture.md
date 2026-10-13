@@ -9,7 +9,7 @@
 | 폴더 | 담당 | 기능 |
 |---|---|---|
 | `00.Common/` | 김지훈 조율, 관련 담당 합의 | 기능 간 공용 계약·기반. 기능 전용 타입은 각 도메인에 둠 |
-| `01.Network/` | 김지훈 | 세션·NetworkManager·스폰 등록·연결 조회·단절 캐릭터/참가자 상태 보존 기반, 재접속은 후순위 검토 |
+| `01.Network/` | 김지훈 | 세션·NetworkManager·스폰 등록·연결 조회·판 진행 중 이탈 시 판 종료, 재접속은 10/25 이후 선택 |
 | `02.World/` | 강민서 | 바다·날씨·시간·안개·맵·섬·파밍·배치·특수 섬·유령선·환영 섬·토네이도 |
 | `03.Interaction/` | 김지훈 | 요청·Relay·Router·Validator·기록·유령선 힌트 |
 | `04.Lighthouse/` | 김지훈 | 작업대·모듈·부식 낙하·등대 |
@@ -61,7 +61,7 @@ Unity 루트의 `Assets/00.Scenes`, `02.Prefabs`~`07.Materials`, `Packages/`, `P
 | 배치 계약 | `02.World/Spawning/Rules/SpawnerPoint.cs` — 실제 스폰 실행은 Monsters 담당 |
 | 자원 계약·정의 | `02.World/Harvest/Rules/SpotInfo.cs`, `ResourceDefinition.cs`, `ResourceRarity.cs` |
 | 상호작용 계약 | `03.Interaction/Requests/Net/InteractionRequest.cs`, `InteractionAction.cs` |
-| 접속·참가자 식별 | `01.Network/Session/Net/LighthouseNetworkManager.cs`, `Connections/Server/ConnectionDirectory.cs`, `Connections/Net/NetworkActor.cs` — JH01의 4인 접속과 송신자/ActorId 식별. 현재 해제 시 명단에서 제거하고 Mirror 기본 해제를 실행하며, 단절 객체·참가자 상태 보존은 미구현 |
+| 접속·참가자 식별 | `01.Network/Session/Net/LighthouseNetworkManager.cs`, `Connections/Server/ConnectionDirectory.cs`, `Connections/Net/NetworkActor.cs` — JH01의 4인 접속과 송신자/ActorId 식별. 현재 해제 시 명단에서 제거하고 Mirror 기본 해제를 실행하며, 판 진행 중 이탈 시 판 종료(JH07)는 미구현 |
 | 투표 규칙 | `07.Mafia/Voting/Rules/VoteService.cs`, `VoteRecord.cs` — 참가자·횟수·같은 대상 재클릭 처리. 새 결정의 역할/자기 투표 제한·의식 잠금·서버 전송 통합은 완료 상태가 아님 |
 
 StateMachine·State·Transition은 현재 MoveConfig에 의존하므로 Player 안에 둔다. ShipPhysicsProfile은 배 물리 정의로 Player가 관리하며 World에서 소비할 때 합의한다.
