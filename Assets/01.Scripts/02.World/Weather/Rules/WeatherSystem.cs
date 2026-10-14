@@ -9,6 +9,7 @@ namespace Lighthouse.World.Weather.Rules
         private WeatherSnapshot _snapshot;
         private WeatherTransition _transition;
         private WeatherState _target;
+        private readonly WeatherState _initial;
         private double _lastStartTime;
         private bool _hasApplied;
         private bool _isTransitioning;
@@ -16,6 +17,7 @@ namespace Lighthouse.World.Weather.Rules
         private WeatherSystem(WeatherState[] states, WeatherState initial)
         {
             _states = states;
+            _initial = initial;
             _target = initial;
             _snapshot = WeatherSnapshot.CreateBuffer(initial.Target.Waves.Length);
             WeatherSnapshot.TryLerp(in initial.Target, in initial.Target, 0f, ref _snapshot);
@@ -60,6 +62,14 @@ namespace Lighthouse.World.Weather.Rules
             return _listeners.Remove(listener);
         }
 
+        public bool CanApply(WeatherType from, WeatherType to)
+        {
+            return TryGetState(from, out WeatherState fromState)
+                && TryGetState(to, out _)
+                && fromState.CanTransitionTo(to)
+                && _target.CanTransitionTo(to);
+        }
+
         public bool Apply(WeatherType from, WeatherType to, double startTime, float duration)
         {
             if (_hasApplied && startTime == _lastStartTime)
@@ -67,15 +77,13 @@ namespace Lighthouse.World.Weather.Rules
                 return false;
             }
 
-            if (!TryGetState(from, out WeatherState fromState) || !TryGetState(to, out WeatherState toState))
+            if (!CanApply(from, to))
             {
                 return false;
             }
 
-            if (!fromState.CanTransitionTo(to) || !_target.CanTransitionTo(to))
-            {
-                return false;
-            }
+            WeatherState fromState = _states[(int)from];
+            WeatherState toState = _states[(int)to];
 
             _transition = new WeatherTransition(fromState, toState, startTime, Mathf.Max(0f, duration));
             _target = toState;
@@ -83,6 +91,17 @@ namespace Lighthouse.World.Weather.Rules
             _hasApplied = true;
             _isTransitioning = true;
             return true;
+        }
+
+        public void Reset()
+        {
+            _target = _initial;
+            _transition = default;
+            _lastStartTime = 0.0;
+            _hasApplied = false;
+            _isTransitioning = false;
+            WeatherSnapshot.TryLerp(in _initial.Target, in _initial.Target, 0f, ref _snapshot);
+            _listeners.Notify(in _snapshot);
         }
 
         public void Tick(double now)
