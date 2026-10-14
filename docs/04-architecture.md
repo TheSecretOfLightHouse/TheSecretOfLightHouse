@@ -11,7 +11,7 @@
 | `00.Common/` | 김지훈 조율, 관련 담당 합의 | 기능 간 공용 계약·기반. 기능 전용 타입은 각 도메인에 둠 |
 | `01.Network/` | 김지훈 | 세션·NetworkManager·스폰 등록·연결 조회·판 진행 중 이탈 시 판 종료, 재접속은 10/25 이후 선택 |
 | `02.World/` | 강민서 | 바다·날씨·시간·안개·맵·섬·파밍·배치·특수 섬·유령선·환영 섬·토네이도 |
-| `03.Interaction/` | 김지훈 | 요청·Relay·Router·Validator·기록·유령선 힌트 |
+| `03.Interaction/` | 김지훈 | 대상 탐지·선택·대상 확인·요청·Relay·Router·Validator·지속 상호작용 세션·기록·유령선 힌트 |
 | `04.Lighthouse/` | 김지훈 | 작업대·모듈·부식 낙하·등대 |
 | `05.Player/` | 최명기 | 배·이동·입력·상태·직군 능력·인벤토리·채집 행동·애니메이션 연결 |
 | `06.Monsters/` | 박태욱 | 몬스터 AI·스폰 실행 |
@@ -60,7 +60,7 @@ Unity 루트의 `Assets/00.Scenes`, `02.Prefabs`~`07.Materials`, `Packages/`, `P
 | 섬·바다 계약 | `02.World/Islands/Rules/IslandHandle.cs`, `Ocean/Rules/SeaZone.cs` |
 | 배치 계약 | `02.World/Spawning/Rules/SpawnerPoint.cs` — 실제 스폰 실행은 Monsters 담당 |
 | 자원 계약·정의 | `02.World/Harvest/Rules/SpotInfo.cs`, `ResourceDefinition.cs`, `ResourceRarity.cs` |
-| 상호작용 계약 | `03.Interaction/Requests/Net/InteractionRequest.cs`, `InteractionAction.cs` |
+| 상호작용 계약 | `03.Interaction/Requests/Net/InteractionRequest.cs`·`InteractionResult.cs`·`InteractionAction.cs`, `Requests/Rules/`(대상 종류·결과 코드), 처리기 계약 `Router/Server/IInteractionHandler.cs`, 세션 처리기 계약 `Sessions/Server/IInteractionSessionHandler.cs`, 비네트워크 대상 계약 `Targets/Server/INonNetworkTargetAdapter.cs`, 대상 표식 `Targets/Net/InteractionTarget.cs` |
 | 접속·참가자 식별 | `01.Network/Session/Net/LighthouseNetworkManager.cs`, `Connections/Server/ConnectionDirectory.cs`, `Connections/Net/NetworkActor.cs` — JH01의 4인 접속과 송신자/ActorId 식별. JH07(같은 파일 + `Session/Net/LobbyPlayer`·`SessionJoinAuthenticator`·세션 메시지, `Session/Rules/MatchPhase`·`SessionEndReason`)이 로비 준비·자동 시작·전원 로딩 확인·판 진행 중 이탈 시 판 종료를 맡는다. 로비 설정이 없는 매니저는 기존 단일 씬 방식 |
 | 투표 규칙 | `07.Mafia/Voting/Rules/VoteService.cs`, `VoteRecord.cs` — 참가자·횟수·같은 대상 재클릭 처리. 새 결정의 역할/자기 투표 제한·의식 잠금·서버 전송 통합은 완료 상태가 아님 |
 

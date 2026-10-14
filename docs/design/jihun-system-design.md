@@ -1,6 +1,6 @@
 # 김지훈 담당 시스템 설계와 아키텍처
 
-기준일: 2026-10-10. 담당: 김지훈(`zhun0922`). 상태: **설계 제안. JH01 접속·ActorId 식별만 구현(2026-10-11, 같은 PC 4인 검증), 나머지 미구현**. 구현 기록은 [담당자별 작업 §6](../06-owner-work-plan.md#6-처음-함께-맞출-일과-작업-기록). 2026-10-13 결정 반영: 대상 탐지·식별(§1·§5·§6), 프리팹 선택 훅(§8.1), 판 진행 중 이탈 시 판 종료(§8.2). 이 문서는 JH01~JH08의 구현 구조를 구체화한다. 새 타입·메서드 이름은 제안이며 현재 존재하는 API가 아니다. 게임 규칙의 미정을 해소하거나 다른 담당자의 구현을 승인하지 않는다.
+기준일: 2026-10-10, 갱신 2026-10-14. 담당: 김지훈(`zhun0922`). 상태: **설계 제안. 구현·검증: JH01 접속·ActorId(2026-10-11), JH07 판 시작·종료(2026-10-13), JH02 A-1 요청 경로·A-2 지속 세션(2026-10-14), 모두 같은 PC M2. JH03~06 미구현**. 구현 기록은 [담당자별 작업 §6](../06-owner-work-plan.md#6-처음-함께-맞출-일과-작업-기록). 2026-10-13 결정 반영: 대상 탐지·식별(§1·§5·§6), 프리팹 선택 훅(§8.1), 판 진행 중 이탈 시 판 종료(§8.2). 2026-10-14 반영: 재접속 없음·한 명 이탈 시 판 종료를 전제로 요청 번호 계약 축소(§5), 판 진행 중에만 요청 접수, 단일 씬 시험 방식 폐기 예정(§8.1), 네트워크 객체 대상은 netId로 식별하고 TargetRegistry를 비네트워크 대상 변환기로 축소(§5.1), JH02 구현을 A-1 요청 경로·A-2 지속 세션으로 나눔(§12). 이 문서는 JH01~JH08의 구현 구조를 구체화한다. 새 타입·메서드 이름은 제안이며 현재 존재하는 API가 아니다. 게임 규칙의 미정을 해소하거나 다른 담당자의 구현을 승인하지 않는다.
 
 ## 1. 범위와 근거
 
@@ -8,7 +8,7 @@
 
 | 지훈 책임 | 포함 | 경계 밖에서 받거나 제공할 것 |
 |---|---|---|
-| JH01·07 Network | 세션 연결·로비 네트워크 흐름·스폰 프리팹 등록·연결 조회. JH07: 로비 준비·자동 시작·전원 로딩 확인과 판 진행 중 이탈 시 판 종료. 재접속은 10/25 이후 선택 | 플레이어 프리팹 선택은 최명기가 매니저 훅으로 제공하고 나머지 도메인 스폰은 각 담당자. 게임 시작·승패·중단 UI는 최명기 |
+| JH01·07 Network | 세션 연결·로비 네트워크 흐름·스폰 프리팹 등록·연결 조회. JH07: 로비 준비·자동 시작·전원 로딩 확인과 판 진행 중 이탈 시 판 종료. 재접속은 10/25 이후 선택 | 플레이어 프리팹 선택은 최명기가 매니저 훅으로 제공하고 나머지 도메인 스폰은 각 담당자. 첫 화면·로비·로딩·종료 사유 화면은 지훈(2026-10-13 결정), 판 안의 게임 단계·승패 UI는 최명기 |
 | JH02 Interaction | 대상 탐지·선택(2026-10-13 결정)·Relay·Router·Validator·지속 상호작용 세션·기록·실패 응답 | Player는 상호작용 키 입력만, 메뉴 동작은 최명기 UI가 Relay로 전달. 채집·특수 섬 등의 실제 판정과 소요 시간·취소 조건은 소유 기능 |
 | JH03~05 Lighthouse | 작업대·모듈·부식·낙하/회수/수리·등대 상태·의식 처리 | 인벤토리·배 효과는 최명기, 파도/판정 위치는 강민서, 투표·심해는 박태욱 |
 | JH06 GhostShipHints | 조사 검증·힌트 생성·개인 전달·이력 | 등장·경로·존재 구간·관찰 가능성은 강민서 |
@@ -22,14 +22,14 @@ UI 화면·직군 능력·투표 계산·몬스터 AI·월드 생성·게임 최
 
 | 근거 | 확인 내용 | 설계에 미치는 영향 |
 |---|---|---|
-| `03.Interaction/Requests/Net/InteractionRequest.cs` | readonly 구조체, ActorId·TargetId·Action·Arg0·Arg1·ServerTime | 송신자 증명·요청 고유 ID·응답·재전송 처리 없음. 그대로 신뢰 가능한 서버 명령으로 사용 불가 |
-| 같은 폴더 `InteractionAction.cs` | Harvest~InspectGhostShip 9종 + None | 부식·검사·점화 등은 열거형에 없음. 추가 동작은 별도 계약 변경 필요 |
-| `05.Player/Control/PlayerController.cs` | InteractionRequested 이벤트 선언·발행만 검색됨 | 지훈 Interaction 컴포넌트가 구독해 대상 선택·요청 생성(2026-10-13 결정). 컴포넌트를 플레이어 프리팹에 붙이는 작업은 최명기가 에디터에서 수행 |
-| `01.Network/`, `04.Lighthouse/` | 현재 검색에서 자체 C# 실행부 미확인 | 아래 NetworkManager·거래·등대 타입은 신규 구현 계획 |
+| `03.Interaction/Requests/Net/InteractionRequest.cs` | 2026-10-14 JH02 A-1에서 전송 구조체로 교체: 요청 번호·대상 종류·대상 netId·비네트워크 대상 키·Action·Arg0·Arg1. 이전의 ActorId·TargetId·ServerTime은 제거 | 송신자는 서버가 연결에서 도출(§5.1) |
+| 같은 폴더 `InteractionAction.cs` | Harvest~InspectGhostShip 9종 + RepairBoat·Rescue + None | 부식·검사·점화 등은 열거형에 없음. 추가 동작은 별도 계약 변경 필요 |
+| `05.Player/Control/PlayerController.cs` | InteractionRequested 이벤트(누를 때만, 로컬 플레이어·난파 아닐 때). 키 뗌 이벤트 없음 | 구독 어댑터 `03.Interaction/Relay/View/PlayerInteractionInput`이 있으나 본편 프리팹 미부착(최명기가 에디터에서 부착). 키 뗌이 없어 본편에서는 세션을 키 뗌으로 취소할 수 없음 |
+| `01.Network/`, `03.Interaction/` | JH01·JH07·JH02 구현(§4 배치의 구현 표시 참고) | `04.Lighthouse/`는 실행 코드 없음. 거래·등대 타입은 신규 구현 계획 |
 | Mirror NetworkManager | 연결·Ready·AddPlayer·Disconnect 콜백 존재. 기본 Disconnect는 플레이어/소유 객체 파괴 | 게임 준비와 transport ready 분리, 보존/재결합 경로 필요 |
-| World 기존 식별자 | SpotInfo.SpotId는 int, IslandHandle.Index는 short, 요청 TargetId는 uint | 단순 캐스팅 대신 registry 매핑 필요 |
+| World 기존 식별자 | SpotInfo.SpotId는 int, IslandHandle.Index는 short | 비네트워크 대상은 (대상 종류, 기존 식별자)로 보내고 서버 변환기가 확인(§5.1). 단순 캐스팅으로 다른 ID 체계와 섞지 않음 |
 
-현재 namespace `Lighthouse.Map.Net.Contracts`는 위치만 보고 바꾸지 않는다. 새 전송 DTO를 추가할 때 기존 구조체와 변환 경계를 둔다. readonly 구조체의 Mirror 직렬화 가능성은 지정 Unity 버전에서 Weaver 및 왕복 테스트로 검증해야 하며 문서로 통과를 가정하지 않는다.
+기존 `Lighthouse.Map.Net.*` 계약은 도메인 네임스페이스로 이관됐다([아키텍처](../04-architecture.md)). readonly 구조체도 Mirror Weaver가 Reader/Writer를 생성함을 2026-10-14 Unity 6000.0.83f1 에디터 왕복 직렬화로 확인했고, JH02 M2 시험에서 실제 전송도 확인했다.
 
 ## 3. 전체 구조도
 
@@ -47,7 +47,7 @@ flowchart TB
   subgraph Server[리슨 호스트 서버 역할 · 지훈 담당]
     Conn[Session / Connections / Reconnect]
     Spawn[SpawnRegistry]
-    Registry[Router 내부 TargetRegistry]
+    Registry[대상 확인 · netId / 비네트워크 변환기]
     Gate[요청 식별·중복 원장·Validator]
     Router[InteractionRouter]
     Workbench[WorkbenchService]
@@ -81,7 +81,7 @@ flowchart TB
   end
   Router -. 검증된 외부 기능 명령 .-> External
   External -. 처리 결과 .-> History
-  World -. 대상 등록·위치·시간 .-> Registry
+  World -. 비네트워크 대상 조회·위치·시간 .-> Registry
   World -. 유령선 유효성 .-> Hint
   World -. 표류 위치·시간 .-> Module
   Workbench -. 거래 요청 .-> Player
@@ -107,23 +107,26 @@ History는 상태 원본을 대신하는 이벤트 소싱 저장소가 아니다
 
 ## 4. 코드 배치와 책임
 
-모두 기존 `Lighthouse.Runtime` 아래다. 아래는 예정 배치이며 비어 있는 모든 층을 먼저 생성하지 않는다.
+모두 기존 `Lighthouse.Runtime` 아래다. 아래는 예정 배치이며 비어 있는 모든 층을 먼저 생성하지 않는다. `(구현)`은 2026-10-14 기준 실제 파일이 있는 항목이다.
 
 ```text
 Assets/01.Scripts/
   01.Network/
-    Session/{Net,Rules}/            LighthouseNetworkManager, LobbyPlayer, SessionJoinAuthenticator, 세션 메시지 / MatchPhase, SessionEndReason (JH07 구현)
-    Connections/Server/             ConnectionDirectory
-    Connections/Net/                NetworkActor (플레이어 객체의 공개 ActorId)
+    Session/{Net,Rules}/            LighthouseNetworkManager, LobbyPlayer, SessionJoinAuthenticator, 세션 메시지 / MatchPhase, SessionEndReason (구현, JH07)
+    Connections/Server/             ConnectionDirectory (구현)
+    Connections/Net/                NetworkActor (구현, 플레이어 객체의 공개 ActorId)
     SpawnRegistry/{Rules,Server}/   NetworkPrefabCatalog, SpawnRegistration
     Reconnect/{Rules,Server,Net}/    ReconnectCoordinator, SnapshotEnvelope (재접속 채택 시, 10/25 이후 선택)
   03.Interaction/
-    Requests/{Rules,Net}/           wire DTO, 검증된 서버 명령, 결과 코드
-    Relay/{Net,View}/               InteractionRelay, InteractionInputAdapter(대상 탐지·선택)
-    Targets/{Net,Server}/           InteractionTarget(대상 표식·TargetId 노출)
-    Router/Server/                 InteractionRouter, TargetRegistry
-    Validator/Server/              RequestValidator, RequestLedger
-    History/Server/                InteractionHistory
+    Requests/{Rules,Net}/           InteractionRequest·InteractionResult·InteractionAction / InteractionTargetKind·InteractionResultCode (구현)
+    Relay/Net/                      InteractionRelay (구현: 요청 Command·결과/세션 TargetRpc·세션 취소 Command·서버 세션 진행)
+    Relay/View/                     InteractionSelector(대상 탐지·선택), PlayerInteractionInput(본편 입력 어댑터) (구현)
+    Targets/Net/                    InteractionTarget (구현: 등록 없는 표식, 기본·허용 Action, 범위)
+    Targets/Server/                 TargetResolver, INonNetworkTargetAdapter, ResolvedTarget (구현)
+    Router/Server/                  InteractionRouter(공통 검사·처리기 호출), IInteractionHandler, InteractionContext (구현)
+    Sessions/{Rules,Net,Server}/    InteractionSessions, IInteractionSessionHandler, InteractionSession / InteractionSessionUpdate / InteractionSessionEndReason (구현)
+    Validator/Server/               RequestLedger (구현). 공통 검사는 InteractionRouter에 있고 기능별 검증은 각 처리기가 맡음
+    History/Server/                 InteractionHistory (미구현)
     GhostShipHints/{Rules,Server,Net,View}/
   04.Lighthouse/
     Workbench/{Rules,Server,Net,View}/
@@ -140,51 +143,68 @@ Assets/01.Scripts/
 
 ### 5.1 식별과 전송
 
-| 필드/식별자(제안) | 용도·신뢰 경계 |
-|---|---|
-| MatchId | 서버가 발급한 판 식별. 이전 판 패킷 차단 |
-| ActorId | 판 안에서 유지하는 주체 ID. 서버 ConnectionDirectory가 연결에서 도출. 클라이언트 값은 주장일 뿐 |
-| ConnectionEpoch | 연결이 교체될 때 서버가 갱신하는 세대. 끊긴 소켓의 늦은 요청 차단 |
-| RequestSequence | ActorId별 단조 증가 요청 번호. 재접속 때 원장과 다음 번호 복원 |
-| TargetId + Generation | 등록된 대상과 재사용 세대. Mirror netId와 도메인 ID를 혼용하지 않음 |
-| Action + 타입별 payload | 허용 동작·개수·슬롯·레시피 ID. Arg0/Arg1의 의미를 라우트별로 고정하고 범위 검사 |
-| ExpectedRevision | 필요할 때 해당 수신자가 볼 수 있는 PublicRevision 비교. 비밀 상태 변경으로 stale 여부를 드러내지 않음 |
-| ReceivedAt / CommittedAt | 서버가 생성. 기존 ServerTime 필드를 클라이언트 시간 근거로 신뢰하지 않음 |
+전제(2026-10-13·14 결정): 재접속은 10/25 이전 범위에 없다. 판 진행 중 한 명이라도 나가면 판이 끝나고 호스트가 종료된다([승패·투표 결정 §8](win-vote-decisions.md#disconnection)). 그래서 **연결 하나 = 판 참가 하나 = 서버 실행 한 번**이다. 끊긴 연결이 다시 붙거나, 같은 서버에서 다음 판이 이어지는 경우가 없다. Mirror Reliable 채널은 한 연결 안에서 순서를 지키고 중복 전달하지 않는다. 아래 식별자는 이 전제로 줄였다.
 
-전송 DTO에는 서버가 작성할 시각과 확정 결과를 넣지 않는다. 서버가 검증된 내부 명령을 만들며 기존 InteractionRequest를 계속 쓸지는 소비자 정리 시 결정한다. 기존 enum 값은 재번호화하지 않는다. 부식/검사/점화 추가는 각 액션의 payload·권한·오류·수신자 계약과 함께 한다.
+| 필드/식별자(제안) | 요청에 포함 | 용도·신뢰 경계 |
+|---|---|---|
+| ActorId | 아니요 | 서버가 Command의 송신 연결에서 ConnectionDirectory로 도출한다. 클라이언트가 보낸 값은 받지 않는다 |
+| RequestSequence | 예 | ActorId별 1부터 단조 증가하는 요청 번호. 응답 대조, 같은 입력의 이중 처리 방지, 검사 능력의 사용권 소비 키로 쓴다 |
+| 대상 참조 | 예 | 네트워크 객체 대상은 Mirror netId, 비네트워크 대상은 (DomainKind, 기존 식별자). 아래 대상 식별 참고 |
+| Action + 타입별 payload | 예 | 허용 동작·개수·슬롯·레시피 ID. Arg0/Arg1의 의미를 라우트별로 고정하고 범위 검사 |
+| ExpectedRevision | 필요할 때 | 해당 수신자가 볼 수 있는 PublicRevision 비교. 비밀 상태 변경으로 stale 여부를 드러내지 않음 |
+| MatchId | 아니요 | 서버 실행 한 번에 판 하나이므로 요청에 넣지 않는다. 서버 로그·이력에만 기록 |
+| ReceivedAt / CommittedAt | 아니요 | 서버가 생성. 기존 ServerTime 필드를 클라이언트 시간 근거로 신뢰하지 않음 |
 
-TargetRegistry는 `(DomainKind, 기존 식별자, 생성 세대)`를 서버 발급 uint TargetId와 Generation에 매핑한다. 음수/short를 uint로 단순 캐스팅하지 않는다. 등록 해제 후 같은 ID가 재사용돼도 Generation을 바꾸고 같은 판에서 과거 쌍은 무효로 둔다. World의 SpotInfo/IslandHandle 타입은 수정하지 않는 adapter를 둔다. 2026-10-13 결정으로 대상 노출은 두 갈래다. 네트워크 객체 대상(배·작업대·등대·표류 모듈·유령선)은 대상 컴포넌트가 자기 `OnStartServer`에서 등록하고 `OnStopServer`에서 해제하며, 발급된 TargetId·Generation을 SyncVar로 클라이언트에 노출한다. 채집 지점처럼 네트워크 객체가 아닌 대상은 클라이언트가 (DomainKind, 기존 식별자)를 보내고 서버가 장부에서 TargetId로 변환한다. 클라이언트가 보낸 기존 식별자는 서버 장부에 활성 대상으로 있을 때만 받아들인다. Harvest·PickUp·UseSpecialIsland는 Router에서 각 기능 담당의 handler로 전달하며 지훈 Validator가 그 기능의 경제·횟수 규칙을 대신 소유하지 않는다.
+ConnectionEpoch(연결 세대)는 두지 않는다. 재접속을 채택하면 그때 §8.3과 함께 추가한다. 기존 키 `(ActorId, RequestSequence)`에 연결 세대를 덧붙이는 방식이라 지금 구조를 버리지 않는다.
+
+전송 DTO에는 서버가 작성할 시각과 확정 결과, 클라이언트가 주장하는 ActorId를 넣지 않는다. 서버가 검증된 내부 명령을 만들며 기존 InteractionRequest(ActorId·ServerTime 포함)는 새 전송 DTO로 대체한다. readonly 구조체도 Mirror Weaver가 Reader/Writer를 생성한다(2026-10-14 Unity 6000.0.83f1, 기존 `InteractionRequest`를 Command 인자로 둔 임시 스크립트로 생성 함수 확인과 에디터 왕복 직렬화 6필드 일치. 이후 JH02 M2 시험에서 실제 전송 확인). 기존 enum 값은 재번호화하지 않는다. 부식/검사/점화 추가는 각 액션의 payload·권한·오류·수신자 계약과 함께 한다.
+
+**대상 식별(2026-10-14 결정, 2026-10-13 TargetRegistry 발급안을 대체).** 대상은 두 갈래로 식별한다.
+
+| 대상 | 식별 | 서버 확인 |
+|---|---|---|
+| 네트워크 객체(배·작업대·등대·표류 모듈·쓰러진 동료 플레이어, 네트워크 객체이면 유령선·잔해·특수 섬) | Mirror netId(`uint`). 요청의 대상 종류는 `NetworkObject` | 서버가 `NetworkServer.spawned`에서 현재 객체를 찾는다. 없으면(사라짐) `InvalidTarget`. 대상에 InteractionTarget 표식과 요청 Action 지원이 있는지 확인한다 |
+| 비네트워크 대상(각 PC에서 만드는 채집 지점 등) | (`InteractionTargetKind`, 기존 식별자). 예: (HarvestSpot, SpotId) | TargetResolver가 종류별 adapter(`INonNetworkTargetAdapter`, 소유 기능이 `TargetResolver.RegisterAdapter`로 등록)로 현재 유효한 대상인지·판정 위치를 확인한다. adapter가 없으면 `InvalidTarget`. 채집 지점이면 `IHarvestSpotQuery.TryGetSpot`을 쓰는 adapter. World 타입은 수정하지 않는다 |
+
+- netId를 쓸 수 있는 근거: Mirror netId는 서버가 객체 생성마다 1씩 올려 발급하고 서버 종료 때만 1로 돌아간다(설치된 Mirror `NetworkIdentity.GetNextNetworkId`·`ResetServerStatics`). 판 하나가 서버 실행 한 번이므로 같은 판 안에서 재사용되지 않는다. 그래서 TargetId·Generation 발급, 대상 등록·해제, SyncVar 노출이 필요 없다. 통신 방식을 Steam으로 바꿔도 같고, 재접속을 넣어도 객체가 남으므로 같다. 호스트 이전은 지원 범위 밖이다.
+- InteractionTarget은 등록하지 않는 표식 컴포넌트다. 클라이언트 탐지가 "상호작용 가능한 대상과 기본 Action"을 알기 위해 쓰고, 서버는 요청 Action이 그 대상에서 허용되는지 확인할 때 쓴다.
+- 어느 대상이 네트워크 객체인지는 해당 기능 담당이 정한다. 채집 지점·유령선·표류 잔해·특수 섬은 강민서 확인 대기이며, 두 갈래를 모두 받게 만들어 답에 따라 연결만 한다. Harvest·PickUp·UseSpecialIsland는 Router에서 각 기능 담당의 handler로 전달하며 지훈 Validator가 그 기능의 경제·횟수 규칙을 대신 소유하지 않는다.
 
 기본 전송안은 소유 플레이어의 NetworkBehaviour에 있는 `[Command]` Relay다. 서버는 실제 연결과 소유 객체를 확인한다. 월드 객체를 클릭했다는 이유로 그 객체의 authority를 넘기지 않는다. 호스트 로컬 입력도 서버 서비스에 직접 우회 호출하지 않는다.
 
 ### 5.2 처리 순서
 
-1. 연결이 현재 세대이며 인증·복원·게임 준비를 마쳤는지 확인한다. 실제 인증/재접속 증명 방식은 §8의 합의 대상이다.
-2. 메시지 크기·해석 가능한 형식·요청 속도 제한을 검사한다. 여기서는 접수 가능 여부만 판단한다. 해석 가능한 Action/수량의 의미 검증은 번호 접수 뒤 수행해 최종 실패도 원장에 남긴다.
-3. 판·주체·요청 번호를 검증하고 중복 결과를 조회한다. 동일 번호와 다른 payload는 거부한다. 이전 연결의 재시도는 현재 연결로만 허용하며 주체는 동일해야 한다.
-4. TargetId/Generation·생존·지원 동작·서버 판정 위치를 확인한다. 거리·시야·행동 상태는 액션마다 적용한다. 주체 위치는 소유 클라이언트 보고값이며 서버에서 보간 지연만큼 과거다(2026-10-13 N07 결정, [네트워크 권위 §4](../unity/NETWORK_AUTHORITY.md#4-이동과-물리-권위)). 거리 경계에는 설정값 여유를 두고 시험값에서 시작한다. 배도 대상이며 배 프리팹의 대상 컴포넌트가 스스로 등록한다. 배 대상 Action은 `InstallModule`·`RepairBoat`·`Rescue`이고, 배→주인 ActorId는 `BoatController.Owner`의 `NetworkActor`로 조회한다. 비밀 투표 등 다른 기능에 공통 거리 검사를 강제하지 않는다.
+구현 순서(`InteractionRouter`): 송신자 → 판 진행 중 → 요청 번호 → 대상 존재·지원 Action → 거리 → 처리기(단발 또는 세션 시작). 아래 1·2는 구현에서 송신자 확인이 먼저다.
+
+1. 판이 진행 중인지 확인한다. 세션 단계가 `InProgress`일 때만 접수한다. `Loading`(먼저 로딩을 마친 사람의 플레이어가 이미 있음)과 `Ended`(종료 통지 후 호스트 종료 전)의 요청은 번호를 소비하지 않고 거절한다. 2026-10-13 결정의 "전원 로딩 후 입력을 연다"를 JH02 경로에서 지키는 지점이다. 이동·사격 등 JH02 밖 Command의 같은 검사는 각 기능 담당 범위다. 로비 없이 접속 즉시 플레이어를 만드는 단일 씬 방식은 지원하지 않는다(§8.1).
+2. 송신자가 판 참가자인지 확인한다. Relay는 소유 플레이어 객체의 Command이므로 Mirror가 소유 연결만 호출을 허용한다. 서버는 그 연결의 ActorId를 ConnectionDirectory에서 얻는다. 메시지 크기·해석 가능한 형식은 Mirror 역직렬화에 맡기고, 요청 속도 제한은 미구현이다(한 번에 하나 규칙으로 정상 클라이언트는 몰아 보내지 않음). 해석 가능한 Action/수량의 의미 검증은 번호 접수 뒤 수행해 최종 실패도 원장에 남긴다.
+3. 요청 번호를 검증한다. 아래 번호 계약을 따른다.
+4. 대상(netId 객체 또는 비네트워크 변환 결과)의 존재·지원 동작·서버 판정 위치를 확인한다. 거리·시야·행동 상태는 액션마다 적용한다. 주체 위치는 소유 클라이언트 보고값이며 서버에서 보간 지연만큼 과거다(2026-10-13 N07 결정, [네트워크 권위 §4](../unity/NETWORK_AUTHORITY.md#4-이동과-물리-권위)). 거리 경계에는 설정값 여유를 두고 시험값에서 시작한다. 배도 대상이며 배 프리팹에 InteractionTarget 표식을 붙인다(등록 없음). 배 대상 Action은 `InstallModule`·`RepairBoat`·`Rescue`이고, 배→주인 ActorId는 `BoatController.Owner`의 `NetworkActor`로 조회한다. 비밀 투표 등 다른 기능에 공통 거리 검사를 강제하지 않는다.
 5. 기능 Validator가 허용 Action·권한·역할·현재 단계·용량·재료·횟수·쿨다운을 확인한다. 수량은 양수 및 상한 이내이며 누적 산술의 overflow도 거부한다. 처리 대기 후 commit 직전에 다시 읽는다.
 6. 같은 서버 상태 변경 단위에서 거래를 확정하고 revision·결과 원장·이력을 갱신한다. 이후 개인 응답과 공개 상태를 보낸다.
 
-클라이언트에는 성공 여부·안전한 오류 코드·RequestSequence·자신에게 허용된 revision을 반환한다. 검증된 자기 연결에는 RequestDisposition과 NextExpectedSequence도 반환해 번호 소비 여부를 모호하게 하지 않는다. 미인증/잘못된 판 요청에는 주체 원장의 기대 번호를 노출하지 않는다. 서버 전용 실패 이유/역할/부식 여부는 일반 오류 메시지로 누출하지 않는다. `Unavailable`, `InvalidRequest`, `OutOfRange`, `Busy`, `StaleState`, `NotEnoughResource`, `CapacityExceeded`, `PolicyNotConfigured` 등은 제안이며 사용 범위와 노출 수준을 라우트별로 확인한다.
+클라이언트에는 `InteractionResult`(요청 번호·결과 코드·다음 기대 번호)를 반환한다. 다음 기대 번호로 번호 소비 여부가 드러나므로 별도 RequestDisposition은 두지 않는다. 자신에게 허용된 revision 반환은 해당 기능 구현 때 추가한다. 미인증/잘못된 판 요청에는 주체 원장의 기대 번호를 노출하지 않는다. 서버 전용 실패 이유/역할/부식 여부는 일반 오류 메시지로 누출하지 않는다. 구현된 공통 코드(`InteractionResultCode`)는 미접수 `NotInProgress`·`NotParticipant`·`SequenceGap`·`StaleSequence`, 접수 후 `Success`·`InvalidTarget`·`ActionNotSupported`·`OutOfRange`·`NotHandled`·`Rejected`·`Busy`다. 처리기는 비밀을 드러내지 않는 범위에서 코드를 고르고 모르면 `Rejected`를 쓴다. `StaleState`·`NotEnoughResource`·`CapacityExceeded` 등 기능 코드는 해당 라우트 계약 때 뒤에 추가한다.
 
-공개 버전 PublicRevision, 서버 내부 변경 버전 ServerRevision, 개인 결과 버전을 분리한다. 부식 표식·검사는 공개 필드/공개 버전/클라이언트 ExpectedRevision에 영향을 주지 않는다. 서버 내부 거래는 ServerRevision을 재검사하되 비밀 변경만으로 StaleState를 외부에 보내지 않고 최신 상태에서 공개적으로 같은 요청을 재판정한다. payload fingerprint에는 동작·대상·수량 등 요청 의미만 넣고 재접속 ConnectionEpoch 같은 전송 메타데이터는 제외한다.
+공개 버전 PublicRevision, 서버 내부 변경 버전 ServerRevision, 개인 결과 버전을 분리한다. 부식 표식·검사는 공개 필드/공개 버전/클라이언트 ExpectedRevision에 영향을 주지 않는다. 서버 내부 거래는 ServerRevision을 재검사하되 비밀 변경만으로 StaleState를 외부에 보내지 않고 최신 상태에서 공개적으로 같은 요청을 재판정한다.
 
-중복 키는 `(MatchId, ActorId, RequestSequence)`다. 연결 세대는 replay 허용 검증에 쓰되 중복 키에 넣어 재접속마다 새 거래가 되게 하지 않는다. 클라이언트는 상태 변경 요청을 한 번에 하나씩 보내는 초기안을 사용하고 미응답 재전송에는 같은 번호/내용을 쓴다. 서버는 마지막 처리 번호와 일정 범위 결과를 유지한다. 캐시에서 사라진 오래된 번호도 재실행하지 않고 상태 재조회 응답을 준다. 만료 범위·요청 제한값은 측정 후 설정하며 무제한 원장·큐를 만들지 않는다. 재전송 실패 시 새 번호로 자동 재실행하지 않는다.
+#### 요청 번호 계약 (2026-10-14 축소)
 
-순서 계약은 다음과 같다. 주체/판을 신뢰할 수 없는 메시지·크기 위반은 입장 전 거절로 원장에 넣지 않는다. 신뢰된 주체의 다음 번호 N만 신규로 접수한다. N보다 크면 SequenceGap과 기대 번호를 돌려주고 번호를 소비하지 않는다. N을 접수한 뒤 권한·거리·수량·용량 등 기능 판정이 끝나면 **성공과 최종 실패 모두** 원장에 기록하고 다음 번호로 진행한다. 처리 중 같은 N은 Pending으로 응답하고 재실행하지 않는다. Ready 이전/속도 제한 같은 일시 거절은 접수 전에만 하며 번호를 소비하지 않는다. 원장 캐시 만료 번호는 결과 미확인과 현재 상태 조회를 돌려주되 재실행하지 않는다. 입력 변경 후 새 번호로 다시 시도하는 것은 사용자의 새 동작이다. 검사 능력도 Relay의 같은 키로 진입하고 최명기 Ability는 그 거래 키를 사용해 권리를 한 번만 소비한다. 별도 Ability 경로가 있으면 동일 원장 계약을 따르기 전까지 중복 진입을 연결하지 않는다.
+중복 키는 `(ActorId, RequestSequence)`다. 원장(RequestLedger)은 서버 메모리에 ActorId별로 "다음 기대 번호"와 "마지막 최종 결과 한 건"만 둔다. 그 사람의 Relay가 서버에서 시작될 때(`OnStartServer`) 1번부터 열고 멈출 때 지운다. 판마다 게임 플레이어가 새로 생기므로 판마다 새로 시작하고, 판이 끝나면 서버와 함께 사라진다.
+
+- 클라이언트는 상태 변경 요청을 **한 번에 하나**만 보낸다. 응답을 받기 전 같은 입력이 다시 들어오면 클라이언트에서 무시한다. 자동 재전송은 하지 않는다. 한 연결 안에서는 Mirror가 전달을 보장하고, 연결이 끊기면 판이 끝나기 때문이다.
+- 요청 처리는 서버 한 프레임 안에서 끝난다. 처리기는 await/yield 없이 성공 또는 최종 실패를 돌려준다. 그래서 "처리 중(Pending)" 상태는 없다. 시간이 걸리는 채집·구조는 요청이 아니라 §6의 지속 상호작용 세션으로 다룬다. 세션 시작 요청은 즉시 최종 결과를 받고, 완료·취소는 서버 이벤트로 알린다.
+- 서버는 다음 기대 번호 N만 신규로 접수한다. 접수한 뒤 권한·거리·수량·용량 등 판정이 끝나면 **성공과 최종 실패 모두** 원장에 기록하고 N+1로 넘어간다.
+- 검사 능력도 이 키로 들어오며, 최명기 Ability는 같은 키로 사용권을 한 번만 소비한다. 별도 Ability 경로가 있으면 이 계약을 따르기 전까지 중복 진입을 연결하지 않는다.
 
 | 요청 분류 | 번호·응답 계약 |
 |---|---|
-| 주체/판 불신, 해석 불가 메시지 | 미접수·번호 미소비, 안전한 일반 거절. 타인/과거 판의 기대 번호 제공 안 함 |
-| 확인된 연결의 준비 전·속도 제한·번호 공백 | Unaccepted, 미소비, 자기 NextExpectedSequence 제공 |
-| 다음 번호 N의 해석 가능한 잘못된 Action·수량 0/음수/초과 | 접수 후 최종 실패 기록, Final·소비, 다음 번호 N+1 |
-| 유효 요청의 처리 중 중복 | Pending, 미완료, N을 유지하고 같은 내용으로만 조회/재시도 |
-| 최종 성공/실패 중복 | Final, 이미 소비한 결과 재응답. 현재 NextExpectedSequence 제공 |
-| 결과 캐시에서 빠진 과거 번호 | Expired, 이미 처리한 번호로 재실행 불가. 현재 상태/기대 번호 조회 |
-| 같은 번호·다른 payload | 변경 요청을 접수하지 않음. 원래 요청의 Pending/Final/Expired 상태와 자기 기대 번호만 안내 |
+| 판 진행 중이 아님(`InProgress` 외), 판 참가자가 아닌 연결, 해석 불가 메시지, 속도 제한 | 미접수, 번호 미소비. 안전한 일반 거절과 자기 다음 기대 번호 |
+| 다음 번호 N | 접수. 판정 후 성공 또는 최종 실패를 기록하고 N+1로 진행. 수량 0/음수/초과·잘못된 Action도 여기서 최종 실패 |
+| 마지막으로 처리한 번호(N-1)와 같은 번호 | 재실행하지 않고 기록된 결과를 다시 응답. 내용이 달라도 재실행하지 않음 |
+| N-1보다 작은 번호 | 재실행하지 않음. `StaleSequence`와 다음 기대 번호 |
+| N보다 큰 번호 | 미접수, 번호 미소비. `SequenceGap`과 다음 기대 번호 |
 
-수신 측은 오류 코드 이름만 보고 번호 소비 여부를 추론하지 않는다. 수정한 payload는 원래 요청이 최종 처리됐음을 확인한 뒤 새 동작으로만 제출한다. 형식 오류가 있어 ActorId/요청 번호를 안전하게 해석할 수 없으면 일반 거절 후 자기 원장을 재조회한다.
+위 세 번째·네 번째 행은 정상 클라이언트에서는 생기지 않는다. 잘못된 클라이언트 코드나 위조 요청이 자원을 두 번 바꾸지 못하게 막는 안전장치다. 재접속을 채택하면 "결과 캐시 만료(Expired)"와 연결 세대 검사를 여기에 더한다.
 
 ```mermaid
 sequenceDiagram
@@ -193,16 +213,14 @@ sequenceDiagram
   participant H as 기능 처리기
   participant I as 인벤토리 계약
   participant S as 공개상태·개인응답
-  C->>G: 판/연결세대/요청번호 + 대상/동작
-  G->>G: 연결 확인·번호와 payload 대조
-  alt 같은 번호·다른 내용 또는 번호 공백
-    G-->>C: 거절 또는 기대 번호 안내
-  else 만료된 과거 번호
-    G-->>C: 재실행 금지·현재 상태 재조회
-  else 이미 확정된 요청
-    G-->>C: 기존 성공/실패 재응답
-  else 접수한 신규 요청
-    G->>G: Pending 등록·기능 검증
+  C->>G: 요청번호 + 대상/동작 (송신 연결에서 ActorId 도출)
+  G->>G: 판 진행 중·참가자 확인, 번호 대조
+  alt 판 진행 중 아님 또는 번호 공백
+    G-->>C: 미접수 거절·기대 번호 안내
+  else 마지막으로 처리한 번호
+    G-->>C: 기록된 성공/실패 재응답
+  else 다음 기대 번호
+    G->>G: 기능 검증
     G->>H: 검증된 서버 명령
     H->>I: 재료/용량 prepare
     I-->>H: 예약 또는 거절
@@ -224,6 +242,18 @@ sequenceDiagram
 ## 6. 작업대·모듈·부식
 
 지속/독점 행동(채집 길게 누르기, 구조, 작업대 점유)은 Interaction이 Begin/Cancel/Complete와 InteractionSessionId를 관리하고, 소요 시간과 취소 조건은 각 기능(MK03 채집, MK04 구조 등)이 정한다(2026-10-13 결정). 서버가 점유·만료를 소유하고 이탈·대상 소멸·단계 전환·시간 초과에 해제한다. 작업대 메뉴 열기가 독점 점유를 뜻한다고 가정하지 않으며, 단발 투입/인출과 지속 행동을 분리한다.
+
+2026-10-14 A-2 구현 계약:
+
+| 항목 | 계약 |
+|---|---|
+| 등록 | 기능이 `InteractionRouter.RegisterSessionHandler(action, IInteractionSessionHandler)`로 등록한다. 같은 Action에 단발 처리기와 세션 처리기를 함께 둘 수 없다 |
+| 시작 | 일반 요청(번호 소비)이 공통 검사를 통과하면 `Begin(context, out duration)`. 성공이면 세션이 시작되고 응답은 `Success`다. 이미 자기 세션이 있거나, 독점(`IsExclusive`) 대상을 다른 사람이 쓰는 중이면 `Busy` |
+| 진행 | 한 사람당 세션 하나. 그 사람의 Relay가 서버에서 매 프레임 판 진행 중·대상 존재·거리(대상 서버 범위)·기능의 `CanContinue`를 확인한다 |
+| 완료 | 소요 시간이 차면 `Complete`. 결과 적용은 여기서만 한다 |
+| 취소 | 키 뗌(`CancelledByPlayer`), 범위 이탈, 대상 소멸, 기능 조건 실패, 판 종료(`MatchEnded`), 이탈(`ActorLeft`, Relay `OnStopServer`), 처리기 예외. `Cancel`은 상태를 시작 전으로 돌려야 한다 |
+| 취소 요청 | 번호 없는 별도 Command(세션 번호 지정). 자기 세션만 끝내고 자원을 바꾸지 않아 반복해도 결과가 같다 |
+| 알림 | 시작·종료를 본인에게만 각 한 번 `TargetRpc`로 보낸다(세션 번호·소요 시간·종료 사유). 다른 사람에게 보일 결과는 기능이 공개한다 |
 
 ### 6.1 자원 거래
 
@@ -288,11 +318,11 @@ NetworkManager는 연결 콜백과 프리팹 등록 진입점, ConnectionDirecto
 
 ### 8.1 로비와 플레이어 객체 생성
 
-로비의 호스트 열기·참가 요청·정원 4명·연결/준비 상태 집계와 첫 화면·로비 화면·버튼·로딩 표시·종료 사유 화면은 지훈이 맡는다(2026-10-13 결정, 이전에는 버튼/화면이 최명기였다). 사용자가 선택한 접속 방식의 진입점을 연결한다. 판 시작 전 4명의 승인된 슬롯·호환 빌드·월드 준비를 확인하고 시작 가능 상태를 Systems에 전달한다. 판 시작 후 새 참가는 거절한다(2026-10-13 결정, [승패·투표 결정 §8](win-vote-decisions.md#disconnection)). 시작 조건도 같은 날 정했다. 서버가 ActorId별 준비 상태를 집계하고, 시작 인원(설정값, 기본 4)이 모두 준비하면 자동으로 게임 씬으로 넘어간다. 준비는 취소할 수 있고, 로비에서 나가면 그 사람의 준비도 사라진다. 시작 신호 이후는 판 진행 중으로 본다. 구현은 JH07에서 한다. Mirror `NetworkRoomManager`는 쓰지 않는다. 로비 구조는 2026-10-13 로비 씬·게임 씬 전환 방식으로 결정했다. 로비 씬(Online Scene)에 로비 전용 플레이어(`LobbyPlayer`+`NetworkActor`)를 만들고, 전원 준비 시 서버가 로비 플레이어를 제거한 뒤 게임 씬으로 바꾼다. 게임 씬 로딩을 마친 클라이언트가 AddPlayer를 다시 보내면 게임 플레이어를 만들며, 이 도착을 그 클라이언트의 로딩 완료로 본다. ActorId는 로비에서 발급해 게임 씬에서 그대로 쓴다. `ActorJoined`·`ActorLeft`는 게임 플레이어에 대해서만 판당 한 번 발생하고 로비 플레이어는 발생시키지 않는다. 판 시작 시 서버 전용 `MatchStarted(matchId, startTime, 참가자)`를 낸다. 로비 프리팹이나 게임 씬을 지정하지 않은 매니저는 기존 단일 씬 방식(접속 즉시 게임 플레이어·`ActorJoined`)을 유지한다. 플레이어별 로비 정보(준비, 이후 직군 선택 가능성)는 로비 플레이어에 둔다.
+로비의 호스트 열기·참가 요청·정원 4명·연결/준비 상태 집계와 첫 화면·로비 화면·버튼·로딩 표시·종료 사유 화면은 지훈이 맡는다(2026-10-13 결정, 이전에는 버튼/화면이 최명기였다). 사용자가 선택한 접속 방식의 진입점을 연결한다. 판 시작 전 4명의 승인된 슬롯·호환 빌드·월드 준비를 확인하고 시작 가능 상태를 Systems에 전달한다. 판 시작 후 새 참가는 거절한다(2026-10-13 결정, [승패·투표 결정 §8](win-vote-decisions.md#disconnection)). 시작 조건도 같은 날 정했다. 서버가 ActorId별 준비 상태를 집계하고, 시작 인원(설정값, 기본 4)이 모두 준비하면 자동으로 게임 씬으로 넘어간다. 준비는 취소할 수 있고, 로비에서 나가면 그 사람의 준비도 사라진다. 시작 신호 이후는 판 진행 중으로 본다. 구현은 JH07에서 한다. Mirror `NetworkRoomManager`는 쓰지 않는다. 로비 구조는 2026-10-13 로비 씬·게임 씬 전환 방식으로 결정했다. 로비 씬(Online Scene)에 로비 전용 플레이어(`LobbyPlayer`+`NetworkActor`)를 만들고, 전원 준비 시 서버가 로비 플레이어를 제거한 뒤 게임 씬으로 바꾼다. 게임 씬 로딩을 마친 클라이언트가 AddPlayer를 다시 보내면 게임 플레이어를 만들며, 이 도착을 그 클라이언트의 로딩 완료로 본다. ActorId는 로비에서 발급해 게임 씬에서 그대로 쓴다. `ActorJoined`·`ActorLeft`는 게임 플레이어에 대해서만 판당 한 번 발생하고 로비 플레이어는 발생시키지 않는다. 판 시작 시 서버 전용 `MatchStarted(matchId, startTime, 참가자)`를 낸다. 로비 프리팹이나 게임 씬을 지정하지 않은 매니저는 기존 단일 씬 방식(접속 즉시 게임 플레이어·`ActorJoined`)으로 동작한다. 2026-10-14 결정으로 이 방식을 쓰는 기존 시험 씬은 모두 폐기 예정이며, 팀원 시험 씬은 로비가 있는 방식으로 옮긴다. JH02 이후 기능은 단일 씬 방식을 지원하지 않는다. 매니저의 단일 씬 분기 코드 제거는 팀원 씬 이전이 끝난 뒤 한다. 플레이어별 로비 정보(준비, 이후 직군 선택 가능성)는 로비 플레이어에 둔다.
 
 본편 플레이어 프리팹·NetworkIdentity 및 PlayerController 연결은 최명기와 합의한다. 직군별 프리팹은 매니저가 제공하는 선택 훅(actorId → 프리팹)에 최명기 코드가 답하는 방식이다(2026-10-13 결정). 직군 배정 시점(접속 시/게임 시작 시)은 D06 결정에 따르며, 매니저의 주석 처리된 무작위 배정 코드는 훅을 추가할 때 정리한다. 지훈은 자신의 InteractionRelay 컴포넌트와 등록/AddPlayer 경로를 제공한다. 프리팹에 Relay를 붙이는 수정은 최명기 영역 안내·합의 대상이다. IdentityValidated 뒤 OnServerAddPlayer 경로에서 플레이어 한 개만 생성/연결하고, ActorId 매핑·소유권 설정을 완료한 뒤 Systems의 직군/역할 초기화와 준비 확인을 거친다. 복귀자는 새 역할 배정/새 플레이어 생성을 타지 않는다.
 
-A단계에서 본편 플레이어가 준비되지 않았다면 `99.Dev`의 시험용 NetworkIdentity+Relay 플레이어와 테스트 진입 씬을 별도 범위로 구현한다. 지훈의 테스트 쓰기 범위를 배타적으로 배정하고 자신의 Jihun 개발 씬만 수정한다. 이는 본편 Player 연결 완료가 아니며 최명기의 프리팹 연동 검증을 별도로 남긴다. JH01 구현에서 시험 스크립트는 `99.Dev/Network/ActorIdProbe.cs`, 시험용 플레이어 프리팹은 `Assets/02.Prefabs/_Net/NetworkTestPlayer.prefab`, 진입 씬은 `Assets/00.Scenes/Jihun/JH01TestScene.unity`다. Relay는 JH02에서 붙인다.
+A단계에서 본편 플레이어가 준비되지 않았다면 `99.Dev`의 시험용 NetworkIdentity+Relay 플레이어와 테스트 진입 씬을 별도 범위로 구현한다. 지훈의 테스트 쓰기 범위를 배타적으로 배정하고 자신의 Jihun 개발 씬만 수정한다. 이는 본편 Player 연결 완료가 아니며 최명기의 프리팹 연동 검증을 별도로 남긴다. JH01 구현에서 시험 스크립트는 `99.Dev/Network/ActorIdProbe.cs`, 시험용 플레이어 프리팹은 `Assets/02.Prefabs/_Net/NetworkTestPlayer.prefab`, 진입 씬은 `Assets/00.Scenes/Jihun/JH01TestScene.unity`다. JH02에서 이 프리팹에 `InteractionRelay`·`InteractionSelector`와 시험용 `DevInteractionKeyInput`·`InteractionTestAutomation`을 붙였다(2026-10-14). JH02 시험은 JH07 씬(`JH07Offline` → `JH07Lobby` → `JH07Game`, 시작 인원 2)에서 한다. 절차는 [멀티플레이 테스트 씬 기록](../ai/04_MULTIPLAYER_TEST_PROTOCOL.md#테스트-씬-기록). 시험용 플레이어에는 `PlayerController`가 없으므로, Interaction 컴포넌트는 입력 원천과 분리해 "상호작용 시도" 진입점만 두고, 본편은 `PlayerController.InteractionRequested`를 구독하는 어댑터가, 시험용은 `99.Dev`의 입력 어댑터가 그 진입점을 부른다.
 
 ### 8.2 해제·보존·재결합
 
@@ -302,7 +332,7 @@ A단계에서 본편 플레이어가 준비되지 않았다면 `99.Dev`의 시�
 
 Mirror 96.0.1 소스에 있는 `RemovePlayerForConnection(conn, RemovePlayerOptions.KeepActive)`는 플레이어를 남기고 연결을 해제하는 후보 수단이다. 다른 소유 객체도 기능별로 권한 회수/보존/파괴 목록을 적용한다. 기본 파괴에 맡겨 보존 객체까지 없애지 않는다. 복귀 연결에 플레이어가 없으면 `AddPlayerForConnection`, 임시 플레이어가 있으면 `ReplacePlayerForConnection`을 검토해 기존 객체를 한 번만 재결합한다. 이 API 호출 순서·관찰자 재등록·호스트 동작은 구현 시 Unity에서 검증하며 소스 존재를 런타임 통과로 보지 않는다.
 
-유예 만료 때 객체를 어떻게 처리하는지는 게임 정책이지만, 유예 중 상태를 의도치 않게 파괴하지 않는 것은 기술 불변식이다. 재접속을 지원하지 않는 운영안이면 기본 파괴와 판 종료 정책을 명시적으로 결정해야 한다.
+유예 만료 때 객체를 어떻게 처리하는지는 게임 정책이지만, 유예 중 상태를 의도치 않게 파괴하지 않는 것은 기술 불변식이다. 10/25 이전 운영안은 재접속 없이 Mirror 기본 파괴와 판 종료로 결정됐다(2026-10-13).
 
 ### 8.3 준비와 상태 복원
 
@@ -321,7 +351,7 @@ Mirror 96.0.1 소스에 있는 `RemovePlayerForConnection(conn, RemovePlayerOpti
 
 ## 9. 힌트·기록·공개 정보
 
-GhostShipHintService는 서버에서 World의 유효 유령선 ID/Generation·조사 가능 구간·판정 위치를 확인한다. 활성 대상만 서버 Router에 등록하고 소멸 시 해제한다. 동일 요청 재전송은 같은 힌트 결과를 반환한다. 별도 요청 번호로 재조사했을 때 새 힌트를 주는지/기존 결과를 재열람하는지는 W22 정책이며 멱등 처리와 혼동하지 않는다.
+GhostShipHintService는 서버에서 World의 유효 유령선 ID/Generation·조사 가능 구간·판정 위치를 확인한다. 유령선이 네트워크 객체면 netId로, 아니면 비네트워크 변환기의 유령선 종류로 식별한다(강민서 확인 ④). 소멸한 유령선 요청은 대상 확인에서 거절한다. 동일 요청 재전송은 같은 힌트 결과를 반환한다. 별도 요청 번호로 재조사했을 때 새 힌트를 주는지/기존 결과를 재열람하는지는 W22 정책이며 멱등 처리와 혼동하지 않는다.
 
 힌트 내용은 승인된 풀·생성 규칙을 받아 생성한다. 정체를 직접 공개하는 힌트나 확정적으로 진실인 힌트를 임의로 추가하지 않는다. 힌트 근거 시점·수신자·재조회 보존·검사 결과의 유효 시점을 기록한다. 유령선 출현과 힌트 기회 보장 책임은 강민서와 나눠 검증한다.
 
@@ -343,13 +373,13 @@ GhostShipHintService는 서버에서 World의 유효 유령선 ID/Generation·�
 
 | 상대 | 필요한 계약 | 지훈 쪽 준비물 |
 |---|---|---|
-| 최명기 Player/UI | 플레이어 프리팹 선택 훅 구현·Interaction 컴포넌트 부착, 배 프리팹 대상 컴포넌트 부착, 메뉴 UI의 Action 전달, 채집·구조 소요 시간·취소 조건, 인벤토리 prepare/commit/abort, 모듈 효과, 검사 사용권(동일 RequestLedger 키), 응답 표시 | DTO·안전한 오류·거래 불변식·효과 ID |
+| 최명기 Player/UI | 플레이어 프리팹 선택 훅 구현·Interaction 컴포넌트(`InteractionRelay`·`InteractionSelector`·`PlayerInteractionInput`) 부착, 배 프리팹 `InteractionTarget` 표식 부착, 메뉴 UI의 Action 전달(`InteractionRelay.TrySendToNetworkTarget`), 본편 입력의 키 뗌 이벤트, 채집·구조 세션 처리기(소요 시간·취소 조건), 인벤토리 prepare/commit/abort, 모듈 효과, 검사 사용권(동일 RequestLedger 키), 응답 표시 | DTO·안전한 오류·거래 불변식·효과 ID |
 | 최명기 Systems | PhaseContext·준비 barrier·동일 tick 판정·GameEnded·snapshot 참여 | 등대/의식 후보·상태 version·복원 완료 목록 |
-| 강민서 World | 서버 시각/일차·유령선 등록/소멸·표류 판정 위치·해역 경계·잔해 객체와 모듈 이동 공유 범위·기존 ID 매핑, 클라이언트 탐지용 채집 지점 위치·SpotId 조회 | 대상 registry·모듈 수명/회수 결과·힌트 조회 계약 |
+| 강민서 World | 서버 시각/일차·유령선 등록/소멸·표류 판정 위치·해역 경계·잔해 객체와 모듈 이동 공유 범위, 네트워크 객체 대상의 `InteractionTarget` 표식 부착, 채집 지점 생성 방식에 따라 표식 또는 클라이언트 탐지용 위치·SpotId 조회와 서버 adapter | 대상 확인(netId·비네트워크 변환기)·모듈 수명/회수 결과·힌트 조회 계약 |
 | 박태욱 Mafia/Monsters | 역할 자격 조회·투표 판정·확정 의식 실패·유효 피해 이벤트, Systems가 유일 발행한 의식 실패 수신 | 서버 전용 결과 DTO·AttemptId/EventId 멱등 계약 |
-| 전 담당 | 프리팹 등록·외부 handler 등록·snapshot capture/apply·초기 준비·연결 해제 객체 목록 | 공용 등록/연결 API·복원 프로토콜·검증 틀 |
+| 전 담당 | 프리팹 등록·외부 handler 등록(`InteractionRouter.RegisterHandler`/`RegisterSessionHandler`)·snapshot capture/apply·초기 준비·연결 해제 객체 목록 | 공용 등록/연결 API·복원 프로토콜·검증 틀 |
 
-대상 탐지는 지훈 컴포넌트로 결정됐다. 최명기 프리팹에 컴포넌트를 붙이거나 공용 API를 실제로 바꾸기 전에는 경로·이유·영향을 알리고 합의 범위를 확인한다. 이번 문서 작성은 이 외부 구현까지 승인하지 않는다.
+대상 탐지는 지훈 컴포넌트로 결정됐고 2026-10-14 구현됐다. 최명기 프리팹에 컴포넌트를 붙이거나 공용 API를 실제로 바꾸기 전에는 경로·이유·영향을 알리고 합의 범위를 확인한다. 이번 문서 작성은 이 외부 구현까지 승인하지 않는다.
 
 ## 11. 구현 전 필요한 기획 결정
 
@@ -357,7 +387,7 @@ GhostShipHintService는 서버에서 World의 유효 유령선 ID/Generation·�
 
 | 결정 | 관련 ID | 그대로 구현할 때 예상 문제 | 결정 상대 / 영향 작업 |
 |---|---|---|---|
-| 대상 탐지/선택 주체와 홀드·점유 수명 — 2026-10-13 결정(§5.1·§6). 채집·구조 소요 시간·취소 조건만 남음 | JH02·N10 | 시간·취소 조건 없이 세션을 만들면 기능마다 다르게 끝남 | 최명기 / JH02·MK03·MK04 |
+| 대상 탐지/선택 주체와 홀드·점유 수명 — 2026-10-13 결정, 2026-10-14 구현(§5.1·§6). 채집·구조 소요 시간·취소 조건과 본편 키 뗌 입력(Interact의 Hold 0.4초 유지 여부 포함)만 남음 | JH02·N10 | 키 뗌이 없으면 본편 플레이어가 세션을 직접 취소할 수 없음. Hold가 남으면 단발 동작도 0.4초 눌러야 함 | 최명기 / JH02·MK03·MK04 |
 | 흔적·표류물 상호작용 종류/횟수, 난파 시 배 장착 모듈 상태 | JH06·W03·W13 | 모듈과 잔해 이중 생성·권한 누락 | 강민서·최명기 및 기획 / JH03·05·06 |
 | 개인/공유 레시피·슬롯·출력 소유·취소·인출 권한/반환 | W01·W03·W05·W08 | 마지막 재료 인출과 완성의 중복, 자원 독점 | 최명기 및 기획 / JH03 |
 | 낙하 시점·미장착 검사 대응·수리 비용·분해/회수 기한 | W02~04·W13 | 타이머 임의 결정, 재장착 효과 중복, 필수 모듈 소실 | 강민서·최명기 및 기획 / JH05 |
@@ -370,7 +400,8 @@ GhostShipHintService는 서버에서 World의 유효 유령선 ID/Generation·�
 
 | 단계 | 작업 | 독립 착수 가능 범위 | 완료 증거 |
 |---|---|---|---|
-| A | JH01·02 기반 | 연결 매핑·registry·DTO·거절 응답·결과 원장, 시험용 handler | 지정 Unity 컴파일/Weaver, 시험용 네트워크 플레이어의 host+remote 정상/위조/중복 요청. 본편 프리팹 연결은 별도 |
+| A-1 | JH02 요청 경로 | 요청 DTO·결과 코드, Relay, 판 진행 중·송신자 접수 검사, 요청 번호 원장(§5.2 축소 계약), Router·시험 handler, 대상 확인(netId·비네트워크 변환기 틀), 공통 거리 검사(시험 여유값), InteractionTarget 표식, 대상 탐지·선택과 선택 대상 이벤트, 입력 어댑터(시험용·본편용 코드) | 지정 Unity 컴파일/Weaver, JH07 씬(2인) host+remote 정상/위조/중복/판 진행 전/사라진 대상 요청. 본편 프리팹 연결은 별도 |
+| A-2 | JH02 지속 세션 | A-1 경로 위의 세션 시작·취소·완료, 이탈·대상 소멸·판 종료 시 정리. 소요 시간·취소 조건은 시험값 | A-1 검증 후. 완료·취소·대상 소멸 중 세션이 한 번만 끝나고 남지 않음 |
 | B | JH03 거래 | 최명기와 거래 adapter 합의 후 개인/공유 작업대 | 동시 마지막 재료·인출·용량 부족에서 자원 수지 및 출력 한 개 |
 | C | JH05 수명 | 정책 확정된 경로부터 제작 부식→장착→낙하→회수→수리 | 경합에도 ID 한 개·위치 한 곳·효과 한 번, 개인 검사 비노출 |
 | D | JH04 통합 | 등대 수리/HP 먼저, 의식/승패는 결정·경계 합의 후 | 4인 의식/소환/파괴/기한 동시 경계에서 단일 결과 |
@@ -382,8 +413,8 @@ B~E는 각 계약이 독립적이면 병행할 수 있다. A의 시험용 handle
 ### 필수 시험 시나리오
 
 - 호스트 로컬과 원격에서 같은 요청을 각 1회 처리하고 호스트 효과가 이중 재생되지 않는다.
-- 타인 ActorId, 구 MatchId, 구 ConnectionEpoch, 재사용 TargetId, 음수/초과 수량, 잘못된 Action을 거절한다. 정상 연결의 N에 수량0/잘못된 Action을 보내면 Final 및 N+1을 받고 같은 N 재전송은 같은 실패를 받는다. 반면 입장 전 일시 거절/번호 공백은 N을 유지한다.
-- 처리 성공 뒤 응답만 손실되어도 재전송/재접속이 같은 결과를 돌려주고 자원을 다시 차감하지 않는다. 원장에서 결과가 제거된 과거 번호도 실행하지 않는다.
+- 사라진 대상(netId)·유효하지 않은 비네트워크 대상, 음수/초과 수량, 잘못된 Action을 거절한다. 정상 연결의 N에 수량0/잘못된 Action을 보내면 최종 실패와 N+1을 받고, 같은 N을 다시 보내면 같은 실패를 재응답받는다. 번호 공백과 판 진행 전(`Loading`)·종료 후(`Ended`) 요청은 N을 유지한다.
+- 이미 처리한 번호를 다시 보내도(시험 코드로 강제) 자원을 다시 바꾸지 않는다. 그보다 오래된 번호도 실행하지 않는다.
 - 마지막 투입과 인출, 장착과 낙하, 회수와 분해의 경합에서 수지/모듈 위치/효과가 보존된다.
 - 종료 후보가 같은 tick에 생겨도 승인된 우선순위로 결과 하나만 확정되고 실패 게이지가 중복 증가하지 않는다.
 - 공개 버전이 부식/검사만으로 변하지 않고 같은 공개 요청의 stale 응답으로 비밀이 새지 않는지 확인한다. 공개/개인/서버 전용 필드를 호스트·원격 시민·마피아·검사자 관점에서 검사한다. 클라이언트 로그에도 숨은 상태가 없다.
@@ -398,3 +429,4 @@ B~E는 각 계약이 독립적이면 병행할 수 있다. A의 시험용 handle
 - 재검증의 추가 중간 지적은 요청 번호 소비 기준이었다. 최종 문서에서는 접수 전 형식 검사와 접수 후 Action/수량 판정을 분리하고, 위 응답표의 disposition/다음 번호·시험 기대값을 추가해 수정했다. 이 문장·표 보완은 로컬 대조했으며 추가 Claude 검증은 수행하지 않았다.
 - 상대 링크 검사와 `git diff --check`를 통과했다. 구조도 3개는 Mermaid 소스이며 별도 이미지 렌더링 검증은 하지 않았다.
 - 게임 구현, Unity 컴파일/Weaver, KeepActive·재결합, 실제 4인 접속은 이번 작업에서 실행하지 않았다. §11의 기획 정책과 타 담당 계약은 여전히 결정/합의 대상이다.
+- 2026-10-14 JH02: 재접속 없음 전제와 netId 대상 식별로 §5를 갱신하고 A-1·A-2를 구현했다. Unity 컴파일·Weaver, 같은 PC 2인·4인 자동 시험(M2)을 실행했다. 결과는 [작업표 JH02 행](../06-owner-work-plan.md)과 [A-1](../김지훈/2026-10-14/JH02-A1-요청경로-구현.md)·[A-2](../김지훈/2026-10-14/JH02-A2-지속세션-구현.md) 원문. M3와 본편 플레이어 연결은 미검증.
