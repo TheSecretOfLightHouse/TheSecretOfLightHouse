@@ -28,7 +28,6 @@ namespace Lighthouse.Player.Boat
         {
             if (!_networkManager)
             {
-                Debug.LogError($"[{nameof(PlayerBoatSpawner)}] Network manager is required.", this);
                 return;
             }
 
@@ -54,7 +53,6 @@ namespace Lighthouse.Player.Boat
 
             if (!_boatPrefab || !_networkManager.spawnPrefabs.Contains(_boatPrefab.gameObject))
             {
-                Debug.LogError($"[{nameof(PlayerBoatSpawner)}] Boat prefab must be registered in Spawnable Prefabs.", this);
                 return;
             }
 

@@ -45,17 +45,37 @@ public sealed class BoatDurability : NetworkBehaviour
             return;
         }
 
+        float previousDurability = _currentDurability;
         _currentDurability = Mathf.Max(0f, _currentDurability - damage);
+
+        Debug.Log(
+            $"[{nameof(BoatDurability)}] {name} | " +
+            $"Damage: {previousDurability - _currentDurability} | " +
+            $"Durability: {previousDurability} -> {_currentDurability}/{_maxDurability}",
+            this);
 
         if (_currentDurability <= 0f)
         {
             _isWrecked = true;
+            Debug.Log($"[{nameof(BoatDurability)}] {name} | Wrecked", this);
             Wrecked?.Invoke();
         }
+
     }
 
     private void OnDurabilityChanged(float oldValue, float newValue)
     {
         DurabilityChanged?.Invoke(newValue, _maxDurability);
+    }
+
+    [Server]
+    public void RestoreDurability(float amount)
+    {
+        if (_isWrecked || amount <= 0f || float.IsNaN(amount) || float.IsInfinity(amount))
+        {
+            return;
+        }
+
+        _currentDurability = Mathf.Min(_maxDurability, _currentDurability + amount);
     }
 }
