@@ -14,6 +14,7 @@ namespace Lighthouse.World.Islands.Rules
         [SerializeField, Min(0f)] private float _weight = 1f;
         [SerializeField, Min(0)] private int _minPerMap;
         [SerializeField, Min(0)] private int _maxPerMap;
+        [SerializeField, Min(0f)] private float _minSameTypeDistance;
         [SerializeField, Min(0f)] private float _radius = 20f;
         [SerializeField, Range(0f, 0.5f)] private float _seedVariance = 0.1f;
         [SerializeField] private IslandVariant[] _variants;
@@ -26,6 +27,7 @@ namespace Lighthouse.World.Islands.Rules
         public int MinPerMap => _minPerMap;
         public int MaxPerMap => _maxPerMap;
         public bool HasMaxLimit => _maxPerMap > 0;
+        public float MinSameTypeDistance => _minSameTypeDistance;
         public float Radius => _radius;
         public float SeedVariance => _seedVariance;
 

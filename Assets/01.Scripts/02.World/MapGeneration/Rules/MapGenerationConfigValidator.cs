@@ -30,6 +30,7 @@ namespace Lighthouse.World.MapGeneration.Rules
             ValidateZones(config, errors);
             ValidateQuotas(config, errors);
             RouteAndFloorValidator.Validate(config, errors);
+            SameTypeDistanceValidator.Validate(config, errors);
             return errors.Count == 0;
         }
 

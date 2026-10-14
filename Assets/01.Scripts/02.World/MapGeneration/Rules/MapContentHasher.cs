@@ -77,6 +77,7 @@ namespace Lighthouse.World.MapGeneration.Rules
             hash.Add(archetype.MaxPerMap);
             hash.Add(archetype.Radius);
             hash.Add(archetype.SeedVariance);
+            hash.Add(archetype.MinSameTypeDistance);
 
             hash.Add(archetype.Variants.Count);
             for (int i = 0; i < archetype.Variants.Count; i++)

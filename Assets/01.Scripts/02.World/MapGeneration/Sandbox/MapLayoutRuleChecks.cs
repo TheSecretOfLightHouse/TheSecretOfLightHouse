@@ -30,6 +30,42 @@ namespace Lighthouse.World.MapGeneration.Sandbox
             return isPassed;
         }
 
+        public static bool CheckSameTypeSpacing(MapGenerationConfig config, IReadOnlyList<MapBuildResult> results)
+        {
+            int violations = 0;
+            for (int r = 0; r < results.Count; r++)
+            {
+                MapLayout layout = results[r].Layout;
+                violations += layout == null ? 1 : CountSameTypeViolations(config, layout);
+            }
+
+            bool isPassed = violations == 0;
+            MapCheckLog.Report("Same-type spacing", isPassed, $"violations={violations} over {results.Count} layouts");
+            return isPassed;
+        }
+
+        private static int CountSameTypeViolations(MapGenerationConfig config, MapLayout layout)
+        {
+            int violations = 0;
+            for (int i = 0; i < layout.Islands.Count; i++)
+            {
+                for (int j = i + 1; j < layout.Islands.Count; j++)
+                {
+                    IslandPlacement a = layout.Islands[i];
+                    IslandPlacement b = layout.Islands[j];
+                    if (a.ArchetypeId != b.ArchetypeId || !config.TryGetArchetype(a.ArchetypeId, out IslandArchetype archetype))
+                    {
+                        continue;
+                    }
+
+                    float minDistance = archetype.MinSameTypeDistance;
+                    violations += minDistance > 0f && (a.Position - b.Position).magnitude < minDistance - Epsilon ? 1 : 0;
+                }
+            }
+
+            return violations;
+        }
+
         public static bool CheckGeometry(MapGenerationConfig config, IReadOnlyList<MapBuildResult> results)
         {
             int indexErrors = 0;

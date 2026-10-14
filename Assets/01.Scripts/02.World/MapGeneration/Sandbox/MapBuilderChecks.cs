@@ -19,6 +19,7 @@ namespace Lighthouse.World.MapGeneration.Sandbox
             isAllPassed &= CheckSeedsDiffer(results);
             isAllPassed &= CheckClientMatchesServer(builder, results);
             isAllPassed &= MapLayoutRuleChecks.CheckQuotas(config, results);
+            isAllPassed &= MapLayoutRuleChecks.CheckSameTypeSpacing(config, results);
             isAllPassed &= MapLayoutRuleChecks.CheckGeometry(config, results);
             return isAllPassed;
         }
