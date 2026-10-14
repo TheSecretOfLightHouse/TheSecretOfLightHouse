@@ -15,7 +15,7 @@ MonoBehaviour:
   _maxHealth: 1
   _patrolSpeed: 3
   _chaseSpeed: 5
-  _detectionRadius: 6
+  _detectionRadius: 15
   _maxChaseDistance: 18
-  _attackDamage: 0
-  _attackCooldown: 0
+  _attackDamage: 10
+  _attackCooldown: 2
