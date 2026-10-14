@@ -112,11 +112,11 @@ History는 상태 원본을 대신하는 이벤트 소싱 저장소가 아니다
 ```text
 Assets/01.Scripts/
   01.Network/
-    Session/{Net,Server}/           LighthouseNetworkManager, SessionCoordinator
+    Session/{Net,Rules}/            LighthouseNetworkManager, LobbyPlayer, SessionJoinAuthenticator, 세션 메시지 / MatchPhase, SessionEndReason (JH07 구현)
     Connections/Server/             ConnectionDirectory
     Connections/Net/                NetworkActor (플레이어 객체의 공개 ActorId)
     SpawnRegistry/{Rules,Server}/   NetworkPrefabCatalog, SpawnRegistration
-    Reconnect/{Rules,Server,Net}/    ReconnectCoordinator, SnapshotEnvelope
+    Reconnect/{Rules,Server,Net}/    ReconnectCoordinator, SnapshotEnvelope (재접속 채택 시, 10/25 이후 선택)
   03.Interaction/
     Requests/{Rules,Net}/           wire DTO, 검증된 서버 명령, 결과 코드
     Relay/{Net,View}/               InteractionRelay, InteractionInputAdapter(대상 탐지·선택)
@@ -288,7 +288,7 @@ NetworkManager는 연결 콜백과 프리팹 등록 진입점, ConnectionDirecto
 
 ### 8.1 로비와 플레이어 객체 생성
 
-로비의 호스트 열기·참가 요청·정원 4명·연결/준비 상태 집계는 지훈, 버튼/화면은 최명기다. 사용자가 선택한 접속 방식의 진입점을 연결한다. 판 시작 전 4명의 승인된 슬롯·호환 빌드·월드 준비를 확인하고 시작 가능 상태를 Systems에 전달한다. 판 시작 후 새 참가는 거절한다(2026-10-13 결정, [승패·투표 결정 §8](win-vote-decisions.md#disconnection)). 시작 조건도 같은 날 정했다. 서버가 ActorId별 준비 상태를 집계하고, 시작 인원(설정값, 기본 4)이 모두 준비하면 자동으로 게임 씬으로 넘어간다. 준비는 취소할 수 있고, 로비에서 나가면 그 사람의 준비도 사라진다. 시작 신호 이후는 판 진행 중으로 본다. 구현은 JH07에서 한다. Mirror `NetworkRoomManager`는 쓰지 않는다. 로비 플레이어를 게임 플레이어로 교체하면 `ActorJoined` 계약 시점이 바뀌기 때문이다.
+로비의 호스트 열기·참가 요청·정원 4명·연결/준비 상태 집계와 첫 화면·로비 화면·버튼·로딩 표시·종료 사유 화면은 지훈이 맡는다(2026-10-13 결정, 이전에는 버튼/화면이 최명기였다). 사용자가 선택한 접속 방식의 진입점을 연결한다. 판 시작 전 4명의 승인된 슬롯·호환 빌드·월드 준비를 확인하고 시작 가능 상태를 Systems에 전달한다. 판 시작 후 새 참가는 거절한다(2026-10-13 결정, [승패·투표 결정 §8](win-vote-decisions.md#disconnection)). 시작 조건도 같은 날 정했다. 서버가 ActorId별 준비 상태를 집계하고, 시작 인원(설정값, 기본 4)이 모두 준비하면 자동으로 게임 씬으로 넘어간다. 준비는 취소할 수 있고, 로비에서 나가면 그 사람의 준비도 사라진다. 시작 신호 이후는 판 진행 중으로 본다. 구현은 JH07에서 한다. Mirror `NetworkRoomManager`는 쓰지 않는다. 로비 구조는 2026-10-13 로비 씬·게임 씬 전환 방식으로 결정했다. 로비 씬(Online Scene)에 로비 전용 플레이어(`LobbyPlayer`+`NetworkActor`)를 만들고, 전원 준비 시 서버가 로비 플레이어를 제거한 뒤 게임 씬으로 바꾼다. 게임 씬 로딩을 마친 클라이언트가 AddPlayer를 다시 보내면 게임 플레이어를 만들며, 이 도착을 그 클라이언트의 로딩 완료로 본다. ActorId는 로비에서 발급해 게임 씬에서 그대로 쓴다. `ActorJoined`·`ActorLeft`는 게임 플레이어에 대해서만 판당 한 번 발생하고 로비 플레이어는 발생시키지 않는다. 판 시작 시 서버 전용 `MatchStarted(matchId, startTime, 참가자)`를 낸다. 로비 프리팹이나 게임 씬을 지정하지 않은 매니저는 기존 단일 씬 방식(접속 즉시 게임 플레이어·`ActorJoined`)을 유지한다. 플레이어별 로비 정보(준비, 이후 직군 선택 가능성)는 로비 플레이어에 둔다.
 
 본편 플레이어 프리팹·NetworkIdentity 및 PlayerController 연결은 최명기와 합의한다. 직군별 프리팹은 매니저가 제공하는 선택 훅(actorId → 프리팹)에 최명기 코드가 답하는 방식이다(2026-10-13 결정). 직군 배정 시점(접속 시/게임 시작 시)은 D06 결정에 따르며, 매니저의 주석 처리된 무작위 배정 코드는 훅을 추가할 때 정리한다. 지훈은 자신의 InteractionRelay 컴포넌트와 등록/AddPlayer 경로를 제공한다. 프리팹에 Relay를 붙이는 수정은 최명기 영역 안내·합의 대상이다. IdentityValidated 뒤 OnServerAddPlayer 경로에서 플레이어 한 개만 생성/연결하고, ActorId 매핑·소유권 설정을 완료한 뒤 Systems의 직군/역할 초기화와 준비 확인을 거친다. 복귀자는 새 역할 배정/새 플레이어 생성을 타지 않는다.
 
@@ -296,7 +296,7 @@ A단계에서 본편 플레이어가 준비되지 않았다면 `99.Dev`의 시�
 
 ### 8.2 해제·보존·재결합
 
-**2026-10-13 결정: 판 진행 중 참가자가 한 명이라도 끊기면(호스트 포함) 판을 종료한다.** 10/25 이전 JH07 범위는 판 진행 중 이탈을 감지해 전원에게 종료 사유를 보내고 판을 끝내는 것이다. 판 진행 여부는 최명기 게임 단계에서 받고, 그 전에는 임시 플래그를 쓴다. 로비 이탈은 자리만 비운다. 이 절의 아래 내용과 §8.3은 재접속을 채택할 때의 참고안이며 현재 구현 범위가 아니다.
+**2026-10-13 결정: 판 진행 중 참가자가 한 명이라도 끊기면(호스트 포함) 판을 종료한다.** 10/25 이전 JH07 범위는 판 진행 중 이탈을 감지해 전원에게 종료 사유를 보내고 판을 끝내는 것이다. 판 진행 여부는 지훈의 세션 단계(Lobby·Loading·InProgress·Ended)로 판단한다. 낮밤·의식·최후 전투 등 판 안의 단계는 최명기 게임 단계가 맡는다. 판이 끝나면 전원 연결을 끊고 첫 화면(Offline Scene)으로 돌아가며 종료 사유를 보여준다(2026-10-13 결정). 로비 이탈은 자리만 비운다. 이 절의 아래 내용과 §8.3은 재접속을 채택할 때의 참고안이며 현재 구현 범위가 아니다.
 
 설치된 Mirror의 기본 `OnServerDisconnect`는 `DestroyPlayerForConnection`으로 연결 소유 객체를 파괴한다. 재접속 지원 경로에서는 기본 호출 전에 ActorId 슬롯을 이탈 상태로 바꾸고 연결 권한을 차단한 뒤, 보존할 플레이어와 배/시설 점유를 소유 기능과 분리한다. 상태 원본과 RequestLedger는 연결 객체 바깥의 판 단위 저장소에 둔다.
 
@@ -343,7 +343,7 @@ GhostShipHintService는 서버에서 World의 유효 유령선 ID/Generation·�
 
 | 상대 | 필요한 계약 | 지훈 쪽 준비물 |
 |---|---|---|
-| 최명기 Player/UI | 플레이어 프리팹 선택 훅 구현·Interaction 컴포넌트 부착, 배 프리팹 대상 컴포넌트 부착, 메뉴 UI의 Action 전달, 채집·구조 소요 시간·취소 조건, 판 중단 상태·종료 사유 UI, 인벤토리 prepare/commit/abort, 모듈 효과, 검사 사용권(동일 RequestLedger 키), 응답 표시 | DTO·안전한 오류·거래 불변식·효과 ID |
+| 최명기 Player/UI | 플레이어 프리팹 선택 훅 구현·Interaction 컴포넌트 부착, 배 프리팹 대상 컴포넌트 부착, 메뉴 UI의 Action 전달, 채집·구조 소요 시간·취소 조건, 인벤토리 prepare/commit/abort, 모듈 효과, 검사 사용권(동일 RequestLedger 키), 응답 표시 | DTO·안전한 오류·거래 불변식·효과 ID |
 | 최명기 Systems | PhaseContext·준비 barrier·동일 tick 판정·GameEnded·snapshot 참여 | 등대/의식 후보·상태 version·복원 완료 목록 |
 | 강민서 World | 서버 시각/일차·유령선 등록/소멸·표류 판정 위치·해역 경계·잔해 객체와 모듈 이동 공유 범위·기존 ID 매핑, 클라이언트 탐지용 채집 지점 위치·SpotId 조회 | 대상 registry·모듈 수명/회수 결과·힌트 조회 계약 |
 | 박태욱 Mafia/Monsters | 역할 자격 조회·투표 판정·확정 의식 실패·유효 피해 이벤트, Systems가 유일 발행한 의식 실패 수신 | 서버 전용 결과 DTO·AttemptId/EventId 멱등 계약 |
