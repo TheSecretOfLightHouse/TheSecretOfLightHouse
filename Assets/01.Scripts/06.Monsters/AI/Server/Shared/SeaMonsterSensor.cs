@@ -4,23 +4,26 @@ using UnityEngine;
 
 namespace Lighthouse.Monsters.AI.Server
 {
+    [UnityEngine.Scripting.APIUpdating.MovedFrom(true, "Lighthouse.Monsters.AI.Server", "Lighthouse.Runtime", "SeaMonsterTestSensor")]
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(SeaMonster))]
-    public sealed class SeaMonsterTestSensor : MonoBehaviour
+    [RequireComponent(typeof(Mirror.NetworkIdentity))]
+    public sealed class SeaMonsterSensor : MonoBehaviour
     {
         private const int GizmoCircleSegments = 64;
 
-        [Header("명시적으로 연결한 시험 대상")]
-        [SerializeField] private SeaMonsterTestTarget[] _targets;
+        [Header("감지할 배 대상")]
+        [SerializeField] private MonsterBoatTarget[] _targets;
 
         [Header("감지 범위 표시")]
         [SerializeField] private bool _showDetectionGizmos = true;
 
-        private SeaMonster _monster;
+        private MonsterBase _monster;
+
+        public IReadOnlyList<MonsterBoatTarget> Targets => _targets;
 
         private void Awake()
         {
-            _monster = GetComponent<SeaMonster>();
+            _monster = GetComponent<MonsterBase>();
         }
 
         private void OnDrawGizmosSelected()
@@ -32,7 +35,7 @@ namespace Lighthouse.Monsters.AI.Server
 
             if (_monster == null)
             {
-                _monster = GetComponent<SeaMonster>();
+                _monster = GetComponent<MonsterBase>();
             }
 
             if (_monster == null || _monster.Profile == null)
@@ -76,7 +79,7 @@ namespace Lighthouse.Monsters.AI.Server
             float closestSquared = radius * radius;
             for (int i = 0; i < _targets.Length; i++)
             {
-                SeaMonsterTestTarget candidate = _targets[i];
+                MonsterBoatTarget candidate = _targets[i];
                 if (candidate == null || !candidate.IsEligible || candidate.gameObject == gameObject)
                 {
                     continue;
@@ -102,7 +105,7 @@ namespace Lighthouse.Monsters.AI.Server
 
             for (int i = 0; i < _targets.Length; i++)
             {
-                SeaMonsterTestTarget candidate = _targets[i];
+                MonsterBoatTarget candidate = _targets[i];
                 if (candidate != null && candidate.gameObject == target)
                 {
                     return candidate.IsEligible
@@ -111,29 +114,6 @@ namespace Lighthouse.Monsters.AI.Server
             }
 
             return false;
-        }
-
-        public void ApplyChargeDamage(Vector3 start, Vector3 end, float radius, float damage,
-            HashSet<SeaMonsterTestTarget> hitTargets)
-        {
-            if (!CanSense(radius) || hitTargets == null || !MonsterMotion.IsFinite(start)
-                || !MonsterMotion.IsFinite(end) || float.IsNaN(damage) || float.IsInfinity(damage) || damage <= 0f)
-            {
-                return;
-            }
-
-            for (int i = 0; i < _targets.Length; i++)
-            {
-                SeaMonsterTestTarget target = _targets[i];
-                if (target == null || !target.IsEligible || hitTargets.Contains(target)
-                    || !target.IntersectsCharge(start, end, radius))
-                {
-                    continue;
-                }
-              
-                hitTargets.Add(target);
-                target.TryApplyChargeDamage(damage);
-            }
         }
 
         private bool CanSense(float distance)

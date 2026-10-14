@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Lighthouse.Monsters.AI.Server
 {
     [DisallowMultipleComponent]
-    public sealed class SeaMonsterTestTarget : MonoBehaviour
+    public sealed class SeaMonsterTestTarget : MonsterBoatTarget
     {
         [Header("시험용 배 상태")]
         [SerializeField] private bool _isInsideIsland;
@@ -17,8 +17,9 @@ namespace Lighthouse.Monsters.AI.Server
         [SerializeField] private int _hitCount;
 
         public bool IsInsideIsland => _isInsideIsland;
-        public bool IsEligible => isActiveAndEnabled && !_isInsideIsland && _currentHealth > 0f
+        public override bool IsEligible => isActiveAndEnabled && !_isInsideIsland && _currentHealth > 0f
             && MonsterMotion.IsFinite(transform.position);
+        public override float HitRadius => _hitRadius;
         public float CurrentHealth => _currentHealth;
         public int HitCount => _hitCount;
         public event Action<float> HealthChanged;
@@ -28,21 +29,7 @@ namespace Lighthouse.Monsters.AI.Server
             _currentHealth = _maxHealth;
         }
 
-        public bool IntersectsCharge(Vector3 start, Vector3 end, float radius)
-        {
-            Vector3 point = transform.position;
-            Vector3 segment = end - start;
-            segment.y = 0f;
-            Vector3 offset = point - start;
-            offset.y = 0f;
-            float t = segment.sqrMagnitude > 0f
-                ? Mathf.Clamp01(Vector3.Dot(offset, segment) / segment.sqrMagnitude) : 0f;
-            Vector3 nearestOffset = offset - segment * t;
-            float combinedRadius = radius + _hitRadius;
-            return nearestOffset.sqrMagnitude <= combinedRadius * combinedRadius;
-        }
-
-        public bool TryApplyChargeDamage(float damage)
+        public override bool TryApplyDamage(float damage)
         {            
             if (!NetworkServer.active || !IsEligible || float.IsNaN(damage)
                 || float.IsInfinity(damage) || damage <= 0f)

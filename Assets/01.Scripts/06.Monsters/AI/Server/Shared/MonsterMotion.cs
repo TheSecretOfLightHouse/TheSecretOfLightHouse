@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Lighthouse.Monsters.AI.Server
 {
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(SeaMonster))]
+    [RequireComponent(typeof(Mirror.NetworkIdentity))]
     public sealed class MonsterMotion : MonoBehaviour
     {
         [Header("고정 시험 해역")]
@@ -26,7 +26,7 @@ namespace Lighthouse.Monsters.AI.Server
         [Header("시험 해역 표시")]
         [SerializeField] private bool _showPatrolGizmos = true;
 
-        private SeaMonster _monster;
+        private MonsterBase _monster;
         private Vector3 _homePosition;
         private Vector3 _patrolMin;
         private Vector3 _patrolMax;
@@ -51,7 +51,7 @@ namespace Lighthouse.Monsters.AI.Server
 
         private void Awake()
         {
-            _monster = GetComponent<SeaMonster>();
+            _monster = GetComponent<MonsterBase>();
             // 개체마다 시작 위치를 보관하며, 이동 중 공유 프로필은 변경하지 않는다.
             _homePosition = transform.position;
             InitializePatrolArea();

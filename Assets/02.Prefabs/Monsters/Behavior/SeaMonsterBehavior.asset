@@ -32,8 +32,8 @@ MonoBehaviour:
           rid: 6255968569297207369
         BlackboardGroupReferences: []
         Root:
-          rid: 6255968591876981006
-        m_VersionTimestamp: 639275704447179014
+          rid: 6255968591876981026
+        m_VersionTimestamp: 639275764522969918
     - rid: 6255968569297207369
       type: {class: BlackboardReference, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
@@ -71,7 +71,7 @@ MonoBehaviour:
           m_Value1: 14327184120084784690
         Name: "\uC7AC\uC0AC\uC6A9 \uB300\uAE30 \uC2DC\uAC04"
         m_Value: 0
-    - rid: 6255968591876981006
+    - rid: 6255968591876981026
       type: {class: Start, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -82,10 +82,10 @@ MonoBehaviour:
         m_Parent:
           rid: -2
         m_Child:
-          rid: 6255968591876981007
+          rid: 6255968591876981027
         Repeat: 1
         AllowMultipleRepeatsPerTick: 0
-    - rid: 6255968591876981007
+    - rid: 6255968591876981027
       type: {class: MonsterSequence, ns: Lighthouse.Monsters.AI.Server, asm: Lighthouse.Runtime}
       data:
         ID:
@@ -94,13 +94,13 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 6255968591876981006
+          rid: 6255968591876981026
         m_Children:
-        - rid: 6255968591876981008
-        - rid: 6255968591876981009
-        - rid: 6255968591876981010
+        - rid: 6255968591876981028
+        - rid: 6255968591876981029
+        - rid: 6255968591876981030
         m_RegisteredObservers: []
-    - rid: 6255968591876981008
+    - rid: 6255968591876981028
       type: {class: PatrolUntilBoatDetectedAction, ns: Lighthouse.Monsters.AI.Server, asm: Lighthouse.Runtime}
       data:
         ID:
@@ -109,12 +109,12 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 6255968591876981007
+          rid: 6255968591876981027
         _self:
           rid: 6255968591876980985
         _targetBoat:
           rid: 6255968591876980986
-    - rid: 6255968591876981009
+    - rid: 6255968591876981029
       type: {class: RepeatBoatCombat, ns: Lighthouse.Monsters.AI.Server, asm: Lighthouse.Runtime}
       data:
         ID:
@@ -123,14 +123,14 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 6255968591876981007
+          rid: 6255968591876981027
         m_Child:
-          rid: 6255968591876981011
+          rid: 6255968591876981031
         _self:
           rid: 6255968591876980985
         _targetBoat:
           rid: 6255968591876980986
-    - rid: 6255968591876981010
+    - rid: 6255968591876981030
       type: {class: ReturnToPatrolAction, ns: Lighthouse.Monsters.AI.Server, asm: Lighthouse.Runtime}
       data:
         ID:
@@ -139,12 +139,12 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 6255968591876981007
+          rid: 6255968591876981027
         _self:
           rid: 6255968591876980985
         _targetBoat:
           rid: 6255968591876980986
-    - rid: 6255968591876981011
+    - rid: 6255968591876981031
       type: {class: SequenceComposite, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -153,13 +153,13 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 6255968591876981009
+          rid: 6255968591876981029
         m_Children:
-        - rid: 6255968591876981012
-        - rid: 6255968591876981013
+        - rid: 6255968591876981032
+        - rid: 6255968591876981033
         m_RegisteredObservers: []
-    - rid: 6255968591876981012
-      type: {class: ChaseBoatAction, ns: Lighthouse.Monsters.AI.Server, asm: Lighthouse.Runtime}
+    - rid: 6255968591876981032
+      type: {class: ChaseUntilChargeReadyAction, ns: Lighthouse.Monsters.AI.Server, asm: Lighthouse.Runtime}
       data:
         ID:
           m_Value0: 17811450714373497381
@@ -167,14 +167,14 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 6255968591876981011
+          rid: 6255968591876981031
         _self:
           rid: 6255968591876980985
         _targetBoat:
           rid: 6255968591876980986
         _cooldownRemaining:
           rid: 6255968591876980987
-    - rid: 6255968591876981013
+    - rid: 6255968591876981033
       type: {class: SequenceComposite, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -183,12 +183,12 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 6255968591876981011
+          rid: 6255968591876981031
         m_Children:
-        - rid: 6255968591876981014
-        - rid: 6255968591876981015
+        - rid: 6255968591876981034
+        - rid: 6255968591876981035
         m_RegisteredObservers: []
-    - rid: 6255968591876981014
+    - rid: 6255968591876981034
       type: {class: PrepareChargeAction, ns: Lighthouse.Monsters.AI.Server, asm: Lighthouse.Runtime}
       data:
         ID:
@@ -197,12 +197,12 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 6255968591876981013
+          rid: 6255968591876981033
         _self:
           rid: 6255968591876980985
         _targetBoat:
           rid: 6255968591876980986
-    - rid: 6255968591876981015
+    - rid: 6255968591876981035
       type: {class: ChargeStraightAction, ns: Lighthouse.Monsters.AI.Server, asm: Lighthouse.Runtime}
       data:
         ID:
@@ -211,7 +211,7 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 6255968591876981013
+          rid: 6255968591876981033
         _self:
           rid: 6255968591876980985
         _targetBoat:
@@ -239,7 +239,7 @@ MonoBehaviour:
   - rid: 6255968591876980937
   - rid: 6255968591876980938
   - rid: 6255968591876980939
-  m_VersionTimestamp: 639275704447179014
+  m_VersionTimestamp: 639275764522969918
   m_SerializedVersion: 3
   m_DebugInfo: {fileID: 48162156267709947}
   m_RuntimeGraph: {fileID: -1276845571039540674}
@@ -295,7 +295,7 @@ MonoBehaviour:
     IsPlaceholder: 0
   - Name: "\uBC30 \uC804\uD22C \uBC18\uBCF5"
     Story: "[Self]\uAC00 [TargetBoat]\uB97C \uD3EC\uAE30\uD560 \uB54C\uAE4C\uC9C0
-      \uCD94\uC801\uACFC \uB3CC\uC9C4 \uACF5\uACA9\uC744 \uBC18\uBCF5\uD55C\uB2E4"
+      \uC804\uD22C \uD589\uB3D9\uC744 \uBC18\uBCF5\uD55C\uB2E4"
     RuntimeTypeString: Lighthouse.Monsters.AI.Server.RepeatBoatCombat, Lighthouse.Runtime,
       Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     RuntimeTypeID:
@@ -318,8 +318,8 @@ MonoBehaviour:
       \uCD94\uC801"
     Story: "[Self]\uAC00 [TargetBoat]\uB97C \uACF5\uACA9 \uBC94\uC704\uC640 \uC7AC\uC0AC\uC6A9
       \uB300\uAE30 \uC870\uAC74\uC774 \uCDA9\uC871\uB420 \uB54C\uAE4C\uC9C0 \uCD94\uC801\uD55C\uB2E4"
-    RuntimeTypeString: Lighthouse.Monsters.AI.Server.ChaseBoatAction, Lighthouse.Runtime,
-      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    RuntimeTypeString: Lighthouse.Monsters.AI.Server.ChaseUntilChargeReadyAction,
+      Lighthouse.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     RuntimeTypeID:
       m_Value0: 4919867157556705165
       m_Value1: 2682921591959860408
@@ -516,8 +516,8 @@ MonoBehaviour:
         - rid: 6255968591876980950
         - rid: 6255968591876980951
         NodeType:
-          m_SerializableType: Lighthouse.Monsters.AI.Server.ChaseBoatAction, Lighthouse.Runtime,
-            Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+          m_SerializableType: Lighthouse.Monsters.AI.Server.ChaseUntilChargeReadyAction,
+            Lighthouse.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
         NodeTypeID:
           m_Value0: 4919867157556705165
           m_Value1: 2682921591959860408

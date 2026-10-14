@@ -4,8 +4,11 @@ using Unity.Behavior;
 namespace Lighthouse.Monsters.AI.Server
 {
     [Serializable]
-    [NodeDescription(name: "순찰 · 전투 · 복귀 순서 실행", story: "순찰 후 배 전투를 반복하고 시작 위치로 복귀한다",
-        category: "흐름/등대/몬스터", id: "6ce5fca0a3394980a891244e95d21701")]
+    [NodeDescription(
+        name: "순찰 · 전투 · 복귀 순서 실행",
+        story: "순찰 후 배 전투를 반복하고 시작 위치로 복귀한다",
+        category: "흐름/등대/몬스터",
+        id: "6ce5fca0a3394980a891244e95d21701")]
     public sealed class MonsterSequence : Composite
     {
         [NonSerialized] private int _childIndex;

@@ -5,12 +5,12 @@ using UnityEngine;
 namespace Lighthouse.Monsters.AI.Server
 {
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(SeaMonster), typeof(MonsterMotion), typeof(SeaMonsterTestSensor))]
+    [RequireComponent(typeof(SeaMonster), typeof(MonsterMotion), typeof(SeaMonsterSensor))]
     public sealed class SeaMonsterChargeAttack : MonoBehaviour
     {
         private const int GizmoCircleSegments = 64;
 
-        [Header("돌진 공격 시험 설정")]
+        [Header("돌진 공격 설정")]
         [SerializeField, Min(0.01f)] private float _attackRange = 4f;
         [SerializeField, Min(0.01f)] private float _preparationDuration = 1f;
         [SerializeField, Min(0.01f)] private float _chargeSpeed = 18f;
@@ -18,10 +18,10 @@ namespace Lighthouse.Monsters.AI.Server
         [SerializeField, Min(0.01f)] private float _hitRadius = 0.65f;
         [SerializeField] private bool _showAttackGizmos = true;
 
-        private readonly HashSet<SeaMonsterTestTarget> _hitTargets = new HashSet<SeaMonsterTestTarget>();
+        private readonly HashSet<MonsterBoatTarget> _hitTargets = new HashSet<MonsterBoatTarget>();
         private SeaMonster _monster;
         private MonsterMotion _motion;
-        private SeaMonsterTestSensor _sensor;
+        private SeaMonsterSensor _sensor;
         private Vector3 _aimPosition;
         private Vector3 _chargeDirection;
         private float _preparationRemaining;
@@ -47,7 +47,7 @@ namespace Lighthouse.Monsters.AI.Server
         {
             _monster = GetComponent<SeaMonster>();
             _motion = GetComponent<MonsterMotion>();
-            _sensor = GetComponent<SeaMonsterTestSensor>();
+            _sensor = GetComponent<SeaMonsterSensor>();
         }
 
         private void OnDisable()
@@ -168,7 +168,7 @@ namespace Lighthouse.Monsters.AI.Server
             float distance = Mathf.Min(_chargeSpeed * deltaTime, _chargeRemainingDistance);
             Vector3 start = transform.position;
             Vector3 end = start + _chargeDirection * distance;
-            _sensor.ApplyChargeDamage(start, end, _hitRadius, _monster.Profile.AttackDamage, _hitTargets);
+            ApplyChargeDamage(start, end);
             if (!CanAct || !_isCharging)
             {
                 return false;
@@ -197,6 +197,55 @@ namespace Lighthouse.Monsters.AI.Server
             {
                 _motion.Stop();
             }
+        }
+
+        private void ApplyChargeDamage(Vector3 start, Vector3 end)
+        {
+            IReadOnlyList<MonsterBoatTarget> targets = _sensor.Targets;
+            float damage = _monster.Profile.AttackDamage;
+            if (targets == null || !IsPositive(damage) || !MonsterMotion.IsFinite(start)
+                || !MonsterMotion.IsFinite(end))
+            {
+                return;
+            }
+
+            for (int i = 0; i < targets.Count; i++)
+            {
+                if (!CanAct || !_isCharging)
+                {
+                    return;
+                }
+
+                MonsterBoatTarget target = targets[i];
+                if (target == null || target.gameObject == gameObject || !target.IsEligible
+                    || _hitTargets.Contains(target) || !IntersectsCharge(target, start, end))
+                {
+                    continue;
+                }
+
+                // Register before callbacks so one charge cannot damage a boat twice.
+                _hitTargets.Add(target);
+                target.TryApplyDamage(damage);
+            }
+        }
+
+        private bool IntersectsCharge(MonsterBoatTarget target, Vector3 start, Vector3 end)
+        {
+            float targetRadius = target.HitRadius;
+            if (!IsPositive(targetRadius) || !MonsterMotion.IsFinite(target.transform.position))
+            {
+                return false;
+            }
+
+            Vector3 segment = end - start;
+            segment.y = 0f;
+            Vector3 offset = target.transform.position - start;
+            offset.y = 0f;
+            float t = segment.sqrMagnitude > 0f
+                ? Mathf.Clamp01(Vector3.Dot(offset, segment) / segment.sqrMagnitude) : 0f;
+            Vector3 nearestOffset = offset - segment * t;
+            float combinedRadius = _hitRadius + targetRadius;
+            return nearestOffset.sqrMagnitude <= combinedRadius * combinedRadius;
         }
 
         private static void DrawPlanarCircle(Vector3 center, float radius)

@@ -11,17 +11,17 @@ namespace Lighthouse.Monsters.AI.Server
         [SerializeReference] private BlackboardVariable<GameObject> _self = new BlackboardVariable<GameObject>();
         [SerializeReference] private BlackboardVariable<GameObject> _targetBoat = new BlackboardVariable<GameObject>();
 
-        [NonSerialized] private SeaMonster _monster;
+        [NonSerialized] private MonsterBase _monster;
         [NonSerialized] private MonsterMotion _motion;
-        [NonSerialized] private SeaMonsterTestSensor _sensor;
+        [NonSerialized] private SeaMonsterSensor _sensor;
 
         // Behavior 그래프 생성 과정에서 공개 프로퍼티를 비공개 직렬화 변수에 연결한다.
         public BlackboardVariable<GameObject> Self { get => _self; set => _self = value; }
         public BlackboardVariable<GameObject> TargetBoat { get => _targetBoat; set => _targetBoat = value; }
 
-        protected SeaMonster Monster => _monster;
+        protected MonsterBase Monster => _monster;
         protected MonsterMotion Motion => _motion;
-        protected SeaMonsterTestSensor Sensor => _sensor;
+        protected SeaMonsterSensor Sensor => _sensor;
         protected bool CanAct => _self != null && _self.Value != null
             && _targetBoat != null && _monster != null && _motion != null && _sensor != null
             && _motion.CanMove && _motion.HasValidSetup && _sensor.isActiveAndEnabled;
@@ -33,9 +33,9 @@ namespace Lighthouse.Monsters.AI.Server
                 return false;
             }
 
-            _monster = _self.Value.GetComponent<SeaMonster>();
+            _monster = _self.Value.GetComponent<MonsterBase>();
             _motion = _self.Value.GetComponent<MonsterMotion>();
-            _sensor = _self.Value.GetComponent<SeaMonsterTestSensor>();
+            _sensor = _self.Value.GetComponent<SeaMonsterSensor>();
             return CanAct;
         }
 

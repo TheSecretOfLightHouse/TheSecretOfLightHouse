@@ -4,8 +4,11 @@ using Unity.Behavior;
 namespace Lighthouse.Monsters.AI.Server
 {
     [Serializable]
-    [NodeDescription(name: "고정 방향으로 직선 돌진", story: "[Self]가 확정한 마지막 배 위치를 향해 빠르게 직선 돌진한다",
-        category: "행동/등대/몬스터", id: "ed18ab89f8bc4c49a56f8134761c4453")]
+    [NodeDescription(
+        name: "고정 방향으로 직선 돌진",
+        story: "[Self]가 확정한 마지막 배 위치를 향해 빠르게 직선 돌진한다",
+        category: "행동/등대/몬스터",
+        id: "ed18ab89f8bc4c49a56f8134761c4453")]
     public sealed class ChargeStraightAction : MonsterAction
     {
         [NonSerialized] private SeaMonsterChargeAttack _attack;
