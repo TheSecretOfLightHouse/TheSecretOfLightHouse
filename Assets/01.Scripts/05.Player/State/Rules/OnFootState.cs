@@ -8,18 +8,32 @@ public sealed class OnFootState : State
     private readonly IdleState _idleState;
     private readonly WalkState _walkState;
     private readonly RunState _runState;
+    private readonly JumpState _jumpState;
 
     public State CurrentMovementState => _movementMachine.CurrentState;
 
     public override MoveConfig MoveConfig => _movementMachine.CurrentConfig;
 
-    public OnFootState(Func<bool> hasMoveInput, Func<bool> runHeld, float runMultiplier)
+    public OnFootState(Func<bool> hasMoveInput, Func<bool> runHeld, Func<bool> isJumping, float runMultiplier)
     {
         _movementMachine = new StateMachine();
 
         _idleState = new IdleState();
         _walkState = new WalkState();
         _runState = new RunState(runMultiplier);
+        _jumpState = new JumpState(runHeld, runMultiplier);
+
+        _movementMachine.AddTransition(_idleState, _jumpState, isJumping);
+
+        _movementMachine.AddTransition(_walkState, _jumpState, isJumping);
+
+        _movementMachine.AddTransition(_runState, _jumpState, isJumping);
+
+        _movementMachine.AddTransition(_jumpState,_idleState,() => !isJumping() && !hasMoveInput());
+
+        _movementMachine.AddTransition(_jumpState,_runState,() => !isJumping() && hasMoveInput() && runHeld());
+
+        _movementMachine.AddTransition(_jumpState,_walkState,() => !isJumping() && hasMoveInput() && !runHeld());
 
         _movementMachine.AddTransition(_idleState, _runState, () => hasMoveInput() && runHeld());
         _movementMachine.AddTransition(_idleState,_walkState,hasMoveInput);

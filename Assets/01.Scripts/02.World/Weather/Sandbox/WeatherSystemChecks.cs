@@ -20,6 +20,8 @@ namespace Lighthouse.World.Weather.Sandbox
             isAllPassed &= CheckInvalidType();
             isAllPassed &= CheckMaelstromLock();
             isAllPassed &= CheckLateJoin();
+            isAllPassed &= CheckCanApply();
+            isAllPassed &= CheckReset();
             isAllPassed &= CheckZeroDuration();
             isAllPassed &= CheckListeners();
             isAllPassed &= CheckNoAllocation();
@@ -129,6 +131,44 @@ namespace Lighthouse.World.Weather.Sandbox
                 && Matches(in system.Snapshot, in maelstrom);
 
             WeatherCheckLog.Report("LateJoin", isPassed, "a stale transition settles on the target");
+            return isPassed;
+        }
+
+        private static bool CheckCanApply()
+        {
+            WeatherSystem system = CreateSystem(WeatherType.Calm);
+
+            bool isPassed = system.CanApply(WeatherType.Calm, WeatherType.Storm)
+                && !system.CanApply(InvalidType, WeatherType.Storm)
+                && !system.CanApply(WeatherType.Calm, InvalidType);
+
+            system.Apply(WeatherType.Calm, WeatherType.Maelstrom, 0.0, 0f);
+            isPassed &= !system.CanApply(WeatherType.Maelstrom, WeatherType.Calm)
+                && system.CanApply(WeatherType.Maelstrom, WeatherType.Maelstrom)
+                && system.Target == WeatherType.Maelstrom;
+
+            WeatherCheckLog.Report("CanApply", isPassed, "query matches Apply rules and does not change state");
+            return isPassed;
+        }
+
+        private static bool CheckReset()
+        {
+            WeatherSystem system = CreateSystem(WeatherType.Calm);
+            var listener = new CountingListener();
+            system.AddListener(listener);
+            WeatherSnapshot calm = MakeCalm();
+
+            system.Apply(WeatherType.Calm, WeatherType.Maelstrom, Start, 0f);
+            system.Tick(Start + 1.0);
+
+            int before = listener.Count;
+            system.Reset();
+
+            bool isPassed = system.Target == WeatherType.Calm && !system.IsTransitioning
+                && Matches(in system.Snapshot, in calm) && listener.Count == before + 1;
+            isPassed &= system.Apply(WeatherType.Calm, WeatherType.Storm, Start, Duration);
+
+            WeatherCheckLog.Report("Reset", isPassed, "returns to initial weather and accepts the same startTime again");
             return isPassed;
         }
 

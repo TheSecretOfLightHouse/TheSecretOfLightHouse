@@ -7,6 +7,9 @@ namespace Lighthouse.World.Clock.Sandbox
     {
         [SerializeField] private GameClock _clock;
         [SerializeField] private double _resyncElapsed = 13.0;
+        [SerializeField] private double _advanceSeconds = 30.0;
+
+        private ManualClock _manual;
 
         private void OnEnable()
         {
@@ -46,6 +49,41 @@ namespace Lighthouse.World.Clock.Sandbox
             Debug.Log($"[{nameof(GameClockProbe)}] Resync to elapsed={_resyncElapsed} -> day={_clock.DayIndex} phase={_clock.Phase}");
         }
 
+        [ContextMenu("Clock/Manual Source Begin At")]
+        private void ManualSourceBeginAt()
+        {
+            _manual = new ManualClock { Now = 100.0 };
+            _clock.UseSource(_manual);
+            _clock.BeginAt(_manual.Now);
+            Debug.Log($"[{nameof(GameClockProbe)}] Manual source, BeginAt now={_manual.Now} -> day={_clock.DayIndex} phase={_clock.Phase}");
+        }
+
+        [ContextMenu("Clock/Manual Advance")]
+        private void ManualAdvance()
+        {
+            if (_manual == null)
+            {
+                Debug.LogWarning($"[{nameof(GameClockProbe)}] Run 'Manual Source Begin At' first.");
+                return;
+            }
+
+            _manual.Now += _advanceSeconds;
+            Debug.Log($"[{nameof(GameClockProbe)}] Manual advance now={_manual.Now} elapsed={_manual.Now - _clock.GameStartTime:F1}");
+        }
+
+        [ContextMenu("Clock/Manual Resync Silently")]
+        private void ManualResyncSilently()
+        {
+            if (_manual == null)
+            {
+                Debug.LogWarning($"[{nameof(GameClockProbe)}] Run 'Manual Source Begin At' first.");
+                return;
+            }
+
+            _clock.Resync(_manual.Now - _resyncElapsed);
+            Debug.Log($"[{nameof(GameClockProbe)}] Manual resync elapsed={_resyncElapsed} -> day={_clock.DayIndex} phase={_clock.Phase}");
+        }
+
         private void HandleDayStarted(int day)
         {
             Debug.Log($"[{nameof(GameClockProbe)}] DayStarted day={day} t={Elapsed():F1}");
@@ -63,7 +101,8 @@ namespace Lighthouse.World.Clock.Sandbox
 
         private double Elapsed()
         {
-            return Time.timeAsDouble - _clock.GameStartTime;
+            double now = _manual != null ? _manual.Now : Time.timeAsDouble;
+            return now - _clock.GameStartTime;
         }
     }
 }

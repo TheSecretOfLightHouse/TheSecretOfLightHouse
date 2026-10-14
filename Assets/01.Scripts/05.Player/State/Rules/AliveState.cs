@@ -27,11 +27,11 @@ public sealed class AliveState : State
 
     public override MoveConfig MoveConfig => _modeStateMachine.CurrentConfig;
 
-    public AliveState(Func<bool> isOnBoat, Func<bool> hasMoveInput, Func<bool> runHeld, float runMultiplier)
+    public AliveState(Func<bool> isOnBoat, Func<bool> hasMoveInput, Func<bool> runHeld, Func<bool> isJumping, float runMultiplier)
     {
         _modeStateMachine = new StateMachine();
         _isOnBoat = isOnBoat;
-        _onFootState = new OnFootState(hasMoveInput, runHeld, runMultiplier);
+        _onFootState = new OnFootState(hasMoveInput, runHeld, isJumping, runMultiplier);
         _onBoatState = new OnBoatState(hasMoveInput);
 
         _modeStateMachine.AddTransition(_onFootState, _onBoatState, isOnBoat);

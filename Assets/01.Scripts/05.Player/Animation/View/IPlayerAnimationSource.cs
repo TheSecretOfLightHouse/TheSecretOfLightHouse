@@ -6,6 +6,7 @@ public enum PlayerAnimationState
     Idle,
     Walk,
     Run,
+    Jump,
     OnBoat,
     Downed
 }
