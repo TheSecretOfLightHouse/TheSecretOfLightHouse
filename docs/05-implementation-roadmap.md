@@ -12,7 +12,7 @@
 |---|---|---|
 | 플레이어 | `05.Player/` 제어·입력·이동·배·상태·능력·애니메이션 코드 26개 | 로컬 실행 확인, 서버 권위·소유권, 내구도·난파·구조·인벤토리 |
 | 월드 | `02.World/` IslandHandle, SeaZone, SpawnerPoint, 자원 정의와 추가 Query/Harvest/Spawning 인터페이스·Mock·파도 Rules/Sandbox | 추가 코드의 실행·본편 연결 범위를 확인한 뒤 생성·배치·잔량·회복·시간·날씨·동기화 검증 |
-| 상호작용 | `03.Interaction/Requests/Net/` 요청 구조체와 enum 2개 | Relay·Router·Validator·기록·개별 실행과 실패 응답 |
+| 상호작용 | `03.Interaction/` 요청·Relay·Router·요청 번호 원장·대상 확인·지속 세션(JH02 A-1·A-2, 2026-10-14 같은 PC 2인·4인 M2 통과) | 본편 플레이어·배 프리팹 부착(최명기), 기능 처리기(채집·작업대·수리·구조 등) 연결, 채집 지점 adapter(강민서), 기록(History), M3 |
 | 투표 | `07.Mafia/Voting/Rules/` VoteRecord, VoteService | 기존 계산 10건 확인 기록은 이번에 재실행하지 않음. 현 코드의 참가자 검증·현재 표·변경 시 소비·시작 시각과 같은 대상 재클릭 시 차감 없음을 확인. 새 결정의 역할/자기표 금지·의식 잠금, 서버 응답·UI·누적 계산·게임 실행 검증은 남음 |
 | 네트워크 | `01.Network/Session/Net/LighthouseNetworkManager`, `Connections/Server/ConnectionDirectory`, `Connections/Net/NetworkActor`, `99.Dev/Network/ActorIdProbe` | JH01은 2026-10-11 같은 PC 호스트1+클라이언트3 M2 통과 기록. JH07(로비 준비·자동 시작·판 진행 중 이탈 시 판 종료, `Session/Net/LobbyPlayer` 등)은 2026-10-13 같은 PC 4인 M2 통과 기록. M3·본편 Player 연결·월드 생성 완료 신호 연결은 남음 |
 | 등대·몬스터·시스템·UI | `04.Lighthouse/`, `06.Monsters/`, `08.Systems/`, `09.UI/` | 이번 C# 검색에서 실행 코드 미확인. 폴더나 패키지를 완료로 세지 않음 |
@@ -22,7 +22,7 @@ Mirror 서버 등록·SyncVar·시험 Command/TargetRpc가 네트워크 코드�
 ### 먼저 처리할 실제 코드 차이
 
 - **입력 연결:** Player 씬은 `Assets/InputSystem_Actions.inputactions`를 사용한다. 액션 Attack/Sprint와 `PlayerInputReader`의 OnFire/OnRun이 맞지 않고 기본 ActionMap도 비어 있다. 실제 전달 방식·맵 활성화·능력 입력을 확인하지 않으면 달리기·사격 콜백이 실행되지 않을 수 있다. 최명기 MK01에서 우선 확인한다.
-- **발행만 있는 이벤트:** `BoatController.TryFire`는 CannonFired를, PlayerController는 InteractionRequested를 발행하지만 조사한 본편에 소비자가 없다. 사격·채집 완료로 집계하지 않고 MK02/JH02에서 처리 경로를 연결한다.
+- **발행만 있는 이벤트:** `BoatController.TryFire`는 CannonFired를, PlayerController는 InteractionRequested를 발행한다. 사격은 소비자가 없고, InteractionRequested는 JH02의 `PlayerInteractionInput`이 구독하지만 본편 프리팹에 아직 붙지 않았다. 사격·채집 완료로 집계하지 않고 MK02와 본편 프리팹 부착(최명기)으로 연결한다.
 - **능력 실행기만 존재:** PlayerAbility는 추상 클래스이고 구체 능력은 미발견, 씬의 jobAbility도 비어 있다. MK05에서 확정 직군부터 구현한다. Runner/AnimationDriver의 직렬화 참조 0은 GetComponent 자동 조회가 있으므로 그것만으로 미연결로 판정하지 않는다.
 - **난파 입력:** SetDowned와 이동 잠금은 있으나 난파 중 LookInput 기반 heading 갱신은 중단된다. 독립 카메라 회전 경로는 미확인이다. 카메라·비밀 투표·구조 UI는 허용돼야 하므로 MK04에서 실제 조작을 확인한다.
 
@@ -84,7 +84,7 @@ AX01~03은 단계 전체의 기록·문서 지원이며 게임 실행의 차단 
 | 계약 | 제공 → 소비 | 합의할 내용 |
 |---|---|---|
 | 참가자·연결 | 김지훈 → 전 담당 | 공개 ActorId(uint)와 접속 연결 분리. `ActorJoined`·`ActorLeft`·`Connections` 계약 고정(2026-10-13). 판 진행 중 이탈은 판 종료, 재접속은 선택 범위 |
-| 대상 선택·식별 | 김지훈 Interaction 탐지·서버 TargetRegistry, 최명기 키 입력·메뉴 UI, 강민서 채집 지점 정보 | 2026-10-13 결정: 네트워크 대상은 스스로 등록·해제하고 TargetId를 SyncVar로 노출, 채집 지점은 클라이언트가 (종류, SpotId)를 보내 서버가 변환([네트워크 권위 §2.2](unity/NETWORK_AUTHORITY.md#22-jh02-상호작용-요청-경로)) |
+| 대상 선택·식별 | 김지훈 Interaction 탐지·서버 대상 확인, 최명기 키 입력·메뉴 UI, 강민서 채집 지점 정보 | 2026-10-14 결정: 네트워크 객체 대상은 Mirror netId로 식별(등록 없음), 비네트워크 대상(각 PC에서 만드는 채집 지점 등)은 클라이언트가 (종류, 기존 ID)를 보내 서버 변환기가 확인([네트워크 권위 §2.2](unity/NETWORK_AUTHORITY.md#22-jh02-상호작용-요청-경로)) |
 | 전투 | 최명기 대포 → 박태욱 몬스터, 몬스터/암초 → 최명기 배 | 발사·명중·일반 몬스터 처치·배 피해의 판정 주체와 중복 방지. 등대 괴물은 처치 불가이며 TW04 계산 공격력은 소환 후 고정 |
 | 모듈·보상 효과 | 김지훈 → 최명기 배/채집, 강민서 자원 협의 | 이동속도·파밍량·대포피해 적용/해제. 소환 전 획득한 수리 보상 유지, 최후 진행도에 따른 추가/중복 보상 없음. 의식 중 낙하 차단·억제 후 처리 미정 |
 | 상호작용 | 기능 요청 → 김지훈 경로 → 기능 실행자 | 거리·상태·횟수 검증 책임, 중복·실패 응답·기록 |
