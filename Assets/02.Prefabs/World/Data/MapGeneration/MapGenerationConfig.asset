@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9acfefda72e661d448795eacaac9ad96, type: 3}
+  m_Name: MapGenerationConfig
+  m_EditorClassIdentifier: 
+  _lighthouseIsland: {fileID: 11400000, guid: 688378c551fb4954e882a03e3621d63b, type: 2}
+  _resources: {fileID: 11400000, guid: 66c600a3b8a9d5140aa198f8483a1cb4, type: 2}
+  _archetypes:
+  - {fileID: 11400000, guid: 20b784bc0c874f94684292c42f443dd7, type: 2}
+  - {fileID: 11400000, guid: 3d707b5962c56974ebca0173c24427cc, type: 2}
+  - {fileID: 11400000, guid: d9f61dee372bc0f498a8159ed7c4ed07, type: 2}
+  - {fileID: 11400000, guid: 78380432124db6549b6686a5b0c19e48, type: 2}
+  - {fileID: 11400000, guid: c89285000056c2441b90ab0aa26616bf, type: 2}
+  _zones:
+  - _zone: 1
+    _innerRadius: 70
+    _outerRadius: 150
+    _minIslands: 4
+    _maxIslands: 6
+    _minIslandDistance: 45
+    _minReefs: 0
+    _maxReefs: 0
+    _minReefDistance: 25
+    _reefRadius: 6
+  - _zone: 2
+    _innerRadius: 150
+    _outerRadius: 300
+    _minIslands: 5
+    _maxIslands: 8
+    _minIslandDistance: 50
+    _minReefs: 3
+    _maxReefs: 6
+    _minReefDistance: 25
+    _reefRadius: 6
+  - _zone: 4
+    _innerRadius: 300
+    _outerRadius: 450
+    _minIslands: 5
+    _maxIslands: 8
+    _minIslandDistance: 55
+    _minReefs: 6
+    _maxReefs: 10
+    _minReefDistance: 25
+    _reefRadius: 6
+  _resourceFloors:
+  - _resource: {fileID: 11400000, guid: 9ff0671df1fa4014793fa191e3e36bab, type: 2}
+    _minIslandCount: 1
+  - _resource: {fileID: 11400000, guid: 8c7a2775b55dec340a1dfce8185c7fb5, type: 2}
+    _minIslandCount: 2
+  - _resource: {fileID: 11400000, guid: d08359d5654970348842cc01ffeb88bf, type: 2}
+    _minIslandCount: 2
+  - _resource: {fileID: 11400000, guid: 36e7424a8f7dc8844a1df2dbe6997f06, type: 2}
+    _minIslandCount: 1
+  _radiusScale: 1
+  _maxBuildAttempts: 8
+  _routeCellSize: 10
+  _shipClearance: 6
