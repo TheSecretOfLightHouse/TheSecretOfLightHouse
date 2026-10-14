@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Lighthouse.Monsters.AI.Server
 {
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(Mirror.NetworkIdentity))]
+    [RequireComponent(typeof(Mirror.NetworkIdentity), typeof(Rigidbody))]
     public sealed class MonsterMotion : MonoBehaviour
     {
         [Header("고정 시험 해역")]
@@ -27,6 +27,7 @@ namespace Lighthouse.Monsters.AI.Server
         [SerializeField] private bool _showPatrolGizmos = true;
 
         private MonsterBase _monster;
+        private Rigidbody _body;
         private Vector3 _homePosition;
         private Vector3 _patrolMin;
         private Vector3 _patrolMax;
@@ -35,6 +36,11 @@ namespace Lighthouse.Monsters.AI.Server
         private bool _hasPatrolDestination;
         private bool _hasValidPatrolArea;
         private bool _isMoving;
+        private Vector3 _destination;
+        private float _requestedSpeed;
+        private float _stoppingDistance;
+        private bool _hasMovementRequest;
+        private bool _isPatrolRequest;
 
         public Vector3 HomePosition => _homePosition;
         public Vector2 PatrolWaitRange => _patrolWaitRange;
@@ -44,7 +50,7 @@ namespace Lighthouse.Monsters.AI.Server
         public Vector3 PatrolDestination => _patrolDestination;
         public bool CanMove => isActiveAndEnabled && _monster != null
             && _monster.isServer && _monster.IsInitialized && !_monster.IsDead
-            && _monster.isActiveAndEnabled;
+            && _monster.isActiveAndEnabled && _body != null && !_body.isKinematic;
         public bool HasValidSetup => _patrolOffsets != null && _patrolOffsets.Length > 0
             && IsFinite(_homePosition) && IsFinite(transform.position)
             && IsFinitePositive(_arrivalDistance) && IsFinitePositive(_chaseStoppingDistance);
@@ -52,9 +58,33 @@ namespace Lighthouse.Monsters.AI.Server
         private void Awake()
         {
             _monster = GetComponent<MonsterBase>();
+            _body = GetComponent<Rigidbody>();
             // 개체마다 시작 위치를 보관하며, 이동 중 공유 프로필은 변경하지 않는다.
             _homePosition = transform.position;
             InitializePatrolArea();
+        }
+
+        private void FixedUpdate()
+        {
+            if (!_hasMovementRequest)
+            {
+                return;
+            }
+
+            if (!CanMove || !HasValidSetup)
+            {
+                Stop();
+                return;
+            }
+
+            if (_isPatrolRequest)
+            {
+                StepPatrolSwim(Time.fixedDeltaTime);
+            }
+            else
+            {
+                StepDirectedMovement(Time.fixedDeltaTime);
+            }
         }
 
         private void OnDisable()
@@ -132,8 +162,14 @@ namespace Lighthouse.Monsters.AI.Server
                 Stop();
                 return false;
             }
-            StepPatrolSwim(speed);
-            return !_hasPatrolDestination;
+            if (HasArrived(_patrolDestination, _arrivalDistance))
+            {
+                Stop();
+                return true;
+            }
+
+            RequestMovement(_patrolDestination, speed, _arrivalDistance, true);
+            return false;
         }
 
         public bool StepReturn(float speed)
@@ -143,14 +179,8 @@ namespace Lighthouse.Monsters.AI.Server
 
         public bool StepTowards(Vector3 destination, float speed, float stoppingDistance)
         {
-            return StepTowards(destination, speed, stoppingDistance, Time.deltaTime);
-        }
-
-        public bool StepTowards(Vector3 destination, float speed, float stoppingDistance, float deltaTime)
-        {
             if (!CanMove || !HasValidSetup || !IsFinite(destination)
-                || !IsFinitePositive(speed) || !IsFinitePositive(stoppingDistance)
-                || !IsFinite(deltaTime) || deltaTime < 0f)
+                || !IsFinitePositive(speed) || !IsFinitePositive(stoppingDistance))
             {
                 Stop();
                 return false;
@@ -158,20 +188,14 @@ namespace Lighthouse.Monsters.AI.Server
 
             // 시험에서는 고정 수면 높이를 사용하며, 월드의 수면·장애물 조회는 추후 계약으로 연결한다.
             destination.y = _homePosition.y;
-            Vector3 offset = destination - transform.position;
-            float distance = offset.magnitude;
-            if (distance <= stoppingDistance)
+            if (HasArrived(destination, stoppingDistance))
             {
                 Stop();
                 return true;
             }
 
-            Vector3 direction = offset / distance;
-            float step = Mathf.Min(speed * deltaTime, distance - stoppingDistance);
-            transform.SetPositionAndRotation(transform.position + direction * step,
-                Quaternion.LookRotation(direction, Vector3.up));
-            _isMoving = step > 0f;
-            return distance - step <= stoppingDistance;
+            RequestMovement(destination, speed, stoppingDistance, false);
+            return false;
         }
 
         public void StepCharge(Vector3 direction, float distance)
@@ -185,16 +209,26 @@ namespace Lighthouse.Monsters.AI.Server
 
             Vector3 position = transform.position + direction * distance;
             position.y = _homePosition.y;
+            // 돌진 전환 전에는 일반 이동 요청이 기존 돌진 이동과 겹치지 않도록 한다.
+            _hasMovementRequest = false;
+            SetHorizontalVelocity(Vector3.zero);
             transform.SetPositionAndRotation(position, Quaternion.LookRotation(direction, Vector3.up));
             _isMoving = distance > 0f;
         }
 
         public void Stop()
         {
-            // 활성 BT 노드만 이동을 갱신하므로 노드 종료 후 별도 속도나 코루틴이 이동을 이어가지 않는다.
+            // 노드 종료 시 요청과 속도를 함께 지워 다음 물리 갱신에서 이동이 재개되지 않도록 한다.
+            _hasMovementRequest = false;
+            _isPatrolRequest = false;
             _isMoving = false;
             _patrolSpeed = 0f;
             _hasPatrolDestination = false;
+            SetHorizontalVelocity(Vector3.zero);
+            if (_body != null && !_body.isKinematic)
+            {
+                _body.angularVelocity = Vector3.zero;
+            }
         }
 
         public static bool IsFinite(Vector3 value)
@@ -237,41 +271,89 @@ namespace Lighthouse.Monsters.AI.Server
             return IsFinite(min) && IsFinite(max) && (max.x > min.x || max.z > min.z);
         }
 
-        private void StepPatrolSwim(float speed)
+        private void RequestMovement(Vector3 destination, float speed, float stoppingDistance, bool isPatrol)
         {
-            Vector3 position = transform.position;
-            position.y = _homePosition.y;
+            _destination = destination;
+            _requestedSpeed = speed;
+            _stoppingDistance = stoppingDistance;
+            _isPatrolRequest = isPatrol;
+            _hasMovementRequest = true;
+        }
+
+        private bool HasArrived(Vector3 destination, float stoppingDistance)
+        {
+            Vector3 offset = destination - _body.position;
+            offset.y = 0f;
+            return offset.sqrMagnitude <= stoppingDistance * stoppingDistance;
+        }
+
+        private void StepDirectedMovement(float deltaTime)
+        {
+            Vector3 offset = _destination - _body.position;
+            offset.y = 0f;
+            float distance = offset.magnitude;
+            if (distance <= _stoppingDistance)
+            {
+                _isMoving = false;
+                SetHorizontalVelocity(Vector3.zero);
+                return;
+            }
+
+            Vector3 direction = offset / distance;
+            // 도착 반경 안까지 이동을 허용해 경계의 부동소수점 오차로 노드가 끝나지 않는 일을 막는다.
+            float speed = Mathf.Min(_requestedSpeed, (distance - _stoppingDistance * 0.5f) / deltaTime);
+            _body.MoveRotation(Quaternion.LookRotation(direction, Vector3.up));
+            SetHorizontalVelocity(direction * speed);
+            _isMoving = speed > 0f;
+        }
+
+        private void SetHorizontalVelocity(Vector3 velocity)
+        {
+            if (_body == null || _body.isKinematic)
+            {
+                return;
+            }
+
+            _body.linearVelocity = new Vector3(velocity.x, _body.linearVelocity.y, velocity.z);
+        }
+
+        private void StepPatrolSwim(float deltaTime)
+        {
+            Vector3 position = _body.position;
             Vector3 offset = _patrolDestination - position;
+            offset.y = 0f;
             float distance = offset.magnitude;
             if (distance <= _arrivalDistance)
             {
                 _patrolSpeed = 0f;
                 _isMoving = false;
-                _hasPatrolDestination = false;
+                SetHorizontalVelocity(Vector3.zero);
                 return;
             }
 
             Vector3 direction = offset / distance;
-            Vector3 forward = transform.forward;
+            Vector3 forward = _body.rotation * Vector3.forward;
             forward.y = 0f;
             forward = forward.sqrMagnitude > 0f ? forward.normalized : direction;
             Quaternion rotation = Quaternion.RotateTowards(Quaternion.LookRotation(forward, Vector3.up),
-                Quaternion.LookRotation(direction, Vector3.up), _patrolTurnSpeed * Time.deltaTime);
+                Quaternion.LookRotation(direction, Vector3.up), _patrolTurnSpeed * deltaTime);
 
             // 출발 전에 방향을 틀고 서서히 가속하며, 목적지에 가까워지면 감속한다.
             float alignment = Mathf.Clamp01(Vector3.Dot(rotation * Vector3.forward, direction));
             float brakingSpeed = Mathf.Sqrt(2f * _patrolAcceleration * (distance - _arrivalDistance));
-            float desiredSpeed = Mathf.Min(speed, brakingSpeed) * alignment;
+            float desiredSpeed = Mathf.Min(_requestedSpeed, brakingSpeed) * alignment;
             _patrolSpeed = Mathf.MoveTowards(_patrolSpeed, desiredSpeed,
-                _patrolAcceleration * Time.deltaTime);
+                _patrolAcceleration * deltaTime);
 
             // 회전 중에도 위치는 목적지를 향하게 하여 목적지 주변을 계속 맴도는 현상을 방지한다.
-            float step = Mathf.Min(_patrolSpeed * Time.deltaTime, distance);
+            float step = Mathf.Min(_patrolSpeed * deltaTime, distance);
             Vector3 nextPosition = position + direction * step;
             nextPosition.x = Mathf.Clamp(nextPosition.x, _patrolMin.x, _patrolMax.x);
             nextPosition.z = Mathf.Clamp(nextPosition.z, _patrolMin.z, _patrolMax.z);
-            _isMoving = (nextPosition - transform.position).sqrMagnitude > 0f;
-            transform.SetPositionAndRotation(nextPosition, rotation);
+            Vector3 velocity = Vector3.ClampMagnitude((nextPosition - position) / deltaTime, _patrolSpeed);
+            _isMoving = velocity.sqrMagnitude > 0f;
+            _body.MoveRotation(rotation);
+            SetHorizontalVelocity(velocity);
         }
 
         private static bool IsFinitePositive(float value)
