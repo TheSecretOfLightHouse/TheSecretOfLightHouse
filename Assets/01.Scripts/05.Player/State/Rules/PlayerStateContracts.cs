@@ -6,6 +6,7 @@ public enum PlayerMotionState
     Idle,
     Walk,
     Run,
+    Jump,
     OnBoat,
     Downed
 }

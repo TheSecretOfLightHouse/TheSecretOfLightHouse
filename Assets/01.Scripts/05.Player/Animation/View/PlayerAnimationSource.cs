@@ -6,6 +6,8 @@ public sealed class PlayerAnimationSource : IPlayerAnimationSource, IDisposable
     private readonly IPlayerStateSource _states;
     private readonly IPlayerAbilitySource _abilities;
 
+    private bool _isJumping;
+
     public PlayerAnimationState Current {  get; private set; }
     public event Action<PlayerAnimationState> Changed;
 
@@ -19,6 +21,17 @@ public sealed class PlayerAnimationSource : IPlayerAnimationSource, IDisposable
         _abilities.AbilityEnded += HandleAbilityEnded;
 
         Current = Resolve();
+    }
+
+    public void SetJumping(bool value)
+    {
+        if (_isJumping == value)
+        {
+            return;
+        }
+
+        _isJumping = value;
+        Refresh();
     }
 
     private void HandleMotionChanged(PlayerMotionState state)
@@ -50,33 +63,20 @@ public sealed class PlayerAnimationSource : IPlayerAnimationSource, IDisposable
     private PlayerAnimationState Resolve()
     {
         if (_states.CurrentMotion == PlayerMotionState.Downed)
-            return PlayerAnimationState.Downed;
-
-        IPlayerAbility ability = _abilities.CurrentAbility;
-
-        if (ability != null)
         {
-            //switch (ability.Kind)
-            //{
-            //    case PlayerAbilityKind.Hammer:
-            //        return PlayerAnimationState.Hammer;
+            return PlayerAnimationState.Downed;
+        }
 
-            //    case PlayerAbilityKind.Gather:
-            //        return PlayerAnimationState.Gather;
-
-            //    case PlayerAbilityKind.Repair:
-            //        return PlayerAnimationState.Repair;
-            //}
+        if (_states.CurrentMotion == PlayerMotionState.OnBoat)
+        {
+            return PlayerAnimationState.OnBoat;
         }
 
         return _states.CurrentMotion switch
         {
+            PlayerMotionState.Jump => PlayerAnimationState.Jump,
             PlayerMotionState.Walk => PlayerAnimationState.Walk,
-
             PlayerMotionState.Run => PlayerAnimationState.Run,
-
-            PlayerMotionState.OnBoat => PlayerAnimationState.OnBoat,
-
             _ => PlayerAnimationState.Idle
         };
     }

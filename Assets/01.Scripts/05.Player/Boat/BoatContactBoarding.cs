@@ -123,9 +123,7 @@ public sealed class BoatContactBoarding : MonoBehaviour
     public bool TryFindLandingPosition(PlayerController player, out Vector3 position)
     {
         position = default;
-        if (!_body || !player
-            || !player.TryGetComponent(out CapsuleCollider capsule)
-            || capsule.direction != 1)
+        if (!_body || !player || !player.TryGetComponent(out CapsuleCollider capsule) || capsule.direction != 1)
         {
             return false;
         }
@@ -139,8 +137,7 @@ public sealed class BoatContactBoarding : MonoBehaviour
                 continue;
             }
 
-            Vector3 direction = GetLandPoint(land, _body.bounds.center)
-                - _body.bounds.center;
+            Vector3 direction = GetLandPoint(land, _body.bounds.center) - _body.bounds.center;
             direction.y = 0f;
             if (direction.sqrMagnitude < DirectionEpsilon)
             {
@@ -156,9 +153,7 @@ public sealed class BoatContactBoarding : MonoBehaviour
             direction.Normalize();
             for (int j = 0; j < LandingDirectionCount; j++)
             {
-                Vector3 candidateDirection =
-                    Quaternion.Euler(0f, j * (360f / LandingDirectionCount), 0f)
-                    * direction;
+                Vector3 candidateDirection = Quaternion.Euler(0f, j * (360f / LandingDirectionCount), 0f) * direction;
                 if (TryGetLandingPosition(land, capsule, candidateDirection, out position))
                 {
                     return true;
@@ -183,8 +178,7 @@ public sealed class BoatContactBoarding : MonoBehaviour
         {
             owner = candidate;
         }
-        if (!owner || !owner.CanProcessBoatInput || !owner.isActiveAndEnabled
-            || owner.IsDowned)
+        if (!owner || !owner.CanProcessBoatInput || !owner.isActiveAndEnabled || owner.IsDowned)
         {
             return;
         }
@@ -218,7 +212,6 @@ public sealed class BoatContactBoarding : MonoBehaviour
             _lands, Quaternion.identity, _landLayers.value != 0 ? _landLayers.value : Physics.AllLayers,
             QueryTriggerInteraction.Ignore);
 
-        // A full buffer cannot guarantee that every candidate was inspected.
         return count == _lands.Length ? 0 : count;
     }
 
@@ -234,8 +227,7 @@ public sealed class BoatContactBoarding : MonoBehaviour
                 continue;
             }
 
-            float distance = (GetLandPoint(land, _body.bounds.center)
-                - _body.bounds.center).sqrMagnitude;
+            float distance = (GetLandPoint(land, _body.bounds.center) - _body.bounds.center).sqrMagnitude;
             if (distance < bestDistance)
             {
                 bestDistance = distance;
@@ -255,13 +247,11 @@ public sealed class BoatContactBoarding : MonoBehaviour
 
         Vector3 landPoint = GetLandPoint(land, _body.bounds.center);
         Vector3 boatPoint = _body.ClosestPoint(landPoint);
-        return (landPoint - boatPoint).sqrMagnitude
-            <= _contactTolerance * _contactTolerance;
+        return (landPoint - boatPoint).sqrMagnitude <= _contactTolerance * _contactTolerance;
     }
 
     private static Vector3 GetLandPoint(Collider land, Vector3 point)
     {
-        // Non-convex terrain meshes do not support Collider.ClosestPoint.
         if (land is MeshCollider mesh && !mesh.convex)
         {
             return land.bounds.ClosestPoint(point);
@@ -270,22 +260,18 @@ public sealed class BoatContactBoarding : MonoBehaviour
         return land.ClosestPoint(point);
     }
 
-    private bool TryGetLandingPosition(Collider land, CapsuleCollider capsule,
-        Vector3 direction, out Vector3 position)
+    private bool TryGetLandingPosition(Collider land, CapsuleCollider capsule, Vector3 direction, out Vector3 position)
     {
         position = default;
         Vector3 scale = capsule.transform.lossyScale;
         float radius = capsule.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
         float height = Mathf.Max(capsule.height * Mathf.Abs(scale.y), radius * 2f);
         Bounds bounds = _body.bounds;
-        float support = Mathf.Abs(direction.x) * bounds.extents.x
-            + Mathf.Abs(direction.z) * bounds.extents.z;
-        Vector3 origin = bounds.center
-            + direction * (support + radius + _landingClearance);
+        float support = Mathf.Abs(direction.x) * bounds.extents.x + Mathf.Abs(direction.z) * bounds.extents.z;
+        Vector3 origin = bounds.center + direction * (support + radius + _landingClearance);
         origin.y = bounds.max.y + _landingProbeHeight;
 
-        if (!land.Raycast(new Ray(origin, Vector3.down), out RaycastHit hit,
-                _landingProbeHeight * 2f + height)
+        if (!land.Raycast(new Ray(origin, Vector3.down), out RaycastHit hit, _landingProbeHeight * 2f + height)
             || Vector3.Angle(hit.normal, Vector3.up) > _maxLandingSlope)
         {
             return false;
@@ -296,6 +282,7 @@ public sealed class BoatContactBoarding : MonoBehaviour
         int count = Physics.OverlapCapsuleNonAlloc(center + Vector3.up * halfSegment,
             center - Vector3.up * halfSegment, radius, _obstacles,
             Physics.AllLayers, QueryTriggerInteraction.Ignore);
+
         if (count == _obstacles.Length)
         {
             return false;
@@ -312,8 +299,7 @@ public sealed class BoatContactBoarding : MonoBehaviour
 
         Quaternion rotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
         position = center - rotation * Vector3.Scale(capsule.center, scale);
-        return (position - transform.position).sqrMagnitude
-            <= _maxLandingDistance * _maxLandingDistance;
+        return (position - transform.position).sqrMagnitude <= _maxLandingDistance * _maxLandingDistance;
     }
 
     private bool IsLand(Collider collider)
@@ -324,8 +310,7 @@ public sealed class BoatContactBoarding : MonoBehaviour
         }
 
         Rigidbody body = collider.attachedRigidbody;
-        if (body && (body.TryGetComponent<PlayerController>(out _)
-            || body.TryGetComponent<BoatController>(out _)))
+        if (body && (body.TryGetComponent<PlayerController>(out _) || body.TryGetComponent<BoatController>(out _)))
         {
             return false;
         }
