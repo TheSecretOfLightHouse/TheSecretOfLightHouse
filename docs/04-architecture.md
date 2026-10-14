@@ -51,8 +51,8 @@ Unity 루트의 `Assets/00.Scenes`, `02.Prefabs`~`07.Materials`, `Packages/`, `P
 | 기능 | 위치·현재 상태 |
 |---|---|
 | 플레이어 제어 | `05.Player/Control/PlayerController.cs` — 기존 입력·상태·물리·승하선 연결 |
-| 입력 | `05.Player/Control/View/PlayerInputReader.cs`. Player 씬의 실제 입력 에셋은 `Assets/InputSystem_Actions.inputactions`이며 최명기 담당. 이동한 `05.Player/Control/View/InputActions.inputactions`는 현재 씬 참조 없음 |
-| 배 제어 | `05.Player/Boat/BoatController.cs`, `Boat/Rules/ShipPhysicsProfile.cs` |
+| 입력 | `05.Player/Control/View/PlayerInputReader.cs` — OnDash/OnFire/OnAbility. tech 프리팹은 같은 폴더 InputActions의 PlayerActions, captain/farm/tanker는 루트 입력 에셋·빈 기본 맵. MK01에서 통일·검증 필요 |
+| 배 제어 | `05.Player/Boat/BoatController.cs`, `BoatDurability.cs`, `PlayerBoatSpawner.cs`, `ReefCollisionDamage.cs`, `BoatCollisionRecoil.cs`·`BoatCollisionRecoilSource.cs`, `Boat/Rules/ShipPhysicsProfile.cs`. 서버 피해/난파·회복 API와 소유 클라이언트 반동 코드 존재, 멀티 실행 미검증 |
 | 이동 | `05.Player/Movement/PlayerMotor.cs`, `Movement/Rules/MoveConfig.cs` |
 | 상태 | `05.Player/State/Rules/` — PlayerHFSM·StateMachine·상태 타입 |
 | 능력 | `05.Player/Abilities/` — PlayerAbility·Runner, `Rules/`의 능력 계약 |
@@ -66,7 +66,7 @@ Unity 루트의 `Assets/00.Scenes`, `02.Prefabs`~`07.Materials`, `Packages/`, `P
 
 StateMachine·State·Transition은 현재 MoveConfig에 의존하므로 Player 안에 둔다. ShipPhysicsProfile은 배 물리 정의로 Player가 관리하며 World에서 소비할 때 합의한다.
 
-현 코드의 PlayerController 등은 MonoBehaviour 기반이다. Mirror 기반은 JH01의 공용 접속·ActorId 식별과 개발용 검사 코드이며, 게임 기능별 권위·동기화 통합은 아직 완료 상태가 아니다. 구현 기록은 [담당자별 작업 §6](06-owner-work-plan.md#6-처음-함께-맞출-일과-작업-기록)을 따른다. 빈 기능 폴더는 작업 위치를 표시하며 구현 완료를 뜻하지 않는다. 새 결정의 단절 객체·ActorId 기반 상태 보존을 별도 구현·검증하고 재접속은 후순위로 검토한다.
+2026-10-14 정적 확인: PlayerController·BoatController·BoatDurability는 Mirror NetworkBehaviour이며 소유권·Command·SyncVar 경로가 있다. Player·배의 전체 통합 완료를 뜻하지 않는다. 다른 기능의 현황은 이번 갱신 범위에서 제외한다. 실제 검증 상태는 [담당자별 작업 §6](06-owner-work-plan.md#6-처음-함께-맞출-일과-작업-기록)을 따른다.
 
 ## 5. 기존 참조 보존
 

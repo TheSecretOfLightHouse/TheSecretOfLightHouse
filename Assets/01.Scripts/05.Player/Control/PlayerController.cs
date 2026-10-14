@@ -40,6 +40,9 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private BoatController _ownedBoat;
     private BoatController _offlineOwnedBoat;
 
+    [SyncVar(hook = nameof(OnDownedChanged))]
+    private bool _isDowned;
+
     private PlayerHFSM _hfsm;
     private Rigidbody _rb;
     private PlayerInput _playerInput;
@@ -190,6 +193,10 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         {
             Vector2 look = _lookAction != null ? _lookAction.ReadValue<Vector2>() : Vector2.zero;
             _heading = Mathf.Repeat(_heading + look.x * _mouseSensitivity, 360f);
+            if (_camera)
+            {
+                _camera.ApplyVerticalLook(look.y * _mouseSensitivity);
+            }
         }
 
         Vector2 input = _inputReader.MoveInput;
@@ -291,6 +298,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     public override void OnStartClient()
     {
         base.OnStartClient();
+        ApplyDownedState(_isDowned);
         RefreshLocalControl();
     }
 
@@ -486,6 +494,26 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     #endregion
 
     public void SetDowned(bool value)
+    {
+        if (NetworkClient.active || NetworkServer.active)
+        {
+            if (!isServer)
+            {
+                return;
+            }
+
+            _isDowned = value;
+        }
+
+        ApplyDownedState(value);
+    }
+
+    private void OnDownedChanged(bool oldValue, bool newValue)
+    {
+        ApplyDownedState(newValue);
+    }
+
+    private void ApplyDownedState(bool value)
     {
         if (IsDowned == value)
         {

@@ -4,6 +4,7 @@ using UnityEngine;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Rigidbody), typeof(NetworkIdentity), typeof(BoatContactBoarding))]
+[RequireComponent(typeof(BoatDurability))]
 public sealed class BoatController : NetworkBehaviour
 {
     [SerializeField]
@@ -37,6 +38,7 @@ public sealed class BoatController : NetworkBehaviour
 
     private Collider _bodyCollider;
     private BoatContactBoarding _contact;
+    private BoatDurability _durability;
     private float _nextLocalRequestTime;
     private float _nextServerRequestTime;
     private float _nextBoardTime;
@@ -46,6 +48,7 @@ public sealed class BoatController : NetworkBehaviour
     public PlayerController Owner => IsNetworkActive ? _owner : _offlineOwner;
     private bool IsNetworkActive => NetworkClient.active || NetworkServer.active;
     public bool IsOccupied => _isOccupied;
+    public bool IsWrecked => _durability && _durability.IsWrecked;
     public Transform BoardingAnchor => _boardingAnchor ? _boardingAnchor : transform;
     public event Action<PlayerController> CannonFired;
 
@@ -75,6 +78,21 @@ public sealed class BoatController : NetworkBehaviour
     {
         base.OnStartServer();
         _rb.isKinematic = true;
+        _durability.Wrecked += HandleWrecked;
+    }
+
+    public override void OnStopServer()
+    {
+        _durability.Wrecked -= HandleWrecked;
+        base.OnStopServer();
+    }
+
+    private void HandleWrecked()
+    {
+        if (Owner && _isOccupied)
+        {
+            Owner.SetDowned(true);
+        }
     }
 
     public override void OnStartClient()
@@ -101,7 +119,7 @@ public sealed class BoatController : NetworkBehaviour
     [Server]
     public bool TrySetOwner(PlayerController player)
     {
-        if (!player || (Owner && Owner != player))
+        if (!player || IsWrecked || (Owner && Owner != player))
         {
             return false;
         }
@@ -305,7 +323,7 @@ public sealed class BoatController : NetworkBehaviour
 
     private bool CanRequest(PlayerController player)
     {
-        return (!IsNetworkActive || (isClient && isOwned)) && isActiveAndEnabled && player
+        return !IsWrecked && (!IsNetworkActive || (isClient && isOwned)) && isActiveAndEnabled && player
             && player == Owner && player.CanProcessBoatInput
             && player.isActiveAndEnabled && !player.IsDowned
             && Time.unscaledTime >= _nextLocalRequestTime;
@@ -313,7 +331,7 @@ public sealed class BoatController : NetworkBehaviour
 
     private bool CanAcceptRequest()
     {
-        if (!Owner || !Owner.isActiveAndEnabled || Owner.IsDowned || connectionToClient == null
+        if (IsWrecked || !Owner || !Owner.isActiveAndEnabled || Owner.IsDowned || connectionToClient == null
             || Owner.connectionToClient != connectionToClient
             || connectionToClient.identity != Owner.netIdentity
             || Time.time < _nextServerRequestTime)
@@ -327,7 +345,7 @@ public sealed class BoatController : NetworkBehaviour
 
     private bool CanControl(PlayerController player)
     {
-        return (!IsNetworkActive || (isClient && isOwned)) && isActiveAndEnabled && player
+        return !IsWrecked && (!IsNetworkActive || (isClient && isOwned)) && isActiveAndEnabled && player
             && player == Owner && player.CanProcessBoatInput
             && player.isActiveAndEnabled && !player.IsDowned
             && _isOccupied && player.CurrentBoat == this;
@@ -342,6 +360,7 @@ public sealed class BoatController : NetworkBehaviour
 
         _bodyCollider = GetComponent<Collider>();
         _contact = GetComponent<BoatContactBoarding>();
+        _durability = GetComponent<BoatDurability>();
     }
 
     public bool TrySetOfflineOwner(PlayerController player)
