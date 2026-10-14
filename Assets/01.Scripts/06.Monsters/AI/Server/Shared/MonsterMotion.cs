@@ -41,11 +41,13 @@ namespace Lighthouse.Monsters.AI.Server
         private float _stoppingDistance;
         private bool _hasMovementRequest;
         private bool _isPatrolRequest;
+        private bool _isMovementLocked;
 
         public Vector3 HomePosition => _homePosition;
         public Vector2 PatrolWaitRange => _patrolWaitRange;
         public float ChaseStoppingDistance => _chaseStoppingDistance;
         public bool IsMoving => _isMoving;
+        public bool IsMovementLocked => _isMovementLocked;
         public bool IsPatrolWaiting => !_hasPatrolDestination;
         public Vector3 PatrolDestination => _patrolDestination;
         public bool CanMove => isActiveAndEnabled && _monster != null
@@ -89,6 +91,7 @@ namespace Lighthouse.Monsters.AI.Server
 
         private void OnDisable()
         {
+            _isMovementLocked = false;
             Stop();
         }
 
@@ -142,6 +145,11 @@ namespace Lighthouse.Monsters.AI.Server
 
         public bool BeginPatrolLeg()
         {
+            if (_isMovementLocked)
+            {
+                return false;
+            }
+
             if (!CanMove || !HasValidSetup || !_hasValidPatrolArea
                 || !IsFinitePositive(_patrolTurnSpeed) || !IsFinitePositive(_patrolAcceleration))
             {
@@ -157,6 +165,11 @@ namespace Lighthouse.Monsters.AI.Server
 
         public bool StepPatrol(float speed)
         {
+            if (_isMovementLocked)
+            {
+                return false;
+            }
+
             if (!CanMove || !HasValidSetup || !_hasPatrolDestination || !IsFinitePositive(speed))
             {
                 Stop();
@@ -179,6 +192,11 @@ namespace Lighthouse.Monsters.AI.Server
 
         public bool StepTowards(Vector3 destination, float speed, float stoppingDistance)
         {
+            if (_isMovementLocked)
+            {
+                return false;
+            }
+
             if (!CanMove || !HasValidSetup || !IsFinite(destination)
                 || !IsFinitePositive(speed) || !IsFinitePositive(stoppingDistance))
             {
@@ -200,6 +218,11 @@ namespace Lighthouse.Monsters.AI.Server
 
         public bool SetChargeVelocity(Vector3 direction, float speed)
         {
+            if (_isMovementLocked)
+            {
+                return false;
+            }
+
             direction.y = 0f;
             if (!CanMove || !HasValidSetup || !IsFinite(direction) || !IsFinitePositive(speed)
                 || !IsFinitePositive(direction.sqrMagnitude))
@@ -218,6 +241,16 @@ namespace Lighthouse.Monsters.AI.Server
             return true;
         }
 
+        public void SetMovementLocked(bool isLocked)
+        {
+            if (isLocked)
+            {
+                Stop();
+            }
+
+            _isMovementLocked = isLocked;
+        }
+
         public void Stop()
         {
             // 노드 종료 시 요청과 속도를 함께 지워 다음 물리 갱신에서 이동이 재개되지 않도록 한다.
@@ -226,6 +259,12 @@ namespace Lighthouse.Monsters.AI.Server
             _isMoving = false;
             _patrolSpeed = 0f;
             _hasPatrolDestination = false;
+            // 회복 중 노드 종료나 이동 요청이 물리 반동을 지우지 않도록 한다.
+            if (_isMovementLocked)
+            {
+                return;
+            }
+
             SetHorizontalVelocity(Vector3.zero);
             if (_body != null && !_body.isKinematic)
             {

@@ -36,7 +36,7 @@ namespace Lighthouse.Monsters.AI.Server
                 return Status.Success;
             }
 
-            return _attack.IsCharging ? Status.Running : Status.Failure;
+            return _attack.IsCharging || _attack.IsRecovering ? Status.Running : Status.Failure;
         }
 
         protected override void OnEnd()

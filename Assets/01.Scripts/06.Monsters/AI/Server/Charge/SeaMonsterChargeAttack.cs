@@ -19,6 +19,11 @@ namespace Lighthouse.Monsters.AI.Server
         [SerializeField, Min(0.01f)] private float _hitRadius = 0.65f;
         [SerializeField] private bool _showAttackGizmos = true;
 
+        [Header("충돌 반동·회복 설정")]
+        [SerializeField, Min(0f)] private float _recoilSpeed = 3f;
+        [SerializeField, Min(0.01f)] private float _recoilDeceleration = 6f;
+        [SerializeField, Min(0.01f)] private float _recoveryDuration = 0.5f;
+
         private readonly HashSet<MonsterBoatTarget> _hitTargets = new HashSet<MonsterBoatTarget>();
         private SeaMonster _monster;
         private MonsterMotion _motion;
@@ -36,6 +41,9 @@ namespace Lighthouse.Monsters.AI.Server
         private bool _isCharging;
         private bool _hasPrepared;
         private bool _hasCompletedCharge;
+        private bool _isRecovering;
+        private bool _recoveryCompletesCharge;
+        private float _recoveryElapsedTime;
 
         public float AttackRange => _attackRange;
         public float PreparationDuration => _preparationDuration;
@@ -43,13 +51,16 @@ namespace Lighthouse.Monsters.AI.Server
         public Vector3 ChargeDirection => _chargeDirection;
         public bool IsPreparing => _isPreparing;
         public bool IsCharging => _isCharging;
+        public bool IsRecovering => _isRecovering;
         public bool HasCompletedCharge => _hasCompletedCharge;
         public bool CanAct => isActiveAndEnabled && _monster != null && _motion != null
             && _sensor != null && _body != null && _motion.CanMove && _sensor.isActiveAndEnabled
             && MonsterMotion.IsFinite(_body.position) && HasValidSettings;
         public bool HasValidSettings => IsPositive(_attackRange) && IsPositive(_preparationDuration)
             && IsPositive(_chargeSpeed) && IsPositive(_hitRadius)
-            && IsFinite(_chargeOvershootDistance) && _chargeOvershootDistance >= 0f;
+            && IsFinite(_chargeOvershootDistance) && _chargeOvershootDistance >= 0f
+            && IsFinite(_recoilSpeed) && _recoilSpeed >= 0f
+            && IsPositive(_recoilDeceleration) && IsPositive(_recoveryDuration);
 
         private void Awake()
         {
@@ -61,6 +72,20 @@ namespace Lighthouse.Monsters.AI.Server
 
         private void FixedUpdate()
         {
+            if (_isRecovering)
+            {
+                if (CanAct)
+                {
+                    StepRecovery();
+                }
+                else
+                {
+                    Cancel();
+                }
+
+                return;
+            }
+
             if (!_isCharging)
             {
                 return;
@@ -74,7 +99,7 @@ namespace Lighthouse.Monsters.AI.Server
 
             Vector3 currentPosition = _body.position;
             // 이동 예정 구간이 아닌 실제 물리 이동 구간에만 피해를 적용한다.
-            ApplyChargeDamage(_previousChargePosition, currentPosition);
+            ResolveSweptImpact(_previousChargePosition, currentPosition);
             if (!CanAct || !_isCharging)
             {
                 return;
@@ -112,6 +137,17 @@ namespace Lighthouse.Monsters.AI.Server
             Cancel();
         }
 
+        private void OnCollisionEnter(Collision collision)
+        {
+            HandleCollision(collision);
+        }
+
+        private void OnCollisionStay(Collision collision)
+        {
+            // 이미 접촉한 배를 향해 돌진을 시작한 경우에도 첫 접촉을 처리한다.
+            HandleCollision(collision);
+        }
+
         private void OnDrawGizmosSelected()
         {
             if (!_showAttackGizmos)
@@ -142,7 +178,7 @@ namespace Lighthouse.Monsters.AI.Server
 
         public bool BeginPreparation(GameObject target)
         {
-            if (!IsTargetInRange(target))
+            if (_isRecovering || !IsTargetInRange(target))
             {
                 return false;
             }
@@ -188,7 +224,7 @@ namespace Lighthouse.Monsters.AI.Server
 
         public bool BeginCharge()
         {
-            if (!CanAct || !_hasPrepared)
+            if (!CanAct || !_hasPrepared || _isRecovering)
             {
                 return false;
             }
@@ -234,23 +270,123 @@ namespace Lighthouse.Monsters.AI.Server
             _isCharging = false;
             _hasPrepared = false;
             _hasCompletedCharge = false;
+            _isRecovering = false;
+            _recoveryCompletesCharge = false;
+            _recoveryElapsedTime = 0f;
             _hitTargets.Clear();
             if (_motion != null)
             {
+                _motion.SetMovementLocked(false);
                 _motion.Stop();
             }
         }
 
-        private void ApplyChargeDamage(Vector3 start, Vector3 end)
+        private void HandleCollision(Collision collision)
+        {
+            if (!CanAct || !_isCharging || collision.collider == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < collision.contactCount; i++)
+            {
+                Vector3 normal = collision.GetContact(i).normal;
+                normal.y = 0f;
+                // 고정 수면의 바닥 접촉과 돌진 진행 방향 뒤쪽의 접촉은 공격 충돌에서 제외한다.
+                if (normal.sqrMagnitude <= ChargeArrivalTolerance * ChargeArrivalTolerance
+                    || Vector3.Dot(normal, _chargeDirection) >= 0f)
+                {
+                    continue;
+                }
+
+                BeginImpactRecovery(collision.collider.GetComponentInParent<MonsterBoatTarget>(), normal.normalized);
+                return;
+            }
+        }
+
+        private void BeginImpactRecovery(MonsterBoatTarget target, Vector3 recoilDirection)
+        {
+            if (!CanAct || !_isCharging)
+            {
+                return;
+            }
+
+            // 피해 콜백이나 같은 물리 프레임의 다른 접촉이 공격을 다시 처리하지 않도록 먼저 확정한다.
+            _isCharging = false;
+            _isRecovering = true;
+            _hasCompletedCharge = false;
+            _recoveryElapsedTime = 0f;
+            _recoveryCompletesCharge = target != null && target.IsEligible && IsRegisteredTarget(target);
+            _motion.SetMovementLocked(true);
+
+            if (_recoveryCompletesCharge && _hitTargets.Add(target) && IsPositive(_monster.Profile.AttackDamage))
+            {
+                target.TryApplyDamage(_monster.Profile.AttackDamage);
+            }
+
+            if (!_isRecovering)
+            {
+                return;
+            }
+
+            if (!CanAct)
+            {
+                Cancel();
+                return;
+            }
+
+            // 취소 후 다음 물리 프레임에 예약된 반동이 다시 적용되지 않도록 속도를 즉시 반영한다.
+            _body.linearVelocity += recoilDirection * _recoilSpeed;
+        }
+
+        private bool IsRegisteredTarget(MonsterBoatTarget target)
         {
             IReadOnlyList<MonsterBoatTarget> targets = _sensor.Targets;
-            float damage = _monster.Profile.AttackDamage;
-            if (targets == null || !IsPositive(damage) || !MonsterMotion.IsFinite(start)
+            if (targets == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < targets.Count; i++)
+            {
+                if (targets[i] == target)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void StepRecovery()
+        {
+            _recoveryElapsedTime += Time.fixedDeltaTime;
+            if (_recoveryElapsedTime >= _recoveryDuration)
+            {
+                _isRecovering = false;
+                _hasCompletedCharge = _recoveryCompletesCharge;
+                _motion.SetMovementLocked(false);
+                _motion.Stop();
+                return;
+            }
+
+            Vector3 velocity = _body.linearVelocity;
+            Vector3 horizontal = Vector3.MoveTowards(new Vector3(velocity.x, 0f, velocity.z),
+                Vector3.zero, _recoilDeceleration * Time.fixedDeltaTime);
+            _body.linearVelocity = new Vector3(horizontal.x, velocity.y, horizontal.z);
+        }
+
+        private void ResolveSweptImpact(Vector3 start, Vector3 end)
+        {
+            IReadOnlyList<MonsterBoatTarget> targets = _sensor.Targets;
+            if (targets == null || !MonsterMotion.IsFinite(start)
                 || !MonsterMotion.IsFinite(end))
             {
                 return;
             }
 
+            MonsterBoatTarget firstTarget = null;
+            float firstEntryDistance = float.PositiveInfinity;
             for (int i = 0; i < targets.Count; i++)
             {
                 if (!CanAct || !_isCharging)
@@ -260,19 +396,28 @@ namespace Lighthouse.Monsters.AI.Server
 
                 MonsterBoatTarget target = targets[i];
                 if (target == null || target.gameObject == gameObject || !target.IsEligible 
-                    || _hitTargets.Contains(target) || !IntersectsCharge(target, start, end))
+                    || _hitTargets.Contains(target) || !TryGetChargeIntersection(target, start, end, out float entryDistance))
                 {
                     continue;
                 }
 
-                // 한 번의 돌진으로 같은 배에 피해가 중복 적용되지 않도록 콜백 전에 피격 대상을 등록한다.
-                _hitTargets.Add(target);
-                target.TryApplyDamage(damage);
+                if (entryDistance < firstEntryDistance)
+                {
+                    firstTarget = target;
+                    firstEntryDistance = entryDistance;
+                }
+            }
+
+            if (firstTarget != null)
+            {
+                BeginImpactRecovery(firstTarget, -_chargeDirection);
             }
         }
 
-        private bool IntersectsCharge(MonsterBoatTarget target, Vector3 start, Vector3 end)
+        private bool TryGetChargeIntersection(MonsterBoatTarget target, Vector3 start, Vector3 end,
+            out float entryDistance)
         {
+            entryDistance = 0f;
             float targetRadius = target.HitRadius;
 
             if (!IsPositive(targetRadius) || !MonsterMotion.IsFinite(target.transform.position))
@@ -286,11 +431,29 @@ namespace Lighthouse.Monsters.AI.Server
             Vector3 offset = target.transform.position - start;
             offset.y = 0f;
 
-            float t = segment.sqrMagnitude > 0f ? Mathf.Clamp01(Vector3.Dot(offset, segment) / segment.sqrMagnitude) : 0f;
-            Vector3 nearestOffset = offset - segment * t;
-            float combinedRadius = _hitRadius + targetRadius;
+            if (Vector3.Dot(offset, _chargeDirection) < 0f)
+            {
+                return false;
+            }
 
-            return nearestOffset.sqrMagnitude <= combinedRadius * combinedRadius;
+            float combinedRadius = _hitRadius + targetRadius;
+            float length = segment.magnitude;
+            if (length <= ChargeArrivalTolerance)
+            {
+                return offset.sqrMagnitude <= combinedRadius * combinedRadius;
+            }
+
+            float projection = Vector3.Dot(offset, segment / length);
+            float perpendicularSquared = Mathf.Max(0f, offset.sqrMagnitude - projection * projection);
+            float radiusSquared = combinedRadius * combinedRadius;
+            if (perpendicularSquared > radiusSquared)
+            {
+                return false;
+            }
+
+            float halfSpan = Mathf.Sqrt(radiusSquared - perpendicularSquared);
+            entryDistance = Mathf.Max(0f, projection - halfSpan);
+            return projection + halfSpan >= 0f && entryDistance <= length;
         }
 
         private static void DrawPlanarCircle(Vector3 center, float radius)
