@@ -16,6 +16,7 @@ namespace Lighthouse.World.MapGeneration.Rules
         [SerializeField, Min(0)] private int _minReefs;
         [SerializeField, Min(0)] private int _maxReefs;
         [SerializeField, Min(0f)] private float _minReefDistance = 25f;
+        [SerializeField, Min(0f)] private float _reefRadius = 6f;
 
         public SeaZone Zone => _zone;
         public float InnerRadius => _innerRadius;
@@ -26,5 +27,6 @@ namespace Lighthouse.World.MapGeneration.Rules
         public int MinReefs => _minReefs;
         public int MaxReefs => _maxReefs;
         public float MinReefDistance => _minReefDistance;
+        public float ReefRadius => _reefRadius;
     }
 }

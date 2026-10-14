@@ -16,9 +16,12 @@ namespace Lighthouse.World.MapGeneration.Rules
 
             hash.Add(config.RadiusScale);
             hash.Add(config.MaxBuildAttempts);
+            hash.Add(config.RouteCellSize);
+            hash.Add(config.ShipClearance);
             AppendResources(hash, config.Resources);
             AppendArchetypes(hash, config);
             AppendZones(hash, config.Zones);
+            AppendFloors(hash, config);
             return hash.Value;
         }
 
@@ -112,7 +115,38 @@ namespace Lighthouse.World.MapGeneration.Rules
                 hash.Add(zone.MinReefs);
                 hash.Add(zone.MaxReefs);
                 hash.Add(zone.MinReefDistance);
+                hash.Add(zone.ReefRadius);
             }
+        }
+
+        private static void AppendFloors(StableHash hash, MapGenerationConfig config)
+        {
+            List<ResourceFloor> sorted = new List<ResourceFloor>();
+            for (int i = 0; i < config.ResourceFloors.Count; i++)
+            {
+                if (config.ResourceFloors[i] != null)
+                {
+                    sorted.Add(config.ResourceFloors[i]);
+                }
+            }
+
+            sorted.Sort(CompareFloorsByResourceId);
+            hash.Add(sorted.Count);
+            for (int i = 0; i < sorted.Count; i++)
+            {
+                hash.Add(GetResourceId(sorted[i]));
+                hash.Add(sorted[i].MinIslandCount);
+            }
+        }
+
+        private static int CompareFloorsByResourceId(ResourceFloor a, ResourceFloor b)
+        {
+            return GetResourceId(a).CompareTo(GetResourceId(b));
+        }
+
+        private static int GetResourceId(ResourceFloor floor)
+        {
+            return floor.Resource != null ? floor.Resource.Id : 0;
         }
 
         private static void AppendDeposit(StableHash hash, DepositSpec deposit)

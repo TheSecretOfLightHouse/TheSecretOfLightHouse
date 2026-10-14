@@ -82,6 +82,11 @@ namespace Lighthouse.World.MapGeneration.Rules
                 errors.Add($"{tag}: Variants 비어 있음");
             }
 
+            if (archetype.Variants.Count > byte.MaxValue)
+            {
+                errors.Add($"{tag}: Variants는 {byte.MaxValue}개 이하여야 함");
+            }
+
             for (int i = 0; i < archetype.Variants.Count; i++)
             {
                 IslandVariant variant = archetype.Variants[i];

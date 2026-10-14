@@ -13,17 +13,24 @@ namespace Lighthouse.World.MapGeneration.Rules
         [SerializeField] private ResourceCatalog _resources;
         [SerializeField] private IslandArchetype[] _archetypes;
         [SerializeField] private ZoneConfig[] _zones;
+        [SerializeField] private ResourceFloor[] _resourceFloors;
         [SerializeField, Min(0.1f)] private float _radiusScale = 1f;
         [SerializeField, Min(1)] private int _maxBuildAttempts = 8;
+        [SerializeField, Min(1f)] private float _routeCellSize = 10f;
+        [SerializeField, Min(0f)] private float _shipClearance = 6f;
 
         public IslandArchetype LighthouseIsland => _lighthouseIsland;
         public ResourceCatalog Resources => _resources;
         public float RadiusScale => _radiusScale;
         public int MaxBuildAttempts => _maxBuildAttempts;
+        public float RouteCellSize => _routeCellSize;
+        public float ShipClearance => _shipClearance;
 
         public IReadOnlyList<IslandArchetype> Archetypes => _archetypes ?? Array.Empty<IslandArchetype>();
 
         public IReadOnlyList<ZoneConfig> Zones => _zones ?? Array.Empty<ZoneConfig>();
+
+        public IReadOnlyList<ResourceFloor> ResourceFloors => _resourceFloors ?? Array.Empty<ResourceFloor>();
 
         public bool TryGetArchetype(int id, out IslandArchetype archetype)
         {

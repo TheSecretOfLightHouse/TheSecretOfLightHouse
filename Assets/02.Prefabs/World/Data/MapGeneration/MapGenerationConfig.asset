@@ -30,6 +30,7 @@ MonoBehaviour:
     _minReefs: 0
     _maxReefs: 0
     _minReefDistance: 25
+    _reefRadius: 6
   - _zone: 2
     _innerRadius: 150
     _outerRadius: 300
@@ -39,6 +40,7 @@ MonoBehaviour:
     _minReefs: 3
     _maxReefs: 6
     _minReefDistance: 25
+    _reefRadius: 6
   - _zone: 4
     _innerRadius: 300
     _outerRadius: 450
@@ -48,5 +50,17 @@ MonoBehaviour:
     _minReefs: 6
     _maxReefs: 10
     _minReefDistance: 25
+    _reefRadius: 6
+  _resourceFloors:
+  - _resource: {fileID: 11400000, guid: 9ff0671df1fa4014793fa191e3e36bab, type: 2}
+    _minIslandCount: 1
+  - _resource: {fileID: 11400000, guid: 8c7a2775b55dec340a1dfce8185c7fb5, type: 2}
+    _minIslandCount: 2
+  - _resource: {fileID: 11400000, guid: d08359d5654970348842cc01ffeb88bf, type: 2}
+    _minIslandCount: 2
+  - _resource: {fileID: 11400000, guid: 36e7424a8f7dc8844a1df2dbe6997f06, type: 2}
+    _minIslandCount: 1
   _radiusScale: 1
   _maxBuildAttempts: 8
+  _routeCellSize: 10
+  _shipClearance: 6
