@@ -31,13 +31,13 @@ namespace Lighthouse.Monsters.AI.Server
         private Vector3 _patrolMin;
         private Vector3 _patrolMax;
         private Vector3 _patrolDestination;
-        private float _patrolWaitRemaining;
         private float _patrolSpeed;
         private bool _hasPatrolDestination;
         private bool _hasValidPatrolArea;
         private bool _isMoving;
 
         public Vector3 HomePosition => _homePosition;
+        public Vector2 PatrolWaitRange => _patrolWaitRange;
         public float ChaseStoppingDistance => _chaseStoppingDistance;
         public bool IsMoving => _isMoving;
         public bool IsPatrolWaiting => !_hasPatrolDestination;
@@ -55,7 +55,6 @@ namespace Lighthouse.Monsters.AI.Server
             // 개체마다 시작 위치를 보관하며, 이동 중 공유 프로필은 변경하지 않는다.
             _homePosition = transform.position;
             InitializePatrolArea();
-            BeginPatrolWait();
         }
 
         private void OnDisable()
@@ -111,33 +110,30 @@ namespace Lighthouse.Monsters.AI.Server
             Gizmos.matrix = previousMatrix;
         }
 
-        public bool StepPatrol(float speed)
+        public bool BeginPatrolLeg()
         {
-            if (!CanMove || !HasValidSetup || !_hasValidPatrolArea || !IsFinitePositive(speed)
-                || !IsFinitePositive(_patrolTurnSpeed) || !IsFinitePositive(_patrolAcceleration)
-                || !IsFinite(_patrolWaitRange.x) || !IsFinite(_patrolWaitRange.y)
-                || _patrolWaitRange.x < 0f || _patrolWaitRange.y < _patrolWaitRange.x)
+            if (!CanMove || !HasValidSetup || !_hasValidPatrolArea
+                || !IsFinitePositive(_patrolTurnSpeed) || !IsFinitePositive(_patrolAcceleration))
             {
                 Stop();
                 return false;
             }
 
-            if (!_hasPatrolDestination)
-            {
-                _isMoving = false;
-                _patrolWaitRemaining -= Time.deltaTime;
-                if (_patrolWaitRemaining > 0f)
-                {
-                    return true;
-                }
-
-                _patrolDestination = new Vector3(Random.Range(_patrolMin.x, _patrolMax.x),
-                    _homePosition.y, Random.Range(_patrolMin.z, _patrolMax.z));
-                _hasPatrolDestination = true;
-            }
-
-            StepPatrolSwim(speed);
+            _patrolDestination = new Vector3(Random.Range(_patrolMin.x, _patrolMax.x),
+                _homePosition.y, Random.Range(_patrolMin.z, _patrolMax.z));
+            _hasPatrolDestination = true;
             return true;
+        }
+
+        public bool StepPatrol(float speed)
+        {
+            if (!CanMove || !HasValidSetup || !_hasPatrolDestination || !IsFinitePositive(speed))
+            {
+                Stop();
+                return false;
+            }
+            StepPatrolSwim(speed);
+            return !_hasPatrolDestination;
         }
 
         public bool StepReturn(float speed)
@@ -147,8 +143,14 @@ namespace Lighthouse.Monsters.AI.Server
 
         public bool StepTowards(Vector3 destination, float speed, float stoppingDistance)
         {
+            return StepTowards(destination, speed, stoppingDistance, Time.deltaTime);
+        }
+
+        public bool StepTowards(Vector3 destination, float speed, float stoppingDistance, float deltaTime)
+        {
             if (!CanMove || !HasValidSetup || !IsFinite(destination)
-                || !IsFinitePositive(speed) || !IsFinitePositive(stoppingDistance))
+                || !IsFinitePositive(speed) || !IsFinitePositive(stoppingDistance)
+                || !IsFinite(deltaTime) || deltaTime < 0f)
             {
                 Stop();
                 return false;
@@ -165,7 +167,7 @@ namespace Lighthouse.Monsters.AI.Server
             }
 
             Vector3 direction = offset / distance;
-            float step = Mathf.Min(speed * Time.deltaTime, distance - stoppingDistance);
+            float step = Mathf.Min(speed * deltaTime, distance - stoppingDistance);
             transform.SetPositionAndRotation(transform.position + direction * step,
                 Quaternion.LookRotation(direction, Vector3.up));
             _isMoving = step > 0f;
@@ -192,7 +194,7 @@ namespace Lighthouse.Monsters.AI.Server
             // 활성 BT 노드만 이동을 갱신하므로 노드 종료 후 별도 속도나 코루틴이 이동을 이어가지 않는다.
             _isMoving = false;
             _patrolSpeed = 0f;
-            BeginPatrolWait();
+            _hasPatrolDestination = false;
         }
 
         public static bool IsFinite(Vector3 value)
@@ -235,12 +237,6 @@ namespace Lighthouse.Monsters.AI.Server
             return IsFinite(min) && IsFinite(max) && (max.x > min.x || max.z > min.z);
         }
 
-        private void BeginPatrolWait()
-        {
-            _hasPatrolDestination = false;
-            _patrolWaitRemaining = Random.Range(_patrolWaitRange.x, _patrolWaitRange.y);
-        }
-
         private void StepPatrolSwim(float speed)
         {
             Vector3 position = transform.position;
@@ -251,7 +247,7 @@ namespace Lighthouse.Monsters.AI.Server
             {
                 _patrolSpeed = 0f;
                 _isMoving = false;
-                BeginPatrolWait();
+                _hasPatrolDestination = false;
                 return;
             }
 

@@ -24,19 +24,17 @@ namespace Lighthouse.Monsters.AI.Server
         private SeaMonsterSensor _sensor;
         private Vector3 _aimPosition;
         private Vector3 _chargeDirection;
-        private float _preparationRemaining;
         private float _chargeRemainingDistance;
-        private float _nextAttackTime;
         private bool _isPreparing;
         private bool _isCharging;
         private bool _hasPrepared;
 
         public float AttackRange => _attackRange;
+        public float PreparationDuration => _preparationDuration;
         public Vector3 AimPosition => _aimPosition;
         public Vector3 ChargeDirection => _chargeDirection;
         public bool IsPreparing => _isPreparing;
         public bool IsCharging => _isCharging;
-        public float CooldownRemaining => Mathf.Max(0f, _nextAttackTime - Time.time);
         public bool CanAct => isActiveAndEnabled && _monster != null && _motion != null
             && _sensor != null && _motion.CanMove && _sensor.isActiveAndEnabled && HasValidSettings;
         public bool HasValidSettings => IsPositive(_attackRange) && IsPositive(_preparationDuration)
@@ -83,14 +81,9 @@ namespace Lighthouse.Monsters.AI.Server
             return CanAct && _sensor.CanTrack(target, _attackRange);
         }
 
-        public bool CanStartAttack(GameObject target)
-        {
-            return IsTargetInRange(target) && Time.time >= _nextAttackTime;
-        }
-
         public bool BeginPreparation(GameObject target)
         {
-            if (!CanStartAttack(target))
+            if (!IsTargetInRange(target))
             {
                 return false;
             }
@@ -99,15 +92,14 @@ namespace Lighthouse.Monsters.AI.Server
             _motion.Stop();
             _aimPosition = target.transform.position;
             _aimPosition.y = _motion.HomePosition.y;
-            _preparationRemaining = _preparationDuration;
             _isPreparing = true;
             _monster.TrySetBehaviorState(MonsterState.Attack);
             return true;
         }
 
-        public bool StepPreparation(GameObject target, float deltaTime)
+        public bool UpdatePreparationAim(GameObject target)
         {
-            if (!CanAct || !_isPreparing || !IsFinite(deltaTime) || deltaTime < 0f)
+            if (!CanAct || !_isPreparing)
             {
                 return false;
             }
@@ -119,12 +111,15 @@ namespace Lighthouse.Monsters.AI.Server
                 _aimPosition.y = _motion.HomePosition.y;
             }
 
-            _preparationRemaining = Mathf.Max(0f, _preparationRemaining - deltaTime);
-            if (_preparationRemaining > 0f)
+            return true;
+        }
+
+        public bool CompletePreparation()
+        {
+            if (!CanAct || !_isPreparing)
             {
                 return false;
             }
-
             _isPreparing = false;
             _hasPrepared = true;
             return true;
@@ -182,7 +177,6 @@ namespace Lighthouse.Monsters.AI.Server
             }
 
             _isCharging = false;
-            _nextAttackTime = Time.time + _monster.Profile.AttackCooldown;
             _motion.Stop();
             return true;
         }

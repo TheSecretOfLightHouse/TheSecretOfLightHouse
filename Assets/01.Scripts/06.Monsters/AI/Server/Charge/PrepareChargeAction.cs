@@ -11,13 +11,16 @@ namespace Lighthouse.Monsters.AI.Server
         id: "1f5629e394784824ade864d1513573a1")]
     public sealed class PrepareChargeAction : MonsterAction
     {
+        [UnityEngine.SerializeReference] private BlackboardVariable<bool> _preparationElapsed = new BlackboardVariable<bool>();
         [NonSerialized] private SeaMonsterChargeAttack _attack;
         [NonSerialized] private bool _completed;
+
+        public BlackboardVariable<bool> PreparationElapsed { get => _preparationElapsed; set => _preparationElapsed = value; }
 
         protected override Status OnStart()
         {
             _completed = false;
-            if (!ResolveReferences())
+            if (!ResolveReferences() || _preparationElapsed == null)
             {
                 return Status.Failure;
             }
@@ -35,7 +38,12 @@ namespace Lighthouse.Monsters.AI.Server
                 return Status.Failure;
             }
 
-            _completed = _attack.StepPreparation(TargetBoat.Value, UnityEngine.Time.deltaTime);
+            if (!_attack.UpdatePreparationAim(TargetBoat.Value))
+            {
+                return Status.Failure;
+            }
+
+            _completed = _preparationElapsed.Value && _attack.CompletePreparation();
             return _completed ? Status.Success : Status.Running;
         }
 
