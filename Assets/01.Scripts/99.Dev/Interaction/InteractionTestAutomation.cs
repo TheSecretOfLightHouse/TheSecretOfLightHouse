@@ -5,6 +5,8 @@ using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Relay.View;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Interaction.Requests.Rules;
+using Lighthouse.Interaction.Sessions.Net;
+using Lighthouse.Interaction.Sessions.Rules;
 using Lighthouse.Interaction.Targets.Net;
 using Lighthouse.Network.Connections.Net;
 using Lighthouse.Network.Session.Net;
@@ -14,7 +16,7 @@ using UnityEngine;
 
 namespace Lighthouse.Dev.Interaction
 {
-    // JH02 A-1 scripted check on the local test player. Runs with "-jh02Auto" on a build, or when an editor session
+    // JH02 A-1/A-2 scripted check on the local test player. Runs with "-jh02Auto" on a build, or when an editor session
     // sets IsEnabledInThisProcess (via MCP) before the match. Each step logs PASS/FAIL with the expected result code.
     [DisallowMultipleComponent]
     [RequireComponent(typeof(InteractionSelector))]
@@ -27,6 +29,10 @@ namespace Lighthouse.Dev.Interaction
         private const int UnknownSpotKey = 7;
         private const float ReplyTimeoutSeconds = 10f;
         private const float StartTimeoutSeconds = 120f;
+        private const string SharedLabel = "Shared";
+        private const string SessionPrefix = "Session";
+        private const string VanishPrefix = "Vanish";
+        private const float FarOffset = 40f;
 
         private InteractionSelector _selector;
         private InteractionRelay _relay;
@@ -35,6 +41,10 @@ namespace Lighthouse.Dev.Interaction
         private InteractionResult _reply;
         private int _passCount;
         private int _failCount;
+        private InteractionSessionUpdate _lastSession;
+        private uint _lastStartedSessionId;
+        private uint _lastEndedSessionId;
+        private InteractionSessionEndReason _lastEndReason;
 
         public static bool IsEnabledInThisProcess { get; set; }
 
@@ -49,6 +59,7 @@ namespace Lighthouse.Dev.Interaction
             if (IsEnabledInThisProcess || Array.IndexOf(Environment.GetCommandLineArgs(), AutoFlag) >= 0)
             {
                 _relay.ResultReceived += HandleResultReceived;
+                _relay.SessionChanged += HandleSessionChanged;
                 StartCoroutine(Run());
             }
         }
@@ -56,6 +67,7 @@ namespace Lighthouse.Dev.Interaction
         public override void OnStopLocalPlayer()
         {
             _relay.ResultReceived -= HandleResultReceived;
+            _relay.SessionChanged -= HandleSessionChanged;
         }
 
         private IEnumerator Run()
@@ -123,7 +135,111 @@ namespace Lighthouse.Dev.Interaction
                 yield return null;
             }
 
+            Log($"A1_DONE actor={actorId} pass={_passCount} fail={_failCount}");
+            yield return RunSessions(actorId);
             Log($"ALL_DONE actor={actorId} pass={_passCount} fail={_failCount}");
+        }
+
+        // A-2: held sessions. Actor 1 holds the shared exclusive target while actor 2 checks it gets Busy.
+        private IEnumerator RunSessions(uint actorId)
+        {
+            uint sharedId = FindNetId(SharedLabel);
+            uint sessionId = FindNetId(SessionPrefix + actorId);
+            uint vanishId = FindNetId(VanishPrefix + actorId);
+
+            if (actorId == 1)
+            {
+                yield return BeginSession("exclusive_hold", sharedId, 4000);
+                yield return WaitSessionEnd("exclusive_hold_complete", InteractionSessionEndReason.Completed, 8f);
+            }
+            else
+            {
+                DevInteractionCounter shared = DevInteractionCounter.FindByLabel(SharedLabel);
+                double deadline = Time.realtimeSinceStartupAsDouble + 8f;
+
+                while (shared && !shared.IsOccupied && Time.realtimeSinceStartupAsDouble < deadline)
+                {
+                    yield return null;
+                }
+
+                Check("exclusive_seen_taken", shared && shared.IsOccupied, "shared target occupied by actor 1");
+                yield return SendAndExpect("exclusive_busy", () => _relay.TrySendToNetworkTarget(sharedId, InteractionAction.Harvest, 1000),
+                    InteractionResultCode.Busy);
+            }
+
+            yield return BeginSession("session_complete", sessionId, 800);
+            yield return WaitSessionEnd("session_complete_end", InteractionSessionEndReason.Completed, 5f);
+
+            yield return BeginSession("session_cancel", sessionId, 3000);
+            yield return new WaitForSecondsRealtime(0.3f);
+            Check("session_cancel_sent", _selector.CancelSession(), "cancel command sent");
+            yield return WaitSessionEnd("session_cancel_end", InteractionSessionEndReason.CancelledByPlayer, 5f);
+            Check("session_cancel_again", !_selector.CancelSession(), "no session left to cancel");
+
+            yield return BeginSession("session_busy_self", sessionId, 3000);
+            yield return SendAndExpect("session_second_begin", () => _relay.TrySendToNetworkTarget(sessionId, InteractionAction.Harvest, 1000),
+                InteractionResultCode.Busy);
+            _selector.CancelSession();
+            yield return WaitSessionEnd("session_busy_self_end", InteractionSessionEndReason.CancelledByPlayer, 5f);
+
+            yield return BeginSession("session_out_of_range", sessionId, 5000);
+            Vector3 home = transform.position;
+            transform.position = home + new Vector3(FarOffset, 0f, 0f);
+            yield return WaitSessionEnd("session_out_of_range_end", InteractionSessionEndReason.OutOfRange, 5f);
+            transform.position = home;
+            yield return new WaitForSecondsRealtime(0.5f);
+
+            yield return BeginSession("session_target_lost", vanishId, 5000);
+            yield return WaitSessionEnd("session_target_lost_end", InteractionSessionEndReason.TargetLost, 5f);
+            yield return SendAndExpect("request_to_lost_target", () => _relay.TrySendToNetworkTarget(vanishId, InteractionAction.Harvest, 1000),
+                InteractionResultCode.InvalidTarget);
+        }
+
+        private IEnumerator BeginSession(string step, uint targetNetId, int durationMs)
+        {
+            uint previousStart = _lastStartedSessionId;
+            yield return SendAndExpect(step, () => _relay.TrySendToNetworkTarget(targetNetId, InteractionAction.Harvest, durationMs),
+                InteractionResultCode.Success);
+
+            double deadline = Time.realtimeSinceStartupAsDouble + ReplyTimeoutSeconds;
+
+            while (_lastStartedSessionId == previousStart && Time.realtimeSinceStartupAsDouble < deadline)
+            {
+                yield return null;
+            }
+
+            Check(step + "_started", _lastStartedSessionId != previousStart && _relay.HasActiveSession,
+                $"session={_lastStartedSessionId} duration={_lastSession.DurationSeconds}");
+        }
+
+        private IEnumerator WaitSessionEnd(string step, InteractionSessionEndReason expected, float timeoutSeconds)
+        {
+            uint sessionId = _lastStartedSessionId;
+            double deadline = Time.realtimeSinceStartupAsDouble + timeoutSeconds;
+
+            while (_lastEndedSessionId != sessionId && Time.realtimeSinceStartupAsDouble < deadline)
+            {
+                yield return null;
+            }
+
+            bool hasEnded = _lastEndedSessionId == sessionId;
+            Check(step, hasEnded && _lastEndReason == expected && !_relay.HasActiveSession,
+                hasEnded ? $"session={sessionId} reason={_lastEndReason} expected={expected}" : $"session={sessionId} did not end");
+        }
+
+        private void HandleSessionChanged(InteractionSessionUpdate update)
+        {
+            _lastSession = update;
+
+            if (update.IsActive)
+            {
+                _lastStartedSessionId = update.SessionId;
+            }
+            else
+            {
+                _lastEndedSessionId = update.SessionId;
+                _lastEndReason = update.EndReason;
+            }
         }
 
         private IEnumerator SendAndExpect(string step, Func<bool> send, InteractionResultCode expected)

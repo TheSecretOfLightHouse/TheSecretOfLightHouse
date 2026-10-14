@@ -30,6 +30,7 @@ namespace Lighthouse.Dev.Interaction
             }
 
             _interactAction.action.performed += HandleInteractPerformed;
+            _interactAction.action.canceled += HandleInteractCanceled;
             _interactAction.action.Enable();
             _isListening = true;
         }
@@ -52,6 +53,7 @@ namespace Lighthouse.Dev.Interaction
             }
 
             _interactAction.action.performed -= HandleInteractPerformed;
+            _interactAction.action.canceled -= HandleInteractCanceled;
             _isListening = false;
         }
 
@@ -59,6 +61,12 @@ namespace Lighthouse.Dev.Interaction
         {
             bool isSent = _selector.TryInteract();
             Debug.Log($"[{nameof(DevInteractionKeyInput)}] Interact pressed. sent={isSent} selected={(_selector.Selected ? _selector.Selected.name : "none")}");
+        }
+
+        // Releasing the key ends a held session; harmless when none is running.
+        private void HandleInteractCanceled(InputAction.CallbackContext context)
+        {
+            _selector.CancelSession();
         }
     }
 }

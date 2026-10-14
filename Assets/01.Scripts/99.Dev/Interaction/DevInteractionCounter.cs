@@ -19,6 +19,9 @@ namespace Lighthouse.Dev.Interaction
 
         [SyncVar(hook = nameof(OnCountChanged))]
         private int _count;
+        // Public on purpose for the exclusivity test: lets another player see the target is being held.
+        [SyncVar]
+        private bool _isOccupied;
 
         private MaterialPropertyBlock _block;
 
@@ -26,6 +29,7 @@ namespace Lighthouse.Dev.Interaction
 
         public string Label => _label;
         public int Count => _count;
+        public bool IsOccupied => _isOccupied;
 
         private void OnEnable()
         {
@@ -48,6 +52,12 @@ namespace Lighthouse.Dev.Interaction
             }
 
             return null;
+        }
+
+        [Server]
+        public void SetOccupied(bool isOccupied)
+        {
+            _isOccupied = isOccupied;
         }
 
         [Server]

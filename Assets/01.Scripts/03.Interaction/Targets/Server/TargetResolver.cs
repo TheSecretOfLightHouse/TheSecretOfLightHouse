@@ -57,6 +57,27 @@ namespace Lighthouse.Interaction.Targets.Server
             return InteractionResultCode.Success;
         }
 
+        // Re-checks a target that was resolved earlier (held sessions), returning its current position.
+        public static bool TryRefresh(in ResolvedTarget target, InteractionAction action, out Vector3 position)
+        {
+            position = default;
+
+            if (target.Kind == InteractionTargetKind.NetworkObject)
+            {
+                if (!target.Identity || !NetworkServer.spawned.ContainsKey(target.Identity.netId)
+                    || !target.Identity.TryGetComponent(out InteractionTarget marker) || !marker.isActiveAndEnabled)
+                {
+                    return false;
+                }
+
+                position = marker.Position;
+                return true;
+            }
+
+            return Adapters.TryGetValue(target.Kind, out INonNetworkTargetAdapter adapter)
+                && adapter.TryResolve(target.Key, action, out position, out _);
+        }
+
         private static InteractionResultCode TryResolveNetworkObject(in InteractionRequest request, out ResolvedTarget target)
         {
             target = default;

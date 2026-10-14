@@ -18,6 +18,8 @@ namespace Lighthouse.Interaction.Requests.Rules
         ActionNotSupported = 7,
         OutOfRange = 8,
         NotHandled = 9,
-        Rejected = 10
+        Rejected = 10,
+        // The actor already has a session, or an exclusive target is taken by someone else.
+        Busy = 11
     }
 }

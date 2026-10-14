@@ -121,7 +121,8 @@ Assets/01.Scripts/
     Requests/{Rules,Net}/           wire DTO, 검증된 서버 명령, 결과 코드
     Relay/{Net,View}/               InteractionRelay, InteractionInputAdapter(대상 탐지·선택)
     Targets/{Net,Server}/           InteractionTarget(상호작용 가능·기본 Action 표식), TargetResolver(비네트워크 대상 변환기)
-    Router/Server/                 InteractionRouter
+    Router/Server/                 InteractionRouter, IInteractionHandler
+    Sessions/{Rules,Net,Server}/    InteractionSessions(지속 상호작용 세션), IInteractionSessionHandler
     Validator/Server/              RequestValidator, RequestLedger
     History/Server/                InteractionHistory
     GhostShipHints/{Rules,Server,Net,View}/
@@ -237,6 +238,18 @@ sequenceDiagram
 ## 6. 작업대·모듈·부식
 
 지속/독점 행동(채집 길게 누르기, 구조, 작업대 점유)은 Interaction이 Begin/Cancel/Complete와 InteractionSessionId를 관리하고, 소요 시간과 취소 조건은 각 기능(MK03 채집, MK04 구조 등)이 정한다(2026-10-13 결정). 서버가 점유·만료를 소유하고 이탈·대상 소멸·단계 전환·시간 초과에 해제한다. 작업대 메뉴 열기가 독점 점유를 뜻한다고 가정하지 않으며, 단발 투입/인출과 지속 행동을 분리한다.
+
+2026-10-14 A-2 구현 계약:
+
+| 항목 | 계약 |
+|---|---|
+| 등록 | 기능이 `InteractionRouter.RegisterSessionHandler(action, IInteractionSessionHandler)`로 등록한다. 같은 Action에 단발 처리기와 세션 처리기를 함께 둘 수 없다 |
+| 시작 | 일반 요청(번호 소비)이 공통 검사를 통과하면 `Begin(context, out duration)`. 성공이면 세션이 시작되고 응답은 `Success`다. 이미 자기 세션이 있거나, 독점(`IsExclusive`) 대상을 다른 사람이 쓰는 중이면 `Busy` |
+| 진행 | 한 사람당 세션 하나. 그 사람의 Relay가 서버에서 매 프레임 판 진행 중·대상 존재·거리(대상 서버 범위)·기능의 `CanContinue`를 확인한다 |
+| 완료 | 소요 시간이 차면 `Complete`. 결과 적용은 여기서만 한다 |
+| 취소 | 키 뗌(`CancelledByPlayer`), 범위 이탈, 대상 소멸, 기능 조건 실패, 판 종료(`MatchEnded`), 이탈(`ActorLeft`, Relay `OnStopServer`), 처리기 예외. `Cancel`은 상태를 시작 전으로 돌려야 한다 |
+| 취소 요청 | 번호 없는 별도 Command(세션 번호 지정). 자기 세션만 끝내고 자원을 바꾸지 않아 반복해도 결과가 같다 |
+| 알림 | 시작·종료를 본인에게만 각 한 번 `TargetRpc`로 보낸다(세션 번호·소요 시간·종료 사유). 다른 사람에게 보일 결과는 기능이 공개한다 |
 
 ### 6.1 자원 거래
 

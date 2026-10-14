@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Interaction.Requests.Rules;
+using Lighthouse.Interaction.Sessions.Server;
 using Lighthouse.Interaction.Targets.Server;
 using Lighthouse.Interaction.Validator.Server;
 using Lighthouse.Network.Session.Net;
@@ -17,6 +18,8 @@ namespace Lighthouse.Interaction.Router.Server
     {
         private static readonly Dictionary<InteractionAction, IInteractionHandler> Handlers =
             new Dictionary<InteractionAction, IInteractionHandler>();
+        private static readonly Dictionary<InteractionAction, IInteractionSessionHandler> SessionHandlers =
+            new Dictionary<InteractionAction, IInteractionSessionHandler>();
         private static readonly RequestLedger Ledger = new RequestLedger();
 
         // Server-only. Raised after every reply is decided, accepted or not. For logs and tests; do not change state here.
@@ -30,13 +33,39 @@ namespace Lighthouse.Interaction.Router.Server
                 return false;
             }
 
-            if (!Handlers.TryAdd(action, handler))
+            if (SessionHandlers.ContainsKey(action) || !Handlers.TryAdd(action, handler))
             {
                 Debug.LogError($"[{nameof(InteractionRouter)}] A handler for {action} is already registered.");
                 return false;
             }
 
             return true;
+        }
+
+        // Held actions (harvest, rescue...): the request starts a session instead of finishing at once.
+        public static bool RegisterSessionHandler(InteractionAction action, IInteractionSessionHandler handler)
+        {
+            if (action == InteractionAction.None || handler == null)
+            {
+                Debug.LogError($"[{nameof(InteractionRouter)}] {action} cannot take a session handler.");
+                return false;
+            }
+
+            if (Handlers.ContainsKey(action) || !SessionHandlers.TryAdd(action, handler))
+            {
+                Debug.LogError($"[{nameof(InteractionRouter)}] A handler for {action} is already registered.");
+                return false;
+            }
+
+            return true;
+        }
+
+        public static void UnregisterSessionHandler(InteractionAction action, IInteractionSessionHandler handler)
+        {
+            if (SessionHandlers.TryGetValue(action, out IInteractionSessionHandler current) && current == handler)
+            {
+                SessionHandlers.Remove(action);
+            }
         }
 
         public static void UnregisterHandler(InteractionAction action, IInteractionHandler handler)
@@ -120,12 +149,25 @@ namespace Lighthouse.Interaction.Router.Server
                 return InteractionResultCode.OutOfRange;
             }
 
+            InteractionContext context = new InteractionContext(actorId, sender, request.Action, target, request.Arg0, request.Arg1);
+
+            if (SessionHandlers.TryGetValue(request.Action, out IInteractionSessionHandler sessionHandler))
+            {
+                try
+                {
+                    return InteractionSessions.TryStart(context, sessionHandler);
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception);
+                    return InteractionResultCode.Rejected;
+                }
+            }
+
             if (!Handlers.TryGetValue(request.Action, out IInteractionHandler handler))
             {
                 return InteractionResultCode.NotHandled;
             }
-
-            InteractionContext context = new InteractionContext(actorId, sender, request.Action, target, request.Arg0, request.Arg1);
 
             try
             {
@@ -145,6 +187,7 @@ namespace Lighthouse.Interaction.Router.Server
         private static void ResetStatics()
         {
             Handlers.Clear();
+            SessionHandlers.Clear();
             Ledger.Clear();
             RequestProcessed = null;
         }

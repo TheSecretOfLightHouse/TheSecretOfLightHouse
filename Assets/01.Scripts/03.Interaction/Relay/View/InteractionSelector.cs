@@ -64,6 +64,13 @@ namespace Lighthouse.Interaction.Relay.View
             return _relay.TrySendToNetworkTarget(_selected.NetId, _selected.DefaultAction);
         }
 
+        // Stops the running held interaction, e.g. on key release. False when there is none.
+        [Client]
+        public bool CancelSession()
+        {
+            return isLocalPlayer && _relay.TryCancelSession();
+        }
+
         private static InteractionTarget FindNearest(Vector3 origin)
         {
             IReadOnlyList<InteractionTarget> targets = InteractionTarget.Active;

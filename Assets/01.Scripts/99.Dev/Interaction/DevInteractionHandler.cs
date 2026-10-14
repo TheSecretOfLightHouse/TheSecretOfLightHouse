@@ -20,10 +20,13 @@ namespace Lighthouse.Dev.Interaction
         public override void OnStartServer()
         {
             _isRegistered = InteractionRouter.RegisterHandler(_action, this);
+            InteractionRouter.RequestProcessed += HandleRequestProcessed;
         }
 
         public override void OnStopServer()
         {
+            InteractionRouter.RequestProcessed -= HandleRequestProcessed;
+
             if (_isRegistered)
             {
                 InteractionRouter.UnregisterHandler(_action, this);
@@ -41,6 +44,11 @@ namespace Lighthouse.Dev.Interaction
             int count = counter.Increment();
             Debug.Log($"[{nameof(DevInteractionHandler)}] Applied actor={context.ActorId} target={counter.Label} count={count}");
             return InteractionResultCode.Success;
+        }
+
+        private static void HandleRequestProcessed(uint actorId, InteractionRequest request, InteractionResult result)
+        {
+            Debug.Log($"[{nameof(DevInteractionHandler)}] Processed actor={actorId} seq={request.Sequence} action={request.Action} code={result.Code}");
         }
     }
 }
