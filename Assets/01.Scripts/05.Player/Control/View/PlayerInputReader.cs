@@ -22,7 +22,7 @@ public class PlayerInputReader : MonoBehaviour
         LookInput = value.Get<Vector2>();
     }
 
-    public void OnDash(InputValue value)
+    public void OnRun(InputValue value)
     {
         RunHeld = value.isPressed;
     }

@@ -25,7 +25,7 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "Dash",
+                    "name": "Run",
                     "type": "Value",
                     "id": "2d490cb9-e13c-4034-9cf5-d6756a90d425",
                     "expectedControlType": "",
@@ -37,6 +37,15 @@
                     "name": "Jump",
                     "type": "Button",
                     "id": "f94dbc99-6b25-48f0-8fdb-ad4254ce245b",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Interact",
+                    "type": "Button",
+                    "id": "07413ca6-0fe0-430f-a710-2613138b2b64",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -117,7 +126,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "PC",
-                    "action": "Dash",
+                    "action": "Run",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -129,6 +138,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "Jump",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "d43c70a7-1ac0-466c-8dd0-2354ab09b65b",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Interact",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
