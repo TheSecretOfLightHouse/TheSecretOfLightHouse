@@ -61,7 +61,7 @@ Unity 루트의 `Assets/00.Scenes`, `02.Prefabs`~`07.Materials`, `Packages/`, `P
 | 배치 계약 | `02.World/Spawning/Rules/SpawnerPoint.cs` — 실제 스폰 실행은 Monsters 담당 |
 | 자원 계약·정의 | `02.World/Harvest/Rules/SpotInfo.cs`, `ResourceDefinition.cs`, `ResourceRarity.cs` |
 | 상호작용 계약 | `03.Interaction/Requests/Net/InteractionRequest.cs`, `InteractionAction.cs` |
-| 접속·참가자 식별 | `01.Network/Session/Net/LighthouseNetworkManager.cs`, `Connections/Server/ConnectionDirectory.cs`, `Connections/Net/NetworkActor.cs` — JH01의 4인 접속과 송신자/ActorId 식별. 현재 해제 시 명단에서 제거하고 Mirror 기본 해제를 실행하며, 판 진행 중 이탈 시 판 종료(JH07)는 미구현 |
+| 접속·참가자 식별 | `01.Network/Session/Net/LighthouseNetworkManager.cs`, `Connections/Server/ConnectionDirectory.cs`, `Connections/Net/NetworkActor.cs` — JH01의 4인 접속과 송신자/ActorId 식별. JH07(같은 파일 + `Session/Net/LobbyPlayer`·`SessionJoinAuthenticator`·세션 메시지, `Session/Rules/MatchPhase`·`SessionEndReason`)이 로비 준비·자동 시작·전원 로딩 확인·판 진행 중 이탈 시 판 종료를 맡는다. 로비 설정이 없는 매니저는 기존 단일 씬 방식 |
 | 투표 규칙 | `07.Mafia/Voting/Rules/VoteService.cs`, `VoteRecord.cs` — 참가자·횟수·같은 대상 재클릭 처리. 새 결정의 역할/자기 투표 제한·의식 잠금·서버 전송 통합은 완료 상태가 아님 |
 
 StateMachine·State·Transition은 현재 MoveConfig에 의존하므로 Player 안에 둔다. ShipPhysicsProfile은 배 물리 정의로 Player가 관리하며 World에서 소비할 때 합의한다.
