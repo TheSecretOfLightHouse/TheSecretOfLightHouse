@@ -172,6 +172,21 @@ namespace Lighthouse.Monsters.AI.Server
             return distance - step <= stoppingDistance;
         }
 
+        public void StepCharge(Vector3 direction, float distance)
+        {
+            if (!CanMove || !HasValidSetup || !IsFinite(direction) || !IsFinite(distance)
+                || distance < 0f || direction.sqrMagnitude <= 0f)
+            {
+                Stop();
+                return;
+            }
+
+            Vector3 position = transform.position + direction * distance;
+            position.y = _homePosition.y;
+            transform.SetPositionAndRotation(position, Quaternion.LookRotation(direction, Vector3.up));
+            _isMoving = distance > 0f;
+        }
+
         public void Stop()
         {
             // 활성 BT 노드만 이동을 갱신하므로 노드 종료 후 별도 속도나 코루틴이 이동을 이어가지 않는다.
