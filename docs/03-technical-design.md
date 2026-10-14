@@ -51,7 +51,7 @@ Command 인자의 권한·범위·쿨타임은 서버에서 검증한다. 비밀
 - ActorId는 서버가 플레이어 생성(`OnServerAddPlayer`) 때 1부터 발급한다. 0은 무효다. 연결 번호(connectionId)·객체 번호(netId)와 분리된 주체 번호다.
 - 서버 코드는 Command 인자나 `InteractionRequest.ActorId`처럼 클라이언트가 보낸 ActorId를 신뢰하지 않는다. `LighthouseNetworkManager.Instance.Connections.TryGetActorId(connectionToClient, out actorId)`로 송신자를 조회하거나 `IsSender`로 대조한다.
 - 플레이어 객체의 `NetworkActor.ActorId`는 모든 클라이언트에 공개된다. 역할 등 비밀 정보와 연결되지 않는다.
-- 타임스탬프(`ServerTime`) 검증과 요청 번호·연결 세대는 JH02에서 정한다. JH01의 현재 `OnServerDisconnect`는 `ActorLeft` 알림 후 연결 명단에서 제거하고 Mirror 기본 해제를 실행한다. 2026-10-13 결정으로 판 진행 중 이탈은 판 종료다. JH07이 이를 구현했다. 로비 씬·게임 씬 전환 방식에서 이탈을 감지해 직접 나감/연결 끊김을 구분한 종료 사유를 전원에게 보내고, 첫 화면으로 돌려보낸다(같은 PC 4인 M2 검증, 다른 PC 미검증). 로비 프리팹이나 게임 씬이 없는 매니저는 기존 JH01 단일 씬 방식을 유지한다. 재접속은 10/25 이후 선택 범위다.
+- 타임스탬프(`ServerTime`)는 클라이언트 값을 신뢰하지 않고 서버가 기록한다. 요청 번호는 2026-10-14 재접속 없음 전제로 `(ActorId, 요청 번호)` 키와 판 진행 중(`InProgress`) 접수만 두고, 연결 세대는 재접속 채택 시 추가한다([지훈 시스템 설계 §5](design/jihun-system-design.md#5-요청검증응답-계약)). JH01의 현재 `OnServerDisconnect`는 `ActorLeft` 알림 후 연결 명단에서 제거하고 Mirror 기본 해제를 실행한다. 2026-10-13 결정으로 판 진행 중 이탈은 판 종료다. JH07이 이를 구현했다. 로비 씬·게임 씬 전환 방식에서 이탈을 감지해 직접 나감/연결 끊김을 구분한 종료 사유를 전원에게 보내고, 첫 화면으로 돌려보낸다(같은 PC 4인 M2 검증, 다른 PC 미검증). 로비 프리팹이나 게임 씬이 없는 매니저는 기존 JH01 단일 씬 방식을 유지한다. 재접속은 10/25 이후 선택 범위다.
 
 ## 6. 상태와 실행값
 
