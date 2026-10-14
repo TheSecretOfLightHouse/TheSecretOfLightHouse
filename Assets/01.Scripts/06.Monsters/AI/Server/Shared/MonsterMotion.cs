@@ -198,22 +198,24 @@ namespace Lighthouse.Monsters.AI.Server
             return false;
         }
 
-        public void StepCharge(Vector3 direction, float distance)
+        public bool SetChargeVelocity(Vector3 direction, float speed)
         {
-            if (!CanMove || !HasValidSetup || !IsFinite(direction) || !IsFinite(distance)
-                || distance < 0f || direction.sqrMagnitude <= 0f)
+            direction.y = 0f;
+            if (!CanMove || !HasValidSetup || !IsFinite(direction) || !IsFinitePositive(speed)
+                || !IsFinitePositive(direction.sqrMagnitude))
             {
                 Stop();
-                return;
+                return false;
             }
 
-            Vector3 position = transform.position + direction * distance;
-            position.y = _homePosition.y;
-            // 돌진 전환 전에는 일반 이동 요청이 기존 돌진 이동과 겹치지 않도록 한다.
+            // 돌진 전용 물리 갱신이 일반 이동 요청과 같은 Rigidbody를 동시에 제어하지 않도록 한다.
             _hasMovementRequest = false;
-            SetHorizontalVelocity(Vector3.zero);
-            transform.SetPositionAndRotation(position, Quaternion.LookRotation(direction, Vector3.up));
-            _isMoving = distance > 0f;
+            _isPatrolRequest = false;
+            direction.Normalize();
+            _body.MoveRotation(Quaternion.LookRotation(direction, Vector3.up));
+            SetHorizontalVelocity(direction * speed);
+            _isMoving = true;
+            return true;
         }
 
         public void Stop()

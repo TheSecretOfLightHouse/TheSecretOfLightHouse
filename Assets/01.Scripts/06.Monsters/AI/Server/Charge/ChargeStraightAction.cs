@@ -31,7 +31,12 @@ namespace Lighthouse.Monsters.AI.Server
                 return Status.Failure;
             }
 
-            return _attack.StepCharge(UnityEngine.Time.deltaTime) ? Status.Success : Status.Running;
+            if (_attack.HasCompletedCharge)
+            {
+                return Status.Success;
+            }
+
+            return _attack.IsCharging ? Status.Running : Status.Failure;
         }
 
         protected override void OnEnd()
