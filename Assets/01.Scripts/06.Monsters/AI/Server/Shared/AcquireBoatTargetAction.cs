@@ -19,7 +19,7 @@ namespace Lighthouse.Monsters.AI.Server
             return Status.Success;
         }
 
-        // Sensing must not stop the parallel patrol branch.
+        // 감지 행동이 병렬로 실행되는 순찰 분기를 중단하지 않도록 한다.
         protected override void OnEnd() { }
     }
 }

@@ -7,7 +7,7 @@ namespace Lighthouse.Monsters.AI.Server
     [Serializable]
     public abstract class MonsterCondition : Condition
     {
-        // Behavior 1.0 discovers and binds conditions through public fields only.
+        // Behavior 1.0은 공개 필드만으로 조건을 탐색하고 연결한다.
         [SerializeReference] public BlackboardVariable<GameObject> Self = new BlackboardVariable<GameObject>();
         [SerializeReference] public BlackboardVariable<GameObject> TargetBoat = new BlackboardVariable<GameObject>();
         [NonSerialized] private Lighthouse.Monsters.AI.Net.MonsterBase _monster;

@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Lighthouse.Monsters.AI.Net
 {
     [DefaultExecutionOrder(-100)]
-    [RequireComponent(typeof(NetworkIdentity), typeof(BehaviorGraphAgent))]
+    [RequireComponent(typeof(NetworkIdentity), typeof(BehaviorGraphAgent), typeof(Rigidbody))]
     public abstract class MonsterBase : NetworkBehaviour
     {
         [Header("공통 설정")]
@@ -16,6 +16,7 @@ namespace Lighthouse.Monsters.AI.Net
         [Header("행동 트리")]
         [SerializeField] private BehaviorGraphAgent _behaviorAgent;
 
+        private Rigidbody _body;
         private float _currentHealth;
         private MonsterState _state = MonsterState.Patrol;
         private bool _isInitialized;
@@ -39,6 +40,9 @@ namespace Lighthouse.Monsters.AI.Net
 
         private void Awake()
         {
+            _body = GetComponent<Rigidbody>();
+            SetPhysicsAuthority(false);
+
             if (_behaviorAgent == null)
             {
                 _behaviorAgent = GetComponent<BehaviorGraphAgent>();
@@ -52,6 +56,7 @@ namespace Lighthouse.Monsters.AI.Net
         {
             if (netIdentity != null && isServer && _isInitialized && !IsDead)
             {
+                SetPhysicsAuthority(true);
                 TryStartBehavior();
             }
             else
@@ -63,6 +68,7 @@ namespace Lighthouse.Monsters.AI.Net
         private void OnDisable()
         {
             StopBehaviorInternal();
+            SetPhysicsAuthority(false);
         }
 
         public sealed override void OnStartServer()
@@ -71,8 +77,27 @@ namespace Lighthouse.Monsters.AI.Net
 
             if (TryInitialize())
             {
+                SetPhysicsAuthority(true);
                 TryStartBehavior();
             }
+        }
+
+        public override void OnStartClient()
+        {
+            base.OnStartClient();
+
+            // 리슨 호스트는 클라이언트도 시작하므로 서버의 물리 권위를 유지한다.
+            SetPhysicsAuthority(isServer && _isInitialized && !IsDead);
+        }
+
+        public override void OnStopClient()
+        {
+            if (!isServer)
+            {
+                SetPhysicsAuthority(false);
+            }
+
+            base.OnStopClient();
         }
 
         public sealed override void OnStopServer()
@@ -80,6 +105,7 @@ namespace Lighthouse.Monsters.AI.Net
             // 노드 종료 콜백에서 새 행동이 시작되지 않도록 먼저 차단한다.
             _isInitialized = false;
             StopBehaviorInternal();
+            SetPhysicsAuthority(false);
 
             base.OnStopServer();
         }
@@ -147,7 +173,7 @@ namespace Lighthouse.Monsters.AI.Net
         [Server]
         public bool TryStartBehavior()
         {
-            if (netIdentity == null || !isServer || !_isInitialized || IsDead || _isStoppingBehavior
+            if (netIdentity == null || !isServer || !_isInitialized || IsDead || _isStoppingBehavior 
                 || !isActiveAndEnabled || !HasValidBehaviorAgent())
             {
                 return false;
@@ -194,20 +220,23 @@ namespace Lighthouse.Monsters.AI.Net
                 return false;
             }
 
+            if (_body == null)
+            {
+                Debug.LogError($"[{nameof(MonsterBase)}] Initialization requires a Rigidbody on the same GameObject.", this);
+
+                return false;
+            }
+
             if (!HasValidProfile())
             {
-                Debug.LogError(
-                    $"[{nameof(MonsterBase)}] Initialization requires a valid profile.",
-                    this);
+                Debug.LogError($"[{nameof(MonsterBase)}] Initialization requires a valid profile.", this);
 
                 return false;
             }
 
             if (!HasValidBehaviorAgent())
             {
-                Debug.LogError(
-                    $"[{nameof(MonsterBase)}] Initialization requires a Behavior Agent with a valid graph on the same GameObject.",
-                    this);
+                Debug.LogError($"[{nameof(MonsterBase)}] Initialization requires a Behavior Agent with a valid graph on the same GameObject.", this);
 
                 return false;
             }
@@ -276,6 +305,23 @@ namespace Lighthouse.Monsters.AI.Net
                 && _behaviorAgent.Graph != null
                 && _behaviorAgent.Graph.BlackboardReference != null
                 && _behaviorAgent.Graph.BlackboardReference.Blackboard != null;
+        }
+
+        private void SetPhysicsAuthority(bool canSimulate)
+        {
+            if (_body == null)
+            {
+                return;
+            }
+
+            if (!canSimulate && !_body.isKinematic)
+            {
+                // 물리 비활성화 시 다음 서버 세션에 이전 속도가 남지 않도록 한다.
+                _body.linearVelocity = Vector3.zero;
+                _body.angularVelocity = Vector3.zero;
+            }
+
+            _body.isKinematic = !canSimulate;
         }
 
         private bool HasValidProfile()

@@ -104,7 +104,7 @@ namespace Lighthouse.Monsters.AI.Server
                 return false;
             }
 
-            // Only samples inside the attack range may replace the last valid aim position.
+            // 공격 범위 안에서 확인한 위치만 마지막 유효 조준 위치를 갱신할 수 있다.
             if (IsTargetInRange(target))
             {
                 _aimPosition = target.transform.position;
@@ -142,7 +142,7 @@ namespace Lighthouse.Monsters.AI.Server
                 return false;
             }
 
-            // The direction is frozen once; the charge never steers toward the moving boat.
+            // 돌진 방향은 시작 시 한 번 고정하며, 이동하는 배를 따라 방향을 바꾸지 않는다.
             _chargeDirection = direction.normalized;
             _chargeRemainingDistance = distance + _chargeOvershootDistance;
             _hitTargets.Clear();
@@ -217,7 +217,7 @@ namespace Lighthouse.Monsters.AI.Server
                     continue;
                 }
 
-                // Register before callbacks so one charge cannot damage a boat twice.
+                // 한 번의 돌진으로 같은 배에 피해가 중복 적용되지 않도록 콜백 전에 피격 대상을 등록한다.
                 _hitTargets.Add(target);
                 target.TryApplyDamage(damage);
             }

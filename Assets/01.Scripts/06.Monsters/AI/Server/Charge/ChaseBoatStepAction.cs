@@ -22,7 +22,7 @@ namespace Lighthouse.Monsters.AI.Server
             {
                 return Status.Failure;
             }
-            // Selector branches can take more than one tick; integrate elapsed movement time.
+            // 선택 노드의 분기 실행에 여러 틱이 걸릴 수 있으므로 경과 시간을 이동량에 반영한다.
             float deltaTime = _hasStepped && Monster.State == MonsterState.Chase
                 ? UnityEngine.Time.time - _lastStepTime : 0f;
             _lastStepTime = UnityEngine.Time.time;
