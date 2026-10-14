@@ -26,6 +26,8 @@ namespace Lighthouse.World.WorldState.Net
             _isAttached = true;
         }
 
+        public bool IsReady => _isAttached && _networkClock.IsReady;
+
         public void Detach()
         {
             _gameClock.Stop();

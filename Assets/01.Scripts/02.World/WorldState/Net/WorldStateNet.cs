@@ -19,6 +19,7 @@ namespace Lighthouse.World.WorldState.Net
 
         public bool IsMatchStarted => _match.IsStarted;
         public int MapSeed => _match.MapSeed;
+        public bool IsClockReady => _binder != null && _binder.IsReady;
 
         private void Awake()
         {
