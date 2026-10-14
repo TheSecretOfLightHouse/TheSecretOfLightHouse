@@ -4,13 +4,15 @@
 
 기준일: 2026-10-09(기존 코드 조사), 2026-10-10(v4 반영), 2026-10-11(승패·투표 결정 반영, 네트워크·투표 재확인). 본편 코드와 [시스템 디자인](01-system-design.md)·[기술설계](03-technical-design.md)를 대조한 실행 계획이다. 아래 순서는 권장 순서이며 날짜·공수·미정 게임 규칙을 확정하지 않는다. 사람별 실행 목록은 [담당자별 구현 작업](06-owner-work-plan.md), 소유권은 [담당표](CODE_OWNERSHIP.md)를 따른다.
 
+2026-10-14 현황 보정: `feature/myeongki` / `0673639`에서 Player·배 코드와 프리팹 입력 설정을 정적으로 재확인했다. 아래 최신 현황은 실행 통과를 뜻하지 않는다.
+
 ## 1. 현재 출발점
 
 2026-10-09 기존 조사 범위는 `Assets/01.Scripts/`의 C# 34개와 Player 씬·입력 에셋이었다. 2026-10-11 파일 목록은 C# 70개이며 네트워크 코드, 월드 인터페이스·Mock·Sandbox가 추가돼 있다. 이번 갱신은 목록과 네트워크·투표의 실제 처리 경로를 재확인했으며 추가 코드 전체의 실행 감사를 뜻하지 않는다. SVN 데모와 개인 작업은 범위 밖이다. JH01의 기존 M2 실행 기록은 아래와 담당자별 작업표에 보존한다.
 
 | 영역 | 확인한 근거 | 남은 구현·검증 |
 |---|---|---|
-| 플레이어 | `05.Player/` 제어·입력·이동·배·상태·능력·애니메이션 코드 26개 | 로컬 실행 확인, 서버 권위·소유권, 내구도·난파·구조·인벤토리 |
+| 플레이어 | `05.Player/` C# 34개. 서버 내구도·난파 SyncVar, 소유 배 생성·승하선, 암초 서버 겹침 피해·소유 클라이언트 반동·회복 API | 입력 설정 통일, 호스트/원격 피해·난파 검증, 수리 요청·대포·몬스터/날씨/모듈 연결. MK02 원문 참조 |
 | 월드 | `02.World/` IslandHandle, SeaZone, SpawnerPoint, 자원 정의와 추가 Query/Harvest/Spawning 인터페이스·Mock·파도 Rules/Sandbox | 추가 코드의 실행·본편 연결 범위를 확인한 뒤 생성·배치·잔량·회복·시간·날씨·동기화 검증 |
 | 상호작용 | `03.Interaction/Requests/Net/` 요청 구조체와 enum 2개 | Relay·Router·Validator·기록·개별 실행과 실패 응답 |
 | 투표 | `07.Mafia/Voting/Rules/` VoteRecord, VoteService | 기존 계산 10건 확인 기록은 이번에 재실행하지 않음. 현 코드의 참가자 검증·현재 표·변경 시 소비·시작 시각과 같은 대상 재클릭 시 차감 없음을 확인. 새 결정의 역할/자기표 금지·의식 잠금, 서버 응답·UI·누적 계산·게임 실행 검증은 남음 |
@@ -21,7 +23,7 @@ Mirror 서버 등록·SyncVar·시험 Command/TargetRpc가 네트워크 코드�
 
 ### 먼저 처리할 실제 코드 차이
 
-- **입력 연결:** Player 씬은 `Assets/InputSystem_Actions.inputactions`를 사용한다. 액션 Attack/Sprint와 `PlayerInputReader`의 OnFire/OnRun이 맞지 않고 기본 ActionMap도 비어 있다. 실제 전달 방식·맵 활성화·능력 입력을 확인하지 않으면 달리기·사격 콜백이 실행되지 않을 수 있다. 최명기 MK01에서 우선 확인한다.
+- **입력 연결:** `tech.prefab`은 `Control/View/InputActions.inputactions`의 PlayerActions(Move/Look/Dash/Jump)를 사용한다. captain/farm/tanker는 루트 입력 에셋과 빈 기본 ActionMap을 사용한다. 현재 Reader는 OnDash/OnFire/OnAbility를 받으므로 액션·맵·상호작용/사격/능력 바인딩을 통일하고 프리팹별 실제 수신을 MK01에서 확인한다.
 - **발행만 있는 이벤트:** `BoatController.TryFire`는 CannonFired를, PlayerController는 InteractionRequested를 발행하지만 조사한 본편에 소비자가 없다. 사격·채집 완료로 집계하지 않고 MK02/JH02에서 처리 경로를 연결한다.
 - **능력 실행기만 존재:** PlayerAbility는 추상 클래스이고 구체 능력은 미발견, 씬의 jobAbility도 비어 있다. MK05에서 확정 직군부터 구현한다. Runner/AnimationDriver의 직렬화 참조 0은 GetComponent 자동 조회가 있으므로 그것만으로 미연결로 판정하지 않는다.
 - **난파 입력:** SetDowned와 이동 잠금은 있으나 난파 중 LookInput 기반 heading 갱신은 중단된다. 독립 카메라 회전 경로는 미확인이다. 카메라·비밀 투표·구조 UI는 허용돼야 하므로 MK04에서 실제 조작을 확인한다.

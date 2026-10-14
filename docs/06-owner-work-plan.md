@@ -32,7 +32,7 @@
 ### 코드 출발점
 
 - `05.Player/Control/PlayerController.cs`: 로컬 이동·승하선, SetDowned, InteractionRequested. 난파 중 heading 입력 중단과 기획의 카메라 허용을 대조한다.
-- `05.Player/Control/View/PlayerInputReader.cs`: OnRun/OnFire/OnAbility. 실제 Player 씬의 루트 입력 에셋 Action 이름·전달 방식과 맞춘다.
+- `05.Player/Control/View/PlayerInputReader.cs`: OnDash/OnFire/OnAbility. tech의 PlayerActions와 나머지 3종의 루트 입력 에셋·빈 기본 맵이 다르므로 프리팹별 입력을 통일·검증한다.
 - `05.Player/Boat/BoatController.cs`: 로컬 이동·재장전·CannonFired 이벤트. 발사체/피격 구현 완료는 아니다.
 - `05.Player/Abilities/PlayerAbilityRunner.cs`: 실행/취소 기반 재사용. 구체 PlayerAbility 파생형은 조사 범위에서 미발견.
 - `05.Player/Animation/View/`: 이동 표현 기반. Gather/Repair 등 주석 처리된 분기는 실제 행동과 연결 필요.
@@ -47,7 +47,7 @@
 | MK06 | 인벤토리·작업대·등대·투표(본인 표/남은 횟수)·소환 요청·난파·시간·결과 UI/HUD·지도를 기능 응답에 연결. 판 진행 여부를 JH07에 제공한다. 로비 화면·준비/취소 버튼·로딩 표시·판 중단 상태·종료 사유 화면은 2026-10-13 결정으로 JH07(김지훈)이 맡는다. 시스템&UI 전체 담당 유지: 직군 배정·게임 상태 머신·의식 표 잠금/기한 정지·실패 즉시 종료, 소환 시 기한/의식 타이머 제거·최후 수리 100%/HP 0 단일 종료 통합. 확인 성공/기회 소진은 마피아 개인 응답, 실패 무고 시민은 비중복 공개 | JH03·04·07, TW01·03~05, MS03·07, D05·10 | 실패 응답/실제 상태 일치. 봉인·심해 게이지 전원 비공개, 타인 표/역할 비공개, 마피아 성공/소진 시민 미전송. 투표는 단축키로 1초 안에 화면 연출 없이 처리. 조건 보고와 최종 종료 확정 구분·결과 한 번·종료 후 입력 차단. 미정 동시 경합은 임의 우선순위 없이 별도 기록. 기존 일정의 승패 판정 10/24 전 필요 유지 |
 | MK07 | 인게임 보이스·배 무전은 v4에서 삭제됨. 밤 토론 수단 결정 후 필요한 안내·UI 연결(R21) | D09, 최명기 및 관련 담당 | 승인된 토론 수단의 안내와 사용 흐름 검증. 음성 채널 구현은 포함하지 않음 |
 
-첫 착수는 **MK01 입력 연결 확인**이다. 이후 MK03을 B단계의 첫 플레이 흐름에 연결한다. UI 화면만 완성한 상태를 해당 시스템 완료로 기록하지 않는다.
+2026-10-14 현재 MK02는 암초 피해·반동·회복 API까지 코드가 진행됐다. 다음 우선순위는 **MK01 입력 설정 통일·콜백 확인 → MK02 호스트/원격 피해·난파 검증 → 수리·대포 연결**이다. 이후 MK03을 B단계의 첫 플레이 흐름에 연결한다. UI 화면만 완성한 상태를 해당 시스템 완료로 기록하지 않는다.
 
 ## 3. 김지훈 — 접속·상호작용·제작·등대
 
@@ -107,5 +107,6 @@ AX가 개발자의 테스트를 대행 완료 처리하거나 게임 수치를 �
 |---|---|---|---|---|---|
 | JH01 | 김지훈 | 검증 통과(같은 PC 4인, M2) | `01.Network/Session/Net/LighthouseNetworkManager.cs`, `01.Network/Connections/Server/ConnectionDirectory.cs`, `01.Network/Connections/Net/NetworkActor.cs`, `99.Dev/Network/ActorIdProbe.cs`, `00.Scenes/Jihun/JH01TestScene.unity`, `02.Prefabs/_Net/NetworkTestPlayer.prefab` | 2026-10-11, Unity 6000.0.83f1, 에디터 호스트 1 + 빌드 클라이언트 3. Actor 1~4 발급, 위조 ActorId 거부, 5번째 접속 거부, 해제 1회. 절차는 [테스트 씬 기록](ai/04_MULTIPLAYER_TEST_PROTOCOL.md#테스트-씬-기록) | 기존 실행 기록 보존·이번 갱신에서 재실행하지 않음. 다른 PC(M3) 미검증. 본편 Player는 MK01과 합의. 판 진행 중 이탈 시 판 종료는 아래 JH07 행, 재접속은 10/25 이후 선택. 연결 세대·요청 번호는 JH02 |
 | JH07 | 김지훈 | 검증 통과(같은 PC 4인, M2). 강민서 월드 연결 합의 대기 | `01.Network/Session/Net/`(`LighthouseNetworkManager`·`LobbyPlayer`·`SessionJoinAuthenticator`·`SessionStateMessage`·`SessionEndedMessage`·`LeaveSessionMessage`), `01.Network/Session/Rules/`(`MatchPhase`·`SessionEndReason`), `99.Dev/Network/`(`SessionTestPanel`·`MatchStartVotingProbe`·`SceneLoadHoldProbe`), `00.Scenes/Jihun/JH07Offline·JH07Lobby·JH07Game.unity`, `02.Prefabs/_Net/LobbyPlayer.prefab` | 2026-10-13, Unity 6000.0.83f1, 에디터 호스트 + 빌드 클라이언트 1~3. 준비 미충족 시 미시작, 전원 준비 자동 시작, 로딩 n/4, 원격·호스트의 나가기·창 닫기·강제 종료별 종료 사유와 서버 로그, 로비 이탈, 판 시작 후 접속 거절, 정원 초과, 로딩 시간 초과(느린 로딩 재현). 상세는 [테스트 씬 기록](ai/04_MULTIPLAYER_TEST_PROTOCOL.md#테스트-씬-기록)과 [JH07 원문](김지훈/2026-10-13/JH07-판시작종료-로비게임씬전환.md) | 강민서: 월드 생성 완료 신호, `WorldStateNet.BeginMatch` 시작 시점을 `MatchStarted`에 맞춤([요청](handover/김지훈/2026-10-13/판시작-월드시계-강민서-연결요청.md)). 팀원 공지 확인. 다른 PC(M3) 미검증 |
+| MK02 | 최명기 | 부분 구현·현재 멀티 실행 미검증 | `05.Player/Boat/` 내구도·암초 피해·반동·회복 API, PlayerController 난파 SyncVar, MKTestScene·Cube 프리팹 | 2026-10-14 `0673639` 정적 확인. 과거 단일 Play 직접 호출 검증은 [원문](최명기/2026-10-13/MK02-배-난파-상태-연결.md)에 보존. 이번 Unity 컴파일·M2/M3 미실행 | 입력 정합 → 호스트/원격 피해·난파 → JH02 수리·TW02 대포/피해 → 날씨/모듈/보상. 비용·수치·피해 계약 미확정 유지 |
 
 이 표의 상태가 기능 구현 현황의 갱신 지점이다. 새로운 요구는 먼저 게임 기획·담당 경계를 확인한 뒤 작업으로 추가한다.
