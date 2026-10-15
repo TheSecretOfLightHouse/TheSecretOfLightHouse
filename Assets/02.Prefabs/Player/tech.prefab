@@ -182,6 +182,13 @@ GameObject:
   - component: {fileID: 2052952998668328031}
   - component: {fileID: 8998998702237103671}
   - component: {fileID: 7343589763569238845}
+  - component: {fileID: 967707442621922517}
+  - component: {fileID: -8490933374312442997}
+  - component: {fileID: 7048856594928909331}
+  - component: {fileID: -5465250122805814647}
+  - component: {fileID: 7080678106786856743}
+  - component: {fileID: 3472481683248674599}
+  - component: {fileID: 4890120984490371654}
   m_Layer: 0
   m_Name: tech
   m_TagString: Untagged
@@ -489,6 +496,121 @@ MonoBehaviour:
   _minPitch: -80
   _maxPitch: 80
   _cameraPivot: {fileID: 3158115175632131791}
+--- !u!114 &967707442621922517
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 369352961249826539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cb71184076b88f4d8f22f68bdc63127, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _player: {fileID: 0}
+  _probeDistance: 20
+  _reach: 3
+  _probeMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _relay: {fileID: 0}
+--- !u!114 &-8490933374312442997
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 369352961249826539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b39f7a1a10bd5d540a79ee7149b00c79, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _resourceCatalog: {fileID: 11400000, guid: 66c600a3b8a9d5140aa198f8483a1cb4, type: 2}
+  _testResourceId: 0
+--- !u!114 &7048856594928909331
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 369352961249826539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9dcd547a18cc7a45940058c02d75086, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _dropOffset: {x: 0, y: 1, z: 0}
+  _testTarget: {fileID: 0}
+--- !u!114 &-5465250122805814647
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 369352961249826539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 17a5089f2457cc14caa78f616758e2ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+--- !u!114 &7080678106786856743
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 369352961249826539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e14b7be8c8325148a53026a1609a1c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+--- !u!114 &3472481683248674599
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 369352961249826539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 019c58af63cc4bf4483fb084af7d969e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &4890120984490371654
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 369352961249826539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 680903080276d3f4b83ba2dc0ef52313, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _resourceCatalog: {fileID: 11400000, guid: 66c600a3b8a9d5140aa198f8483a1cb4, type: 2}
+  _showPanel: 1
+  _width: 300
+  _height: 240
+  _margin: 16
 --- !u!1 &669510438535997806
 GameObject:
   m_ObjectHideFlags: 0
