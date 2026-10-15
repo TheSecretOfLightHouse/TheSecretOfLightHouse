@@ -158,7 +158,7 @@ namespace Lighthouse.Mafia.IdentityCheck.Rules
             }
             else
             {
-                // Freeze only after approval; denied requests must leave the ledger running.
+                // 소환이 승인된 뒤에만 정산을 동결하며, 거부된 요청은 기존 정산을 계속 유지한다.
                 SummonSnapshot = _votes.AbyssGauge.FreezeForSummon(serverTime);
                 HasSummoned = true;
                 _hasGrantedRight = false;
@@ -192,7 +192,7 @@ namespace Lighthouse.Mafia.IdentityCheck.Rules
             {
                 return IdentityActionResult.GameEnded;
             }
-            // The deadline wins even if the final-result callback has not run yet.
+            // 최종 결과 콜백이 아직 실행되지 않았더라도 의식 완료 시각에 도달했다면 완료 판정을 우선한다.
             if (_hasRitual && !HasSummoned && serverTime >= _ritualCompletesAt)
             {
                 return IdentityActionResult.RitualCompleted;
@@ -223,7 +223,7 @@ namespace Lighthouse.Mafia.IdentityCheck.Rules
             }
             if (requestId == lastId)
             {
-                // A retry acknowledges the old decision but must not publish or execute it again.
+                // 재시도에는 이전 판정 결과를 응답하되, 공개나 실행을 반복하지 않는다.
                 response = new IdentityActionResponse(lastResponse.Result, false, lastResponse.RevealedCitizenId);
                 return true;
             }
