@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2412584831589340990}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: spine
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -43,7 +43,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2391804485092207211}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: pectoral.R_end
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -74,7 +74,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4161784449363233386}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: pelvic.R
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -106,7 +106,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7806699806177839634}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: pectoral.L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -138,7 +138,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8375104118573199307}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: root
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -170,7 +170,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9052770145078957410}
-  m_Layer: 0
+  - component: {fileID: 87938426497595948}
+  m_Layer: 2
   m_Name: Tripo_Shark_Rig
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -193,6 +194,28 @@ Transform:
   - {fileID: 8375104118573199307}
   m_Father: {fileID: 8993372868849537946}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &87938426497595948
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 967287155272300542}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: a2515b649a365934586e84116b0034d8, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &1822564487540963537
 GameObject:
   m_ObjectHideFlags: 0
@@ -202,7 +225,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6272440910455677646}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: tail_02
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -235,7 +258,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2163211076224278894}
   - component: {fileID: 5190470303009917463}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: tripo_node_b9538387-626a-4a3f-a70a-8b982512170d
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -334,7 +357,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6217225153726203798}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: dorsal_fin_end
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -365,7 +388,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6294006444659286165}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: dorsal_fin
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -397,7 +420,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6263508363367241697}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: pectoral.L_end
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -428,7 +451,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8740052377355755451}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: head_end
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -459,7 +482,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8831914410838139171}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: pelvic.R_end
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -490,7 +513,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 678405979873734865}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: pelvic.L_end
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -521,7 +544,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3989385694831416333}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: body
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -557,7 +580,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 737768503532637810}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: pectoral.R
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -589,7 +612,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8559946992323781008}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: tail_fin_end
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -620,7 +643,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1734877204220354644}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: tail_fin
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -652,7 +675,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2264010317020605063}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: pelvic.L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -684,7 +707,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3315538826577249362}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: tail_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -725,7 +748,9 @@ GameObject:
   - component: {fileID: 3979028442922128522}
   - component: {fileID: 8382456548814782233}
   - component: {fileID: 6649434460031839919}
-  m_Layer: 0
+  - component: {fileID: 4044030548958632852}
+  - component: {fileID: 1613517810118871938}
+  m_Layer: 2
   m_Name: BlueMarline
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -897,7 +922,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa72eb5a20b3cf844b361d04fdb08b6b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _targets: []
   _showDetectionGizmos: 1
 --- !u!114 &8382456548814782233
 MonoBehaviour:
@@ -954,6 +978,37 @@ MonoBehaviour:
   rotationSensitivity: 0.01
   positionPrecision: 0.01
   scalePrecision: 0.01
+--- !u!114 &4044030548958632852
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8612343004966537504}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b327b23b76de76408669c82a67cb3af, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _recoilSpeed: 3
+  _cooldown: 0.3
+--- !u!114 &1613517810118871938
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8612343004966537504}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73163461ae819464cae3432407a4c0c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _animator: {fileID: 87938426497595948}
+  _transitionDuration: 0.12
 --- !u!1 &8654307395362441973
 GameObject:
   m_ObjectHideFlags: 0
@@ -963,7 +1018,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2629921721457535806}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: head
   m_TagString: Untagged
   m_Icon: {fileID: 0}
