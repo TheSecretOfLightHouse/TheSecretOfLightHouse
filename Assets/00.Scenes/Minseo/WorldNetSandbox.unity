@@ -189,6 +189,8 @@ GameObject:
   - component: {fileID: 327246932}
   - component: {fileID: 327246931}
   - component: {fileID: 327246935}
+  - component: {fileID: 327246937}
+  - component: {fileID: 327246936}
   m_Layer: 0
   m_Name: WorldState
   m_TagString: Untagged
@@ -277,6 +279,38 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   _startLeadSeconds: 0.2
+--- !u!114 &327246936
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 327246930}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ad06730d8a4c2a4e969a39d5261f9cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _driver: {fileID: 327246937}
+  _tamperType: 3
+--- !u!114 &327246937
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 327246930}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1be315085581b85478f953e810effc37, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _profile: {fileID: 11400000, guid: 01ac2dcb1c8025445a95867ab2b130a6, type: 2}
+  _dayConfig: {fileID: 11400000, guid: bf2540967047f484ea5dd7ce54991940, type: 2}
+  _debugSeed: 0
 --- !u!1 &629532721
 GameObject:
   m_ObjectHideFlags: 0
