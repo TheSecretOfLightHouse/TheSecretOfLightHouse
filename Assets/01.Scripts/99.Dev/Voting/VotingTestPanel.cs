@@ -59,7 +59,7 @@ namespace Lighthouse.Dev.Voting
 
         private void Awake()
         {
-            // IMGUI caches can outlive this panel; Unity owns the font's eventual cleanup.
+            // IMGUI 캐시가 이 패널보다 오래 유지될 수 있으므로 폰트의 최종 정리는 Unity에 맡긴다.
             _font = Font.CreateDynamicFontFromOSFont("Malgun Gothic", 16);
         }
 
@@ -95,7 +95,7 @@ namespace Lighthouse.Dev.Voting
             if (NetworkServer.active && _hasRitual && !_hasSummoned && !_hasEnded
                 && NetworkTime.time >= _ritualCompletesAt)
             {
-                // This harness marks completion; the production winner still belongs to Systems.
+                // 이 테스트 도구에서는 완료 상태만 표시하며, 본편의 승패 판정은 Systems에서 담당한다.
                 EndTestMatch();
             }
             if (NetworkClient.ready && _voting.HasOwnIdentityState && NetworkTime.time >= _nextIdentityRefreshAt)
@@ -739,7 +739,7 @@ namespace Lighthouse.Dev.Voting
 
         private void HandleVoteResponded(VoteResponse response)
         {
-            // This event contains only the local client's reply, including on a listen host.
+            // 리슨 호스트에서도 이 이벤트에는 로컬 클라이언트의 응답만 포함된다.
             if (_history.Count == HistoryLimit)
             {
                 _history.RemoveAt(0);
