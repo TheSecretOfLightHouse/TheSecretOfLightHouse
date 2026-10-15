@@ -17,15 +17,15 @@ namespace Lighthouse.World.Harvest.Rules.Mocks
             return true;
         }
 
-        public bool TryConsume(int spotId, int requested, out int granted)
+        public bool TryConsume(int spotId, int requested, out ConsumeResult result)
         {
             if (requested <= 0)
             {
-                granted = 0;
+                result = new ConsumeResult(_resourceId, 0);
                 return false;
             }
 
-            granted = requested;
+            result = new ConsumeResult(_resourceId, requested);
             return true;
         }
     }
