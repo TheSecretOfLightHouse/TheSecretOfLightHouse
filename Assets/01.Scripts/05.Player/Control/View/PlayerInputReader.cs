@@ -8,6 +8,7 @@ public class PlayerInputReader : MonoBehaviour
     public bool RunHeld { get; private set; }
 
     public event Action InteractRequested;
+    public event Action HarvestRequested;
     public event Action FireRequested;
     public event Action AbilityRequested;
     public event Action JumpRequested;
@@ -22,7 +23,7 @@ public class PlayerInputReader : MonoBehaviour
         LookInput = value.Get<Vector2>();
     }
 
-    public void OnDash(InputValue value)
+    public void OnRun(InputValue value)
     {
         RunHeld = value.isPressed;
     }
@@ -32,6 +33,14 @@ public class PlayerInputReader : MonoBehaviour
         if (value.isPressed)
         {
             InteractRequested?.Invoke();
+        }
+    }
+
+    public void OnHarvest(InputValue value)
+    {
+        if (value.isPressed)
+        {
+            HarvestRequested?.Invoke();
         }
     }
 
