@@ -31,6 +31,7 @@ namespace Lighthouse.World.Harvest.Server
             _adapter = new HarvestTargetAdapter(_registry, _serverRange);
             WorldServices.Register<IHarvestSpotRegistry>(_registry);
             WorldServices.Register<IHarvestSpotQuery>(_registry);
+            WorldServices.Register<IHarvestIslandRegistrar>(_registry);
             TargetResolver.RegisterAdapter(InteractionTargetKind.HarvestSpot, _adapter);
         }
 
@@ -64,6 +65,7 @@ namespace Lighthouse.World.Harvest.Server
 
             WorldServices.Unregister<IHarvestSpotRegistry>(_registry);
             WorldServices.Unregister<IHarvestSpotQuery>(_registry);
+            WorldServices.Unregister<IHarvestIslandRegistrar>(_registry);
             TargetResolver.UnregisterAdapter(InteractionTargetKind.HarvestSpot, _adapter);
         }
     }

@@ -3,7 +3,7 @@ using Lighthouse.World.Harvest.Rules;
 
 namespace Lighthouse.World.Harvest.Server
 {
-    public sealed class HarvestSpotRegistry : IHarvestSpotRegistry
+    public sealed class HarvestSpotRegistry : IHarvestSpotRegistry, IHarvestIslandRegistrar
     {
         private readonly Dictionary<short, IslandEntry> _islands = new Dictionary<short, IslandEntry>();
         private readonly List<IslandEntry> _entries = new List<IslandEntry>();
