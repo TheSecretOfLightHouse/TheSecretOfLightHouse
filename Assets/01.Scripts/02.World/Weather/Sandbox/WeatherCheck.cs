@@ -14,6 +14,7 @@ namespace Lighthouse.World.Weather.Sandbox
             isAllPassed &= WeatherSystemChecks.RunAll();
             isAllPassed &= WeatherForecastChecks.RunAll();
             isAllPassed &= WeatherSchedulerChecks.RunAll();
+            isAllPassed &= WeatherRunnerChecks.RunAll();
 
             if (_catalog != null)
             {
