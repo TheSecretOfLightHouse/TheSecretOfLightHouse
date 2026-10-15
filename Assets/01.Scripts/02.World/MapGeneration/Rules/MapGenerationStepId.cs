@@ -8,6 +8,7 @@ namespace Lighthouse.World.MapGeneration.Rules
         IslandAppearance = 4,
         Reefs = 5,
         ResourceFloors = 6,
-        Route = 7
+        Route = 7,
+        HarvestAssignment = 8
     }
 }
