@@ -11,15 +11,12 @@ namespace Lighthouse.Monsters.AI.Server
     {
         private const int GizmoCircleSegments = 64;
 
-        [Header("감지할 배 대상")]
-        [SerializeField] private MonsterBoatTarget[] _targets;
-
         [Header("감지 범위 표시")]
         [SerializeField] private bool _showDetectionGizmos = true;
 
         private MonsterBase _monster;
 
-        public IReadOnlyList<MonsterBoatTarget> Targets => _targets;
+        public IReadOnlyList<MonsterBoatTarget> Targets => MonsterBoatTarget.Targets;
 
         private void Awake()
         {
@@ -77,9 +74,9 @@ namespace Lighthouse.Monsters.AI.Server
             }
 
             float closestSquared = radius * radius;
-            for (int i = 0; i < _targets.Length; i++)
+            for (int i = 0; i < Targets.Count; i++)
             {
-                MonsterBoatTarget candidate = _targets[i];
+                MonsterBoatTarget candidate = Targets[i];
                 if (candidate == null || !candidate.IsEligible || candidate.gameObject == gameObject)
                 {
                     continue;
@@ -103,9 +100,9 @@ namespace Lighthouse.Monsters.AI.Server
                 return false;
             }
 
-            for (int i = 0; i < _targets.Length; i++)
+            for (int i = 0; i < Targets.Count; i++)
             {
-                MonsterBoatTarget candidate = _targets[i];
+                MonsterBoatTarget candidate = Targets[i];
                 if (candidate != null && candidate.gameObject == target)
                 {
                     return candidate.IsEligible
@@ -120,7 +117,7 @@ namespace Lighthouse.Monsters.AI.Server
         {
             return isActiveAndEnabled && _monster != null && _monster.isServer
                 && _monster.IsInitialized && !_monster.IsDead && _monster.isActiveAndEnabled
-                && _targets != null && MonsterMotion.IsFinite(transform.position)
+                && MonsterMotion.IsFinite(transform.position)
                 && !float.IsNaN(distance) && !float.IsInfinity(distance) && distance > 0f;
         }
 
