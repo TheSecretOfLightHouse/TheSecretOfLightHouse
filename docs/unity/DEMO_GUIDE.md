@@ -38,11 +38,21 @@ Assets/ThirdParty/_Demo/<사람>/<주제>/   ← 데모. 이 폴더 안에서 �
 
 ## 커밋
 - 데모 폴더는 git에 올라가지 않는다. SVN 커밋은 사용자가 한다. 작업이 끝나면 SVN에 추가할 경로를 알려준다.
+- 데모를 새로 만들거나 상태가 바뀌면 아래 **데모 목록**에 한 줄을 추가·갱신한다. 이 표는 git에 있어 SVN을 아직 업데이트하지 않은 PC에서도 어떤 데모가 있는지 알 수 있다. 다른 PC에서만 만든 데모도 SVN 커밋할 때 함께 적는다.
+- 데모를 폐기하면 데모 목록에서 그 줄을 빼고 **폐기 목록**으로 옮긴다. 폐기일, 이유, 삭제 직전 SVN 리비전을 함께 적는다. SVN 이력에는 파일이 남으므로 이 리비전에서 되살릴 수 있다.
 
-## 기존 데모 기록
-2026-10-09 로컬에는 `Assets/ThirdParty/` 체크아웃이 없다. 아래는 기존 데모 기록이며 파일 존재·메뉴 실행·조작 가능성을 이번에 검증하지 않았다.
+## 데모 목록
+현재 있는 데모의 목록이다. 데모를 만들거나 상태가 바뀔 때마다 갱신한다. 상태 열은 기록 시점의 확인 수준이며 현재 실행 가능함을 보장하지 않는다.
 
-| 경로 | 내용 |
-|---|---|
-| `_Demo/Jihun/LighthouseArchipelago/` | 군도 맵. 본 맵은 `Map_LighthouseArchipelago_Far.unity` (생성기: `TheLightHouse/Build Archipelago Map (Far)`). 예전 규칙으로 만들어 네임스페이스(`TheLightHouse.*`)가 다르다 |
-| `_Demo/Jihun/GatherLoop/` | 1단계 채집 루프 (배·채집·인벤토리·등대 수리도). Far 맵 복사 + `TheLightHouse/Demo/GatherLoop/Build Scene` |
+| 경로 | 내용 | 상태 |
+|---|---|---|
+| `_Demo/Jihun/LighthouseArchipelago/` | 군도 맵. 본 맵은 `Map_LighthouseArchipelago_Far.unity` (생성기: `TheLightHouse/Build Archipelago Map (Far)`). 예전 규칙으로 만들어 네임스페이스(`TheLightHouse.*`)가 다르다 | 2026-10-14 로컬 체크아웃에 존재 확인 |
+| `_Demo/Jihun/GatherLoop/` | 1단계 채집 루프 (배·채집·인벤토리·등대 수리도). Far 맵 복사 + `TheLightHouse/Demo/GatherLoop/Build Scene` | 2026-10-14 로컬 체크아웃에 존재 확인. 실행 미확인 |
+| `_Demo/Jihun/LighthouseSearchlight/` | 기획 제안(확정 아님): 등대 탐조등 조종으로 안개를 걷고 괴물을 쫓아 귀항하는 배 엄호. 열린 맵 복사 + `TheLightHouse/Demo/LighthouseSearchlight/Build From Open Scene` | 2026-10-14 작성, Unity 컴파일 확인. 빌더·플레이 미확인. SVN 미커밋 |
+| `_Demo/Jihun/CrewMultiplayer/` | 4인 멀티: 팀 캐릭터 4종·애니메이션, 방 만들기/찾기/입장, 서버 판정 채집·등대 투입. 데모 전용 Mirror 동기화(본편 무수정). 열린 맵 복사 + `TheLightHouse/Demo/CrewMultiplayer/Build From Open Scene` | 2026-10-15 Unity 컴파일·빌더 실행 확인. 첫 빌드에서 섬 전체를 등대로 잡아 상자 0개 → 빌더 수정, 재빌드 필요. 4인 플레이 미확인. SVN 미커밋 |
+
+## 폐기 목록
+더 이상 쓰지 않아 SVN에서 지운 데모다. 다시 필요하면 `마지막 리비전`에서 복원한다.
+
+| 경로 | 내용 | 폐기일 | 이유 | 마지막 리비전 |
+|---|---|---|---|---|
