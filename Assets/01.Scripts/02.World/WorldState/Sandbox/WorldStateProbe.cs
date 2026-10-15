@@ -62,10 +62,9 @@ namespace Lighthouse.World.WorldState.Sandbox
             }
 
             string samplerTime = _sampler != null ? _sampler.CurrentTime.ToString("F2") : "-";
-            string seed = _worldState != null ? _worldState.MapSeed.ToString() : "-";
             bool isStarted = _worldState != null && _worldState.IsMatchStarted;
 
-            Debug.Log($"[{nameof(WorldStateProbe)}] {Role()} started={isStarted} seed={seed} day={_gameClock.DayIndex}/{_gameClock.TotalDays} phase={_gameClock.Phase} elapsed={Elapsed():F2} samplerTime={samplerTime} netTime={NetworkTime.time:F2} bufferTime={NetworkClient.bufferTime:F3}");
+            Debug.Log($"[{nameof(WorldStateProbe)}] {Role()} started={isStarted} day={_gameClock.DayIndex}/{_gameClock.TotalDays} phase={_gameClock.Phase} elapsed={Elapsed():F2} samplerTime={samplerTime} netTime={NetworkTime.time:F2} bufferTime={NetworkClient.bufferTime:F3}");
         }
 
         private void HandleDayStarted(int day)

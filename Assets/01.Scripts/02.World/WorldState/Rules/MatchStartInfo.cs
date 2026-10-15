@@ -4,7 +4,6 @@ namespace Lighthouse.World.WorldState.Rules
 {
     public struct MatchStartInfo : IEquatable<MatchStartInfo>
     {
-        public int MapSeed;
         public byte TotalDays;
         public double StartTime;
 
@@ -12,8 +11,7 @@ namespace Lighthouse.World.WorldState.Rules
 
         public bool Equals(MatchStartInfo other)
         {
-            return MapSeed == other.MapSeed
-                && TotalDays == other.TotalDays
+            return TotalDays == other.TotalDays
                 && StartTime.Equals(other.StartTime);
         }
 
@@ -24,7 +22,7 @@ namespace Lighthouse.World.WorldState.Rules
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(MapSeed, TotalDays, StartTime);
+            return HashCode.Combine(TotalDays, StartTime);
         }
     }
 }

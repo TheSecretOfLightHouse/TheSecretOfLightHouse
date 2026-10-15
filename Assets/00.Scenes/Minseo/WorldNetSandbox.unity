@@ -191,6 +191,8 @@ GameObject:
   - component: {fileID: 327246935}
   - component: {fileID: 327246937}
   - component: {fileID: 327246936}
+  - component: {fileID: 327246939}
+  - component: {fileID: 327246938}
   m_Layer: 0
   m_Name: WorldState
   m_TagString: Untagged
@@ -310,6 +312,37 @@ MonoBehaviour:
   syncInterval: 0
   _profile: {fileID: 11400000, guid: 01ac2dcb1c8025445a95867ab2b130a6, type: 2}
   _dayConfig: {fileID: 11400000, guid: bf2540967047f484ea5dd7ce54991940, type: 2}
+  _debugSeed: 0
+--- !u!114 &327246938
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 327246930}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e89b9b3a75e893a489beb6744454e9fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _state: {fileID: 327246939}
+  _config: {fileID: 11400000, guid: 178d035fad71e444fbae3510572569c0, type: 2}
+--- !u!114 &327246939
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 327246930}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8fdd45b35e546840a47b6b03fcb9555, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _config: {fileID: 11400000, guid: 178d035fad71e444fbae3510572569c0, type: 2}
   _debugSeed: 0
 --- !u!1 &629532721
 GameObject:
