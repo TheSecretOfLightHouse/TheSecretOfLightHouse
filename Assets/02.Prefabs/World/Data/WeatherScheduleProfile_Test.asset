@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b8713500d8bab94ca43e21d639177bb, type: 3}
+  m_Name: WeatherScheduleProfile_Test
+  m_EditorClassIdentifier: 
+  _firstDayType: 0
+  _transitionDayRatio: 0.2
+  _weights:
+  - Type: 0
+    Weight: 35
+  - Type: 1
+    Weight: 25
+  - Type: 2
+    Weight: 25
+  - Type: 3
+    Weight: 15

@@ -20,7 +20,7 @@ namespace Lighthouse.World.MapGeneration.Rules
         {
         }
 
-        private SeededRandom(ulong seedBits)
+        public SeededRandom(ulong seedBits)
         {
             _seedBits = seedBits;
 
