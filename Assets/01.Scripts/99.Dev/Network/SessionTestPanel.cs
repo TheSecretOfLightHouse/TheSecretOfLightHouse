@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using Lighthouse.Network.Session.Net;
 using Lighthouse.Network.Session.Rules;
+using Lighthouse.Network.Session.View;
 using Mirror;
 using UnityEngine;
 
 namespace Lighthouse.Dev.Network
 {
-    // JH07 test aid until MK06 provides the real lobby screen. Put it on the network manager object so it survives scene changes.
+    // JH07 test aid. Put it on the network manager object so it survives scene changes.
+    // It steps aside while the real session screens (SessionScreen) are up.
     [DisallowMultipleComponent]
     public sealed class SessionTestPanel : MonoBehaviour
     {
@@ -26,7 +28,7 @@ namespace Lighthouse.Dev.Network
 
         private void OnGUI()
         {
-            if (!_manager)
+            if (!_manager || SessionScreen.IsShown)
             {
                 return;
             }
