@@ -52,6 +52,7 @@ Codex는 [`.agents/skills/`](../../.agents/skills/), Claude Code는 [`.claude/sk
 |---|---|
 | [00 읽기 안내](../00-reading-guide.md) | 역할별 읽기 순서 |
 | [01 시스템 개요](../01-system-design.md) | 게임 루프와 범위 |
+| [자원 채집 확정 기획](../design/resource-gathering-decisions.md) | 파괴형 월드 자원·채집/획득 규칙·담당·미정 사항 |
 | [승패·투표 결정](../design/win-vote-decisions.md) | v4 이후 결정·미정 경계·팀원별 연결 계약 |
 | [게임 기획 v4](../design/references/game-design-v4.md) | 확정·가안·미정 규칙 |
 | [03 기술설계서](../03-technical-design.md) | 권위와 데이터 경계 |
