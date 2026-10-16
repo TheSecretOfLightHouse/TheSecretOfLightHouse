@@ -7,6 +7,9 @@ using UnityEngine;
 using System;
 using Lighthouse.World.Spawning.Rules;
 using Lighthouse.World.Spawning.Server;
+using Lighthouse.World.Clock.Rules;
+using Lighthouse.World.Ocean.Rules;
+using System.Collections.Generic;
 
 namespace Lighthouse.World.MapGeneration.Net
 {
@@ -16,6 +19,9 @@ namespace Lighthouse.World.MapGeneration.Net
         [SerializeField] private MapGenerationConfig _config;
         [SerializeField] private int _debugSeed;
         [SerializeField] private SpawnerPlacementConfig _spawningConfig;
+        [SerializeField] private GameClock _gameClock;
+        [SerializeField] private WaterSamplerHost _waterSampler;
+        [SerializeField] private StormWallConfig _stormWallConfig;
 
         [SyncVar(hook = nameof(OnMapChanged))]
         private MapSeedInfo _map;
@@ -26,17 +32,32 @@ namespace Lighthouse.World.MapGeneration.Net
         private MapSeedInfo _applied;
         private WorldReadyTracker _tracker;
         private SpawnerSession _spawnerSession;
+        private IRegionGate _regions;
+        private WorldQuerySession _querySession;
+        private StormWallSession _stormWallSession;
 
         public MapSeedInfo Info => _map;
         public MapLayout Layout => _layout;
         public uint ContentHash => _contentHash;
         public int ReadyCount => _tracker != null ? _tracker.ReadyCount : 0;
+        public IReadOnlyList<StormWallField> StormWalls =>
+            _stormWallSession != null
+                ? _stormWallSession.Fields
+                : Array.Empty<StormWallField>();
 
         private void Awake()
         {
             if (_config == null)
             {
                 Debug.LogError($"[{nameof(MapStateNet)}] MapGenerationConfig is not assigned.");
+                return;
+            }
+
+            if (_gameClock == null || _gameClock.Config == null
+                || _waterSampler == null || _spawningConfig == null
+                || _stormWallConfig == null || !_stormWallConfig.IsValid)
+            {
+                Debug.LogError($"[{nameof(MapStateNet)}] World query dependencies are missing.");
                 return;
             }
 
@@ -63,8 +84,14 @@ namespace Lighthouse.World.MapGeneration.Net
 
             try
             {
+                RegisterWorldQueries();
+
                 _spawnerSession = new SpawnerSession();
-                _spawnerSession.Start(_layout, _config, _spawningConfig);
+                _spawnerSession.Start(_layout, _config, _spawningConfig, _regions);
+
+                info.ContentHash = WorldQuerySettingsHash.Compute(
+                    info.ContentHash, _gameClock.Config,
+                    _spawningConfig.SafeRadius, _stormWallConfig);
             }
             catch (Exception exception)
             {
@@ -73,6 +100,8 @@ namespace Lighthouse.World.MapGeneration.Net
                     _spawnerSession.Dispose();
                     _spawnerSession = null;
                 }
+
+                ReleaseWorldQueries();
 
                 _layout = null;
                 Debug.LogError($"[{nameof(MapStateNet)}] Spawner setup failed: {exception.Message}");
@@ -96,6 +125,8 @@ namespace Lighthouse.World.MapGeneration.Net
                 _spawnerSession = null;
             }
 
+            ReleaseWorldQueries();
+
             NetworkServer.UnregisterHandler<WorldReadyMessage>();
 
             if (_tracker != null)
@@ -115,6 +146,8 @@ namespace Lighthouse.World.MapGeneration.Net
             {
                 return;
             }
+
+            ReleaseWorldQueries();
 
             _layout = null;
             _applied = default;
@@ -142,12 +175,26 @@ namespace Lighthouse.World.MapGeneration.Net
 
             if (!isServer)
             {
-                result = MapLayoutLoader.Load(_builder, _config, info, out _layout, out _contentHash);
+                result = LoadClientMap(info);
             }
 
             if (result != MapChecksumResult.Match)
             {
                 Debug.LogError($"[{nameof(MapStateNet)}] Map checksum {result}. seed={info.Seed}");
+            }
+
+            if (!isServer && result == MapChecksumResult.Match)
+            {
+                try
+                {
+                    RegisterWorldQueries();
+                }
+                catch (Exception exception)
+                {
+                    ReleaseWorldQueries();
+                    Debug.LogError($"[{nameof(MapStateNet)}] World query setup failed: {exception.Message}");
+                    return;
+                }
             }
 
             NetworkClient.Send(new WorldReadyMessage
@@ -183,6 +230,88 @@ namespace Lighthouse.World.MapGeneration.Net
             }
 
             return (uint)conn.connectionId;
+        }
+
+        private MapChecksumResult LoadClientMap(MapSeedInfo expected)
+        {
+            uint baseHash = MapContentHasher.Compute(_config);
+            _contentHash = WorldQuerySettingsHash.Compute(
+                baseHash, _gameClock.Config,
+                _spawningConfig.SafeRadius, _stormWallConfig);
+
+            if (_contentHash != expected.ContentHash)
+            {
+                _layout = null;
+                return MapChecksumResult.ContentMismatch;
+            }
+
+            _layout = _builder.Build(expected.Seed, false).Layout;
+            if (_layout == null)
+            {
+                return MapChecksumResult.BuildFailed;
+            }
+
+            return expected.Verify(_layout.Hash, _contentHash);
+        }
+
+        private void RegisterWorldQueries()
+        {
+            if (_querySession != null)
+            {
+                return;
+            }
+
+            if (_gameClock == null || _gameClock.Config == null
+                || _waterSampler == null || _spawningConfig == null
+                || _stormWallConfig == null
+                || !WorldServices.TryGet<IClock>(out IClock clock)
+                || !WorldServices.TryGet<ForceFieldRegistry>(out ForceFieldRegistry forces)
+                || !WorldServices.TryGet<IForceFieldProvider>(out IForceFieldProvider provider))
+            {
+                throw new InvalidOperationException("World query dependencies are unavailable.");
+            }
+
+            if (!ReferenceEquals(forces, provider))
+            {
+                throw new InvalidOperationException(
+                    "Force field provider does not use the registered registry.");
+            }
+
+            _regions = new RegionGate(GetRegionDayIndex, _gameClock.Config);
+
+            var geometry = new MapGeometry(_layout, _config, _spawningConfig.SafeRadius);
+            var facade = new WorldQueryFacade(geometry, _waterSampler.Inputs, clock);
+
+            _querySession = new WorldQuerySession(facade, _regions);
+            _querySession.Register();
+
+            _stormWallSession = new StormWallSession(
+                _config, _stormWallConfig, _spawningConfig.SafeRadius,
+                _regions, forces);
+        }
+
+        private int GetRegionDayIndex()
+        {
+            return _gameClock != null && _gameClock.IsRunning
+                ? _gameClock.DayIndex
+                : 1;
+        }
+
+        private void ReleaseWorldQueries()
+        {
+            if (_stormWallSession != null)
+            {
+                _stormWallSession.Dispose();
+                _stormWallSession = null;
+            }
+
+            if (_querySession != null)
+            {
+                _querySession.Dispose();
+                _querySession = null;
+            }
+
+            _regions = null;
         }
     }
 }

@@ -15,11 +15,16 @@ namespace Lighthouse.World.Spawning.Server
         public int Count => _context != null ? _context.Spawners.Count : 0;
 
         public void Start(MapLayout layout, MapGenerationConfig mapConfig,
-            SpawnerPlacementConfig spawningConfig)
+            SpawnerPlacementConfig spawningConfig, IRegionGate regions)
         {
             if (IsStarted)
             {
                 throw new InvalidOperationException("Spawner session already started.");
+            }
+
+            if (regions == null)
+            {
+                throw new ArgumentNullException(nameof(regions));
             }
 
             if (WorldServices.TryGet<ISpawnZoneProvider>(out _))
@@ -30,7 +35,7 @@ namespace Lighthouse.World.Spawning.Server
             ulong seed = SpawnerSeedSource.Next();
             SpawnerRegistry registry = SpawnerPlacementStep.Build(
                 layout, mapConfig, spawningConfig, seed);
-            registry.SetUnlockedZones(SeaZone.Inner);
+            registry.SetRegionGate(regions);
 
             WorldServices.Register<ISpawnZoneProvider>(registry);
             if (!WorldServices.TryGet<ISpawnZoneProvider>(out ISpawnZoneProvider registered)

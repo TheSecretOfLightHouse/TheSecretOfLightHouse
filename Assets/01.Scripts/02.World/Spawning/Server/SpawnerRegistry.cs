@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Lighthouse.World.Ocean.Rules;
 using Lighthouse.World.Spawning.Rules;
 using UnityEngine;
+using Lighthouse.World.MapGeneration.Rules;
 
 namespace Lighthouse.World.Spawning.Server
 {
@@ -12,9 +13,11 @@ namespace Lighthouse.World.Spawning.Server
         private readonly SpawnerPoint[] _points;
         private readonly Dictionary<Vector2Int, List<SpawnerPoint>> _cells;
         private SeaZone _unlockedZones;
+        private IRegionGate _regions;
 
         public int Count => _points.Length;
-        public SeaZone UnlockedZones => _unlockedZones;
+        public SeaZone UnlockedZones =>
+            _regions != null ? _regions.UnlockedZones : _unlockedZones;
 
         public SpawnerRegistry(IReadOnlyList<SpawnerPoint> points, float cellSize)
         {
@@ -69,7 +72,7 @@ namespace Lighthouse.World.Spawning.Server
                 throw new ArgumentOutOfRangeException(nameof(radius), "Query values must be finite and radius non-negative.");
             }
 
-            if (_unlockedZones == SeaZone.None || _points.Length == 0)
+            if (UnlockedZones == SeaZone.None || _points.Length == 0)
             {
                 return;
             }
@@ -99,14 +102,26 @@ namespace Lighthouse.World.Spawning.Server
             }
         }
 
+        public void SetRegionGate(IRegionGate regions)
+        {
+            if (regions == null)
+            {
+                throw new ArgumentNullException(nameof(regions));
+            }
+
+            _regions = regions;
+        }
+
         private void AppendMatches(IReadOnlyList<SpawnerPoint> points, Vector3 center,
             float radius, List<SpawnerPoint> results)
         {
             double sqrRadius = (double)radius * radius;
+            SeaZone unlockedZones = UnlockedZones;
+
             for (int i = 0; i < points.Count; i++)
             {
                 SpawnerPoint point = points[i];
-                if ((_unlockedZones & point.Zone) == 0)
+                if ((unlockedZones & point.Zone) == 0)
                 {
                     continue;
                 }
