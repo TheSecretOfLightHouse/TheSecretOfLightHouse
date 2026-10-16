@@ -11,6 +11,10 @@ namespace Lighthouse.Monsters.AI.Server
         private const int GizmoCircleSegments = 64;
         private const float ChargeArrivalTolerance = 0.001f;
 
+        [Header("돌진 후 근거리 이동")]
+        [SerializeField, Min(0f)] private float _repositionRadius = 2f;
+        [SerializeField, Min(0.01f)] private float _repositionTimeout = 2f;
+
         [Header("돌진 공격 설정")]
         [SerializeField, Min(0.01f)] private float _attackRange = 4f;
         [SerializeField, Min(0.01f)] private float _preparationDuration = 1f;
@@ -44,6 +48,11 @@ namespace Lighthouse.Monsters.AI.Server
         private bool _isRecovering;
         private bool _recoveryCompletesCharge;
         private float _recoveryElapsedTime;
+        private Vector3 _repositionDestination;
+
+        public float RepositionTimeout => _repositionTimeout;
+        public bool HasValidRepositionSettings => IsFinite(_repositionRadius) && _repositionRadius >= 0f
+            && IsPositive(_repositionTimeout);
 
         public float AttackRange => _attackRange;
         public float PreparationDuration => _preparationDuration;
@@ -169,6 +178,47 @@ namespace Lighthouse.Monsters.AI.Server
 
             Gizmos.color = previousColor;
             Gizmos.matrix = previousMatrix;
+        }
+
+        public bool BeginRepositionLeg(Vector3 targetPosition, float maxChaseDistance)
+        {
+            if (!isActiveAndEnabled || _motion == null || _body == null
+                || !HasValidRepositionSettings || !MonsterMotion.IsFinite(targetPosition)
+                || !IsPositive(maxChaseDistance))
+            {
+                return false;
+            }
+
+            Vector3 offset = targetPosition - _body.position;
+            offset.y = 0f;
+            float margin = _motion.ArrivalDistance * 2f;
+            // Keep the entire movement segment inside the target's tracking range.
+            float radius = Mathf.Min(_repositionRadius, maxChaseDistance - offset.magnitude - margin);
+            if (radius <= margin)
+            {
+                return false;
+            }
+
+            Vector2 direction = Random.insideUnitCircle;
+            direction = direction.sqrMagnitude > 0f ? direction.normalized : Vector2.right;
+            _repositionDestination = _body.position
+                + new Vector3(direction.x, 0f, direction.y) * Random.Range(margin, radius);
+            _repositionDestination.y = _motion.HomePosition.y;
+            return _motion.BeginSmoothMovementLeg(_repositionDestination);
+        }
+
+        public bool CanContinueReposition(Vector3 targetPosition, float maxChaseDistance)
+        {
+            if (_motion == null || !_motion.HasSmoothMovementDestination || !MonsterMotion.IsFinite(targetPosition)
+                || !IsPositive(maxChaseDistance))
+            {
+                return false;
+            }
+
+            Vector3 offset = _repositionDestination - targetPosition;
+            offset.y = 0f;
+            float safeDistance = maxChaseDistance - _motion.ArrivalDistance * 2f;
+            return safeDistance > 0f && offset.sqrMagnitude <= safeDistance * safeDistance;
         }
 
         public bool IsTargetInRange(GameObject target)
