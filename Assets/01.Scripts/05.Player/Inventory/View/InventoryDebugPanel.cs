@@ -124,14 +124,12 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
             }
 
             string resourceName = "자원";
-            if (_resourceCatalog
-                && _resourceCatalog.TryGetById(entry.Key, out ResourceDefinition resource))
+            if (_resourceCatalog && _resourceCatalog.TryGetById(entry.Key, out ResourceDefinition resource))
             {
                 resourceName = resource.DisplayName;
             }
 
-            _builder.Append(resourceName).Append(" (ID ").Append(entry.Key)
-                .Append("): ").Append(entry.Value).AppendLine();
+            _builder.Append(resourceName).Append(" (ID ").Append(entry.Key).Append("): ").Append(entry.Value).AppendLine();
         }
 
         _contents = _builder.Length == 0 ? "보유 자원 없음" : _builder.ToString();
