@@ -395,9 +395,10 @@ GameObject:
   - component: {fileID: 4953698622455657580}
   - component: {fileID: 6300419492610816022}
   - component: {fileID: 9013295712711937960}
-  - component: {fileID: 1209894092458537283}
-  - component: {fileID: 2077795861757451822}
   - component: {fileID: 2062514321365233825}
+  - component: {fileID: 1209894092458537283}
+  - component: {fileID: 4883212538549895950}
+  - component: {fileID: 2077795861757451822}
   - component: {fileID: 3500470669398193022}
   m_Layer: 2
   m_Name: BlueShark
@@ -570,33 +571,6 @@ MonoBehaviour:
   syncInterval: 0
   _profile: {fileID: 11400000, guid: 98a55507cb53b9245876aefa79a0e1fb, type: 2}
   _behaviorAgent: {fileID: 6300419492610816022}
---- !u!114 &1209894092458537283
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3061826974098303317}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa72eb5a20b3cf844b361d04fdb08b6b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _showDetectionGizmos: 1
---- !u!114 &2077795861757451822
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3061826974098303317}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2b327b23b76de76408669c82a67cb3af, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _recoilSpeed: 3
-  _cooldown: 0.3
 --- !u!114 &2062514321365233825
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -618,6 +592,52 @@ MonoBehaviour:
   _patrolTurnSpeed: 120
   _patrolAcceleration: 3
   _showPatrolGizmos: 1
+--- !u!114 &1209894092458537283
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3061826974098303317}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa72eb5a20b3cf844b361d04fdb08b6b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _showDetectionGizmos: 1
+--- !u!114 &4883212538549895950
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3061826974098303317}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc3df97e6397080488caaeebec09296f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _speed: 18
+  _acceleration: 9
+  _hitRadius: 1.5
+  _timeout: 10
+  _retreatDistance: 15
+  _retreatSpeed: 15
+  _retreatTimeout: 15
+--- !u!114 &2077795861757451822
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3061826974098303317}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b327b23b76de76408669c82a67cb3af, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _recoilSpeed: 3
+  _cooldown: 0.3
 --- !u!114 &3500470669398193022
 MonoBehaviour:
   m_ObjectHideFlags: 0
