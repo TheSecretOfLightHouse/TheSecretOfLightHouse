@@ -5,12 +5,12 @@ namespace Lighthouse.Monsters.AI.Server
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(SeaMonster), typeof(MonsterMotion), typeof(SeaMonsterSensor))]
+    [RequireComponent(typeof(CapsuleCollider))]
     public sealed class TrackingAttack : MonoBehaviour
     {
         [Header("추적 돌진 설정")]
         [SerializeField, Min(0.01f)] private float _speed = 18f;
         [SerializeField, Min(0.01f)] private float _acceleration = 9f;
-        [SerializeField, Min(0.01f)] private float _hitRadius = 1.5f;
         [SerializeField, Min(0.01f)] private float _timeout = 10f;
 
         [Header("공격 후 이탈 설정")]
@@ -22,8 +22,8 @@ namespace Lighthouse.Monsters.AI.Server
         private MonsterMotion _motion;
         private SeaMonsterSensor _sensor;
         private BlueSharkAnimation _animation;
+        private CapsuleCollider _bodyCollider;
         private MonsterBoatTarget _target;
-        private Vector3 _previousOffset;
         private float _elapsedTime;
         private float _currentSpeed;
         private bool _isAttacking;
@@ -35,11 +35,12 @@ namespace Lighthouse.Monsters.AI.Server
         public float RetreatSpeed => _retreatSpeed;
         public float RetreatTimeout => _retreatTimeout;
         public bool HasValidSettings => IsPositive(_speed) && IsPositive(_acceleration)
-            && IsPositive(_hitRadius) && IsPositive(_timeout);
+            && IsPositive(_timeout);
         public bool HasValidRetreatSettings => IsPositive(_retreatDistance)
             && IsPositive(_retreatSpeed) && IsPositive(_retreatTimeout);
         public bool CanAct => isActiveAndEnabled && _monster != null && _motion != null
-            && _sensor != null && _motion.CanMove && _motion.HasValidSetup
+            && _sensor != null && _bodyCollider != null && _bodyCollider.enabled
+            && !_bodyCollider.isTrigger && _motion.CanMove && _motion.HasValidSetup
             && !_motion.IsMovementLocked && _sensor.isActiveAndEnabled && HasValidSettings;
 
         private void Awake()
@@ -48,6 +49,7 @@ namespace Lighthouse.Monsters.AI.Server
             _motion = GetComponent<MonsterMotion>();
             _sensor = GetComponent<SeaMonsterSensor>();
             _animation = GetComponent<BlueSharkAnimation>();
+            _bodyCollider = GetComponent<CapsuleCollider>();
         }
 
         private void FixedUpdate()
@@ -61,6 +63,17 @@ namespace Lighthouse.Monsters.AI.Server
         private void OnDisable()
         {
             Cancel();
+        }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+            HandleCollision(collision);
+        }
+
+        private void OnCollisionStay(Collision collision)
+        {
+            // 공격 시작 전부터 접촉 중인 배도 같은 캡슐 접촉 기준으로 판정한다.
+            HandleCollision(collision);
         }
 
         public bool BeginAttack(GameObject target)
@@ -81,7 +94,6 @@ namespace Lighthouse.Monsters.AI.Server
             _elapsedTime = 0f;
             _currentSpeed = 0f;
             _hasSucceeded = false;
-            _previousOffset = GetTargetOffset();
             _motion.Stop();
             _isAttacking = true;
             _monster.TrySetBehaviorState(MonsterState.Attack);
@@ -119,24 +131,6 @@ namespace Lighthouse.Monsters.AI.Server
             }
 
             Vector3 offset = GetTargetOffset();
-            float radius = _hitRadius + _target.HitRadius;
-            Vector3 segment = offset - _previousOffset;
-            float fraction = segment.sqrMagnitude > 0f
-                ? Mathf.Clamp01(-Vector3.Dot(_previousOffset, segment) / segment.sqrMagnitude) : 0f;
-            Vector3 closest = _previousOffset + segment * fraction;
-            _previousOffset = offset;
-
-            // 배나 샤크가 빠르게 이동해도 명중을 놓치지 않도록 상대 이동 구간 전체를 검사한다.
-            if (closest.sqrMagnitude <= radius * radius)
-            {
-                // 피해 콜백 중 다음 물리 갱신에서 피해를 중복 적용하지 않도록 먼저 공격을 종료한다.
-                _isAttacking = false;
-                _motion.Stop();
-                bool succeeded = _target.TryApplyDamage(_monster.Profile.AttackDamage);
-                FinishAttack(succeeded);
-                return;
-            }
-
             _elapsedTime += deltaTime;
             if (_elapsedTime >= _timeout)
             {
@@ -148,6 +142,31 @@ namespace Lighthouse.Monsters.AI.Server
             if (_currentSpeed > 0f && !_motion.SetChargeVelocity(offset, _currentSpeed))
             {
                 FinishAttack(false);
+            }
+        }
+
+        private void HandleCollision(Collision collision)
+        {
+            if (!_isAttacking || !CanAct || !HasValidTarget() || collision.collider == null
+                || _monster.Profile == null || !IsPositive(_monster.Profile.AttackDamage)
+                || collision.collider.GetComponentInParent<MonsterBoatTarget>() != _target)
+            {
+                return;
+            }
+
+            for (int i = 0; i < collision.contactCount; i++)
+            {
+                if (collision.GetContact(i).thisCollider != _bodyCollider)
+                {
+                    continue;
+                }
+
+                // 피해 콜백이나 추가 접촉이 같은 공격의 피해를 중복 적용하지 않도록 먼저 종료한다.
+                _isAttacking = false;
+                _motion.Stop();
+                bool succeeded = _target.TryApplyDamage(_monster.Profile.AttackDamage);
+                FinishAttack(succeeded);
+                return;
             }
         }
 
@@ -172,7 +191,7 @@ namespace Lighthouse.Monsters.AI.Server
 
         private bool HasValidTarget()
         {
-            if (_target == null || !_target.IsEligible || !IsPositive(_target.HitRadius)
+            if (_target == null || !_target.IsEligible
                 || !MonsterMotion.IsFinite(_target.transform.position))
             {
                 return false;
