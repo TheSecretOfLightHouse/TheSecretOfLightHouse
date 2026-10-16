@@ -11,22 +11,21 @@ namespace Lighthouse.Monsters.AI.Server
         category: "행동/등대/몬스터", id: "37b4d241a87945cdb89ef0e239ad1e77")]
     public sealed class RetreatFromBoatAction : MonsterAction
     {
-        [SerializeReference] private BlackboardVariable<float> _distance = new BlackboardVariable<float>(15f);
-        [SerializeReference] private BlackboardVariable<float> _speed = new BlackboardVariable<float>(8f);
-        [SerializeReference] private BlackboardVariable<float> _timeout = new BlackboardVariable<float>(15f);
-
         [NonSerialized] private float _elapsedTime;
         [NonSerialized] private BlueSharkAnimation _animation;
-
-        public BlackboardVariable<float> Distance { get => _distance; set => _distance = value; }
-        public BlackboardVariable<float> Speed { get => _speed; set => _speed = value; }
-        public BlackboardVariable<float> Timeout { get => _timeout; set => _timeout = value; }
+        [NonSerialized] private TrackingAttack _trackingAttack;
 
         protected override Status OnStart()
         {
             _elapsedTime = 0f;
             _animation = null;
-            if (!ResolveReferences() || Motion.IsMovementLocked || !HasValidSettings())
+            _trackingAttack = null;
+            if (!ResolveReferences() || Motion.IsMovementLocked)
+            {
+                return Status.Failure;
+            }
+            _trackingAttack = Self.Value.GetComponent<TrackingAttack>();
+            if (!HasValidSettings())
             {
                 return Status.Failure;
             }
@@ -53,7 +52,7 @@ namespace Lighthouse.Monsters.AI.Server
             }
 
             // 배가 이동하거나 파괴되어도 이탈을 계속하도록 목적지를 시작 시점에 고정한다.
-            Vector3 destination = position + direction.normalized * _distance.Value;
+            Vector3 destination = position + direction.normalized * _trackingAttack.RetreatDistance;
             if (!Motion.BeginSmoothMovementLeg(destination))
             {
                 return Status.Failure;
@@ -73,12 +72,12 @@ namespace Lighthouse.Monsters.AI.Server
             {
                 return Status.Failure;
             }
-            if (Motion.StepSmoothMovement(_speed.Value))
+            if (Motion.StepSmoothMovement(_trackingAttack.RetreatSpeed))
             {
                 return Status.Success;
             }
             _elapsedTime += Time.deltaTime;
-            return _elapsedTime >= _timeout.Value ? Status.Failure : Status.Running;
+            return _elapsedTime >= _trackingAttack.RetreatTimeout ? Status.Failure : Status.Running;
         }
 
         protected override void OnEnd()
@@ -92,13 +91,8 @@ namespace Lighthouse.Monsters.AI.Server
 
         private bool HasValidSettings()
         {
-            return _distance != null && _speed != null && _timeout != null
-                && IsPositive(_distance.Value) && IsPositive(_speed.Value) && IsPositive(_timeout.Value);
-        }
-
-        private static bool IsPositive(float value)
-        {
-            return !float.IsNaN(value) && !float.IsInfinity(value) && value > 0f;
+            return _trackingAttack != null && _trackingAttack.isActiveAndEnabled
+                && _trackingAttack.HasValidRetreatSettings;
         }
     }
 }

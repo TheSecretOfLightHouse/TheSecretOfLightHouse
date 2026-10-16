@@ -12,7 +12,7 @@ namespace Lighthouse.Monsters.AI.Server
     public sealed class PrepareChargeAction : MonsterAction
     {
         [UnityEngine.SerializeReference] private BlackboardVariable<bool> _preparationElapsed = new BlackboardVariable<bool>();
-        [NonSerialized] private SeaMonsterChargeAttack _attack;
+        [NonSerialized] private StraightAttack _attack;
         [NonSerialized] private bool _completed;
 
         public BlackboardVariable<bool> PreparationElapsed { get => _preparationElapsed; set => _preparationElapsed = value; }
@@ -25,7 +25,7 @@ namespace Lighthouse.Monsters.AI.Server
                 return Status.Failure;
             }
 
-            _attack = Self.Value.GetComponent<SeaMonsterChargeAttack>();
+            _attack = Self.Value.GetComponent<StraightAttack>();
             return _attack != null && _attack.BeginPreparation(TargetBoat.Value)
                 ? Status.Running : Status.Failure;
         }

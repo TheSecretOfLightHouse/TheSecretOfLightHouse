@@ -11,7 +11,7 @@ namespace Lighthouse.Monsters.AI.Server
         id: "ed18ab89f8bc4c49a56f8134761c4453")]
     public sealed class ChargeStraightAction : MonsterAction
     {
-        [NonSerialized] private SeaMonsterChargeAttack _attack;
+        [NonSerialized] private StraightAttack _attack;
 
         protected override Status OnStart()
         {
@@ -20,7 +20,7 @@ namespace Lighthouse.Monsters.AI.Server
                 return Status.Failure;
             }
 
-            _attack = Self.Value.GetComponent<SeaMonsterChargeAttack>();
+            _attack = Self.Value.GetComponent<StraightAttack>();
             return _attack != null && _attack.BeginCharge() ? Status.Running : Status.Failure;
         }
 
