@@ -1,6 +1,7 @@
+using System.Collections.Generic;
+using Lighthouse.Network.Session.Net;
 using Lighthouse.World.Clock.Rules;
 using Lighthouse.World.WorldState.Rules;
-using Lighthouse.World.WorldState.Server;
 using Mirror;
 using UnityEngine;
 
@@ -16,9 +17,9 @@ namespace Lighthouse.World.WorldState.Net
         private MatchStartInfo _match;
 
         private MatchClockBinder _binder;
+        private LighthouseNetworkManager _manager;
 
         public bool IsMatchStarted => _match.IsStarted;
-        public int MapSeed => _match.MapSeed;
         public bool IsClockReady => _binder != null && _binder.IsReady;
 
         private void Awake()
@@ -49,9 +50,18 @@ namespace Lighthouse.World.WorldState.Net
 
             _binder.Attach();
 
+            LighthouseNetworkManager manager = LighthouseNetworkManager.Instance;
+
+            if (manager != null && manager.IsSessionFlowEnabled)
+            {
+                _manager = manager;
+                _manager.MatchStarted += HandleMatchStarted;
+                return;
+            }
+
             if (_isBeginOnStartServer)
             {
-                BeginMatch();
+                BeginMatch(NetworkTime.time);
             }
         }
 
@@ -68,6 +78,12 @@ namespace Lighthouse.World.WorldState.Net
 
         public override void OnStopServer()
         {
+            if (_manager != null)
+            {
+                _manager.MatchStarted -= HandleMatchStarted;
+                _manager = null;
+            }
+
             _match = default;
             ReleaseClock();
         }
@@ -83,7 +99,7 @@ namespace Lighthouse.World.WorldState.Net
         }
 
         [Server]
-        public void BeginMatch()
+        public void BeginMatch(double startTime)
         {
             if (_binder == null || _match.IsStarted)
             {
@@ -100,9 +116,8 @@ namespace Lighthouse.World.WorldState.Net
 
             var info = new MatchStartInfo
             {
-                MapSeed = MatchSeedSource.Next(),
                 TotalDays = (byte)totalDays,
-                StartTime = NetworkTime.time
+                StartTime = startTime
             };
 
             _match = info;
@@ -111,6 +126,11 @@ namespace Lighthouse.World.WorldState.Net
             {
                 _binder.Submit(info, true);
             }
+        }
+
+        private void HandleMatchStarted(uint matchId, double startTime, IReadOnlyList<uint> roster)
+        {
+            BeginMatch(startTime);
         }
 
         private void OnMatchChanged(MatchStartInfo oldValue, MatchStartInfo newValue)

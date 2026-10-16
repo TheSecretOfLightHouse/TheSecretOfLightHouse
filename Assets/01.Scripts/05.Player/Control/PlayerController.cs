@@ -56,6 +56,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private bool _savedDetectCollisions;
 
     private bool _interactRequested;
+    private bool _harvestRequested;
     private bool _fireRequested;
     private bool _abilityRequested;
     private bool _jumpRequested;
@@ -85,6 +86,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     }
 
     public event Action<PlayerController> InteractionRequested;
+    public event Action<PlayerController> HarvestRequested;
     public event Action<BoatController> Boarded;
     public event Action<BoatController> Disembarked;
     public event Action<bool> DownedChanged;
@@ -114,6 +116,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _heading = transform.eulerAngles.y;
 
         _inputReader.InteractRequested += HandleInteractRequested;
+        _inputReader.HarvestRequested += HandleHarvestRequested;
         _inputReader.FireRequested += HandleFireRequested;
         _inputReader.AbilityRequested += HandleAbilityRequested;
         _inputReader.JumpRequested += HandleJumpRequested;
@@ -266,6 +269,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         if (_inputReader)
         {
             _inputReader.InteractRequested -= HandleInteractRequested;
+            _inputReader.HarvestRequested -= HandleHarvestRequested;
             _inputReader.FireRequested -= HandleFireRequested;
             _inputReader.AbilityRequested -= HandleAbilityRequested;
             _inputReader.JumpRequested -= HandleJumpRequested;
@@ -546,10 +550,12 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private void ProcessActionRequests()
     {
         bool interactRequested = _interactRequested;
+        bool harvestRequested = _harvestRequested;
         bool fireRequested = _fireRequested;
         bool abilityRequested = _abilityRequested;
 
         _interactRequested = false;
+        _harvestRequested = false;
         _fireRequested = false;
         _abilityRequested = false;
 
@@ -561,6 +567,16 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         if (interactRequested)
         {
             InteractionRequested?.Invoke(this);
+        }
+
+        if (IsDowned || !isActiveAndEnabled)
+        {
+            return;
+        }
+
+        if (harvestRequested && !IsOnBoat)
+        {
+            HarvestRequested?.Invoke(this);
         }
 
         if (IsDowned || !isActiveAndEnabled)
@@ -595,6 +611,11 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _interactRequested = true;
     }
 
+    private void HandleHarvestRequested()
+    {
+        _harvestRequested = true;
+    }
+
     private void HandleFireRequested()
     {
         _fireRequested = true;
@@ -608,6 +629,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private void ClearActionRequests()
     {
         _interactRequested = false;
+        _harvestRequested = false;
         _fireRequested = false;
         _abilityRequested = false;
         _jumpRequested = false;

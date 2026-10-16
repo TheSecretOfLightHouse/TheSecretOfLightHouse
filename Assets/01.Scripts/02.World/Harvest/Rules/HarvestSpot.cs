@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Lighthouse.World.Harvest.Rules
@@ -5,11 +6,15 @@ namespace Lighthouse.World.Harvest.Rules
     [DisallowMultipleComponent]
     public class HarvestSpot : MonoBehaviour
     {
+        private static readonly List<HarvestSpot> ActiveSpots = new List<HarvestSpot>();
+
         [SerializeField] private HarvestSpotCategory _category;
 
         private int _spotId;
         private int _resourceId;
         private bool _isBound;
+
+        public static IReadOnlyList<HarvestSpot> Active => ActiveSpots;
 
         public HarvestSpotCategory Category => _category;
 
@@ -20,6 +25,16 @@ namespace Lighthouse.World.Harvest.Rules
         public bool IsBound => _isBound;
 
         public Vector3 Position => transform.position;
+
+        private void OnEnable()
+        {
+            ActiveSpots.Add(this);
+        }
+
+        private void OnDisable()
+        {
+            ActiveSpots.Remove(this);
+        }
 
         public void Bind(int spotId, int resourceId)
         {

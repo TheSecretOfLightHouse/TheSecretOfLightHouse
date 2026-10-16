@@ -1,8 +1,8 @@
 using System;
 
-namespace Lighthouse.World.WorldState.Server
+namespace Lighthouse.World.MapGeneration.Server
 {
-    public static class MatchSeedSource
+    public static class MapSeedSource
     {
         public static int Next()
         {
