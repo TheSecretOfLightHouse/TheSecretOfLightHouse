@@ -4,6 +4,9 @@ using Lighthouse.World.MapGeneration.Server;
 using Lighthouse.World.Query.Rules;
 using Mirror;
 using UnityEngine;
+using System;
+using Lighthouse.World.Spawning.Rules;
+using Lighthouse.World.Spawning.Server;
 
 namespace Lighthouse.World.MapGeneration.Net
 {
@@ -12,6 +15,7 @@ namespace Lighthouse.World.MapGeneration.Net
     {
         [SerializeField] private MapGenerationConfig _config;
         [SerializeField] private int _debugSeed;
+        [SerializeField] private SpawnerPlacementConfig _spawningConfig;
 
         [SyncVar(hook = nameof(OnMapChanged))]
         private MapSeedInfo _map;
@@ -21,6 +25,7 @@ namespace Lighthouse.World.MapGeneration.Net
         private uint _contentHash;
         private MapSeedInfo _applied;
         private WorldReadyTracker _tracker;
+        private SpawnerSession _spawnerSession;
 
         public MapSeedInfo Info => _map;
         public MapLayout Layout => _layout;
@@ -56,6 +61,24 @@ namespace Lighthouse.World.MapGeneration.Net
                 return;
             }
 
+            try
+            {
+                _spawnerSession = new SpawnerSession();
+                _spawnerSession.Start(_layout, _config, _spawningConfig);
+            }
+            catch (Exception exception)
+            {
+                if (_spawnerSession != null)
+                {
+                    _spawnerSession.Dispose();
+                    _spawnerSession = null;
+                }
+
+                _layout = null;
+                Debug.LogError($"[{nameof(MapStateNet)}] Spawner setup failed: {exception.Message}");
+                return;
+            }
+
             _contentHash = info.ContentHash;
             _map = info;
         }
@@ -67,6 +90,12 @@ namespace Lighthouse.World.MapGeneration.Net
 
         public override void OnStopServer()
         {
+            if (_spawnerSession != null)
+            {
+                _spawnerSession.Dispose();
+                _spawnerSession = null;
+            }
+
             NetworkServer.UnregisterHandler<WorldReadyMessage>();
 
             if (_tracker != null)
