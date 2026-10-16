@@ -15,6 +15,8 @@ namespace Lighthouse.Network.Session.Net
 
         [SyncVar]
         private bool _isReady;
+        [SyncVar]
+        private bool _isHost;
 
         private NetworkActor _actor;
 
@@ -22,11 +24,18 @@ namespace Lighthouse.Network.Session.Net
         public static IReadOnlyList<LobbyPlayer> Active => ActivePlayers;
 
         public bool IsReady => _isReady;
+        public bool IsHost => _isHost;
         public uint ActorId => _actor.ActorId;
 
         private void Awake()
         {
             _actor = GetComponent<NetworkActor>();
+        }
+
+        public override void OnStartServer()
+        {
+            // Remote clients cannot tell which connection is the listen host, so the server marks it once at spawn.
+            _isHost = connectionToClient == NetworkServer.localConnection;
         }
 
         public override void OnStartClient()
