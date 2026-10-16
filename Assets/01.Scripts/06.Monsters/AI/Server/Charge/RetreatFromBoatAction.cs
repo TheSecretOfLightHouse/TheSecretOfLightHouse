@@ -1,4 +1,5 @@
 using System;
+using Lighthouse.Monsters.AI.Net;
 using Unity.Behavior;
 using UnityEngine;
 
@@ -15,6 +16,7 @@ namespace Lighthouse.Monsters.AI.Server
         [SerializeReference] private BlackboardVariable<float> _timeout = new BlackboardVariable<float>(15f);
 
         [NonSerialized] private float _elapsedTime;
+        [NonSerialized] private BlueSharkAnimation _animation;
 
         public BlackboardVariable<float> Distance { get => _distance; set => _distance = value; }
         public BlackboardVariable<float> Speed { get => _speed; set => _speed = value; }
@@ -23,6 +25,7 @@ namespace Lighthouse.Monsters.AI.Server
         protected override Status OnStart()
         {
             _elapsedTime = 0f;
+            _animation = null;
             if (!ResolveReferences() || Motion.IsMovementLocked || !HasValidSettings())
             {
                 return Status.Failure;
@@ -56,6 +59,11 @@ namespace Lighthouse.Monsters.AI.Server
                 return Status.Failure;
             }
             Monster.TrySetBehaviorState(MonsterState.Return);
+            _animation = Self.Value.GetComponent<BlueSharkAnimation>();
+            if (_animation != null)
+            {
+                _animation.SetAnimationState(BlueSharkAnimation.Dash);
+            }
             return Status.Running;
         }
 
@@ -71,6 +79,15 @@ namespace Lighthouse.Monsters.AI.Server
             }
             _elapsedTime += Time.deltaTime;
             return _elapsedTime >= _timeout.Value ? Status.Failure : Status.Running;
+        }
+
+        protected override void OnEnd()
+        {
+            if (_animation != null)
+            {
+                _animation.SetAnimationState(BlueSharkAnimation.Idle);
+            }
+            base.OnEnd();
         }
 
         private bool HasValidSettings()

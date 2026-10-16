@@ -398,6 +398,7 @@ GameObject:
   - component: {fileID: 1209894092458537283}
   - component: {fileID: 2077795861757451822}
   - component: {fileID: 2062514321365233825}
+  - component: {fileID: 3500470669398193022}
   m_Layer: 2
   m_Name: BlueShark
   m_TagString: Untagged
@@ -617,6 +618,24 @@ MonoBehaviour:
   _patrolTurnSpeed: 120
   _patrolAcceleration: 3
   _showPatrolGizmos: 1
+--- !u!114 &3500470669398193022
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3061826974098303317}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b534f4d36e81964aa71e65a360c04f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _animator: {fileID: 2417491521181515817}
+  _transitionDuration: 0.1
+  _attackOpeningDuration: 0.4
 --- !u!1 &3577697292619952690
 GameObject:
   m_ObjectHideFlags: 0
@@ -1314,6 +1333,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1893087708724182710}
+  - component: {fileID: 2417491521181515817}
   m_Layer: 2
   m_Name: SeaCreature_Rig
   m_TagString: Untagged
@@ -1337,6 +1357,28 @@ Transform:
   - {fileID: 4486246055959408247}
   m_Father: {fileID: 2393130788010259439}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &2417491521181515817
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7449567699666787737}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 2c0bcbceca9f26f4ea523dd25b19ca37, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &7545159247799574180
 GameObject:
   m_ObjectHideFlags: 0

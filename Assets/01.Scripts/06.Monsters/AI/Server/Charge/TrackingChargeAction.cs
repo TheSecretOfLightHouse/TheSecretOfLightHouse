@@ -1,4 +1,5 @@
 using System;
+using Lighthouse.Monsters.AI.Net;
 using Unity.Behavior;
 using UnityEngine;
 
@@ -16,6 +17,7 @@ namespace Lighthouse.Monsters.AI.Server
         [SerializeReference] private BlackboardVariable<float> _timeout = new BlackboardVariable<float>(10f);
 
         [NonSerialized] private MonsterBoatTarget _target;
+        [NonSerialized] private BlueSharkAnimation _animation;
         [NonSerialized] private Vector3 _previousOffset;
         [NonSerialized] private float _elapsedTime;
         [NonSerialized] private float _currentSpeed;
@@ -32,6 +34,7 @@ namespace Lighthouse.Monsters.AI.Server
             _currentSpeed = 0f;
             _hasAttacked = false;
             _target = null;
+            _animation = null;
             if (!ResolveReferences() || !HasValidSettings() || TargetBoat.Value == null)
             {
                 return Status.Failure;
@@ -46,12 +49,26 @@ namespace Lighthouse.Monsters.AI.Server
             _previousOffset = GetTargetOffset();
             Motion.Stop();
             Monster.TrySetBehaviorState(MonsterState.Attack);
+            _animation = Self.Value.GetComponent<BlueSharkAnimation>();
+            if (_animation != null)
+            {
+                _animation.SetAnimationState(BlueSharkAnimation.DashAttack);
+            }
             return StepAttack(0f);
         }
 
         protected override Status OnUpdate()
         {
             return StepAttack(Time.deltaTime);
+        }
+
+        protected override void OnEnd()
+        {
+            if (_animation != null)
+            {
+                _animation.SetAnimationState(BlueSharkAnimation.Idle);
+            }
+            base.OnEnd();
         }
 
         private Status StepAttack(float deltaTime)
