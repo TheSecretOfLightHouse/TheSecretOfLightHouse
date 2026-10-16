@@ -6,7 +6,7 @@ Unity 프로젝트 루트는 저장소 루트다. `Assets/`, `Packages/`, `Proje
 
 2026-10-10 커밋 `0201350`에서 문서 폴더가 `Docs/`에서 `docs/`로 바뀌었다. 그 전에 받은 Windows 체크아웃은 pull 후에도 디스크 폴더가 `Docs`로 남아, `docs/` 아래 새 파일이 Git에 `Docs/...`로 추가된다. 그대로 커밋하면 GitHub에서 폴더가 둘로 갈라지고 문서 링크가 깨진다. `git status`에서 새 문서가 `Docs/`로 보이면 편집기를 닫고 `Docs` → `docs_tmp` → `docs` 순서로 폴더 이름을 두 번 바꾼다. 바로 바꿀 수 없으면 `git add docs/...`처럼 소문자 경로로 추가한다.
 
-SVN 에셋·데모가 필요하면 `Assets/ThirdParty/`에 팀 체크아웃을 준비한다. 2026-10-09 확인한 작업 폴더에는 이 경로가 없다. Git 클론만으로 구매 에셋과 데모가 갖춰졌다고 보지 않는다.
+SVN 에셋·데모가 필요하면 `Assets/ThirdParty/1조 Unity Asset/`에 팀 체크아웃을 준비한다([파일 위치 규칙](LARGE_FILES.md)). 2026-10-09 확인한 작업 폴더에는 이 경로가 없다. Git 클론만으로 구매 에셋과 데모가 갖춰졌다고 보지 않는다.
 
 ### GitHub CLI 설치와 로그인
 

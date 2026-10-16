@@ -52,7 +52,7 @@
 - 코드는 기능별 도메인으로 나누며 각 담당자가 자기 기능의 서버·클라이언트·동기화를 함께 맡는다. [담당 경계](docs/CODE_OWNERSHIP.md)와 [.github/CODEOWNERS](.github/CODEOWNERS)를 먼저 확인한다. 다른 영역 수정이 필요하면 대상·담당자·이유·영향을 수정 전에 알리고 필요한 합의를 확인한다. 사용자가 이미 허용한 같은 작업·실행은 반복 확인하지 않는다.
 - `.meta`는 에셋과 항상 함께 관리하며 GUID를 직접 바꾸지 않는다. Unity 에셋 이동·이름 변경은 에디터에서 수행한다. `.unity`·`.prefab`·`.asset` YAML을 직접 편집하지 않는다.
 - `Assets/Mirror/`, 외부 플러그인과 구매 에셋을 수정하지 않는다. `Library/`, `Temp/`, `Logs/`, `UserSettings/`는 작업 대상에서 제외한다.
-- 본편은 Git, 구매 에셋과 데모는 SVN으로 관리한다. 로컬 체크아웃 루트는 `Assets/ThirdParty/`이며 `1조 Unity Asset/`은 SVN 저장소 경로다. 경로·대용량 규칙은 [파일 관리](docs/unity/LARGE_FILES.md)를 따른다.
+- 본편은 Git, 구매 에셋과 데모는 SVN으로 관리한다. 로컬 체크아웃 루트는 `Assets/ThirdParty/1조 Unity Asset/`이다(저장소 `Work/1조 Unity Asset`을 폴더 이름 그대로 받는다). 경로·대용량 규칙은 [파일 관리](docs/unity/LARGE_FILES.md)를 따른다.
 - 브랜치는 `feature/<이름>`, PR 대상은 `develop`이다. 승인 없는 커밋·푸시·게시를 작업 완료의 기본 단계로 추가하지 않는다.
 - 실제 실행한 검증과 실행하지 못한 검증을 구별한다. 에디터 사용 가능 여부는 세션에서 확인하며, 미실행을 통과로 보고하지 않는다.
 - 공유 규칙은 해당 `docs/` 기준 문서에, 본인 작업 기록은 `docs/{이름}/{날짜}/{내용}.md`에, 인수인계는 `docs/handover/{이름}/{날짜}/{내용}.md`에 둔다. 의미 있는 작업 후 원문과 담당자 pointer를 함께 갱신한다. 상세 규칙은 [작업 기록과 재개](docs/ai/11_WORK_RECORDS.md)를 따른다.

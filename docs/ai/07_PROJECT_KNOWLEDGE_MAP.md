@@ -26,7 +26,7 @@
 | 마피아 | [승패·투표 결정](../design/win-vote-decisions.md), [v4](../design/references/game-design-v4.md), [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/07.Mafia/` (`Voting/Rules/VoteService.cs`) | 시민 표·확인권·누적/공격력 및 비밀 정보 수신 경계. 현재 Rules와 새 규칙의 차이는 로드맵에서 확인 |
 | 시스템·UI·개발 도구 | [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/08.Systems/`, `09.UI/`, `99.Dev/` (같은 루트) | Systems·UI는 최명기, Dev는 관련 기능 담당 공유 |
 | 개발 씬 | [씬·에셋 안전](../unity/SCENE_AND_ASSET_SAFETY.md) | `Assets/00.Scenes/SampleScene.unity`, `Assets/00.Scenes/Myeongki/Player.unity`, `Assets/00.Scenes/Jihun/JH01TestScene.unity`(빌드 미포함), `Assets/00.Scenes/Jihun/JH07Offline.unity`·`JH07Lobby.unity`·`JH07Game.unity`(빌드 0~2번, 임시) | 씬 소유·역할·빌드 포함 여부는 실제 설정에서 확인 |
-| 에셋 데모 | [데모 가이드](../unity/DEMO_GUIDE.md) | `Assets/ThirdParty/_Demo/` | 실제 로컬 체크아웃 존재와 공유 절차 확인 |
+| 에셋 데모 | [데모 가이드](../unity/DEMO_GUIDE.md) | `Assets/ThirdParty/1조 Unity Asset/_Demo/` | 실제 로컬 체크아웃 존재와 공유 절차 확인 |
 | 검증·재현 | [검증 플레이북](03_VERIFICATION_PLAYBOOK.md), [멀티플레이 테스트](04_MULTIPLAYER_TEST_PROTOCOL.md) | 실제 테스트 씬·빌드·로그 | 호스트 1 + 원격 클라이언트 3, 비밀 정보 수신 경계 |
 | AI 작업 운영 | [AI 문서](README.md), [AGENTS.md](../../AGENTS.md) | `docs/ai/`, `.agents/skills/`, `.claude/skills/` | 범위·승인·실제 담당·인수인계 |
 
