@@ -230,7 +230,7 @@ namespace Lighthouse.World.Weather.Sandbox
             return isPassed;
         }
 
-        private static WeatherState[] BuildStates()
+        internal static WeatherState[] BuildStates()
         {
             return new WeatherState[]
             {

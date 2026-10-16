@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -27,6 +28,8 @@ namespace Lighthouse.World.Harvest.Rules
                 _remaining[i] = Mathf.Clamp(assignment.InitialAmount, 0, _maxAmounts[i]);
             }
         }
+
+        public event Action<int, int> RemainingChanged;
 
         public int Count => _remaining.Length;
 
@@ -65,6 +68,12 @@ namespace Lighthouse.World.Harvest.Rules
             int granted = requested > 0 ? Mathf.Min(_remaining[localIndex], requested) : 0;
             _remaining[localIndex] -= granted;
             result = new ConsumeResult(_resourceIds[localIndex], granted);
+
+            if (granted > 0)
+            {
+                RemainingChanged?.Invoke(localIndex, _remaining[localIndex]);
+            }
+
             return granted > 0;
         }
 
@@ -86,8 +95,13 @@ namespace Lighthouse.World.Harvest.Rules
                 int amount = policy.GetRegenAmount(_maxAmounts[i], _regenRates[i], _remaining[i], days);
                 if (amount > 0)
                 {
-                    _remaining[i] = Mathf.Min(_maxAmounts[i], _remaining[i] + amount);
-                    changed++;
+                    int next = Mathf.Min(_maxAmounts[i], _remaining[i] + amount);
+                    if (next != _remaining[i])
+                    {
+                        _remaining[i] = next;
+                        changed++;
+                        RemainingChanged?.Invoke(i, next);
+                    }
                 }
             }
 
