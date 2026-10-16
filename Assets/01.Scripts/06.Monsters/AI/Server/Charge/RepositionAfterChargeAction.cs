@@ -15,7 +15,8 @@ namespace Lighthouse.Monsters.AI.Server
         protected override Status OnStart()
         {
             _elapsedTime = 0f;
-            if (!ResolveReferences() || !Motion.HasValidRepositionSettings || Motion.IsMovementLocked
+            if (!ResolveReferences() || Attack == null || !Attack.isActiveAndEnabled
+                || !Attack.HasValidRepositionSettings || Motion.IsMovementLocked
                 || float.IsNaN(Monster.Profile.PatrolSpeed) || float.IsInfinity(Monster.Profile.PatrolSpeed)
                 || Monster.Profile.PatrolSpeed <= 0f)
             {
@@ -23,7 +24,7 @@ namespace Lighthouse.Monsters.AI.Server
             }
 
             if (!Sensor.CanTrack(TargetBoat.Value, Monster.Profile.MaxChaseDistance)
-                || !Motion.BeginRepositionLeg(TargetBoat.Value.transform.position, Monster.Profile.MaxChaseDistance))
+                || !Attack.BeginRepositionLeg(TargetBoat.Value.transform.position, Monster.Profile.MaxChaseDistance))
             {
                 return Status.Success;
             }
@@ -34,21 +35,21 @@ namespace Lighthouse.Monsters.AI.Server
 
         protected override Status OnUpdate()
         {
-            if (!CanAct || Motion.IsMovementLocked)
+            if (!CanAct || Attack == null || !Attack.isActiveAndEnabled || Motion.IsMovementLocked)
             {
                 return Status.Failure;
             }
 
             _elapsedTime += Time.deltaTime;
             // 배가 멀어지거나 장애물에 막혀도 이 보조 이동이 행동트리를 계속 점유하지 않도록 종료한다.
-            if (_elapsedTime >= Motion.RepositionTimeout
+            if (_elapsedTime >= Attack.RepositionTimeout
                 || !Sensor.CanTrack(TargetBoat.Value, Monster.Profile.MaxChaseDistance)
-                || !Motion.CanContinueReposition(TargetBoat.Value.transform.position, Monster.Profile.MaxChaseDistance))
+                || !Attack.CanContinueReposition(TargetBoat.Value.transform.position, Monster.Profile.MaxChaseDistance))
             {
                 return Status.Success;
             }
 
-            return Motion.StepPatrol(Monster.Profile.PatrolSpeed) ? Status.Success : Status.Running;
+            return Motion.StepSmoothMovement(Monster.Profile.PatrolSpeed) ? Status.Success : Status.Running;
         }
     }
 }

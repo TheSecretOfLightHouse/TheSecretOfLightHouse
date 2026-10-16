@@ -7,7 +7,7 @@ namespace Lighthouse.Monsters.AI.Net
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(SeaMonster), typeof(SeaMonsterChargeAttack))]
-    public sealed class SeaMonsterAnimation : NetworkBehaviour
+    public sealed class BlueMarlinAnimation : NetworkBehaviour
     {
         private const byte Swim = 0;
         private const byte Chase = 1;

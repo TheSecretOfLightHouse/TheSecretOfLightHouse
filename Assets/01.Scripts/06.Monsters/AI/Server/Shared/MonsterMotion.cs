@@ -23,10 +23,6 @@ namespace Lighthouse.Monsters.AI.Server
         [SerializeField, Min(1f)] private float _patrolTurnSpeed = 120f;
         [SerializeField, Min(0.01f)] private float _patrolAcceleration = 3f;
 
-        [Header("돌진 후 근거리 이동")]
-        [SerializeField, Min(0f)] private float _repositionRadius = 2f;
-        [SerializeField, Min(0.01f)] private float _repositionTimeout = 2f;
-
         [Header("시험 해역 표시")]
         [SerializeField] private bool _showPatrolGizmos = true;
 
@@ -49,16 +45,14 @@ namespace Lighthouse.Monsters.AI.Server
         private bool _clampPatrolToArea;
 
         public Vector3 HomePosition => _homePosition;
+        public float ArrivalDistance => _arrivalDistance;
         public Vector2 PatrolWaitRange => _patrolWaitRange;
         public float ChaseStoppingDistance => _chaseStoppingDistance;
         public bool IsMoving => _isMoving;
         public bool IsMovementLocked => _isMovementLocked;
         public bool IsPatrolWaiting => !_hasPatrolDestination;
         public Vector3 PatrolDestination => _patrolDestination;
-        public float RepositionTimeout => _repositionTimeout;
-        public bool HasValidRepositionSettings => IsFinite(_repositionRadius) && _repositionRadius >= 0f
-            && IsFinitePositive(_repositionTimeout) && IsFinitePositive(_patrolTurnSpeed)
-            && IsFinitePositive(_patrolAcceleration);
+        public bool HasSmoothMovementDestination => _hasPatrolDestination;
         public bool CanMove => isActiveAndEnabled && _monster != null
             && _monster.isServer && _monster.IsInitialized && !_monster.IsDead
             && _monster.isActiveAndEnabled && _body != null && !_body.isKinematic;
@@ -173,48 +167,27 @@ namespace Lighthouse.Monsters.AI.Server
             return true;
         }
 
-        public bool BeginRepositionLeg(Vector3 targetPosition, float maxChaseDistance)
+        public bool BeginSmoothMovementLeg(Vector3 destination)
         {
-            if (_isMovementLocked || !CanMove || !HasValidSetup || !HasValidRepositionSettings
-                || !IsFinite(targetPosition) || !IsFinitePositive(maxChaseDistance))
+            if (_isMovementLocked || !CanMove || !HasValidSetup || !IsFinite(destination)
+                || !IsFinitePositive(_patrolTurnSpeed) || !IsFinitePositive(_patrolAcceleration))
             {
                 return false;
             }
 
-            Vector3 offset = targetPosition - _body.position;
-            offset.y = 0f;
-            // 목적지뿐 아니라 이동 경로 전체가 추적 범위 안에 있도록 남은 거리만큼 이동 반경을 제한한다.
-            float radius = Mathf.Min(_repositionRadius, maxChaseDistance - offset.magnitude - _arrivalDistance * 2f);
-            if (radius <= _arrivalDistance * 2f)
-            {
-                return false;
-            }
-
-            Vector2 direction = Random.insideUnitCircle;
-            direction = direction.sqrMagnitude > 0f ? direction.normalized : Vector2.right;
-            float distance = Random.Range(_arrivalDistance * 2f, radius);
-            _patrolDestination = _body.position + new Vector3(direction.x, 0f, direction.y) * distance;
+            _patrolDestination = destination;
             _patrolDestination.y = _homePosition.y;
-            // 돌진 후 위치를 바꿀 때는 원래 순찰 해역으로 끌려가지 않도록 해역 경계 제한을 해제한다.
             _clampPatrolToArea = false;
             _hasPatrolDestination = true;
             return true;
         }
 
-        public bool CanContinueReposition(Vector3 targetPosition, float maxChaseDistance)
+        public bool StepPatrol(float speed)
         {
-            if (!_hasPatrolDestination || !IsFinite(targetPosition) || !IsFinitePositive(maxChaseDistance))
-            {
-                return false;
-            }
-
-            Vector3 offset = _patrolDestination - targetPosition;
-            offset.y = 0f;
-            float safeDistance = maxChaseDistance - _arrivalDistance * 2f;
-            return safeDistance > 0f && offset.sqrMagnitude <= safeDistance * safeDistance;
+            return StepSmoothMovement(speed);
         }
 
-        public bool StepPatrol(float speed)
+        public bool StepSmoothMovement(float speed)
         {
             if (_isMovementLocked)
             {
