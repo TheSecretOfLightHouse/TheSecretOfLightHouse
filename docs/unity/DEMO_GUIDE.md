@@ -5,7 +5,7 @@
 ## 위치·이름
 SVN 체크아웃 루트, 산 에셋 위치, 데모 폴더 이름(`<사람>`·`<주제>`)은 [파일 위치 규칙](LARGE_FILES.md)이 기준이다. 데모 폴더 안의 구성은 다음과 같다.
 ```
-Assets/ThirdParty/_Demo/<사람>/<주제>/   ← 데모. 이 폴더 안에서 완결
+Assets/ThirdParty/1조 Unity Asset/_Demo/<사람>/<주제>/   ← 데모. 이 폴더 안에서 완결
 ├─ <주제>.unity
 ├─ README.md
 ├─ Scripts/   (런타임 코드)
