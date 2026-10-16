@@ -15,7 +15,7 @@ namespace Lighthouse.Monsters.AI.Server
         [NonSerialized] private MonsterMotion _motion;
         [NonSerialized] private SeaMonsterSensor _sensor;
         [NonSerialized] private GameObject _resolvedSelf;
-        [NonSerialized] private SeaMonsterChargeAttack _attack;
+        [NonSerialized] private StraightAttack _attack;
 
         // Behavior 그래프 생성 과정에서 공개 프로퍼티를 비공개 직렬화 변수에 연결한다.
         public BlackboardVariable<GameObject> Self { get => _self; set => _self = value; }
@@ -24,7 +24,7 @@ namespace Lighthouse.Monsters.AI.Server
         protected MonsterBase Monster => _monster;
         protected MonsterMotion Motion => _motion;
         protected SeaMonsterSensor Sensor => _sensor;
-        protected SeaMonsterChargeAttack Attack => _attack;
+        protected StraightAttack Attack => _attack;
         protected bool CanAct => _self != null && _self.Value != null
             && _targetBoat != null && _monster != null && _motion != null && _sensor != null
             && _motion.CanMove && _motion.HasValidSetup && _sensor.isActiveAndEnabled;
@@ -42,7 +42,7 @@ namespace Lighthouse.Monsters.AI.Server
                 _monster = _resolvedSelf.GetComponent<MonsterBase>();
                 _motion = _resolvedSelf.GetComponent<MonsterMotion>();
                 _sensor = _resolvedSelf.GetComponent<SeaMonsterSensor>();
-                _attack = _resolvedSelf.GetComponent<SeaMonsterChargeAttack>();
+                _attack = _resolvedSelf.GetComponent<StraightAttack>();
             }
             return CanAct;
         }

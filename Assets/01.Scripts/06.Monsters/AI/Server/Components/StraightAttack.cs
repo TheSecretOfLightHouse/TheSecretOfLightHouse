@@ -6,7 +6,7 @@ namespace Lighthouse.Monsters.AI.Server
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(SeaMonster), typeof(MonsterMotion), typeof(SeaMonsterSensor))]
-    public sealed class SeaMonsterChargeAttack : MonoBehaviour
+    public sealed class StraightAttack : MonoBehaviour
     {
         private const int GizmoCircleSegments = 64;
         private const float ChargeArrivalTolerance = 0.001f;
@@ -192,7 +192,7 @@ namespace Lighthouse.Monsters.AI.Server
             Vector3 offset = targetPosition - _body.position;
             offset.y = 0f;
             float margin = _motion.ArrivalDistance * 2f;
-            // Keep the entire movement segment inside the target's tracking range.
+            // 이동 구간 전체가 배를 추적할 수 있는 범위 안에 있도록 여유 거리를 확보한다.
             float radius = Mathf.Min(_repositionRadius, maxChaseDistance - offset.magnitude - margin);
             if (radius <= margin)
             {

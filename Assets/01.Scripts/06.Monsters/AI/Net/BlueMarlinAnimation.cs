@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Lighthouse.Monsters.AI.Net
 {
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(SeaMonster), typeof(SeaMonsterChargeAttack))]
+    [RequireComponent(typeof(SeaMonster), typeof(StraightAttack))]
     public sealed class BlueMarlinAnimation : NetworkBehaviour
     {
         private const byte Swim = 0;
@@ -25,13 +25,13 @@ namespace Lighthouse.Monsters.AI.Net
         [SyncVar(hook = nameof(OnAnimationStateChanged))] private byte _animationState;
 
         private SeaMonster _monster;
-        private SeaMonsterChargeAttack _attack;
+        private StraightAttack _attack;
         private int _renderedState = -1;
 
         private void Awake()
         {
             _monster = GetComponent<SeaMonster>();
-            _attack = GetComponent<SeaMonsterChargeAttack>();
+            _attack = GetComponent<StraightAttack>();
             if (_animator == null)
             {
                 _animator = GetComponentInChildren<Animator>(true);
