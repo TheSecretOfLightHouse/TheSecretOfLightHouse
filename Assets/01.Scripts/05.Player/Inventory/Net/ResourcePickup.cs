@@ -1,3 +1,4 @@
+using System;
 using Mirror;
 using UnityEngine;
 
@@ -5,10 +6,32 @@ using UnityEngine;
 [RequireComponent(typeof(NetworkIdentity))]
 public sealed class ResourcePickup : NetworkBehaviour
 {
+    [SyncVar]
     private int _resourceId;
+    [SyncVar]
     private int _amount;
     private bool _isInitialized;
     private bool _isTaken;
+
+    public int ResourceId => _resourceId;
+    public int Amount => _amount;
+
+    public event Action<ResourcePickup> RecycleRequested;
+
+    [Server]
+    public bool TryResetForReuse()
+    {
+        if (netId != 0)
+        {
+            return false;
+        }
+
+        _resourceId = 0;
+        _amount = 0;
+        _isInitialized = false;
+        _isTaken = false;
+        return true;
+    }
 
     [Server]
     public bool TryInitialize(int resourceId, int amount)
@@ -39,7 +62,15 @@ public sealed class ResourcePickup : NetworkBehaviour
             return false;
         }
 
-        NetworkServer.Destroy(gameObject);
+        if (RecycleRequested != null)
+        {
+            RecycleRequested.Invoke(this);
+        }
+        else
+        {
+            NetworkServer.Destroy(gameObject);
+        }
+
         return true;
     }
 }

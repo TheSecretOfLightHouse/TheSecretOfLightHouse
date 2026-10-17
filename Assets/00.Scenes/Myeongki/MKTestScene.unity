@@ -550,6 +550,7 @@ GameObject:
   - component: {fileID: 1196650482}
   - component: {fileID: 1196650481}
   - component: {fileID: 1196650485}
+  - component: {fileID: 1196650486}
   m_Layer: 0
   m_Name: HarvestServer
   m_TagString: Untagged
@@ -639,6 +640,22 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+--- !u!114 &1196650486
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1196650480}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09a4ba99963fe974eb6fb163b07726cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _resourceCatalog: {fileID: 11400000, guid: 66c600a3b8a9d5140aa198f8483a1cb4, type: 2}
 --- !u!1 &1438448875
 GameObject:
   m_ObjectHideFlags: 0
@@ -964,6 +981,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _resource: {fileID: 11400000, guid: fa31dd611901c164f8a45b569154efd6, type: 2}
   _amountPerHarvest: 1
+  _initialCount: 3
 --- !u!135 &1840583904
 SphereCollider:
   m_ObjectHideFlags: 0
