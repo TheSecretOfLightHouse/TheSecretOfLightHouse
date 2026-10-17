@@ -107,9 +107,36 @@ public sealed class HarvestInteractionHandler :
             return InteractionResultCode.InvalidTarget;
         }
 
-        bool isSpawned = _dropSpawner.TrySpawnDrop(target);
+        PlayerHarvestProgress progress = context.Sender.identity.GetComponent<PlayerHarvestProgress>();
 
-        return isSpawned? InteractionResultCode.Success: InteractionResultCode.Rejected;
+        if (!progress || !progress.isActiveAndEnabled)
+        {
+            return InteractionResultCode.Rejected;
+        }
+
+        int spotId = context.Target.Key;
+        int initialCount = target.InitialCount;
+
+        if (!progress.TryConsumeOne(spotId, initialCount, out int remaining))
+        {
+            return InteractionResultCode.Rejected;
+        }
+
+        bool isSpawned = false;
+
+        try
+        {
+            isSpawned = _dropSpawner.TrySpawnDrop(target);
+        }
+        finally
+        {
+            if (!isSpawned)
+            {
+                progress.RestoreOne(spotId, initialCount);
+            }
+        }
+
+        return isSpawned ? InteractionResultCode.Success : InteractionResultCode.Rejected;
     }
 
     private bool TryGetTestTarget(int spotId,out HarvestTarget target)

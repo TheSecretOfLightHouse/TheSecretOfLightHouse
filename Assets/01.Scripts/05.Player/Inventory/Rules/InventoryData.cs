@@ -59,4 +59,14 @@ public sealed class InventoryData
 
         return removedAmount;
     }
+
+    public void CopyTo(List<KeyValuePair<int, int>> results)
+    {
+        results.Clear();
+
+        foreach (KeyValuePair<int, int> entry in _counts)
+        {
+            results.Add(entry);
+        }
+    }
 }

@@ -61,6 +61,9 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private bool _abilityRequested;
     private bool _jumpRequested;
     private float _heading;
+    private bool _hasSavedCursor;
+    private CursorLockMode _savedCursorLockMode;
+    private bool _savedCursorVisible;
 
     public Transform Actor => transform;
 
@@ -122,6 +125,11 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _inputReader.JumpRequested += HandleJumpRequested;
 
         RefreshLocalControl();
+
+        if (CanProcessLocalInput)
+        {
+            ConfineCursor();
+        }
     }
 
     private void Start()
@@ -266,6 +274,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void OnDisable()
     {
+        RestoreCursor();
+
         if (_inputReader)
         {
             _inputReader.InteractRequested -= HandleInteractRequested;
@@ -313,12 +323,39 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _heading = transform.eulerAngles.y;
         RefreshLocalControl();
         _camera?.Attach();
+        ConfineCursor();
     }
 
     public override void OnStopLocalPlayer()
     {
+        RestoreCursor();
         _camera.Release();
         base.OnStopLocalPlayer();
+    }
+
+    private void ConfineCursor()
+    {
+        if (!_hasSavedCursor)
+        {
+            _savedCursorLockMode = Cursor.lockState;
+            _savedCursorVisible = Cursor.visible;
+            _hasSavedCursor = true;
+        }
+
+        Cursor.lockState = CursorLockMode.Confined;
+        Cursor.visible = true;
+    }
+
+    private void RestoreCursor()
+    {
+        if (!_hasSavedCursor)
+        {
+            return;
+        }
+
+        _hasSavedCursor = false;
+        Cursor.lockState = _savedCursorLockMode;
+        Cursor.visible = _savedCursorVisible;
     }
 
     public override void OnStopClient()

@@ -143,6 +143,11 @@ public sealed class PlayerInventory : NetworkBehaviour
         return 0;
     }
 
+    [Server]
+    public void CopyContentsTo(List<KeyValuePair<int, int>> results)
+    {
+        _data.CopyTo(results);
+    }
 
     //[ContextMenu("Test/Add Resource On Server")]
     //private void TestAddResourceOnServer()
