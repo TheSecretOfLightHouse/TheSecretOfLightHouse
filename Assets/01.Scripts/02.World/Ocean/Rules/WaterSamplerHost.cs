@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Lighthouse.World.Clock.Rules;
 using Lighthouse.World.Query.Rules;
 using UnityEngine;
+using System;
 
 namespace Lighthouse.World.Ocean.Rules
 {
@@ -20,10 +21,14 @@ namespace Lighthouse.World.Ocean.Rules
 
         private readonly List<IWaterSampleSource> _sources = new List<IWaterSampleSource>();
         private readonly WaveInputs _inputs = new WaveInputs();
+        private readonly WaveModifierRegistry _modifierRegistry = new WaveModifierRegistry();
+        private readonly WaveModifierData[] _modifierBuffer =
+            new WaveModifierData[WaveModifierModel.MaxModifiers];
         private WaterSampler _sampler;
         private IClock _clock;
 
         public WaveInputs Inputs => _inputs;
+        public WaveModifierRegistry ModifierRegistry => _modifierRegistry;
 
         public double CurrentTime { get; private set; }
 
@@ -67,6 +72,7 @@ namespace Lighthouse.World.Ocean.Rules
             }
 
             CurrentTime = _clock.Now;
+            RefreshModifiers();
 
             for (int i = 0; i < _sources.Count; i++)
             {
@@ -119,6 +125,16 @@ namespace Lighthouse.World.Ocean.Rules
         public float GetHeight(in SamplerTicket ticket, int index)
         {
             return _sampler != null ? _sampler.GetHeight(in ticket, index) : 0f;
+        }
+
+        public void RefreshModifiers()
+        {
+            if (!_modifierRegistry.TryGather(_modifierBuffer, out int count)
+                || !_inputs.TrySetModifiers(
+                    new ReadOnlySpan<WaveModifierData>(_modifierBuffer, 0, count)))
+            {
+                throw new InvalidOperationException("Wave modifier collection failed.");
+            }
         }
     }
 }

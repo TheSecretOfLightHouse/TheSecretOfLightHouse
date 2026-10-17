@@ -18,6 +18,8 @@ namespace Lighthouse.World.Clock.Rules
         public int DayIndex => _state.DayIndex;
         public DayPhase Phase => _state.Phase;
         public double GameStartTime => _gameStartTime;
+        public DayCycleConfig Config => _config;
+        public bool IsRunning => _isRunning;
 
         public event Action<int> DayStarted;
         public event Action<int> NightStarted;
