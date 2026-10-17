@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using Lighthouse.Network.Session.Rules;
 using Lighthouse.World.MapGeneration.Rules;
 
 namespace Lighthouse.World.MapGeneration.Server
 {
-    public sealed class WorldReadyTracker : IWorldReadyGate
+    public sealed class WorldReadyTracker : IWorldReadyGate, IMatchStartGate
     {
         private readonly HashSet<uint> _ready = new HashSet<uint>();
 

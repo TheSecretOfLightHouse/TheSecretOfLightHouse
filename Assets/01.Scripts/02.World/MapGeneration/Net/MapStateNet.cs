@@ -31,6 +31,7 @@ namespace Lighthouse.World.MapGeneration.Net
         private uint _contentHash;
         private MapSeedInfo _applied;
         private WorldReadyTracker _tracker;
+        private LighthouseNetworkManager _startGateOwner;
         private SpawnerSession _spawnerSession;
         private IRegionGate _regions;
         private WorldQuerySession _querySession;
@@ -69,6 +70,12 @@ namespace Lighthouse.World.MapGeneration.Net
             _tracker = new WorldReadyTracker();
             WorldServices.Register<IWorldReadyGate>(_tracker);
             NetworkServer.RegisterHandler<WorldReadyMessage>(HandleWorldReady);
+            _startGateOwner = LighthouseNetworkManager.Instance;
+
+            if (_startGateOwner != null)
+            {
+                _startGateOwner.RegisterStartGate(_tracker);
+            }
 
             if (_builder == null)
             {
@@ -131,9 +138,16 @@ namespace Lighthouse.World.MapGeneration.Net
 
             if (_tracker != null)
             {
+                if (_startGateOwner != null)
+                {
+                    _startGateOwner.UnregisterStartGate(_tracker);
+                }
+
                 WorldServices.Unregister<IWorldReadyGate>(_tracker);
                 _tracker = null;
             }
+
+            _startGateOwner = null;
 
             _map = default;
             _layout = null;
@@ -211,7 +225,12 @@ namespace Lighthouse.World.MapGeneration.Net
                 return;
             }
 
-            uint actorId = ResolveActorId(conn);
+            if (!TryResolveActorId(conn, out uint actorId))
+            {
+                Debug.LogWarning($"[{nameof(MapStateNet)}] Ready message ignored: no actor for connId={conn.connectionId}.");
+                return;
+            }
+
             MapChecksumResult result = _tracker.Submit(actorId, _map, message.LayoutHash, message.ContentHash);
 
             if (result != MapChecksumResult.Match)
@@ -220,16 +239,17 @@ namespace Lighthouse.World.MapGeneration.Net
             }
         }
 
-        private static uint ResolveActorId(NetworkConnectionToClient conn)
+        private static bool TryResolveActorId(NetworkConnectionToClient conn, out uint actorId)
         {
             LighthouseNetworkManager manager = LighthouseNetworkManager.Instance;
 
-            if (manager != null && manager.Connections.TryGetActorId(conn, out uint actorId))
+            if (manager != null)
             {
-                return actorId;
+                return manager.Connections.TryGetActorId(conn, out actorId);
             }
 
-            return (uint)conn.connectionId;
+            actorId = (uint)conn.connectionId;
+            return true;
         }
 
         private MapChecksumResult LoadClientMap(MapSeedInfo expected)
