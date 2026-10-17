@@ -429,6 +429,7 @@ MonoBehaviour:
   _settings: {fileID: 11400000, guid: 556732e820a224543b60dea7e8e5be52, type: 2}
   _lighthouseModel: {fileID: 641134283}
   _tentacleModel: {fileID: 382491953}
+  _voting: {fileID: 1621655694}
 --- !u!114 &637299326
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -573,7 +574,7 @@ MonoBehaviour:
   _voting: {fileID: 1621655694}
   _identitySettings: {fileID: 11400000, guid: b95929fea02909a4ab72bb4442b9796e, type: 2}
   _ritualDuration: 60
-  _bottomDiagnosticsSpace: 164
+  _bottomDiagnosticsSpace: 218
 --- !u!4 &660936042
 Transform:
   m_ObjectHideFlags: 0
