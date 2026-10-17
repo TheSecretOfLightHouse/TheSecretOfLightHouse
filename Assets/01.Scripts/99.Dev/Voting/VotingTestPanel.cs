@@ -19,6 +19,7 @@ namespace Lighthouse.Dev.Voting
         [SerializeField] private VotingNetworkController _voting;
         [SerializeField] private IdentityCheckSettings _identitySettings = null;
         [SerializeField, Min(1)] private float _ritualDuration = 60;
+        [SerializeField, Min(0)] private float _bottomDiagnosticsSpace;
 
         private readonly List<uint> _serverParticipants = new();
         private readonly List<string> _history = new();
@@ -516,7 +517,7 @@ namespace Lighthouse.Dev.Voting
         {
             float width = Mathf.Min(300, Screen.width - leftPanelWidth - 48);
             GUILayout.BeginArea(new Rect(Screen.width - width - 16, 16, width,
-                Mathf.Min(450, Screen.height - 32)), _panelStyle);
+                Mathf.Min(450, Mathf.Max(80, Screen.height - 32 - _bottomDiagnosticsSpace))), _panelStyle);
             GUILayout.Label("게이지 · 서버 진단", _titleStyle);
             GUILayout.Label("호스트 시험 화면 전용 · 클라이언트 미전송", _mutedStyle);
             _gaugeScroll = GUILayout.BeginScrollView(_gaugeScroll);
