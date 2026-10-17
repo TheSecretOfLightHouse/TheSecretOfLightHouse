@@ -35,7 +35,7 @@ public sealed class PlayerInventory : NetworkBehaviour
         _syncedCounts.OnRemove += HandleResourceRemoved;
         _syncedCounts.OnClear += HandleInventoryCleared;
 
-        ResourceCountChanged += HandleTestResourceCountChanged;
+        //ResourceCountChanged += HandleTestResourceCountChanged;
     }
 
     public override void OnStopLocalPlayer()
@@ -47,7 +47,7 @@ public sealed class PlayerInventory : NetworkBehaviour
 
         InventoryReset?.Invoke();
 
-        ResourceCountChanged -= HandleTestResourceCountChanged;
+        //ResourceCountChanged -= HandleTestResourceCountChanged;
         base.OnStopLocalPlayer();
     }
 
@@ -98,6 +98,41 @@ public sealed class PlayerInventory : NetworkBehaviour
         _syncedCounts[id] = _data.GetCount(id);
         return true;
     }
+
+    [Server]
+    public int TryRemoveTo(int id, int requestedAmount)
+    {
+        if (!_resourceCatalog || requestedAmount <= 0)
+        {
+            return 0;
+        }
+
+        if (!_resourceCatalog.TryGetById(id, out ResourceDefinition resource))
+        {
+            return 0;
+        }
+
+        int removedAmount = _data.TryRemoveTo(id, requestedAmount);
+
+        if (removedAmount <= 0)
+        {
+            return 0;
+        }
+
+        int remainingCount = _data.GetCount(id);
+
+        if (remainingCount == 0)
+        {
+            _syncedCounts.Remove(id);
+        }
+        else
+        {
+            _syncedCounts[id] = remainingCount;
+        }
+
+        return removedAmount;
+    }
+
     public int GetSyncedCount(int id)
     {
         if (_syncedCounts.TryGetValue(id, out int count))
@@ -109,34 +144,34 @@ public sealed class PlayerInventory : NetworkBehaviour
     }
 
 
-    [ContextMenu("Test/Add Resource On Server")]
-    private void TestAddResourceOnServer()
-    {
-        if (!isServer)
-        {
-            Debug.Log($"[{nameof(PlayerInventory)}] Run this on the server.");
-            return;
-        }
+    //[ContextMenu("Test/Add Resource On Server")]
+    //private void TestAddResourceOnServer()
+    //{
+    //    if (!isServer)
+    //    {
+    //        Debug.Log($"[{nameof(PlayerInventory)}] Run this on the server.");
+    //        return;
+    //    }
 
-        bool success = TryAdd(_testResourceId, 2);
+    //    bool success = TryAdd(_testResourceId, 2);
 
-        Debug.Log(
-            $"[{nameof(PlayerInventory)}] Success={success}, " +
-            $"Id={_testResourceId}, ServerCount={GetCount(_testResourceId)}");
-    }
+    //    Debug.Log(
+    //        $"[{nameof(PlayerInventory)}] Success={success}, " +
+    //        $"Id={_testResourceId}, ServerCount={GetCount(_testResourceId)}");
+    //}
 
-    [ContextMenu("Test/Read Synced Count")]
-    private void TestReadSyncedCount()
-    {
-        Debug.Log(
-            $"[{nameof(PlayerInventory)}] LocalPlayer={isLocalPlayer}, " +
-            $"Id={_testResourceId}, SyncedCount={GetSyncedCount(_testResourceId)}");
-    }
+    //[ContextMenu("Test/Read Synced Count")]
+    //private void TestReadSyncedCount()
+    //{
+    //    Debug.Log(
+    //        $"[{nameof(PlayerInventory)}] LocalPlayer={isLocalPlayer}, " +
+    //        $"Id={_testResourceId}, SyncedCount={GetSyncedCount(_testResourceId)}");
+    //}
 
-    private void HandleTestResourceCountChanged(int id, int count)
-    {
-        Debug.Log(
-            $"[{nameof(PlayerInventory)}] LocalPlayer={isLocalPlayer}, " +
-            $"Id={id}, Count={count}");
-    }
+    //private void HandleTestResourceCountChanged(int id, int count)
+    //{
+    //    Debug.Log(
+    //        $"[{nameof(PlayerInventory)}] LocalPlayer={isLocalPlayer}, " +
+    //        $"Id={id}, Count={count}");
+    //}
 }
