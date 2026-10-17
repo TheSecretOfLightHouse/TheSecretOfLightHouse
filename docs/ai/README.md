@@ -53,6 +53,8 @@ Codex는 [`.agents/skills/`](../../.agents/skills/), Claude Code는 [`.claude/sk
 | [00 읽기 안내](../00-reading-guide.md) | 역할별 읽기 순서 |
 | [01 시스템 개요](../01-system-design.md) | 게임 루프와 범위 |
 | [자원 채집 확정 기획](../design/resource-gathering-decisions.md) | 파괴형 월드 자원·채집/획득 규칙·담당·미정 사항 |
+| [등대·작업대 모듈 결정](../design/lighthouse-module-decisions.md) | 등대 층별 모듈 장착, 자원은 작업대 전용, 작업대 레시피·상한·존재 기준, 미정 목록 |
+| [자원·섬·맵 생성 결정](../design/world-resource-island-decisions.md) | World(강민서) 자원 6종·ID 규약·섬 종류·구역·맵 생성 결정과 구현, 모듈 후보(미정) |
 | [승패·투표 결정](../design/win-vote-decisions.md) | v4 이후 결정·미정 경계·팀원별 연결 계약 |
 | [게임 기획 v4](../design/references/game-design-v4.md) | 확정·가안·미정 규칙 |
 | [03 기술설계서](../03-technical-design.md) | 권위와 데이터 경계 |
