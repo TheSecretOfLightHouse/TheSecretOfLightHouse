@@ -1,5 +1,6 @@
 using System;
 using Lighthouse.Monsters.AI.Rules;
+using Lighthouse.Monsters.Spawning.Server;
 using Mirror;
 using Unity.Behavior;
 using UnityEngine;
@@ -17,6 +18,7 @@ namespace Lighthouse.Monsters.AI.Net
         [SerializeField] private BehaviorGraphAgent _behaviorAgent;
 
         private Rigidbody _body;
+        private Collider[] _spawnColliders;
         private float _currentHealth;
         private MonsterState _state = MonsterState.Patrol;
         private bool _isInitialized;
@@ -41,6 +43,7 @@ namespace Lighthouse.Monsters.AI.Net
         private void Awake()
         {
             _body = GetComponent<Rigidbody>();
+            _spawnColliders = GetComponentsInChildren<Collider>(true);
             SetPhysicsAuthority(false);
 
             if (_behaviorAgent == null)
@@ -54,6 +57,7 @@ namespace Lighthouse.Monsters.AI.Net
 
         private void OnEnable()
         {
+            MonsterSpawnCollisionRegistry.Register(this, _spawnColliders);
             if (netIdentity != null && isServer && _isInitialized && !IsDead)
             {
                 SetPhysicsAuthority(true);
@@ -69,6 +73,12 @@ namespace Lighthouse.Monsters.AI.Net
         {
             StopBehaviorInternal();
             SetPhysicsAuthority(false);
+        }
+
+        private void OnDestroy()
+        {
+            // AI만 꺼도 물리 콜라이더는 활성 상태이므로 파괴될 때까지 소유권 등록을 유지한다.
+            MonsterSpawnCollisionRegistry.Unregister(_spawnColliders);
         }
 
         public sealed override void OnStartServer()
