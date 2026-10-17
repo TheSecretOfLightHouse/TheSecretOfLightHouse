@@ -8,15 +8,18 @@ namespace Lighthouse.World.MapGeneration.Rules
     {
         private readonly ForceFieldRegistry _registry;
         private readonly StormWallField[] _fields;
+        private readonly WaveModifierRegistry _modifiers;
+        private readonly StormWallWaveSource _waveSource;
 
         public IReadOnlyList<StormWallField> Fields => _fields;
 
         public StormWallSession(MapGenerationConfig mapConfig,
             StormWallConfig wallConfig, float safeRadius,
-            IRegionGate regions, ForceFieldRegistry registry)
+            IRegionGate regions, ForceFieldRegistry registry,
+            WaveModifierRegistry modifiers)
         {
             if (mapConfig == null || wallConfig == null || !wallConfig.IsValid
-                || regions == null || registry == null)
+                || regions == null || registry == null || modifiers == null)
             {
                 throw new ArgumentException("Storm wall setup is incomplete.");
             }
@@ -54,6 +57,9 @@ namespace Lighthouse.World.MapGeneration.Rules
                 new StormWallField(outerRadius, SeaZone.Outer, regions, wallConfig)
             };
 
+            _modifiers = modifiers;
+            _waveSource = new StormWallWaveSource(_fields, wallConfig);
+
             try
             {
                 for (int i = 0; i < _fields.Length; i++)
@@ -62,6 +68,11 @@ namespace Lighthouse.World.MapGeneration.Rules
                     {
                         throw new InvalidOperationException("Storm wall registration failed.");
                     }
+                }
+
+                if (!_modifiers.Register(_waveSource))
+                {
+                    throw new InvalidOperationException("Storm wave registration failed or capacity is full.");
                 }
             }
             catch
@@ -73,6 +84,8 @@ namespace Lighthouse.World.MapGeneration.Rules
 
         public void Dispose()
         {
+            _modifiers.Unregister(_waveSource);
+
             for (int i = 0; i < _fields.Length; i++)
             {
                 _registry.Unregister(_fields[i]);

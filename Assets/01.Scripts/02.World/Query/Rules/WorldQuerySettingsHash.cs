@@ -7,7 +7,7 @@ namespace Lighthouse.World.Query.Rules
 {
     public static class WorldQuerySettingsHash
     {
-        private const int SchemaVersion = 2;
+        private const int SchemaVersion = 3;
 
         public static uint Compute(uint mapHash, DayCycleConfig config,
             float safeRadius, StormWallConfig stormWall = null)
@@ -44,6 +44,9 @@ namespace Lighthouse.World.Query.Rules
                 hash.Add(BitConverter.SingleToInt32Bits(stormWall.Width));
                 hash.Add(BitConverter.SingleToInt32Bits(stormWall.PushForce));
                 hash.Add(BitConverter.SingleToInt32Bits(stormWall.OutwardDamping));
+                hash.Add(BitConverter.SingleToInt32Bits(stormWall.WaveAmplitude));
+                hash.Add(BitConverter.SingleToInt32Bits(stormWall.WaveWavelength));
+                hash.Add(BitConverter.SingleToInt32Bits(stormWall.WaveSpeed));
             }
 
             return hash.Value;

@@ -286,8 +286,10 @@ namespace Lighthouse.World.MapGeneration.Net
             _querySession.Register();
 
             _stormWallSession = new StormWallSession(
-                _config, _stormWallConfig, _spawningConfig.SafeRadius,
-                _regions, forces);
+                 _config, _stormWallConfig, _spawningConfig.SafeRadius,
+                 _regions, forces, _waterSampler.ModifierRegistry);
+
+            _waterSampler.RefreshModifiers();
         }
 
         private int GetRegionDayIndex()
@@ -303,6 +305,11 @@ namespace Lighthouse.World.MapGeneration.Net
             {
                 _stormWallSession.Dispose();
                 _stormWallSession = null;
+
+                if (_waterSampler != null)
+                {
+                    _waterSampler.RefreshModifiers();
+                }
             }
 
             if (_querySession != null)
