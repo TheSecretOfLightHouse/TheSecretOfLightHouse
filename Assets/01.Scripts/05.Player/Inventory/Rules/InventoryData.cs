@@ -30,4 +30,33 @@ public sealed class InventoryData
         _counts[id] = currentCount + amount;
         return true;
     }
+
+    public int TryRemoveTo(int id, int requestedAmount)
+    {
+        if (requestedAmount <= 0)
+        {
+            return 0;
+        }
+
+        int currentCount = GetCount(id);
+        int removedAmount = System.Math.Min(currentCount, requestedAmount);
+
+        if (removedAmount <= 0)
+        {
+            return 0;
+        }
+
+        int remainingCount = currentCount - removedAmount;
+
+        if (remainingCount == 0)
+        {
+            _counts.Remove(id);
+        }
+        else
+        {
+            _counts[id] = remainingCount;
+        }
+
+        return removedAmount;
+    }
 }
