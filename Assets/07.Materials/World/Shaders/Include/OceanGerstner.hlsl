@@ -3,6 +3,7 @@
 
 #define OCEAN_MAX_WAVES 8
 #define OCEAN_TWO_PI 6.28318530718
+#include "OceanModifiers.hlsl"
 
 float4 _OceanWaveA[OCEAN_MAX_WAVES];
 float4 _OceanWaveB[OCEAN_MAX_WAVES];
@@ -53,9 +54,18 @@ void OceanGerstner_float(float3 restPositionWS, out float3 positionWS, out float
 
     positionWS = restPositionWS + displacement;
 
+    float modifierHeight;
+    float2 modifierSlope;
+    OceanModifiersAt(positionWS.xz, _OceanTime, modifierHeight, modifierSlope);
+    positionWS.y += modifierHeight;
+
     float normalY = (1.0 - stretchXX) * (1.0 - stretchZZ) - stretchXZ * stretchXZ;
     float normalX = -(slopeX * (1.0 - stretchZZ) + stretchXZ * slopeZ);
     float normalZ = -(slopeZ * (1.0 - stretchXX) + stretchXZ * slopeX);
+
+    normalX -= modifierSlope.x * normalY;
+    normalZ -= modifierSlope.y * normalY;
+
     normalWS = normalize(float3(normalX, normalY, normalZ));
 }
 

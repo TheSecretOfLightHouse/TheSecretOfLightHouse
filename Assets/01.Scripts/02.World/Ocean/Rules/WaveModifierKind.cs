@@ -4,6 +4,7 @@ namespace Lighthouse.World.Ocean.Rules
     {
         None = 0,
         Vortex = 1,
-        Bump = 2
+        Bump = 2,
+        RingWave = 3
     }
 }

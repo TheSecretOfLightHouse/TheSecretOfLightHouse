@@ -445,12 +445,13 @@ MonoBehaviour:
   disconnectInactiveConnections: 0
   disconnectInactiveTimeout: 60
   authenticator: {fileID: 1737995833}
-  playerPrefab: {fileID: 369352961249826539, guid: 0cdcdd578f6d1084f959fa220a3d3af8, type: 3}
+  playerPrefab: {fileID: 4492665440649449213, guid: e6cf129f5165840418bde70c61110401, type: 3}
   autoCreatePlayer: 1
   playerSpawnMethod: 0
   spawnPrefabs:
   - {fileID: 2411459328641944667, guid: 47d9ed5a167e0b54e99d439b5716765c, type: 3}
   - {fileID: 7885967594719081140, guid: 2ffb0d8ea4aac4446bf6aef45828d6bd, type: 3}
+  - {fileID: 4257653208653849673, guid: b30e1fbdd842f4d46a8535e5b5da4674, type: 3}
   exceptionsDisconnect: 1
   snapshotSettings:
     bufferTimeMultiplier: 2
@@ -471,6 +472,7 @@ MonoBehaviour:
   _startPlayerCount: 2
   _loadTimeoutSeconds: 60
   _shutdownDelaySeconds: 0.5
+  _requireStartGate: 0
 --- !u!114 &1737995831
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -572,12 +574,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3792ab6ad33d9114185e3e827bb526eb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _networkManager: {fileID: 0}
-  _boatPrefab: {fileID: 0}
+  _networkManager: {fileID: 1737995830}
+  _boatPrefab: {fileID: 3100090438404496623, guid: b30e1fbdd842f4d46a8535e5b5da4674, type: 3}
   _spawnOffset: {x: 1.5, y: -0.2, z: 0}
   _landLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

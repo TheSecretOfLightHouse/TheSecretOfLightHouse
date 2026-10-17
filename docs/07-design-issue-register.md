@@ -116,7 +116,7 @@
 | [W05](design/references/v4-design-review.md#w05) | 필수 공급량과 노동 시간을 계산할 경제표가 없다 | P0 · 누락 계약 | 계약 확인 필요 |
 | [W06](design/references/v4-design-review.md#w06) | 손실과 부분 재생 뒤 승리 자원이 남는지 불명확하다 | P0 · 검증 가설 | 가설 검증 필요 |
 | [W07](design/references/v4-design-review.md#w07) | 개인 강화와 공동 수리의 투자 가치가 검증되지 않았다 | P1 · 검증 가설 | 가설 검증 필요 |
-| [W08](design/references/v4-design-review.md#w08) | 공동 인출의 권한과 반복 방해 한도가 없다 | P1 · 누락 계약 | 계약 확인 필요 |
+| [W08](design/references/v4-design-review.md#w08) | 공동 인출의 권한과 반복 방해 한도가 없다 | P1 · 누락 계약 | 부분 결정(2026-10-17): [공용 인벤토리 결정](design/shared-inventory-decisions.md)에 따라 작업대·등대에서 마피아만 인출 가능, 시민은 본인 투입분도 인출 불가. 등대 수리에 이미 반영된 자원도 회수하고 해당 진행도를 되돌림. 인출 시 등대 HP는 감소하지 않음. 환산·단계별 회수 대상·보상·의식/승패 경합은 추가 계약 필요. 인출 한도·속도·시점·경합·취소 정책은 미정. 구현·검증 후속 |
 | [W09](design/references/v4-design-review.md#w09) | 연료 탄약 배 수리의 비용과 고갈 행동이 없다 | P1 · 누락 계약 | 버전 충돌: 연료 재도입인지 잔존 문구인지 먼저 확인(V09) |
 | [W10](design/references/v4-design-review.md#w10) | 공동 자원을 쓰는 자동 구조의 잔액 부족 처리가 없다 | P0 · 누락 계약 | v4 자동구조 비용 방향 확인. 잔액 부족/전원 난파 정책 미정 |
 | [W11](design/references/v4-design-review.md#w11) | 가까운 섬에 도착해도 배가 없으면 돌아올 수 없다 | P0 · 누락 계약 | v4 가까운 섬 복귀 방향 확인. 배 복구·이동 가능성 미정 |

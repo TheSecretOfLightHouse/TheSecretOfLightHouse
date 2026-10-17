@@ -21,7 +21,7 @@ namespace Lighthouse.World.Ocean.Rules
         {
             FindRestPosition(waves, x, z, time, out float restX, out float restZ);
             Vector3 displacement = DisplacementAt(waves, restX, restZ, time);
-            return displacement.y + WaveModifierModel.HeightAt(modifiers, x, z);
+            return displacement.y + WaveModifierModel.HeightAt(modifiers, x, z, time);
         }
 
         public static Vector3 NormalAt(
@@ -63,7 +63,8 @@ namespace Lighthouse.World.Ocean.Rules
             float normalX = -(slopeX * (1f - stretchZZ) + stretchXZ * slopeZ);
             float normalZ = -(slopeZ * (1f - stretchXX) + stretchXZ * slopeX);
 
-            WaveModifierModel.SlopeAt(modifiers, x, z, out float modifierSlopeX, out float modifierSlopeZ);
+            WaveModifierModel.SlopeAt(modifiers, x, z,
+                out float modifierSlopeX, out float modifierSlopeZ, time);
             normalX -= modifierSlopeX * normalY;
             normalZ -= modifierSlopeZ * normalY;
 
