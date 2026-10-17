@@ -89,7 +89,25 @@ public sealed class BoatController : NetworkBehaviour
 
     private void HandleWrecked()
     {
-        if (Owner && _isOccupied)
+        if (!Owner || !_isOccupied)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!Owner.TryGetComponent(
+                out PlayerInventoryDropper dropper))
+            {
+                return;
+            }
+
+            if (!dropper.TryDropAll(transform.position))
+            {
+                return;
+            }
+        }
+        finally
         {
             Owner.SetDowned(true);
         }
@@ -168,7 +186,6 @@ public sealed class BoatController : NetworkBehaviour
 
     public void Disembark(PlayerController player)
     {
-        // Replicated state is changed only by the server command.
         if (player == Owner && (isOwned || !IsNetworkActive))
         {
             Stop();
