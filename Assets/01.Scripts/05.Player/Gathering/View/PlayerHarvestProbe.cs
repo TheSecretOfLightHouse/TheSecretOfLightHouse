@@ -1,6 +1,6 @@
 using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
-using Lighthouse.Interaction.Targets.Net;
+using Lighthouse.Interaction.Requests.Rules;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -67,7 +67,7 @@ public sealed class PlayerHarvestProbe : MonoBehaviour
     {
         Camera mainCamera = Camera.main;
 
-        if (!mainCamera || Mouse.current == null)
+        if (!mainCamera || Mouse.current == null || !_relay)
         {
             return;
         }
@@ -113,29 +113,36 @@ public sealed class PlayerHarvestProbe : MonoBehaviour
 
         RaycastHit nearestHit = _hits[nearestIndex];
 
-        HarvestTarget target =nearestHit.collider.GetComponentInParent<HarvestTarget>();
+        HarvestTarget target =
+            nearestHit.collider.GetComponentInParent<HarvestTarget>();
 
         if (!target || !target.IsConfigured)
         {
             return;
         }
 
-        float distanceSquared = (nearestHit.point - actor.position).sqrMagnitude;
+        LocalHarvestTestSpot spot =
+            target.GetComponent<LocalHarvestTestSpot>();
+
+        if (!spot || !spot.isActiveAndEnabled || spot.SpotId <= 0)
+        {
+            return;
+        }
+
+        float distanceSquared =
+            (nearestHit.point - actor.position).sqrMagnitude;
 
         if (distanceSquared > _reach * _reach)
         {
             return;
         }
 
-        InteractionTarget networkTarget = target.GetComponent<InteractionTarget>();
+        bool isSent = _relay.TrySendToNonNetworkTarget(
+            InteractionTargetKind.HarvestSpot,
+            spot.SpotId,
+            InteractionAction.Harvest);
 
-        if (!networkTarget || !_relay)
-        {
-            return;
-        }
-
-        bool sent = _relay.TrySendToNetworkTarget(networkTarget.NetId, InteractionAction.Harvest);
-
-        Debug.Log($"Harvest request sent={sent}");
+        Debug.Log(
+            $"[{nameof(PlayerHarvestProbe)}] SpotId={spot.SpotId}, Sent={isSent}");
     }
 }

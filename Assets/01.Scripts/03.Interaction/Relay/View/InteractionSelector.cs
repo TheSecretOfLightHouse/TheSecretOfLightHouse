@@ -13,6 +13,9 @@ namespace Lighthouse.Interaction.Relay.View
     [RequireComponent(typeof(InteractionRelay))]
     public sealed class InteractionSelector : NetworkBehaviour
     {
+        [SerializeField]
+        private LayerMask _interactionLayers;
+
         private InteractionRelay _relay;
         private InteractionTarget _selected;
 
@@ -34,13 +37,7 @@ namespace Lighthouse.Interaction.Relay.View
                 return;
             }
 
-            InteractionTarget nearest = FindNearest(transform.position);
-
-            if (nearest != _selected)
-            {
-                _selected = nearest;
-                SelectedChanged?.Invoke(_selected);
-            }
+            RefreshSelection();
         }
 
         public override void OnStopLocalPlayer()
@@ -56,11 +53,16 @@ namespace Lighthouse.Interaction.Relay.View
         [Client]
         public bool TryInteract()
         {
-            if (!isLocalPlayer || !_selected)
+            if (!isLocalPlayer)
             {
                 return false;
             }
+            RefreshSelection();
 
+            if (!_selected)
+            {
+                return false;
+            }
             return _relay.TrySendToNetworkTarget(_selected.NetId, _selected.DefaultAction);
         }
 
@@ -71,15 +73,48 @@ namespace Lighthouse.Interaction.Relay.View
             return isLocalPlayer && _relay.TryCancelSession();
         }
 
-        private static InteractionTarget FindNearest(Vector3 origin)
+        private void RefreshSelection()
+        {
+            SetSelected(FindNearest(transform.position));
+        }
+
+        private void SetSelected(InteractionTarget target)
+        {
+            if (ReferenceEquals(_selected, target))
+            {
+                return;
+            }
+
+            _selected = target;
+            SelectedChanged?.Invoke(_selected);
+        }
+
+        private InteractionTarget FindNearest(Vector3 origin)
         {
             IReadOnlyList<InteractionTarget> targets = InteractionTarget.Active;
             InteractionTarget nearest = null;
-            float nearestSqr = float.MaxValue;
+            float nearestSqr = float.PositiveInfinity;
 
             for (int i = 0; i < targets.Count; i++)
             {
                 InteractionTarget target = targets[i];
+
+                if (!target || target.NetId == 0)
+                {
+                    continue;
+                }
+
+                int targetLayerMask = 1 << target.gameObject.layer;
+                if ((_interactionLayers.value & targetLayerMask) == 0)
+                {
+                    continue;
+                }
+
+                if (!target.Supports(target.DefaultAction))
+                {
+                    continue;
+                }
+
                 float rangeSqr = target.Range * target.Range;
                 float distanceSqr = (target.Position - origin).sqrMagnitude;
 

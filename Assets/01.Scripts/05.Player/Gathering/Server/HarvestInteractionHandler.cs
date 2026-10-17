@@ -1,16 +1,24 @@
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Interaction.Requests.Rules;
 using Lighthouse.Interaction.Router.Server;
+using Lighthouse.Interaction.Targets.Server;
 using Mirror;
 using UnityEngine;
 
 [RequireComponent(typeof(NetworkIdentity))]
 [RequireComponent(typeof(HarvestDropSpawner))]
 public sealed class HarvestInteractionHandler :
-       NetworkBehaviour, IInteractionHandler
+       NetworkBehaviour, IInteractionHandler, INonNetworkTargetAdapter
 {
+    [SerializeField]
+    private LocalHarvestTestSpot[] _testSpots;
+
+    [SerializeField, Min(0.1f)]
+    private float _serverRange = 3f;
+
     private HarvestDropSpawner _dropSpawner;
     private bool _isRegistered;
+    private bool _isAdapterRegistered;
 
     private void Awake()
     {
@@ -21,34 +29,65 @@ public sealed class HarvestInteractionHandler :
     {
         base.OnStartServer();
 
-        _isRegistered = InteractionRouter.RegisterHandler(
-            InteractionAction.Harvest,
-            this);
+        _isAdapterRegistered = TargetResolver.RegisterAdapter(InteractionTargetKind.HarvestSpot,this);
 
-        Debug.Log(
-            $"[{nameof(HarvestInteractionHandler)}] Registered={_isRegistered}");
+        if (!_isAdapterRegistered)
+        {
+            return;
+        }
+
+        _isRegistered = InteractionRouter.RegisterHandler(InteractionAction.Harvest,this);
+
+        if (!_isRegistered)
+        {
+            TargetResolver.UnregisterAdapter(InteractionTargetKind.HarvestSpot,this);
+            _isAdapterRegistered = false;
+        }
     }
 
     public override void OnStopServer()
     {
         if (_isRegistered)
         {
-            InteractionRouter.UnregisterHandler(
-                InteractionAction.Harvest,
-                this);
-
+            InteractionRouter.UnregisterHandler(InteractionAction.Harvest,this);
             _isRegistered = false;
+        }
+
+        if (_isAdapterRegistered)
+        {
+            TargetResolver.UnregisterAdapter(InteractionTargetKind.HarvestSpot,this);
+            _isAdapterRegistered = false;
         }
 
         base.OnStopServer();
     }
 
-    public InteractionResultCode Handle(
-        in InteractionContext context)
+    //id를 서버 위치로 변환하는 함수
+    public bool TryResolve(int key,InteractionAction action,out Vector3 position,out float serverRange)
     {
-        if (!isServer || !_dropSpawner)
+        position = default;
+        serverRange = _serverRange;
+
+        if (!isServer ||!_isRegistered ||action != InteractionAction.Harvest ||!TryGetTestTarget(key, out HarvestTarget target))
+        {
+            return false;
+        }
+
+        position = target.transform.position;
+        return true;
+    }
+
+    public InteractionResultCode Handle(in InteractionContext context)
+    {
+        if (!isServer || !_isRegistered || !_dropSpawner)
         {
             return InteractionResultCode.Rejected;
+        }
+
+        if (context.Action != InteractionAction.Harvest ||
+            context.Target.Kind != InteractionTargetKind.HarvestSpot)
+        {
+            return InteractionResultCode.InvalidTarget;
         }
 
         if (context.Sender == null || !context.Sender.identity)
@@ -56,34 +95,56 @@ public sealed class HarvestInteractionHandler :
             return InteractionResultCode.Rejected;
         }
 
-        PlayerController player =
-            context.Sender.identity.GetComponent<PlayerController>();
+        PlayerController player = context.Sender.identity.GetComponent<PlayerController>();
 
-        if (!player || player.IsDowned || player.IsOnBoat)
+        if (!player ||!player.isActiveAndEnabled || player.IsDowned || player.IsOnBoat)
         {
             return InteractionResultCode.Rejected;
         }
 
-        if (!context.Target.Identity)
+        if (!TryGetTestTarget(context.Target.Key, out HarvestTarget target))
         {
             return InteractionResultCode.InvalidTarget;
         }
 
-        HarvestTarget target =
-            context.Target.Identity.GetComponent<HarvestTarget>();
+        bool isSpawned = _dropSpawner.TrySpawnDrop(target);
 
-        if (!target || !target.IsConfigured)
+        return isSpawned? InteractionResultCode.Success: InteractionResultCode.Rejected;
+    }
+
+    private bool TryGetTestTarget(int spotId,out HarvestTarget target)
+    {
+        target = null;
+
+        if (spotId <= 0 || _testSpots == null)
         {
-            return InteractionResultCode.Rejected;
+            return false;
         }
 
-        bool success = _dropSpawner.TrySpawnDrop(target);
+        LocalHarvestTestSpot matchedSpot = null;
 
-        Debug.Log(
-            $"[{nameof(HarvestInteractionHandler)}] Actor={context.ActorId}, Spawn success={success}");
+        for (int i = 0; i < _testSpots.Length; i++)
+        {
+            LocalHarvestTestSpot spot = _testSpots[i];
 
-        return success
-            ? InteractionResultCode.Success
-            : InteractionResultCode.Rejected;
+            if (!spot || spot.SpotId != spotId)
+            {
+                continue;
+            }
+            if (matchedSpot)
+            {
+                return false;
+            }
+
+            matchedSpot = spot;
+        }
+
+        if (!matchedSpot || !matchedSpot.isActiveAndEnabled)
+        {
+            return false;
+        }
+
+        target = matchedSpot.GetComponent<HarvestTarget>();
+        return target && target.IsConfigured;
     }
 }
