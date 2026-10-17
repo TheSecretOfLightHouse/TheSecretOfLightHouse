@@ -46,6 +46,10 @@ namespace Lighthouse.Network.Session.Net
         [Tooltip("Gives the end notice time to reach clients before the host shuts down.")]
         [SerializeField, Min(0f)]
         private float _shutdownDelaySeconds = 0.5f;
+        [Tooltip("On for scenes whose features must register a start gate (e.g. World map ready). " +
+                 "Without one the match stays loading until the load timeout instead of starting early.")]
+        [SerializeField]
+        private bool _requireStartGate;
 
         //[SerializeField]
         //private GameObject[] _playerPrefabs = new GameObject[MaxPlayers];
@@ -55,6 +59,7 @@ namespace Lighthouse.Network.Session.Net
         private readonly HashSet<uint> _joinedActors = new HashSet<uint>();
         private readonly List<NetworkConnectionToClient> _rejectedConnections = new List<NetworkConnectionToClient>(MaxPlayers);
         private readonly HashSet<NetworkConnectionToClient> _leaveRequested = new HashSet<NetworkConnectionToClient>();
+        private readonly List<IMatchStartGate> _startGates = new List<IMatchStartGate>();
 
         private MatchPhase _phase;
         private uint _matchId;
@@ -430,6 +435,34 @@ namespace Lighthouse.Network.Session.Net
             StopClient();
         }
 
+        // Features register from their game scene OnStartServer, which can run before or after players finish loading,
+        // so the start is checked again both here and on every Changed.
+        [Server]
+        public bool RegisterStartGate(IMatchStartGate gate)
+        {
+            if (gate == null || _startGates.Contains(gate))
+            {
+                return false;
+            }
+
+            _startGates.Add(gate);
+            gate.Changed += HandleStartGateChanged;
+            TryStartMatch();
+            return true;
+        }
+
+        [Server]
+        public bool UnregisterStartGate(IMatchStartGate gate)
+        {
+            if (gate == null || !_startGates.Remove(gate))
+            {
+                return false;
+            }
+
+            gate.Changed -= HandleStartGateChanged;
+            return true;
+        }
+
         // Called by SessionJoinAuthenticator before Mirror sends the scene message, so the client stays on its first screen.
         // Sends are batched until the end of the frame; the client leaves on receipt and the delayed drop is the fallback.
         [Server]
@@ -519,13 +552,42 @@ namespace Lighthouse.Network.Session.Net
                 return;
             }
 
-            // TODO(JH07): also wait for the World ready signal (강민서) once it exists; scene load is the only gate for now.
+            if (!AreStartGatesReady())
+            {
+                // Still Loading: a later Changed retries, otherwise the load timeout ends the match.
+                return;
+            }
+
             _phase = MatchPhase.InProgress;
             double startTime = NetworkTime.time;
 
             Debug.Log($"[{nameof(LighthouseNetworkManager)}] Match {_matchId} started. players={_roster.Count}");
             BroadcastState();
             MatchStarted?.Invoke(_matchId, startTime, _roster);
+        }
+
+        private bool AreStartGatesReady()
+        {
+            if (_startGates.Count == 0)
+            {
+                return !_requireStartGate;
+            }
+
+            for (int i = 0; i < _startGates.Count; i++)
+            {
+                if (!_startGates[i].AreAllReady(_roster))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // The phase and load checks in TryStartMatch keep repeated or early Changed calls from starting twice.
+        private void HandleStartGateChanged()
+        {
+            TryStartMatch();
         }
 
         [Server]
@@ -638,8 +700,20 @@ namespace Lighthouse.Network.Session.Net
             _joinedActors.Clear();
             _rejectedConnections.Clear();
             _leaveRequested.Clear();
+            ClearStartGates();
             _phase = MatchPhase.Lobby;
             _matchId = 0;
+        }
+
+        // A gate left over from a previous server run must not decide the next match.
+        private void ClearStartGates()
+        {
+            for (int i = 0; i < _startGates.Count; i++)
+            {
+                _startGates[i].Changed -= HandleStartGateChanged;
+            }
+
+            _startGates.Clear();
         }
 
         [Server]

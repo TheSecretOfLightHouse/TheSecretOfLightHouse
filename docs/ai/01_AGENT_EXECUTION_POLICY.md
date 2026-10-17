@@ -40,7 +40,7 @@
 
 위 표는 새로 필요한 확인에 적용한다. 기존 대화에서 승인된 요청과 담당자의 자기 소유 범위를 먼저 확인하고, 이미 허용된 같은 작업이나 명시적으로 승인된 구조 이관은 반복 승인받지 않는다. 담당 경계 확인의 규칙 원문은 [AGENTS.md](../../AGENTS.md)다.
 
-외부 코드 `Assets/Mirror/`, `Assets/Plugins/ParrelSync/`, 구매 에셋 `Assets/ThirdParty/ThirdParty/`는 수정하지 않는다. 씬·프리팹·`.asset` YAML을 직접 편집하지 않는다. 담당자나 CODEOWNERS가 확인되지 않으면 임의로 배정하지 않는다.
+외부 코드 `Assets/Mirror/`, `Assets/Plugins/ParrelSync/`, 구매 에셋 `Assets/ThirdParty/1조 Unity Asset/ThirdParty/`는 수정하지 않는다. 씬·프리팹·`.asset` YAML을 직접 편집하지 않는다. 담당자나 CODEOWNERS가 확인되지 않으면 임의로 배정하지 않는다.
 
 ### 절대 하지 않음
 

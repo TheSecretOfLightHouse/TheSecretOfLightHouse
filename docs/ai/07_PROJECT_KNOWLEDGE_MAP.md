@@ -17,7 +17,7 @@
 | 폴더·어셈블리 | [아키텍처](../04-architecture.md) | `Assets/01.Scripts/`, `Lighthouse.Runtime` | 단일 런타임, Unity.InputSystem·Mirror 참조. 구조 변경과 런타임 검증은 구분 |
 | 담당자·업무 경계 | [코드 소유권](../CODE_OWNERSHIP.md) | 기능별 담당·계정·수정 합의 | 다른 담당 영역 수정은 [AGENTS.md](../../AGENTS.md)의 담당 경계 확인을 따른다 |
 | 공통 계약 | [코드 소유권](../CODE_OWNERSHIP.md), [아키텍처](../04-architecture.md) | `Assets/01.Scripts/00.Common/` | 공통 계약 조율과 기능 담당의 사용 범위 |
-| 연결·스폰 등록·이탈 시 판 종료 | [지훈 시스템 설계](../design/jihun-system-design.md), [단절 결정](../design/win-vote-decisions.md#disconnection), [네트워크 권위](../unity/NETWORK_AUTHORITY.md), [협업](../unity/SERVER_CLIENT_WORKFLOW.md) | `Assets/01.Scripts/01.Network/` (`LighthouseNetworkManager`, `ConnectionDirectory`, `NetworkActor`) | 호스트 1 + 원격 클라이언트 3. 판 진행 중 이탈 시 판 종료는 구현 반영 필요, 재접속은 10/25 이후 선택. 구현 기록은 [담당자별 작업 §6](../06-owner-work-plan.md#6-처음-함께-맞출-일과-작업-기록) |
+| 연결·스폰 등록·이탈 시 판 종료 | [지훈 시스템 설계](../design/jihun-system-design.md), [단절 결정](../design/win-vote-decisions.md#disconnection), [네트워크 권위](../unity/NETWORK_AUTHORITY.md), [협업](../unity/SERVER_CLIENT_WORKFLOW.md) | `Assets/01.Scripts/01.Network/` (`LighthouseNetworkManager`, `ConnectionDirectory`, `NetworkActor`) | 호스트 1 + 원격 클라이언트 3. 로비 준비·자동 시작·판 진행 중 이탈 시 판 종료는 JH07 구현(2026-10-13 같은 PC 4인 M2), 판 시작 게이트 `Session/Rules/IMatchStartGate`는 매니저 측 구현·World 등록 대기(2026-10-16), 재접속은 10/25 이후 선택. 구현 기록은 [담당자별 작업 §6](../06-owner-work-plan.md#6-처음-함께-맞출-일과-작업-기록) |
 | 바다·날씨·시간·섬·월드 배치 | [아키텍처](../04-architecture.md), [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/02.World/` | 파밍 스포너 배치와 플레이어 채집 행동 구분, Ghost 등장·경로·연출과 힌트 판정 구분 |
 | 상호작용 라우팅·검증·기록 | [지훈 시스템 설계](../design/jihun-system-design.md), [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/03.Interaction/` | 대상 탐지·대상 확인·Relay·Router·Validator·지속 상호작용 세션·기록·GhostShipHints |
 | 등대·작업대·모듈 | [지훈 시스템 설계](../design/jihun-system-design.md), [기획서](../design/references/game-design-v4.md), [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/04.Lighthouse/` | 모듈·부식 낙하·등대 포함, 기획값 변경 없이 구현 근거 확인 |
@@ -26,7 +26,7 @@
 | 마피아 | [승패·투표 결정](../design/win-vote-decisions.md), [v4](../design/references/game-design-v4.md), [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/07.Mafia/` (`Voting/Rules/VoteService.cs`) | 시민 표·확인권·누적/공격력 및 비밀 정보 수신 경계. 현재 Rules와 새 규칙의 차이는 로드맵에서 확인 |
 | 시스템·UI·개발 도구 | [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/08.Systems/`, `09.UI/`, `99.Dev/` (같은 루트) | Systems·UI는 최명기, Dev는 관련 기능 담당 공유 |
 | 개발 씬 | [씬·에셋 안전](../unity/SCENE_AND_ASSET_SAFETY.md) | `Assets/00.Scenes/SampleScene.unity`, `Assets/00.Scenes/Myeongki/Player.unity`, `Assets/00.Scenes/Jihun/JH01TestScene.unity`(빌드 미포함), `Assets/00.Scenes/Jihun/JH07Offline.unity`·`JH07Lobby.unity`·`JH07Game.unity`(빌드 0~2번, 임시) | 씬 소유·역할·빌드 포함 여부는 실제 설정에서 확인 |
-| 에셋 데모 | [데모 가이드](../unity/DEMO_GUIDE.md) | `Assets/ThirdParty/_Demo/` | 실제 로컬 체크아웃 존재와 공유 절차 확인 |
+| 에셋 데모 | [데모 가이드](../unity/DEMO_GUIDE.md) | `Assets/ThirdParty/1조 Unity Asset/_Demo/` | 실제 로컬 체크아웃 존재와 공유 절차 확인 |
 | 검증·재현 | [검증 플레이북](03_VERIFICATION_PLAYBOOK.md), [멀티플레이 테스트](04_MULTIPLAYER_TEST_PROTOCOL.md) | 실제 테스트 씬·빌드·로그 | 호스트 1 + 원격 클라이언트 3, 비밀 정보 수신 경계 |
 | AI 작업 운영 | [AI 문서](README.md), [AGENTS.md](../../AGENTS.md) | `docs/ai/`, `.agents/skills/`, `.claude/skills/` | 범위·승인·실제 담당·인수인계 |
 

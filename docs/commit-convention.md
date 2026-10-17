@@ -35,7 +35,7 @@
 |---|---|
 | 기능 코드와 그 테스트를 함께 추가 | 기능의 타입 (`feat`/`fix`) 하나로 |
 | 기존 버그를 막는 테스트만 추가 | `fix` |
-| Asset Store·외부 에셋 도입 (`Assets/ThirdParty/ThirdParty/`) | `chore` |
+| Asset Store·외부 에셋 도입 (`Assets/ThirdParty/1조 Unity Asset/ThirdParty/`) | `chore` |
 | 씬·프리팹에 오브젝트를 배치해 기능을 연결 | `feat` |
 | SO·데이터 테이블 수치만 조정 (의도한 밸런스 변경) | `chore` |
 | 수치가 기획서와 달라서 바로잡음 | `fix` |
