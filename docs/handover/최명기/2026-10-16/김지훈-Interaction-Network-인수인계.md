@@ -1,7 +1,7 @@
 # 인수인계 — 김지훈 Interaction·Network 연결 확인
 
 작성일: 2026-10-16
-갱신일: 2026-10-16
+갱신일: 2026-10-17
 브랜치·기준: feature/myeongki / HEAD 5828650 + 최신 작업 트리
 작성자: 최명기
 수신자: 김지훈
@@ -28,7 +28,7 @@
 - 본편 World: 시험 LocalHarvestTestSpot은 World HarvestSpotRegistry와 별개. 원본 파괴·잔량 차감·실패 복구·일일 원본 복구 미연결.
 - Adapter 충돌: 시험 Handler와 World HarvestHost는 HarvestSpot 종류를 등록한다. 같은 실행 환경에 함께 켜면 중복 등록 실패 가능. 사용할 Adapter·Handler 구성을 세 담당자가 맞춘다.
 - E키 범용 행동: 현재 선택 경로는 공용으로 바뀌었지만 작업대 등 실제 대상 레이어·Action·UI/입력 통합 검증은 남는다. 자원 원본을 E키로 채집하지 않도록 구성·회귀 시험 필요.
-- 월드 준비: MapStateNet/WorldReadyTracker 신호는 있으나 TryStartMatch는 씬 로딩만 검사하는 TODO가 남아 있다. 강민서와 준비 의미·불일치/시간 초과 정책 확인 필요.
+- 월드 준비: LighthouseNetworkManager에 RegisterStartGate(IMatchStartGate)와 TryStartMatch의 AreAllReady 검사가 이미 있다. 이번 02.World 검색에서는 RegisterStartGate 호출을 찾지 못했다. 매니저 재구현이 아니라 실제 World 게이트 등록·준비 의미·불일치/시간 초과 정책을 강민서와 확인한다. 게이트가 없으면 _requireStartGate=true일 때 대기하고 false일 때 통과하므로 실제 설정과 등록을 함께 확인한다.
 - M2: 원격 표시·동시 획득·수량 비노출·새 Selector 레이어 회귀 미검증.
 
 ## 4. 현재 저장소 상태
@@ -54,6 +54,7 @@
 4. Adapter 등록 충돌을 피할 본편 구성과 World 파괴/잔량/복구 계약을 맞춘다. 이후 월드 준비 지연·해시 불일치 시험을 진행한다.
 
 ## 8. 주의
+- 개인 자원 부분 투입은 [인벤토리 API](../../../unity/PLAYER_INVENTORY_API.md) → [10/17 인수인계](../2026-10-17/김지훈-인벤토리-소비반환-API.md) 순서로 확인한다. 이 문서는 입력·공용 경로 안내이며 거래 계약의 단일 기준이 아니다.
 - 강민서의 월드 스폰 자원은 파괴형 원본이다. 생성된 결과 드롭의 E키 획득과 구분한다.
 - Selector는 레이어/기본 Action 선택이므로 ResourcePickup 전용 필터라고 설명하지 않는다. 픽업 Handler의 탑승 거절과 입력 어댑터 조건도 구분한다.
 - 공용 Router의 진행 단계·송신자·거리·중복 검사를 제거하지 않는다. 이 문서로 다른 담당의 코드 변경 합의·실행 검증이 완료되지는 않는다.
