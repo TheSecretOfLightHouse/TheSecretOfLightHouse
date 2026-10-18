@@ -9,8 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b095284c2ca2412196d313360e7e8552, type: 3}
-  m_Name: VotingTestIdentitySettings
+  m_Script: {fileID: 11500000, guid: 6ffd3bbf99e51064d86208c77ae61187, type: 3}
+  m_Name: AbyssSettings
   m_EditorClassIdentifier: 
-  _maxCheckCount: 2
-  _requiredVoteCount: 2
+  _dailyBaseGain: 100
+  _sealGainPerSecond: 1
+  _wrongGainPerSecond: 1
+  _minimumAttackPower: 10

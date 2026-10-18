@@ -149,7 +149,7 @@ namespace Lighthouse.Interaction.Router.Server
                 return InteractionResultCode.OutOfRange;
             }
 
-            InteractionContext context = new InteractionContext(actorId, sender, request.Action, target, request.Arg0, request.Arg1);
+            InteractionContext context = new InteractionContext(actorId, sender, request.Action, target, request.Arg0, request.Arg1, request.Arg2);
 
             if (SessionHandlers.TryGetValue(request.Action, out IInteractionSessionHandler sessionHandler))
             {

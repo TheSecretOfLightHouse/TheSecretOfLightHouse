@@ -18,6 +18,9 @@ namespace Lighthouse.Network.Session.View
         private Text _state;
         [SerializeField]
         private Image _dot;
+        [Tooltip("Optional crown shown on the listen host's row.")]
+        [SerializeField]
+        private Image _hostBadge;
         [SerializeField]
         private Sprite _readyDot;
         [SerializeField]
@@ -49,6 +52,11 @@ namespace Lighthouse.Network.Session.View
             _state.color = isReady ? _readyColor : _idleColor;
             _dot.enabled = true;
 
+            if (_hostBadge)
+            {
+                _hostBadge.enabled = player.IsHost;
+            }
+
             Sprite dot = isReady ? _readyDot : _idleDot;
 
             if (dot)
@@ -72,6 +80,11 @@ namespace Lighthouse.Network.Session.View
             _name.text = "빈 자리";
             _state.text = string.Empty;
             _dot.enabled = false;
+
+            if (_hostBadge)
+            {
+                _hostBadge.enabled = false;
+            }
         }
     }
 }

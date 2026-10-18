@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using Lighthouse.Network.Session.Net;
+using Mirror;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Lighthouse.Network.Session.View
 {
     // Lobby scene: crew slots, the ready count and the ready toggle.
+    // Progress pips, address copy, join/leave notices and ping are optional; unassigned references are skipped.
     [DisallowMultipleComponent]
     public sealed class SessionLobbyView : MonoBehaviour
     {
@@ -41,6 +43,44 @@ namespace Lighthouse.Network.Session.View
         private GameObject _hostAddress;
         [SerializeField]
         private Text _hostAddressText;
+        [Tooltip("One pip per seat needed to start: ready pips first, then joined, then empty seats. Without sprites the pips are tinted instead.")]
+        [SerializeField]
+        private Image[] _readyPips = new Image[LighthouseNetworkManager.MaxPlayers];
+        [SerializeField]
+        private Sprite _pipReadySprite;
+        [SerializeField]
+        private Sprite _pipJoinedSprite;
+        [SerializeField]
+        private Color _pipReadyColor = new Color32(62, 112, 58, 255);
+        [SerializeField]
+        private Color _pipJoinedColor = new Color32(122, 94, 72, 255);
+        [SerializeField]
+        private float _pipEmptyAlpha = 0.25f;
+        [SerializeField]
+        private Button _copyAddress;
+        [SerializeField]
+        private CanvasGroup _notice;
+        [SerializeField]
+        private Text _noticeText;
+        [SerializeField]
+        private float _noticeSeconds = 2.5f;
+        [SerializeField]
+        private float _noticeFadeSeconds = 0.4f;
+        [Tooltip("Round-trip time to the host. Hidden on the host itself.")]
+        [SerializeField]
+        private Text _ping;
+        [SerializeField]
+        private float _pingInterval = 0.5f;
+        [SerializeField]
+        private int _pingGoodMs = 80;
+        [SerializeField]
+        private int _pingFairMs = 150;
+        [SerializeField]
+        private Color _pingGoodColor = new Color32(146, 206, 112, 255);
+        [SerializeField]
+        private Color _pingFairColor = new Color32(226, 186, 116, 255);
+        [SerializeField]
+        private Color _pingPoorColor = new Color32(214, 108, 96, 255);
 
         private readonly LobbyPlayer[] _sorted = new LobbyPlayer[LighthouseNetworkManager.MaxPlayers];
 
@@ -50,8 +90,18 @@ namespace Lighthouse.Network.Session.View
         private int _shownPlayers = -1;
         private int _shownStart = -1;
         private int _shownHost = -1;
+        private int _shownPingMs = -1;
+
+        // Crew seen at the last refresh, for join/leave notices. Taken once our own player exists so the
+        // players already aboard when we enter are not announced as joining.
+        private readonly uint[] _knownIds = new uint[LighthouseNetworkManager.MaxPlayers];
+        private int _knownCount;
+        private bool _hasKnownCrew;
 
         private LobbyPlayer _localPlayer;
+        private string _lanAddress;
+        private float _noticeEndTime;
+        private float _nextPingTime;
 
         public event Action LeaveRequested;
 
@@ -62,12 +112,32 @@ namespace Lighthouse.Network.Session.View
         {
             _ready.onClick.AddListener(HandleReady);
             _leave.onClick.AddListener(HandleLeave);
+
+            if (_copyAddress)
+            {
+                _copyAddress.onClick.AddListener(HandleCopyAddress);
+            }
         }
 
         private void OnEnable()
         {
             _shownPlayers = -1;
             _shownHost = -1;
+            _shownPingMs = -1;
+            _hasKnownCrew = false;
+            _knownCount = 0;
+            _noticeEndTime = 0f;
+
+            if (_notice)
+            {
+                _notice.alpha = 0f;
+            }
+        }
+
+        private void Update()
+        {
+            UpdateNotice();
+            UpdatePing();
         }
 
         public void Refresh(int startPlayerCount, bool isHost)
@@ -104,7 +174,8 @@ namespace Lighthouse.Network.Session.View
 
                 if (isHost)
                 {
-                    _hostAddressText.text = FindLanAddress();
+                    _lanAddress = FindLanAddress();
+                    _hostAddressText.text = _lanAddress ?? "확인 불가";
                 }
             }
 
@@ -161,11 +232,14 @@ namespace Lighthouse.Network.Session.View
             {
                 _readyImage.color = isReady ? _cancelColor : _readyColor;
             }
+
+            ShowReadyPips(startPlayerCount, count, readyCount);
+            AnnounceCrewChanges(count);
         }
 
         private static byte FlagsOf(LobbyPlayer player)
         {
-            return (byte)((player.IsReady ? 1 : 0) | (player.isLocalPlayer ? 2 : 0));
+            return (byte)((player.IsReady ? 1 : 0) | (player.isLocalPlayer ? 2 : 0) | (player.IsHost ? 4 : 0));
         }
 
         private int CollectSorted()
@@ -203,6 +277,188 @@ namespace Lighthouse.Network.Session.View
             return count;
         }
 
+        private void ShowReadyPips(int startPlayerCount, int count, int readyCount)
+        {
+            for (int i = 0; i < _readyPips.Length; i++)
+            {
+                Image pip = _readyPips[i];
+
+                if (!pip)
+                {
+                    continue;
+                }
+
+                bool isUsed = i < startPlayerCount;
+                pip.gameObject.SetActive(isUsed);
+
+                if (!isUsed)
+                {
+                    continue;
+                }
+
+                if (i < readyCount)
+                {
+                    SetPip(pip, _pipReadySprite, _pipReadyColor, 1f);
+                }
+                else if (i < count)
+                {
+                    SetPip(pip, _pipJoinedSprite, _pipJoinedColor, 1f);
+                }
+                else
+                {
+                    SetPip(pip, _pipJoinedSprite, _pipJoinedColor, _pipEmptyAlpha);
+                }
+            }
+        }
+
+        private static void SetPip(Image pip, Sprite sprite, Color fallbackColor, float alpha)
+        {
+            Color color = Color.white;
+
+            if (sprite)
+            {
+                pip.sprite = sprite;
+            }
+            else
+            {
+                color = fallbackColor;
+            }
+
+            color.a *= alpha;
+            pip.color = color;
+        }
+
+        private void AnnounceCrewChanges(int count)
+        {
+            if (!_hasKnownCrew)
+            {
+                if (!_localPlayer)
+                {
+                    return;
+                }
+
+                RememberCrew(count);
+                _hasKnownCrew = true;
+                return;
+            }
+
+            int joined = 0;
+            int left = 0;
+            uint joinedId = 0;
+            uint leftId = 0;
+
+            for (int i = 0; i < count; i++)
+            {
+                uint id = _sorted[i].ActorId;
+
+                if (Array.IndexOf(_knownIds, id, 0, _knownCount) < 0)
+                {
+                    joined++;
+                    joinedId = id;
+                }
+            }
+
+            for (int i = 0; i < _knownCount; i++)
+            {
+                if (!IsAboard(_knownIds[i], count))
+                {
+                    left++;
+                    leftId = _knownIds[i];
+                }
+            }
+
+            RememberCrew(count);
+
+            // Leaving matters more than joining when both land in one refresh.
+            if (left > 0)
+            {
+                ShowNotice(left == 1 ? $"플레이어 {leftId}님이 배에서 내렸습니다." : $"선원 {left}명이 배에서 내렸습니다.");
+            }
+            else if (joined > 0)
+            {
+                ShowNotice(joined == 1 ? $"플레이어 {joinedId}님이 승선했습니다." : $"선원 {joined}명이 승선했습니다.");
+            }
+        }
+
+        private bool IsAboard(uint actorId, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (_sorted[i].ActorId == actorId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void RememberCrew(int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                _knownIds[i] = _sorted[i].ActorId;
+            }
+
+            _knownCount = count;
+        }
+
+        private void ShowNotice(string message)
+        {
+            if (!_notice || !_noticeText)
+            {
+                return;
+            }
+
+            _noticeText.text = message;
+            _notice.alpha = 1f;
+            _noticeEndTime = Time.unscaledTime + _noticeSeconds;
+        }
+
+        private void UpdateNotice()
+        {
+            if (!_notice || _notice.alpha <= 0f)
+            {
+                return;
+            }
+
+            float remaining = _noticeEndTime - Time.unscaledTime;
+            _notice.alpha = _noticeFadeSeconds > 0f ? Mathf.Clamp01(remaining / _noticeFadeSeconds) : remaining > 0f ? 1f : 0f;
+        }
+
+        private void UpdatePing()
+        {
+            if (!_ping)
+            {
+                return;
+            }
+
+            // The host talks to itself; its round trip is always zero and says nothing about the others.
+            bool isShown = NetworkClient.isConnected && !NetworkServer.active;
+
+            if (_ping.enabled != isShown)
+            {
+                _ping.enabled = isShown;
+            }
+
+            if (!isShown || Time.unscaledTime < _nextPingTime)
+            {
+                return;
+            }
+
+            _nextPingTime = Time.unscaledTime + _pingInterval;
+            int pingMs = Mathf.RoundToInt((float)(NetworkTime.rtt * 1000.0));
+
+            if (pingMs == _shownPingMs)
+            {
+                return;
+            }
+
+            _shownPingMs = pingMs;
+            _ping.text = $"연결 {pingMs}ms";
+            _ping.color = pingMs <= _pingGoodMs ? _pingGoodColor : pingMs <= _pingFairMs ? _pingFairColor : _pingPoorColor;
+        }
+
         private void HandleReady()
         {
             if (_localPlayer)
@@ -216,7 +472,20 @@ namespace Lighthouse.Network.Session.View
             LeaveRequested?.Invoke();
         }
 
+        private void HandleCopyAddress()
+        {
+            if (string.IsNullOrEmpty(_lanAddress))
+            {
+                ShowNotice("복사할 주소를 찾지 못했습니다.");
+                return;
+            }
+
+            GUIUtility.systemCopyBuffer = _lanAddress;
+            ShowNotice("주소를 복사했습니다. 참가자에게 보내 주세요.");
+        }
+
         // Adapters without a gateway are usually virtual (Hyper-V, VPN), so the first IPv4 with one is the LAN address.
+        // Returns null when none is found.
         private static string FindLanAddress()
         {
             try
@@ -251,7 +520,7 @@ namespace Lighthouse.Network.Session.View
                 Debug.LogWarning($"[{nameof(SessionLobbyView)}] Could not read the LAN address: {exception.Message}");
             }
 
-            return "확인 불가";
+            return null;
         }
     }
 }

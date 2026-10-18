@@ -34,6 +34,7 @@ namespace Lighthouse.Mafia.Voting.Net
         public event Action<IdentityResponse> IdentityResponded;
         public event Action<uint> InnocentCitizenRevealed;
         public event Action<AbyssGaugeSnapshot> SummonApproved;
+        public event Action VotingEnded;
 
         public override void OnStartServer()
         {
@@ -145,10 +146,11 @@ namespace Lighthouse.Mafia.Voting.Net
         [Server]
         public void EndGame()
         {
-            if (_votes != null)
+            if (_votes != null && !_votes.IsEnded)
             {
                 _votes.AbyssGauge.EndGame(NetworkTime.time);
                 _votes.EndGame();
+                VotingEnded?.Invoke();
                 SendOwnStates();
                 SendIdentityState();
             }

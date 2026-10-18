@@ -15,9 +15,11 @@ namespace Lighthouse.Interaction.Requests.Net
         public readonly InteractionAction Action;
         public readonly int Arg0;
         public readonly int Arg1;
+        // Third argument for actions that need one (workbench Deposit: amount). 0 when unused.
+        public readonly int Arg2;
 
         public InteractionRequest(uint sequence, InteractionTargetKind targetKind, uint targetNetId, int targetKey,
-            InteractionAction action, int arg0, int arg1)
+            InteractionAction action, int arg0, int arg1, int arg2)
         {
             Sequence = sequence;
             TargetKind = targetKind;
@@ -26,22 +28,24 @@ namespace Lighthouse.Interaction.Requests.Net
             Action = action;
             Arg0 = arg0;
             Arg1 = arg1;
+            Arg2 = arg2;
         }
 
-        public static InteractionRequest ForNetworkTarget(uint sequence, uint targetNetId, InteractionAction action, int arg0, int arg1)
+        public static InteractionRequest ForNetworkTarget(uint sequence, uint targetNetId, InteractionAction action, int arg0, int arg1,
+            int arg2 = 0)
         {
-            return new InteractionRequest(sequence, InteractionTargetKind.NetworkObject, targetNetId, 0, action, arg0, arg1);
+            return new InteractionRequest(sequence, InteractionTargetKind.NetworkObject, targetNetId, 0, action, arg0, arg1, arg2);
         }
 
         public static InteractionRequest ForNonNetworkTarget(uint sequence, InteractionTargetKind targetKind, int targetKey,
-            InteractionAction action, int arg0, int arg1)
+            InteractionAction action, int arg0, int arg1, int arg2 = 0)
         {
-            return new InteractionRequest(sequence, targetKind, 0, targetKey, action, arg0, arg1);
+            return new InteractionRequest(sequence, targetKind, 0, targetKey, action, arg0, arg1, arg2);
         }
 
         public InteractionRequest WithSequence(uint sequence)
         {
-            return new InteractionRequest(sequence, TargetKind, TargetNetId, TargetKey, Action, Arg0, Arg1);
+            return new InteractionRequest(sequence, TargetKind, TargetNetId, TargetKey, Action, Arg0, Arg1, Arg2);
         }
     }
 }

@@ -66,15 +66,16 @@ namespace Lighthouse.Interaction.Relay.Net
         }
 
         [Client]
-        public bool TrySendToNetworkTarget(uint targetNetId, InteractionAction action, int arg0 = 0, int arg1 = 0)
+        public bool TrySendToNetworkTarget(uint targetNetId, InteractionAction action, int arg0 = 0, int arg1 = 0, int arg2 = 0)
         {
-            return TrySend(InteractionRequest.ForNetworkTarget(0, targetNetId, action, arg0, arg1));
+            return TrySend(InteractionRequest.ForNetworkTarget(0, targetNetId, action, arg0, arg1, arg2));
         }
 
         [Client]
-        public bool TrySendToNonNetworkTarget(InteractionTargetKind kind, int targetKey, InteractionAction action, int arg0 = 0, int arg1 = 0)
+        public bool TrySendToNonNetworkTarget(InteractionTargetKind kind, int targetKey, InteractionAction action, int arg0 = 0, int arg1 = 0,
+            int arg2 = 0)
         {
-            return TrySend(InteractionRequest.ForNonNetworkTarget(0, kind, targetKey, action, arg0, arg1));
+            return TrySend(InteractionRequest.ForNonNetworkTarget(0, kind, targetKey, action, arg0, arg1, arg2));
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
