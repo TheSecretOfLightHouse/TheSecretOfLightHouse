@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4f344cce67288164c851f2381cc7c2a0, type: 3}
+  m_Name: ModuleRecipe_Gear
+  m_EditorClassIdentifier: 
+  _id: 2
+  _displayName: "\uAE30\uC5B4 \uC7A5\uCE58"
+  _ingredients:
+  - _resource: {fileID: 11400000, guid: 8c7a2775b55dec340a1dfce8185c7fb5, type: 2}
+    _amount: 3
+  - _resource: {fileID: 11400000, guid: 9ff0671df1fa4014793fa191e3e36bab, type: 2}
+    _amount: 3
+  _maxExisting: 1
+  _isTestValue: 1
+  _icon: {fileID: 21300000, guid: 48dd8119c1777e94fa4657fccc8854e8, type: 3}

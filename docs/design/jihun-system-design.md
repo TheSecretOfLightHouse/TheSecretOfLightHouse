@@ -23,8 +23,8 @@ UI 화면·직군 능력·투표 계산·몬스터 AI·월드 생성·게임 최
 | 근거 | 확인 내용 | 설계에 미치는 영향 |
 |---|---|---|
 | `03.Interaction/Requests/Net/InteractionRequest.cs` | 2026-10-14 JH02 A-1에서 전송 구조체로 교체: 요청 번호·대상 종류·대상 netId·비네트워크 대상 키·Action·Arg0·Arg1. 이전의 ActorId·TargetId·ServerTime은 제거 | 송신자는 서버가 연결에서 도출(§5.1) |
-| 같은 폴더 `InteractionAction.cs` | Harvest~InspectGhostShip 9종 + RepairBoat·Rescue + None | 부식·검사·점화 등은 열거형에 없음. 추가 동작은 별도 계약 변경 필요 |
-| `05.Player/Control/PlayerController.cs` | InteractionRequested 이벤트(누를 때만, 로컬 플레이어·난파 아닐 때). 키 뗌 이벤트 없음 | 구독 어댑터 `03.Interaction/Relay/View/PlayerInteractionInput`이 있으나 본편 프리팹 미부착(최명기가 에디터에서 부착). 키 뗌이 없어 본편에서는 세션을 키 뗌으로 취소할 수 없음 |
+| 같은 폴더 `InteractionAction.cs` | Harvest~InspectGhostShip 9종 + RepairBoat·Rescue + Craft(12, 작업대 제작 완료, 2026-10-17) + None | 부식·검사·점화 등은 열거형에 없음. 추가 동작은 별도 계약 변경 필요 |
+| `05.Player/Control/PlayerController.cs` | InteractionRequested 이벤트(누를 때만, 로컬 플레이어·난파 아닐 때). 키 뗌 이벤트 없음 | 구독 어댑터는 최명기의 `05.Player/Control/PlayerInteractionInput`(전역 네임스페이스)이며 `tech.prefab`에 부착됨(2026-10-16 병합). Interaction 쪽 같은 이름 어댑터는 중복 부착을 막으려고 2026-10-17 삭제. 키 뗌이 없어 본편에서는 세션을 키 뗌으로 취소할 수 없음 |
 | `01.Network/`, `03.Interaction/` | JH01·JH07·JH02 구현(§4 배치의 구현 표시 참고) | `04.Lighthouse/`는 실행 코드 없음. 거래·등대 타입은 신규 구현 계획 |
 | Mirror NetworkManager | 연결·Ready·AddPlayer·Disconnect 콜백 존재. 기본 Disconnect는 플레이어/소유 객체 파괴 | 게임 준비와 transport ready 분리, 보존/재결합 경로 필요 |
 | World 기존 식별자 | SpotInfo.SpotId는 int, IslandHandle.Index는 short | 비네트워크 대상은 (대상 종류, 기존 식별자)로 보내고 서버 변환기가 확인(§5.1). 단순 캐스팅으로 다른 ID 체계와 섞지 않음 |
@@ -120,7 +120,7 @@ Assets/01.Scripts/
   03.Interaction/
     Requests/{Rules,Net}/           InteractionRequest·InteractionResult·InteractionAction / InteractionTargetKind·InteractionResultCode (구현)
     Relay/Net/                      InteractionRelay (구현: 요청 Command·결과/세션 TargetRpc·세션 취소 Command·서버 세션 진행)
-    Relay/View/                     InteractionSelector(대상 탐지·선택), PlayerInteractionInput(본편 입력 어댑터) (구현)
+    Relay/View/                     InteractionSelector(대상 탐지·선택, 레이어 마스크·기본 Action 지원 필터) (구현). 본편 입력 어댑터는 Player 영역
     Targets/Net/                    InteractionTarget (구현: 등록 없는 표식, 기본·허용 Action, 범위)
     Targets/Server/                 TargetResolver, INonNetworkTargetAdapter, ResolvedTarget (구현)
     Router/Server/                  InteractionRouter(공통 검사·처리기 호출), IInteractionHandler, InteractionContext (구현)
@@ -373,7 +373,7 @@ GhostShipHintService는 서버에서 World의 유효 유령선 ID/Generation·�
 
 | 상대 | 필요한 계약 | 지훈 쪽 준비물 |
 |---|---|---|
-| 최명기 Player/UI | 플레이어 프리팹 선택 훅 구현·Interaction 컴포넌트(`InteractionRelay`·`InteractionSelector`·`PlayerInteractionInput`) 부착, 배 프리팹 `InteractionTarget` 표식 부착, 메뉴 UI의 Action 전달(`InteractionRelay.TrySendToNetworkTarget`), 본편 입력의 키 뗌 이벤트, 채집·구조 세션 처리기(소요 시간·취소 조건), 인벤토리 prepare/commit/abort, 모듈 효과, 검사 사용권(동일 RequestLedger 키), 응답 표시 | DTO·안전한 오류·거래 불변식·효과 ID |
+| 최명기 Player/UI | 플레이어 프리팹 선택 훅 구현·Interaction 컴포넌트(`InteractionRelay`·`InteractionSelector`) 부착과 Player 입력 어댑터(`05.Player/Control/PlayerInteractionInput`), 배 프리팹 `InteractionTarget` 표식 부착, 메뉴 UI의 Action 전달(`InteractionRelay.TrySendToNetworkTarget`), 본편 입력의 키 뗌 이벤트, 채집·구조 세션 처리기(소요 시간·취소 조건), 인벤토리 prepare/commit/abort, 모듈 효과, 검사 사용권(동일 RequestLedger 키), 응답 표시 | DTO·안전한 오류·거래 불변식·효과 ID |
 | 최명기 Systems | PhaseContext·준비 barrier·동일 tick 판정·GameEnded·snapshot 참여 | 등대/의식 후보·상태 version·복원 완료 목록 |
 | 강민서 World | 서버 시각/일차·유령선 등록/소멸·표류 판정 위치·해역 경계·잔해 객체와 모듈 이동 공유 범위, 네트워크 객체 대상의 `InteractionTarget` 표식 부착, 채집 지점 생성 방식에 따라 표식 또는 클라이언트 탐지용 위치·SpotId 조회와 서버 adapter | 대상 확인(netId·비네트워크 변환기)·모듈 수명/회수 결과·힌트 조회 계약 |
 | 박태욱 Mafia/Monsters | 역할 자격 조회·투표 판정·확정 의식 실패·유효 피해 이벤트, Systems가 유일 발행한 의식 실패 수신 | 서버 전용 결과 DTO·AttemptId/EventId 멱등 계약 |
