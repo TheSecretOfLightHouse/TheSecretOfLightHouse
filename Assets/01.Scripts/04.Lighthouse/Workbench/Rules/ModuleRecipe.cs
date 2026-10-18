@@ -20,9 +20,12 @@ namespace Lighthouse.Workbench.Rules
         [Tooltip("On while the numbers are play-test values, so UI and docs do not present them as final.")]
         [SerializeField]
         private bool _isTestValue = true;
+        [SerializeField]
+        private Sprite _icon;
 
         public int Id => _id;
         public string DisplayName => _displayName;
+        public Sprite Icon => _icon;
         public int IngredientCount => _ingredients != null ? _ingredients.Length : 0;
         public int MaxExisting => _maxExisting;
         public bool HasExistenceLimit => _maxExisting > 0;
