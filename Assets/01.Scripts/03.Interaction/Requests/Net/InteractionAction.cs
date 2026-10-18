@@ -13,6 +13,8 @@ namespace Lighthouse.Interaction.Requests.Net
         UseSpecialIsland = 8,
         InspectGhostShip = 9,
         RepairBoat = 10,
-        Rescue = 11
+        Rescue = 11,
+        // Finishes a workbench recipe whose ingredients are all in (2026-10-17: completion is a separate press).
+        Craft = 12
     }
 }

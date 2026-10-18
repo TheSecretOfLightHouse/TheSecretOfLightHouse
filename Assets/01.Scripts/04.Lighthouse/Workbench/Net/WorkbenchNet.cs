@@ -89,6 +89,25 @@ namespace Lighthouse.Workbench.Net
             return TryGetCurrentRecipe(out ModuleRecipe recipe) ? recipe.GetRequired(resourceId) - GetDeposited(resourceId) : 0;
         }
 
+        // Read from the synced progress, so every machine agrees on when the craft button may be pressed.
+        public bool IsReadyToCraft()
+        {
+            if (!TryGetCurrentRecipe(out ModuleRecipe recipe) || recipe.IngredientCount == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < recipe.IngredientCount; i++)
+            {
+                if (GetDepositedAt(i) < recipe.GetIngredient(i).Amount)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         public int GetStoredCount(int recipeId)
         {
             return _storedCounts.TryGetValue(recipeId, out int count) ? count : 0;
@@ -166,13 +185,21 @@ namespace Lighthouse.Workbench.Net
             int index = _progress.Add(resourceId, removed);
             _deposited[index] = _progress.GetDepositedAt(index);
             _contributions[actorId] = (_contributions.TryGetValue(actorId, out int given) ? given : 0) + removed;
+            return removed;
+        }
 
-            if (_progress.IsComplete)
+        // A full recipe waits on the bench until someone presses craft (2026-10-17 decision). Requests are handled
+        // one at a time on the server, so when two players press together only the first finds it still full.
+        [Server]
+        public bool TryCraft(uint actorId, ModuleLedger ledger)
+        {
+            if (!_isCatalogValid || ledger == null || !_progress.HasRecipe || !_progress.IsComplete)
             {
-                Complete(actorId, ledger);
+                return false;
             }
 
-            return removed;
+            Complete(actorId, ledger);
+            return true;
         }
 
         [Server]

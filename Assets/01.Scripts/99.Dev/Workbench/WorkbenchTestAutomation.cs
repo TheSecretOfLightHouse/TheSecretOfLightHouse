@@ -147,11 +147,17 @@ namespace Lighthouse.Dev.Workbench
                 Log("SKIP deposit_capped (not host)");
             }
 
+            yield return SendAndExpect("craft_not_full", InteractionAction.Craft, 0, 0, InteractionResultCode.Rejected);
             yield return SendAndExpect("deposit_iron", InteractionAction.Deposit, Iron, 2, InteractionResultCode.Success);
             yield return SendAndExpect("deposit_crystal", InteractionAction.Deposit, Crystal, 2, InteractionResultCode.Success);
 
             if (NetworkServer.active)
             {
+                // A full recipe stays on the bench until craft is pressed.
+                yield return WaitFor("lens_waits_for_craft",
+                    () => _workbench.CurrentRecipeId == LensRecipe && _workbench.IsReadyToCraft() && _workbench.GetStoredCount(LensRecipe) == 0,
+                    StateTimeoutSeconds);
+                yield return SendAndExpect("craft_lens", InteractionAction.Craft, 0, 0, InteractionResultCode.Success);
                 yield return WaitFor("lens_completed",
                     () => _workbench.CurrentRecipeId == 0 && _workbench.GetStoredCount(LensRecipe) == 1
                         && Held(Iron) == SeedIron - 2 && Held(Crystal) == 0, StateTimeoutSeconds);
@@ -187,7 +193,8 @@ namespace Lighthouse.Dev.Workbench
         }
 
         // Either result is allowed; what must hold is that the inventory moved exactly when the reply says Success,
-        // and that the gear finished once. The two actors' logs together must show at most one Success.
+        // and that the gear finished once. The two actors' logs together must show at most one RACE Success and
+        // exactly one CRAFT_RACE Success.
         private IEnumerator SendLastUnit(uint actorId)
         {
             int ironBefore = Held(Iron);
@@ -196,6 +203,11 @@ namespace Lighthouse.Dev.Workbench
             Log($"RACE actor={actorId} code={(_hasReply ? _reply.Code.ToString() : "none")}");
             int expectedIron = isSuccess ? ironBefore - 1 : ironBefore;
             yield return WaitFor("race_inventory_matches", () => Held(Iron) == expectedIron, StateTimeoutSeconds);
+            yield return WaitFor("gear_ready", () => _workbench.IsReadyToCraft() || _workbench.GetStoredCount(GearRecipe) == 1, StateTimeoutSeconds);
+
+            // Both actors press craft at about the same moment; the two logs together must show one Success.
+            yield return Send("craft_race", InteractionAction.Craft, 0, 0);
+            Log($"CRAFT_RACE actor={actorId} code={(_hasReply ? _reply.Code.ToString() : "none")}");
             yield return WaitFor("gear_completed_once",
                 () => _workbench.CurrentRecipeId == 0 && _workbench.GetStoredCount(GearRecipe) == 1, StateTimeoutSeconds);
         }

@@ -12,6 +12,7 @@ namespace Lighthouse.Modules.Server
     // It also owns this match's module ledger, since the existence cap spans every place a module can be.
     //   SelectRecipe: Arg0 = recipe id.
     //   Deposit:      Arg0 = resource id, Arg1 = requested amount (capped to what the recipe still needs).
+    //   Craft:        no arguments; finishes the current recipe once every ingredient is in.
     // The lighthouse takes modules only (2026-10-17), so Deposit never reaches it.
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkIdentity))]
@@ -20,6 +21,7 @@ namespace Lighthouse.Modules.Server
         private ModuleLedger _ledger;
         private bool _isSelectRegistered;
         private bool _isDepositRegistered;
+        private bool _isCraftRegistered;
 
         // Server-only. Valid between OnStartServer and OnStopServer.
         public ModuleLedger Ledger => _ledger;
@@ -30,6 +32,7 @@ namespace Lighthouse.Modules.Server
             _ledger = new ModuleLedger();
             _isSelectRegistered = InteractionRouter.RegisterHandler(InteractionAction.SelectRecipe, this);
             _isDepositRegistered = InteractionRouter.RegisterHandler(InteractionAction.Deposit, this);
+            _isCraftRegistered = InteractionRouter.RegisterHandler(InteractionAction.Craft, this);
         }
 
         public override void OnStopServer()
@@ -44,6 +47,12 @@ namespace Lighthouse.Modules.Server
             {
                 InteractionRouter.UnregisterHandler(InteractionAction.Deposit, this);
                 _isDepositRegistered = false;
+            }
+
+            if (_isCraftRegistered)
+            {
+                InteractionRouter.UnregisterHandler(InteractionAction.Craft, this);
+                _isCraftRegistered = false;
             }
 
             _ledger = null;
@@ -76,6 +85,8 @@ namespace Lighthouse.Modules.Server
                     return workbench.TrySelectRecipe(context.Arg0, _ledger) ? InteractionResultCode.Success : InteractionResultCode.Rejected;
                 case InteractionAction.Deposit:
                     return HandleDeposit(context, workbench);
+                case InteractionAction.Craft:
+                    return workbench.TryCraft(context.ActorId, _ledger) ? InteractionResultCode.Success : InteractionResultCode.Rejected;
                 default:
                     return InteractionResultCode.Rejected;
             }

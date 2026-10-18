@@ -108,6 +108,15 @@ namespace Lighthouse.Dev.Workbench
 
                 GUILayout.EndHorizontal();
             }
+
+            GUI.enabled = _workbench.IsReadyToCraft();
+
+            if (GUILayout.Button("제작"))
+            {
+                Send(InteractionAction.Craft, 0, 0);
+            }
+
+            GUI.enabled = true;
         }
 
         private void DrawStock()
