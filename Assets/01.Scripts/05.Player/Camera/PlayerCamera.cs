@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[DefaultExecutionOrder(100)]
 public sealed class PlayerCamera : MonoBehaviour
 {
     [SerializeField]
@@ -18,7 +19,15 @@ public sealed class PlayerCamera : MonoBehaviour
     [SerializeField]
     private Transform _cameraPivot;
 
+    [SerializeField, Min(0f)]
+    private float _boatLookReturnDelay = 0.5f;
+    [SerializeField, Min(0f)]
+    private float _boatLookReturnSpeed = 120f;
+
     private float _pitch;
+    private float _orbitYaw;
+    private bool _isBoatOrbit;
+    private float _lastLookTime;
 
     public void Attach()
     {
@@ -74,6 +83,38 @@ public sealed class PlayerCamera : MonoBehaviour
         Release();
     }
 
+    private void LateUpdate()
+    {
+        if (_isBoatOrbit && _attachedCamera && _cameraPivot)
+        {
+            UpdateBoatLookReturn(transform.eulerAngles.y, Time.deltaTime);
+            _cameraPivot.rotation = Quaternion.Euler(_pitch, _orbitYaw, 0f);
+        }
+    }
+
+    public void SetBoatOrbit(bool isBoatOrbit, float heading)
+    {
+        _isBoatOrbit = isBoatOrbit;
+        _orbitYaw = heading;
+        _lastLookTime = Time.time - _boatLookReturnDelay;
+        if (!_isBoatOrbit && _cameraPivot)
+        {
+            _cameraPivot.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
+        }
+    }
+
+    public void ApplyHorizontalLook(float delta)
+    {
+        if (_isBoatOrbit && _attachedCamera)
+        {
+            _orbitYaw = Mathf.Repeat(_orbitYaw + delta, 360f);
+            if (delta != 0f)
+            {
+                _lastLookTime = Time.time;
+            }
+        }
+    }
+
     public void ApplyVerticalLook(float delta)
     {
         if(!_attachedCamera||!_cameraPivot)
@@ -81,6 +122,25 @@ public sealed class PlayerCamera : MonoBehaviour
             return;
         }
         _pitch = Mathf.Clamp(_pitch - delta, _minPitch, _maxPitch);
-        _cameraPivot.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
+        if (_isBoatOrbit && delta != 0f)
+        {
+            _lastLookTime = Time.time;
+        }
+        if (!_isBoatOrbit)
+        {
+            _cameraPivot.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
+        }
+    }
+
+    private void UpdateBoatLookReturn(float heading, float deltaTime)
+    {
+        if (Time.time - _lastLookTime < _boatLookReturnDelay)
+        {
+            return;
+        }
+
+        float step = _boatLookReturnSpeed * deltaTime;
+        _orbitYaw = Mathf.MoveTowardsAngle(_orbitYaw, heading, step);
+        _pitch = Mathf.MoveTowards(_pitch, Mathf.Clamp(0f, _minPitch, _maxPitch), step);
     }
 }

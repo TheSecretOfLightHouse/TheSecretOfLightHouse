@@ -9,30 +9,51 @@ public sealed class BoatController : NetworkBehaviour
 {
     [SerializeField]
     private Rigidbody _rb;
+
     [SerializeField]
     private Transform _boardingAnchor;
+
     [SerializeField, Min(0f)]
     private float _speed = 8f;
+
     [SerializeField, Min(0f)]
     private float _acceleration = 4f;
+
+    [SerializeField, Min(0f)]
+    private float _recoilRecoveryDuration = 0.4f;
+
+    [SerializeField, Min(0f)]
+    private float _turnSpeed = 45f;
+
+    [SerializeField, Range(0f, 179f)]
+    private float _maxTurnAngle = 30f;
+
     [SerializeField, Min(0.01f)]
     private float _reloadDuration = 2f;
+
     [SerializeField, Min(0.01f)]
     private float _boardingDistance = 1.5f;
+
     [SerializeField, Min(0f)]
     private float _departureProtectionDuration = 3f;
+
     [SerializeField, Min(0f)]
     private float _reboardDelay = 1f;
+
     [SerializeField, Min(0.01f)]
     private float _requestInterval = 0.2f;
 
     [SyncVar]
     private PlayerController _owner;
+
     private PlayerController _offlineOwner;
+
     [SyncVar]
     private float _departureHeading;
+
     [SyncVar]
     private Vector3 _landingPosition;
+
     [SyncVar(hook = nameof(OnOccupiedChanged))]
     private bool _isOccupied;
 
@@ -44,7 +65,13 @@ public sealed class BoatController : NetworkBehaviour
     private float _nextBoardTime;
     private float _nextDisembarkTime;
     private float _nextFireTime;
+    private float _steeringReferenceHeading;
+    private bool _hasSteeringReference;
+    private bool _isSteering;
+    private float _recoilEndTime;
+    private bool _isWreckPresentationApplied;
 
+    public float ReloadDuration => _reloadDuration;
     public PlayerController Owner => IsNetworkActive ? _owner : _offlineOwner;
     private bool IsNetworkActive => NetworkClient.active || NetworkServer.active;
     public bool IsOccupied => _isOccupied;
@@ -55,6 +82,7 @@ public sealed class BoatController : NetworkBehaviour
     private void Awake()
     {
         ResolveReferences();
+        _steeringReferenceHeading = _rb.rotation.eulerAngles.y;
     }
 
     private void Reset()
@@ -64,6 +92,11 @@ public sealed class BoatController : NetworkBehaviour
 
     private void Update()
     {
+        if (IsWrecked && !_isWreckPresentationApplied)
+        {
+            ApplyWreckPresentation();
+        }
+
         if (_isOccupied && (isServer || !IsNetworkActive))
         {
             _contact.RefreshDepartureContacts();
@@ -89,6 +122,8 @@ public sealed class BoatController : NetworkBehaviour
 
     private void HandleWrecked()
     {
+        ApplyWreckPresentation();
+
         if (!Owner || !_isOccupied)
         {
             return;
@@ -110,6 +145,27 @@ public sealed class BoatController : NetworkBehaviour
         finally
         {
             Owner.SetDowned(true);
+        }
+    }
+
+    private void ApplyWreckPresentation()
+    {
+        if (_isWreckPresentationApplied)
+        {
+            return;
+        }
+
+        _isWreckPresentationApplied = true;
+        Stop();
+
+        foreach (Renderer boatRenderer in GetComponentsInChildren<Renderer>(true))
+        {
+            boatRenderer.enabled = false;
+        }
+
+        foreach (Collider boatCollider in GetComponentsInChildren<Collider>(true))
+        {
+            boatCollider.enabled = false;
         }
     }
 
@@ -192,7 +248,7 @@ public sealed class BoatController : NetworkBehaviour
         }
     }
 
-    public void Move(PlayerController player, Vector3 direction, Quaternion rotation, MoveConfig config, float fixedDeltaTime)
+    public void Move(PlayerController player, Vector2 input, MoveConfig config, float fixedDeltaTime)
     {
         if (!CanControl(player))
         {
@@ -201,14 +257,48 @@ public sealed class BoatController : NetworkBehaviour
 
         if (config.InputLocked)
         {
-            direction = Vector3.zero;
+            input = Vector2.zero;
         }
 
-        direction.y = 0f;
-        Vector3 targetVelocity = Vector3.ClampMagnitude(direction, 1f) * _speed * config.SpeedMultiplier;
+        float turn = Mathf.Clamp(input.x, -1f, 1f) * _turnSpeed * fixedDeltaTime;
+        float currentHeading = _rb.rotation.eulerAngles.y;
+
+        // Spawn/authority callbacks can run before the owner is ready to set a heading.
+        bool isSteering = !Mathf.Approximately(input.x, 0f);
+        if (!_hasSteeringReference || (_isSteering && !isSteering))
+        {
+            _steeringReferenceHeading = currentHeading;
+            _hasSteeringReference = true;
+        }
+        _isSteering = isSteering;
+
+        float currentAngle = Mathf.DeltaAngle(_steeringReferenceHeading, currentHeading);
+        float targetAngle = Mathf.Clamp(currentAngle + turn, -_maxTurnAngle, _maxTurnAngle);
+        float headingChange = Mathf.DeltaAngle(currentHeading, _steeringReferenceHeading + targetAngle);
+        if (isSteering)
+        {
+            headingChange = input.x > 0f
+                ? Mathf.Clamp(headingChange, 0f, Mathf.Abs(turn))
+                : Mathf.Clamp(headingChange, -Mathf.Abs(turn), 0f);
+
+            // Contact yaw must not overpower the owner's steering on the next physics step.
+            Vector3 angularVelocity = _rb.angularVelocity;
+            angularVelocity.y = 0f;
+            _rb.angularVelocity = angularVelocity;
+        }
+        Quaternion rotation = Quaternion.AngleAxis(headingChange, Vector3.up) * _rb.rotation;
+        Vector3 forward = Vector3.ProjectOnPlane(rotation * Vector3.forward, Vector3.up).normalized;
+        Vector3 targetVelocity = forward * Mathf.Clamp(input.y, -1f, 1f) * _speed * config.SpeedMultiplier;
         Vector3 velocity = _rb.linearVelocity;
         Vector3 horizontal = new Vector3(velocity.x, 0f, velocity.z);
-        horizontal = Vector3.MoveTowards(horizontal, targetVelocity, _acceleration * config.AccelerationMultiplier * fixedDeltaTime);
+        if (Time.time >= _recoilEndTime)
+        {
+            float recovery = _recoilEndTime > 0f && _recoilRecoveryDuration > 0f
+                ? Mathf.SmoothStep(0f, 1f, (Time.time - _recoilEndTime) / _recoilRecoveryDuration)
+                : 1f;
+            horizontal = Vector3.MoveTowards(horizontal, targetVelocity,
+                _acceleration * config.AccelerationMultiplier * recovery * fixedDeltaTime);
+        }
         _rb.linearVelocity = new Vector3(horizontal.x, velocity.y, horizontal.z);
 
         if (!config.InputLocked)
@@ -226,7 +316,15 @@ public sealed class BoatController : NetworkBehaviour
 
         _rb.rotation = rotation;
         _rb.angularVelocity = Vector3.zero;
+        _steeringReferenceHeading = rotation.eulerAngles.y;
+        _hasSteeringReference = true;
+        _isSteering = false;
         return true;
+    }
+
+    public void PreserveCollisionRecoil(float duration)
+    {
+        _recoilEndTime = Mathf.Max(_recoilEndTime, Time.time + duration);
     }
 
     public bool TryFire(PlayerController player)
@@ -243,6 +341,10 @@ public sealed class BoatController : NetworkBehaviour
 
     public void Stop()
     {
+        _hasSteeringReference = false;
+        _isSteering = false;
+        _recoilEndTime = 0f;
+
         if (!_rb || _rb.isKinematic)
         {
             return;
