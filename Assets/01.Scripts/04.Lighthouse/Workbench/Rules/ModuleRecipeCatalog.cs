@@ -15,20 +15,26 @@ namespace Lighthouse.Workbench.Rules
 
         public bool TryGetById(int id, out ModuleRecipe recipe)
         {
+            int index = IndexOf(id);
+            recipe = index >= 0 ? _recipes[index] : null;
+            return recipe;
+        }
+
+        // Slot of the recipe with this id, or -1. The workbench lays its synced progress out in this order.
+        public int IndexOf(int id)
+        {
             if (id != 0)
             {
                 for (int i = 0; i < Count; i++)
                 {
                     if (_recipes[i] && _recipes[i].Id == id)
                     {
-                        recipe = _recipes[i];
-                        return true;
+                        return i;
                     }
                 }
             }
 
-            recipe = null;
-            return false;
+            return -1;
         }
 
         // Returns the first problem, or null.

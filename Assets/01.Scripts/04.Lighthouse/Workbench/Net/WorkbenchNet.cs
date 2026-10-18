@@ -8,9 +8,10 @@ using UnityEngine;
 
 namespace Lighthouse.Workbench.Net
 {
-    // The shared lighthouse workbench (2026-10-17 decision): one recipe at a time, partial deposits from personal
-    // inventories, finished modules kept here by kind until installed. Progress and stock are public to everyone;
-    // who put in what stays on the server.
+    // The shared lighthouse workbench. Every recipe keeps its own progress (2026-10-18 decision), so each player
+    // views and fills whichever recipe they like; there is no shared "current recipe". Partial deposits come from
+    // personal inventories and finished modules stay here by kind until installed. Progress and stock are public
+    // to everyone; who put in what stays on the server.
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkIdentity))]
     public sealed class WorkbenchNet : NetworkBehaviour
@@ -18,30 +19,35 @@ namespace Lighthouse.Workbench.Net
         [SerializeField]
         private ModuleRecipeCatalog _catalog;
 
-        // 0 = no recipe selected.
-        [SyncVar(hook = nameof(OnRecipeIdChanged))]
-        private int _recipeId;
-        // Deposited amount per ingredient, in the order of the current recipe's ingredient list.
+        // Deposited amount per ingredient of every recipe, flattened in catalog order (see _offsets).
+        // Server and clients share the catalog asset, so both derive the same layout.
         private readonly SyncList<int> _deposited = new SyncList<int>();
         // Finished modules waiting to be installed: recipe id -> count.
         private readonly SyncDictionary<int, int> _storedCounts = new SyncDictionary<int, int>();
 
-        // Server-only.
-        private readonly WorkbenchProgress _progress = new WorkbenchProgress();
+        // Start of each catalog recipe's ingredients in _deposited.
+        private int[] _offsets = new int[0];
+
+        // Server-only, indexed like the catalog.
+        private WorkbenchProgress[] _progress = new WorkbenchProgress[0];
+        private uint[] _craftingModuleIds = new uint[0];
+        // Units each actor put into a recipe. Kept for a later return or withdraw rule (W08); never synced.
+        private Dictionary<uint, int>[] _contributions = new Dictionary<uint, int>[0];
         private readonly Dictionary<int, List<uint>> _storedModules = new Dictionary<int, List<uint>>();
-        // Units each actor put into the current recipe. Kept for a later return or withdraw rule (W08); never synced.
-        private readonly Dictionary<uint, int> _contributions = new Dictionary<uint, int>();
-        private uint _craftingModuleId;
         private bool _isCatalogValid;
 
         public ModuleRecipeCatalog Catalog => _catalog;
-        public int CurrentRecipeId => _recipeId;
         public IReadOnlyDictionary<int, int> StoredCounts => _storedCounts;
 
         // Raised on every machine whenever the public progress or stock changes. For UI refresh.
         public event Action Changed;
         // Server-only. (actorId, recipeId, moduleId) when a module finishes. For logs, history and tests.
         public event Action<uint, int, uint> ModuleCompleted;
+
+        private void Awake()
+        {
+            BuildOffsets();
+        }
 
         private void OnEnable()
         {
@@ -65,41 +71,78 @@ namespace Lighthouse.Workbench.Net
             if (!_isCatalogValid)
             {
                 Debug.LogError($"[{nameof(WorkbenchNet)}] {name}: {error}");
+                return;
+            }
+
+            int count = _catalog.Count;
+            _progress = new WorkbenchProgress[count];
+            _craftingModuleIds = new uint[count];
+            _contributions = new Dictionary<uint, int>[count];
+            _deposited.Clear();
+
+            for (int i = 0; i < count; i++)
+            {
+                ModuleRecipe recipe = _catalog[i];
+                _progress[i] = new WorkbenchProgress(recipe);
+                _contributions[i] = new Dictionary<uint, int>();
+
+                for (int j = 0; j < recipe.IngredientCount; j++)
+                {
+                    _deposited.Add(0);
+                }
             }
         }
 
-        public bool TryGetCurrentRecipe(out ModuleRecipe recipe)
+        public int GetDepositedAt(int recipeId, int ingredientIndex)
         {
-            recipe = null;
-            return _catalog && _catalog.TryGetById(_recipeId, out recipe);
+            int flat = FlatIndex(recipeId, ingredientIndex);
+            return flat >= 0 && flat < _deposited.Count ? _deposited[flat] : 0;
         }
 
-        public int GetDepositedAt(int ingredientIndex)
+        public int GetDeposited(int recipeId, int resourceId)
         {
-            return ingredientIndex >= 0 && ingredientIndex < _deposited.Count ? _deposited[ingredientIndex] : 0;
+            return _catalog && _catalog.TryGetById(recipeId, out ModuleRecipe recipe)
+                ? GetDepositedAt(recipeId, recipe.IndexOf(resourceId))
+                : 0;
         }
 
-        public int GetDeposited(int resourceId)
+        public int GetRemaining(int recipeId, int resourceId)
         {
-            return TryGetCurrentRecipe(out ModuleRecipe recipe) ? GetDepositedAt(recipe.IndexOf(resourceId)) : 0;
+            return _catalog && _catalog.TryGetById(recipeId, out ModuleRecipe recipe)
+                ? recipe.GetRequired(resourceId) - GetDeposited(recipeId, resourceId)
+                : 0;
         }
 
-        public int GetRemaining(int resourceId)
+        // Anything went in, read from the synced progress.
+        public bool IsStarted(int recipeId)
         {
-            return TryGetCurrentRecipe(out ModuleRecipe recipe) ? recipe.GetRequired(resourceId) - GetDeposited(resourceId) : 0;
-        }
-
-        // Read from the synced progress, so every machine agrees on when the craft button may be pressed.
-        public bool IsReadyToCraft()
-        {
-            if (!TryGetCurrentRecipe(out ModuleRecipe recipe) || recipe.IngredientCount == 0)
+            if (!_catalog || !_catalog.TryGetById(recipeId, out ModuleRecipe recipe))
             {
                 return false;
             }
 
             for (int i = 0; i < recipe.IngredientCount; i++)
             {
-                if (GetDepositedAt(i) < recipe.GetIngredient(i).Amount)
+                if (GetDepositedAt(recipeId, i) > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Read from the synced progress, so every machine agrees on when the craft button may be pressed.
+        public bool IsReadyToCraft(int recipeId)
+        {
+            if (!_catalog || !_catalog.TryGetById(recipeId, out ModuleRecipe recipe) || recipe.IngredientCount == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < recipe.IngredientCount; i++)
+            {
+                if (GetDepositedAt(recipeId, i) < recipe.GetIngredient(i).Amount)
                 {
                     return false;
                 }
@@ -113,57 +156,29 @@ namespace Lighthouse.Workbench.Net
             return _storedCounts.TryGetValue(recipeId, out int count) ? count : 0;
         }
 
-        // Anyone may pick a recipe while nothing has gone in yet; the cap counts modules that already exist.
-        [Server]
-        public bool TrySelectRecipe(int recipeId, ModuleLedger ledger)
-        {
-            if (!_isCatalogValid || ledger == null || _progress.IsLocked || !_catalog.TryGetById(recipeId, out ModuleRecipe recipe))
-            {
-                return false;
-            }
-
-            if (_progress.RecipeId == recipeId)
-            {
-                return true;
-            }
-
-            if (!ledger.CanCreate(recipeId, recipe.MaxExisting) || !_progress.TrySetRecipe(recipe))
-            {
-                return false;
-            }
-
-            _contributions.Clear();
-            _deposited.Clear();
-
-            for (int i = 0; i < recipe.IngredientCount; i++)
-            {
-                _deposited.Add(0);
-            }
-
-            _recipeId = recipeId;
-            return true;
-        }
-
-        // Moves up to requestedAmount of one resource from the sender's inventory into the current recipe.
+        // Moves up to requestedAmount of one resource from the sender's inventory into the given recipe.
         // Returns the amount actually moved; 0 means nothing changed anywhere.
         [Server]
-        public int Deposit(uint actorId, PlayerInventory inventory, int resourceId, int requestedAmount, ModuleLedger ledger)
+        public int Deposit(uint actorId, PlayerInventory inventory, int recipeId, int resourceId, int requestedAmount, ModuleLedger ledger)
         {
-            if (!_isCatalogValid || !inventory || ledger == null || !_progress.HasRecipe)
+            int slot = _isCatalogValid ? _catalog.IndexOf(recipeId) : -1;
+
+            if (slot < 0 || !inventory || ledger == null)
             {
                 return 0;
             }
 
-            ModuleRecipe recipe = _progress.Recipe;
-            int amount = _progress.ClampRequest(resourceId, requestedAmount);
+            WorkbenchProgress progress = _progress[slot];
+            int amount = progress.ClampRequest(resourceId, requestedAmount);
 
             if (amount <= 0)
             {
                 return 0;
             }
 
-            // The first deposit creates the module, so the cap is checked again right before anything is taken.
-            bool isFirstDeposit = !_progress.IsLocked;
+            // The first deposit creates the module, so the cap is checked right before anything is taken.
+            ModuleRecipe recipe = progress.Recipe;
+            bool isFirstDeposit = !progress.IsStarted;
 
             if (isFirstDeposit && !ledger.CanCreate(recipe.Id, recipe.MaxExisting))
             {
@@ -179,34 +194,38 @@ namespace Lighthouse.Workbench.Net
 
             if (isFirstDeposit)
             {
-                _craftingModuleId = ledger.Create(recipe.Id, ModuleState.Crafting);
+                _craftingModuleIds[slot] = ledger.Create(recipe.Id, ModuleState.Crafting);
             }
 
-            int index = _progress.Add(resourceId, removed);
-            _deposited[index] = _progress.GetDepositedAt(index);
-            _contributions[actorId] = (_contributions.TryGetValue(actorId, out int given) ? given : 0) + removed;
+            int index = progress.Add(resourceId, removed);
+            _deposited[_offsets[slot] + index] = progress.GetDepositedAt(index);
+            Dictionary<uint, int> contributions = _contributions[slot];
+            contributions[actorId] = (contributions.TryGetValue(actorId, out int given) ? given : 0) + removed;
             return removed;
         }
 
         // A full recipe waits on the bench until someone presses craft (2026-10-17 decision). Requests are handled
         // one at a time on the server, so when two players press together only the first finds it still full.
         [Server]
-        public bool TryCraft(uint actorId, ModuleLedger ledger)
+        public bool TryCraft(uint actorId, int recipeId, ModuleLedger ledger)
         {
-            if (!_isCatalogValid || ledger == null || !_progress.HasRecipe || !_progress.IsComplete)
+            int slot = _isCatalogValid ? _catalog.IndexOf(recipeId) : -1;
+
+            if (slot < 0 || ledger == null || !_progress[slot].IsComplete)
             {
                 return false;
             }
 
-            Complete(actorId, ledger);
+            Complete(actorId, slot, ledger);
             return true;
         }
 
         [Server]
-        private void Complete(uint actorId, ModuleLedger ledger)
+        private void Complete(uint actorId, int slot, ModuleLedger ledger)
         {
-            int recipeId = _progress.RecipeId;
-            uint moduleId = _craftingModuleId;
+            WorkbenchProgress progress = _progress[slot];
+            int recipeId = progress.Recipe.Id;
+            uint moduleId = _craftingModuleIds[slot];
             ledger.TrySetState(moduleId, ModuleState.Stored);
 
             if (!_storedModules.TryGetValue(recipeId, out List<uint> modules))
@@ -219,18 +238,42 @@ namespace Lighthouse.Workbench.Net
             _storedCounts[recipeId] = modules.Count;
 
             // Resources were consumed as they went in; finishing takes nothing more from anyone.
-            _progress.Clear();
-            _contributions.Clear();
-            _craftingModuleId = 0;
-            _deposited.Clear();
-            _recipeId = 0;
+            int ingredientCount = progress.Recipe.IngredientCount;
+            progress.Clear();
+            _contributions[slot].Clear();
+            _craftingModuleIds[slot] = 0;
+
+            for (int i = 0; i < ingredientCount; i++)
+            {
+                _deposited[_offsets[slot] + i] = 0;
+            }
 
             ModuleCompleted?.Invoke(actorId, recipeId, moduleId);
         }
 
-        private void OnRecipeIdChanged(int oldValue, int newValue)
+        private void BuildOffsets()
         {
-            Changed?.Invoke();
+            int count = _catalog ? _catalog.Count : 0;
+            _offsets = new int[count];
+            int offset = 0;
+
+            for (int i = 0; i < count; i++)
+            {
+                _offsets[i] = offset;
+                offset += _catalog[i] ? _catalog[i].IngredientCount : 0;
+            }
+        }
+
+        private int FlatIndex(int recipeId, int ingredientIndex)
+        {
+            int slot = _catalog ? _catalog.IndexOf(recipeId) : -1;
+
+            if (slot < 0 || slot >= _offsets.Length || ingredientIndex < 0 || ingredientIndex >= _catalog[slot].IngredientCount)
+            {
+                return -1;
+            }
+
+            return _offsets[slot] + ingredientIndex;
         }
 
         private void HandleDepositedChanged(SyncList<int>.Operation operation, int index, int value)

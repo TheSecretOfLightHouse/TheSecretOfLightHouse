@@ -10,16 +10,15 @@ namespace Lighthouse.Modules.Server
     // Server entry for the module actions. The router takes one handler per action, so this one handler
     // branches on the target's component (workbench now; lighthouse and drifting modules with JH04·JH05).
     // It also owns this match's module ledger, since the existence cap spans every place a module can be.
-    //   SelectRecipe: Arg0 = recipe id.
-    //   Deposit:      Arg0 = resource id, Arg1 = requested amount (capped to what the recipe still needs).
-    //   Craft:        no arguments; finishes the current recipe once every ingredient is in.
+    //   Deposit: Arg0 = recipe id, Arg1 = resource id, Arg2 = requested amount (capped to what the recipe still needs).
+    //   Craft:   Arg0 = recipe id; finishes that recipe once every ingredient is in.
+    // Each recipe keeps its own progress (2026-10-18), so there is no SelectRecipe step on the workbench.
     // The lighthouse takes modules only (2026-10-17), so Deposit never reaches it.
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkIdentity))]
     public sealed class ModuleInteractionHandler : NetworkBehaviour, IInteractionHandler
     {
         private ModuleLedger _ledger;
-        private bool _isSelectRegistered;
         private bool _isDepositRegistered;
         private bool _isCraftRegistered;
 
@@ -30,19 +29,12 @@ namespace Lighthouse.Modules.Server
         {
             base.OnStartServer();
             _ledger = new ModuleLedger();
-            _isSelectRegistered = InteractionRouter.RegisterHandler(InteractionAction.SelectRecipe, this);
             _isDepositRegistered = InteractionRouter.RegisterHandler(InteractionAction.Deposit, this);
             _isCraftRegistered = InteractionRouter.RegisterHandler(InteractionAction.Craft, this);
         }
 
         public override void OnStopServer()
         {
-            if (_isSelectRegistered)
-            {
-                InteractionRouter.UnregisterHandler(InteractionAction.SelectRecipe, this);
-                _isSelectRegistered = false;
-            }
-
             if (_isDepositRegistered)
             {
                 InteractionRouter.UnregisterHandler(InteractionAction.Deposit, this);
@@ -81,12 +73,10 @@ namespace Lighthouse.Modules.Server
 
             switch (context.Action)
             {
-                case InteractionAction.SelectRecipe:
-                    return workbench.TrySelectRecipe(context.Arg0, _ledger) ? InteractionResultCode.Success : InteractionResultCode.Rejected;
                 case InteractionAction.Deposit:
                     return HandleDeposit(context, workbench);
                 case InteractionAction.Craft:
-                    return workbench.TryCraft(context.ActorId, _ledger) ? InteractionResultCode.Success : InteractionResultCode.Rejected;
+                    return workbench.TryCraft(context.ActorId, context.Arg0, _ledger) ? InteractionResultCode.Success : InteractionResultCode.Rejected;
                 default:
                     return InteractionResultCode.Rejected;
             }
@@ -102,7 +92,7 @@ namespace Lighthouse.Modules.Server
                 return InteractionResultCode.Rejected;
             }
 
-            int moved = workbench.Deposit(context.ActorId, inventory, context.Arg0, context.Arg1, _ledger);
+            int moved = workbench.Deposit(context.ActorId, inventory, context.Arg0, context.Arg1, context.Arg2, _ledger);
             return moved > 0 ? InteractionResultCode.Success : InteractionResultCode.Rejected;
         }
     }

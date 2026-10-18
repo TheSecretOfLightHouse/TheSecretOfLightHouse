@@ -17,13 +17,15 @@ using UnityEngine.UI;
 
 namespace Lighthouse.Workbench.View
 {
-    // Canvas screen for the shared workbench (JH03 draft until MK06 owns the final UI). Opens with the open key
+    // Canvas screen for the shared workbench (JH03; the workbench UI moved to JH03 on 2026-10-18). Opens with the open key
     // while the local player is inside the workbench's interaction range, and sends the same relay requests as
-    // real input would. Everything shown comes from WorkbenchNet's public state and the local inventory.
+    // real input would. Which recipe is shown is this player's own choice and never leaves this machine; the
+    // progress of every recipe is shared (2026-10-18). Everything shown comes from WorkbenchNet's public state
+    // and the local inventory.
     [DisallowMultipleComponent]
     public sealed class WorkbenchScreen : MonoBehaviour
     {
-        private const string IdleMessage = "레시피를 고르고 자원을 넣으세요. 넣은 자원은 되돌릴 수 없습니다.";
+        private const string IdleMessage = "레시피를 골라 진행도를 보고 자원을 넣으세요. 넣은 자원은 되돌릴 수 없습니다.";
 
         [Serializable]
         private struct ResourceIcon
@@ -75,16 +77,6 @@ namespace Lighthouse.Workbench.View
         [SerializeField]
         private Button _craftButton;
 
-        [Header("First deposit confirm")]
-        [SerializeField]
-        private GameObject _confirm;
-        [SerializeField]
-        private Text _confirmText;
-        [SerializeField]
-        private Button _confirmYesButton;
-        [SerializeField]
-        private Button _confirmNoButton;
-
         [Header("Stock")]
         [SerializeField]
         private WorkbenchItemSlot[] _resourceSlots = new WorkbenchItemSlot[0];
@@ -112,11 +104,11 @@ namespace Lighthouse.Workbench.View
         private CursorLockMode _savedLockMode;
         private bool _savedCursorVisible;
         private bool _wasPlayerInputEnabled;
+        // Local view only: other players may be looking at a different recipe.
+        private ModuleRecipe _viewedRecipe;
         private InteractionAction _pendingAction;
-        private int _pendingArg;
+        private int _pendingResourceId;
         private string _pendingRecipeName;
-        private int _confirmResourceId;
-        private bool _isConfirmAll;
 
         public bool IsOpen => _isOpen;
 
@@ -136,11 +128,8 @@ namespace Lighthouse.Workbench.View
             }
 
             _craftButton.onClick.AddListener(HandleCraftClicked);
-            _confirmYesButton.onClick.AddListener(HandleConfirmYesClicked);
-            _confirmNoButton.onClick.AddListener(HandleConfirmNoClicked);
             _window.SetActive(false);
             _prompt.SetActive(false);
-            _confirm.SetActive(false);
         }
 
         private void OnEnable()
@@ -178,11 +167,7 @@ namespace Lighthouse.Workbench.View
                 return;
             }
 
-            if (_isOpen && _confirm.activeSelf && keyboard.escapeKey.wasPressedThisFrame)
-            {
-                _confirm.SetActive(false);
-            }
-            else if (_isOpen && (keyboard.escapeKey.wasPressedThisFrame || keyboard[_openKey].wasPressedThisFrame))
+            if (_isOpen && (keyboard.escapeKey.wasPressedThisFrame || keyboard[_openKey].wasPressedThisFrame))
             {
                 Close();
             }
@@ -213,6 +198,7 @@ namespace Lighthouse.Workbench.View
             _isOpen = true;
             EnsureEventSystem();
             BuildCards();
+            PickDefaultRecipe();
             _window.SetActive(true);
             _prompt.SetActive(false);
             SetMessage(IdleMessage, _messageInfoColor);
@@ -228,7 +214,6 @@ namespace Lighthouse.Workbench.View
             }
 
             _isOpen = false;
-            _confirm.SetActive(false);
             _window.SetActive(false);
             LockPlayer(false);
         }
@@ -273,7 +258,7 @@ namespace Lighthouse.Workbench.View
         }
 
         // Movement, camera look and harvest clicks all come from the player's actions, so they pause while the
-        // screen is open. A proper input lock belongs to the player side (MK06); this is the draft's stand-in.
+        // screen is open. A proper input lock belongs to the player side; this stands in until it exists.
         private void LockPlayer(bool isLocked)
         {
             if (isLocked)
@@ -333,6 +318,28 @@ namespace Lighthouse.Workbench.View
             }
         }
 
+        // Keeps the last recipe this player looked at; otherwise one already in progress, otherwise the first.
+        private void PickDefaultRecipe()
+        {
+            ModuleRecipeCatalog catalog = _workbench.Catalog;
+
+            if (_viewedRecipe || catalog.Count == 0)
+            {
+                return;
+            }
+
+            _viewedRecipe = catalog[0];
+
+            for (int i = 0; i < catalog.Count; i++)
+            {
+                if (_workbench.IsStarted(catalog[i].Id))
+                {
+                    _viewedRecipe = catalog[i];
+                    return;
+                }
+            }
+        }
+
         private void Refresh()
         {
             if (!_isOpen)
@@ -340,14 +347,12 @@ namespace Lighthouse.Workbench.View
                 return;
             }
 
-            bool hasRecipe = _workbench.TryGetCurrentRecipe(out ModuleRecipe current);
-            bool isLocked = hasRecipe && HasAnyDeposit(current);
-            RefreshCards(current, isLocked);
-            RefreshProgress(hasRecipe ? current : null, isLocked);
+            RefreshCards();
+            RefreshProgress(_viewedRecipe);
             RefreshStock();
         }
 
-        private void RefreshCards(ModuleRecipe current, bool isLocked)
+        private void RefreshCards()
         {
             for (int i = 0; i < _cards.Count; i++)
             {
@@ -359,29 +364,24 @@ namespace Lighthouse.Workbench.View
                     continue;
                 }
 
-                bool isSelected = recipe == current;
-                bool isCapped = recipe.HasExistenceLimit && _workbench.GetStoredCount(recipe.Id) >= recipe.MaxExisting;
-                string badge = isSelected ? (isLocked ? "투입 시작 · 변경 불가" : "선택됨") : (isCapped ? "보유 한도" : null);
-                card.SetState(isSelected, !isSelected && !isLocked && !isCapped, badge);
+                bool isSelected = recipe == _viewedRecipe;
+                card.SetState(isSelected, !isSelected, DescribeBadge(recipe));
             }
         }
 
-        private void RefreshProgress(ModuleRecipe recipe, bool isLocked)
+        private void RefreshProgress(ModuleRecipe recipe)
         {
             _progressEmpty.SetActive(!recipe);
-            _progressTitle.text = recipe ? $"진행 중: {recipe.DisplayName}" : "진행 중인 레시피 없음";
-            bool isReady = recipe && _workbench.IsReadyToCraft();
+            _progressTitle.text = recipe ? recipe.DisplayName : "레시피를 고르세요";
+            bool isReady = recipe && _workbench.IsReadyToCraft(recipe.Id);
+            bool isCapped = recipe && IsCapped(recipe);
             _progressHint.gameObject.SetActive(recipe);
             _progressHint.text = isReady ? "재료가 모두 모였습니다. 제작을 누르면 완성됩니다."
-                : isLocked ? "자원 투입이 시작되어 완성할 때까지 레시피를 바꿀 수 없습니다."
-                : "아직 레시피를 바꿀 수 있습니다. 자원을 넣으면 고정됩니다.";
+                : isCapped ? "보유 한도에 닿아 지금은 새로 만들 수 없습니다."
+                : recipe && _workbench.IsStarted(recipe.Id) ? "선원들이 함께 채우는 중입니다. 다른 레시피도 따로 채울 수 있습니다."
+                : "자원을 넣으면 제작이 시작됩니다.";
             _craftButton.gameObject.SetActive(recipe);
             _craftButton.interactable = isReady;
-
-            if (!recipe || isLocked)
-            {
-                _confirm.SetActive(false);
-            }
             int count = recipe ? recipe.IngredientCount : 0;
 
             while (_rows.Count < count)
@@ -402,7 +402,7 @@ namespace Lighthouse.Workbench.View
                 RecipeIngredient ingredient = recipe.GetIngredient(i);
                 ResourceDefinition resource = ingredient.Resource;
                 _rows[i].Bind(ingredient.ResourceId, resource ? resource.DisplayName : "?", GetResourceIcon(resource), HandleDepositClicked);
-                _rows[i].SetProgress(_workbench.GetDepositedAt(i), ingredient.Amount, Held(ingredient.ResourceId));
+                _rows[i].SetProgress(_workbench.GetDepositedAt(recipe.Id, i), ingredient.Amount, Held(ingredient.ResourceId), !isCapped);
             }
         }
 
@@ -441,59 +441,48 @@ namespace Lighthouse.Workbench.View
             }
         }
 
-        private void Send(InteractionAction action, int arg0, int arg1)
+        private bool Send(InteractionAction action, int arg0, int arg1, int arg2)
         {
-            if (!_relay || !_relay.TrySendToNetworkTarget(_workbench.netId, action, arg0, arg1))
+            if (!_relay || !_relay.TrySendToNetworkTarget(_workbench.netId, action, arg0, arg1, arg2))
             {
                 SetMessage("이전 요청을 처리하는 중입니다. 잠시 후 다시 시도하세요.", _messageRejectColor);
-                return;
+                return false;
             }
 
             _pendingAction = action;
-            _pendingArg = arg0;
+            return true;
         }
 
+        // Switching recipes only changes what this player sees, so nothing is sent.
         private void HandleRecipeClicked(ModuleRecipe recipe)
         {
-            Send(InteractionAction.SelectRecipe, recipe.Id, 0);
+            _viewedRecipe = recipe;
+            SetMessage(IdleMessage, _messageInfoColor);
+            Refresh();
         }
 
         private void HandleDepositClicked(int resourceId, bool isAll)
         {
-            // The first unit fixes the recipe for good, so that one deposit asks first.
-            if (_workbench.TryGetCurrentRecipe(out ModuleRecipe recipe) && !HasAnyDeposit(recipe))
+            if (!_viewedRecipe)
             {
-                _confirmResourceId = resourceId;
-                _isConfirmAll = isAll;
-                _confirmText.text = $"자원을 넣으면 <b>{recipe.DisplayName}</b>을(를) 완성할 때까지\n레시피를 바꿀 수 없습니다. 넣을까요?";
-                _confirm.SetActive(true);
                 return;
             }
 
-            SendDeposit(resourceId, isAll);
-        }
+            int amount = isAll ? _workbench.GetRemaining(_viewedRecipe.Id, resourceId) : 1;
 
-        private void SendDeposit(int resourceId, bool isAll)
-        {
-            int amount = isAll ? _workbench.GetRemaining(resourceId) : 1;
-            Send(InteractionAction.Deposit, resourceId, Mathf.Max(1, amount));
-        }
-
-        private void HandleConfirmYesClicked()
-        {
-            _confirm.SetActive(false);
-            SendDeposit(_confirmResourceId, _isConfirmAll);
-        }
-
-        private void HandleConfirmNoClicked()
-        {
-            _confirm.SetActive(false);
+            if (Send(InteractionAction.Deposit, _viewedRecipe.Id, resourceId, Mathf.Max(1, amount)))
+            {
+                _pendingResourceId = resourceId;
+                _pendingRecipeName = _viewedRecipe.DisplayName;
+            }
         }
 
         private void HandleCraftClicked()
         {
-            _pendingRecipeName = _workbench.TryGetCurrentRecipe(out ModuleRecipe recipe) ? recipe.DisplayName : string.Empty;
-            Send(InteractionAction.Craft, 0, 0);
+            if (_viewedRecipe && Send(InteractionAction.Craft, _viewedRecipe.Id, 0, 0))
+            {
+                _pendingRecipeName = _viewedRecipe.DisplayName;
+            }
         }
 
         private void HandleResultReceived(InteractionResult result)
@@ -531,28 +520,19 @@ namespace Lighthouse.Workbench.View
                 return "제작할 수 없습니다. (재료가 모자라거나 다른 선원이 먼저 제작함, 쓰러짐·배 탑승 상태)";
             }
 
-            if (_pendingAction == InteractionAction.SelectRecipe)
-            {
-                return _workbench.TryGetCurrentRecipe(out ModuleRecipe current) && HasAnyDeposit(current)
-                    ? "이미 자원을 넣기 시작해 레시피를 바꿀 수 없습니다."
-                    : "이 레시피는 지금 고를 수 없습니다. (보유 한도 또는 쓰러짐·배 탑승 상태)";
-            }
-
-            return Held(_pendingArg) <= 0
+            return Held(_pendingResourceId) <= 0
                 ? "넣을 자원이 없습니다."
-                : "넣을 수 없습니다. (다 찬 재료이거나 쓰러짐·배 탑승 상태)";
+                : $"{_pendingRecipeName}에 넣을 수 없습니다. (다 찬 재료, 보유 한도 또는 쓰러짐·배 탑승 상태)";
         }
 
         private string DescribeSuccess()
         {
             switch (_pendingAction)
             {
-                case InteractionAction.SelectRecipe:
-                    return "레시피를 선택했습니다.";
                 case InteractionAction.Craft:
                     return $"{_pendingRecipeName} 제작 완료! 작업대 보관함에 넣었습니다.";
                 default:
-                    return "자원을 넣었습니다.";
+                    return $"{_pendingRecipeName}에 자원을 넣었습니다.";
             }
         }
 
@@ -572,17 +552,26 @@ namespace Lighthouse.Workbench.View
             _message.color = color;
         }
 
-        private bool HasAnyDeposit(ModuleRecipe recipe)
+        // A recipe already in progress keeps its module, so the cap only stops starting a new one.
+        // Counts stored modules only until installed and drifting modules are public (JH04·JH05).
+        private bool IsCapped(ModuleRecipe recipe)
         {
-            for (int i = 0; i < recipe.IngredientCount; i++)
+            return recipe.HasExistenceLimit && !_workbench.IsStarted(recipe.Id) && _workbench.GetStoredCount(recipe.Id) >= recipe.MaxExisting;
+        }
+
+        private string DescribeBadge(ModuleRecipe recipe)
+        {
+            if (_workbench.IsReadyToCraft(recipe.Id))
             {
-                if (_workbench.GetDepositedAt(i) > 0)
-                {
-                    return true;
-                }
+                return "제작 가능";
             }
 
-            return false;
+            if (_workbench.IsStarted(recipe.Id))
+            {
+                return "진행 중";
+            }
+
+            return IsCapped(recipe) ? "보유 한도" : null;
         }
 
         private int Held(int resourceId)

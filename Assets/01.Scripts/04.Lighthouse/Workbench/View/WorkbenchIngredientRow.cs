@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace Lighthouse.Workbench.View
 {
-    // One ingredient of the current recipe: shared progress, the local player's stock and the deposit buttons.
+    // One ingredient of the recipe on screen: shared progress, the local player's stock and the deposit buttons.
     // There is no take-back button because deposits are final once made (2026-10-17 decision).
     [DisallowMultipleComponent]
     public sealed class WorkbenchIngredientRow : MonoBehaviour
@@ -44,7 +44,7 @@ namespace Lighthouse.Workbench.View
             _icon.enabled = icon;
         }
 
-        public void SetProgress(int deposited, int required, int held)
+        public void SetProgress(int deposited, int required, int held, bool isOpen)
         {
             float ratio = required > 0 ? Mathf.Clamp01((float)deposited / required) : 0f;
             _fill.anchorMax = new Vector2(ratio, 1f);
@@ -53,7 +53,7 @@ namespace Lighthouse.Workbench.View
             _held.text = $"보유 {held}";
             bool isFull = deposited >= required;
             _doneMark.SetActive(isFull);
-            bool canDeposit = !isFull && held > 0;
+            bool canDeposit = isOpen && !isFull && held > 0;
             _addOneButton.interactable = canDeposit;
             _addAllButton.interactable = canDeposit;
         }
