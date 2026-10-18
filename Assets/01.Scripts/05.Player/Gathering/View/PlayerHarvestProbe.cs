@@ -1,6 +1,7 @@
 using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Interaction.Requests.Rules;
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -19,10 +20,13 @@ public sealed class PlayerHarvestProbe : MonoBehaviour
     [SerializeField]
     private LayerMask _probeMask = ~0;
 
-    private readonly RaycastHit[] _hits = new RaycastHit[32];
     [SerializeField]
     private InteractionRelay _relay;
 
+    [SerializeField]
+    private PlayerActionEvents _actionEvents;
+
+    private readonly RaycastHit[] _hits = new RaycastHit[32];
 
     private void Awake()
     {
@@ -34,6 +38,11 @@ public sealed class PlayerHarvestProbe : MonoBehaviour
         if (!_relay)
         {
             _relay = GetComponent<InteractionRelay>();
+        }
+
+        if (!_actionEvents)
+        {
+            _actionEvents = GetComponent<PlayerActionEvents>();
         }
     }
 
@@ -129,20 +138,23 @@ public sealed class PlayerHarvestProbe : MonoBehaviour
             return;
         }
 
-        float distanceSquared =
-            (nearestHit.point - actor.position).sqrMagnitude;
+        float distanceSquared = (nearestHit.point - actor.position).sqrMagnitude;
 
         if (distanceSquared > _reach * _reach)
         {
             return;
         }
 
-        bool isSent = _relay.TrySendToNonNetworkTarget(
+        // The local gesture does not confirm a server-side harvest result.
+        if (_actionEvents)
+        {
+            _actionEvents.Publish(PlayerAnimationAction.Dig);
+        }
+
+        _relay.TrySendToNonNetworkTarget(
             InteractionTargetKind.HarvestSpot,
             spot.SpotId,
             InteractionAction.Harvest);
 
-        Debug.Log(
-            $"[{nameof(PlayerHarvestProbe)}] SpotId={spot.SpotId}, Sent={isSent}");
     }
 }

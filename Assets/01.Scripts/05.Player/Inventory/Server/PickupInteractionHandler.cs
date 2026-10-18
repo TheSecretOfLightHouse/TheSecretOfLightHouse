@@ -46,6 +46,11 @@ public sealed class PickupInteractionHandler : NetworkBehaviour, IInteractionHan
             return InteractionResultCode.InvalidTarget;
         }
 
-        return pickup.TryCollect(inventory) ? InteractionResultCode.Success : InteractionResultCode.Rejected;
+        if (!pickup.TryCollect(inventory))
+        {
+            return InteractionResultCode.Rejected;
+        }
+
+        return InteractionResultCode.Success;
     }
 }
