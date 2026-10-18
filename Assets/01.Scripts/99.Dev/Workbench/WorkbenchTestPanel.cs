@@ -8,8 +8,8 @@ using UnityEngine;
 
 namespace Lighthouse.Dev.Workbench
 {
-    // JH03 test GUI until the real workbench UI (MK06): pick a recipe, deposit from the local player's inventory,
-    // and watch the shared progress. Requests go through the local player's relay like real input would.
+    // JH03 test GUI kept beside the Canvas WorkbenchScreen: view a recipe (local only), deposit from the local player's
+    // inventory, and watch the shared progress of that recipe. Requests go through the local player's relay like real input would.
     [DisallowMultipleComponent]
     public sealed class WorkbenchTestPanel : MonoBehaviour
     {
@@ -21,6 +21,7 @@ namespace Lighthouse.Dev.Workbench
         private InteractionRelay _relay;
         private PlayerInventory _inventory;
         private string _lastResult = "-";
+        private ModuleRecipe _viewed;
 
         private void OnDisable()
         {
@@ -66,54 +67,58 @@ namespace Lighthouse.Dev.Workbench
         private void DrawRecipes()
         {
             ModuleRecipeCatalog catalog = _workbench.Catalog;
-            GUILayout.Label("레시피 선택");
+            GUILayout.Label("레시피 보기");
 
             for (int i = 0; i < catalog.Count; i++)
             {
                 ModuleRecipe recipe = catalog[i];
 
-                if (GUILayout.Button($"{recipe.Id}. {recipe.DisplayName}{(recipe.IsTestValue ? " (시험값)" : string.Empty)}"))
+                string mark = recipe == _viewed ? "▶ " : string.Empty;
+
+                if (GUILayout.Button($"{mark}{recipe.Id}. {recipe.DisplayName}{(recipe.IsTestValue ? " (시험값)" : string.Empty)}"))
                 {
-                    Send(InteractionAction.SelectRecipe, recipe.Id, 0);
+                    _viewed = recipe;
                 }
             }
         }
 
         private void DrawProgress()
         {
-            if (!_workbench.TryGetCurrentRecipe(out ModuleRecipe recipe))
+            ModuleRecipe recipe = _viewed;
+
+            if (!recipe)
             {
-                GUILayout.Label("진행 중 레시피 없음");
+                GUILayout.Label("레시피를 고르세요");
                 return;
             }
 
-            GUILayout.Label($"진행 중: {recipe.DisplayName}");
+            GUILayout.Label($"보는 중: {recipe.DisplayName}");
 
             for (int i = 0; i < recipe.IngredientCount; i++)
             {
                 RecipeIngredient ingredient = recipe.GetIngredient(i);
                 int held = _inventory ? _inventory.GetSyncedCount(ingredient.ResourceId) : 0;
                 GUILayout.BeginHorizontal();
-                GUILayout.Label($"{ingredient.Resource.DisplayName} {_workbench.GetDepositedAt(i)}/{ingredient.Amount} (보유 {held})");
+                GUILayout.Label($"{ingredient.Resource.DisplayName} {_workbench.GetDepositedAt(recipe.Id, i)}/{ingredient.Amount} (보유 {held})");
 
                 if (GUILayout.Button("+1", GUILayout.Width(40f)))
                 {
-                    Send(InteractionAction.Deposit, ingredient.ResourceId, 1);
+                    Send(InteractionAction.Deposit, recipe.Id, ingredient.ResourceId, 1);
                 }
 
                 if (GUILayout.Button("전부", GUILayout.Width(50f)))
                 {
-                    Send(InteractionAction.Deposit, ingredient.ResourceId, ingredient.Amount);
+                    Send(InteractionAction.Deposit, recipe.Id, ingredient.ResourceId, ingredient.Amount);
                 }
 
                 GUILayout.EndHorizontal();
             }
 
-            GUI.enabled = _workbench.IsReadyToCraft();
+            GUI.enabled = _workbench.IsReadyToCraft(recipe.Id);
 
             if (GUILayout.Button("제작"))
             {
-                Send(InteractionAction.Craft, 0, 0);
+                Send(InteractionAction.Craft, recipe.Id, 0, 0);
             }
 
             GUI.enabled = true;
@@ -135,9 +140,9 @@ namespace Lighthouse.Dev.Workbench
             }
         }
 
-        private void Send(InteractionAction action, int arg0, int arg1)
+        private void Send(InteractionAction action, int arg0, int arg1, int arg2)
         {
-            if (!_relay || !_relay.TrySendToNetworkTarget(_workbench.netId, action, arg0, arg1))
+            if (!_relay || !_relay.TrySendToNetworkTarget(_workbench.netId, action, arg0, arg1, arg2))
             {
                 _lastResult = "보내지 못함";
             }

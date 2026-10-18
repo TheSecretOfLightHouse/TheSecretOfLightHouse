@@ -40,7 +40,7 @@ Command 인자의 권한·범위·쿨타임은 서버에서 검증한다. 비밀
 
 ## 5. 현재 요청·데이터 계약
 
-- `Assets/01.Scripts/03.Interaction/Requests/Net/InteractionRequest.cs`: 2026-10-14 JH02 A-1에서 요청 번호·대상 종류·대상 netId·비네트워크 대상 키·Action·Arg0·Arg1을 가진 전송 구조체로 바꿨다. ActorId와 ServerTime은 넣지 않고 서버가 연결에서 ActorId를 얻는다. 처리 경로는 `Relay/Net/InteractionRelay` → `Router/Server/InteractionRouter`(판 진행 중·송신자·요청 번호·대상·거리 검사 후 기능 처리기 호출)다.
+- `Assets/01.Scripts/03.Interaction/Requests/Net/InteractionRequest.cs`: 2026-10-14 JH02 A-1에서 요청 번호·대상 종류·대상 netId·비네트워크 대상 키·Action·Arg0·Arg1(2026-10-18 작업대 투입용 Arg2 추가, 기본 0)을 가진 전송 구조체로 바꿨다. ActorId와 ServerTime은 넣지 않고 서버가 연결에서 ActorId를 얻는다. 처리 경로는 `Relay/Net/InteractionRelay` → `Router/Server/InteractionRouter`(판 진행 중·송신자·요청 번호·대상·거리 검사 후 기능 처리기 호출)다.
 - `Assets/01.Scripts/03.Interaction/Requests/Net/InteractionAction.cs`: 상호작용 종류를 정의한다.
 - `Assets/01.Scripts/02.World/Harvest/Rules/ResourceDefinition.cs`: 자원 ID·표시명·아이콘·희귀도·픽업 프리팹의 ScriptableObject 정의다.
 

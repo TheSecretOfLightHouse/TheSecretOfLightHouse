@@ -7,7 +7,7 @@ namespace Lighthouse.Workbench.Rules
     [CreateAssetMenu(fileName = "ModuleRecipe_New", menuName = "TheLightHouse/Lighthouse/ModuleRecipe")]
     public sealed class ModuleRecipe : ScriptableObject
     {
-        [Tooltip("Sent as Arg0 of SelectRecipe. Must be unique and non-zero; 0 means no recipe.")]
+        [Tooltip("Sent as Arg0 of Deposit and Craft. Must be unique and non-zero; 0 means no recipe.")]
         [SerializeField]
         private int _id;
         [SerializeField]

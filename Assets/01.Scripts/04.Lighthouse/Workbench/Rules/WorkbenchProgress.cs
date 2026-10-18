@@ -1,31 +1,29 @@
 namespace Lighthouse.Workbench.Rules
 {
-    // The one recipe a workbench is building and what has gone into it. Pure state, no inventory access:
-    // the caller removes resources first and adds only what was actually removed.
+    // What has gone into one recipe on the workbench. Every recipe keeps its own progress, so players can fill
+    // different recipes side by side (2026-10-18 decision). Pure state, no inventory access: the caller removes
+    // resources first and adds only what was actually removed.
     public sealed class WorkbenchProgress
     {
-        private const int MaxIngredients = 16;
-
-        private readonly int[] _deposited = new int[MaxIngredients];
-        private ModuleRecipe _recipe;
+        private readonly ModuleRecipe _recipe;
+        private readonly int[] _deposited;
         private int _depositedTotal;
 
+        public WorkbenchProgress(ModuleRecipe recipe)
+        {
+            _recipe = recipe;
+            _deposited = new int[recipe.IngredientCount];
+        }
+
         public ModuleRecipe Recipe => _recipe;
-        public bool HasRecipe => _recipe;
-        public int RecipeId => _recipe ? _recipe.Id : 0;
-        // The recipe locks once anything went in (2026-10-17 decision).
-        public bool IsLocked => _depositedTotal > 0;
+        // Started once anything went in; the module record exists from then on.
+        public bool IsStarted => _depositedTotal > 0;
 
         public bool IsComplete
         {
             get
             {
-                if (!_recipe)
-                {
-                    return false;
-                }
-
-                for (int i = 0; i < _recipe.IngredientCount; i++)
+                for (int i = 0; i < _deposited.Length; i++)
                 {
                     if (_deposited[i] < _recipe.GetIngredient(i).Amount)
                     {
@@ -33,34 +31,17 @@ namespace Lighthouse.Workbench.Rules
                     }
                 }
 
-                return true;
+                return _deposited.Length > 0;
             }
-        }
-
-        public bool TrySetRecipe(ModuleRecipe recipe)
-        {
-            if (!recipe || IsLocked || recipe.IngredientCount > MaxIngredients)
-            {
-                return false;
-            }
-
-            Clear();
-            _recipe = recipe;
-            return true;
         }
 
         public int GetDepositedAt(int index)
         {
-            return _recipe && index >= 0 && index < _recipe.IngredientCount ? _deposited[index] : 0;
+            return index >= 0 && index < _deposited.Length ? _deposited[index] : 0;
         }
 
         public int GetRemaining(int resourceId)
         {
-            if (!_recipe)
-            {
-                return 0;
-            }
-
             int index = _recipe.IndexOf(resourceId);
             return index >= 0 ? _recipe.GetIngredient(index).Amount - _deposited[index] : 0;
         }
@@ -95,7 +76,6 @@ namespace Lighthouse.Workbench.Rules
         {
             System.Array.Clear(_deposited, 0, _deposited.Length);
             _depositedTotal = 0;
-            _recipe = null;
         }
     }
 }

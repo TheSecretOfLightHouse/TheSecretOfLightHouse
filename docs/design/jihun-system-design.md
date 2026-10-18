@@ -22,7 +22,7 @@ UI 화면·직군 능력·투표 계산·몬스터 AI·월드 생성·게임 최
 
 | 근거 | 확인 내용 | 설계에 미치는 영향 |
 |---|---|---|
-| `03.Interaction/Requests/Net/InteractionRequest.cs` | 2026-10-14 JH02 A-1에서 전송 구조체로 교체: 요청 번호·대상 종류·대상 netId·비네트워크 대상 키·Action·Arg0·Arg1. 이전의 ActorId·TargetId·ServerTime은 제거 | 송신자는 서버가 연결에서 도출(§5.1) |
+| `03.Interaction/Requests/Net/InteractionRequest.cs` | 2026-10-14 JH02 A-1에서 전송 구조체로 교체: 요청 번호·대상 종류·대상 netId·비네트워크 대상 키·Action·Arg0·Arg1(2026-10-18 Arg2 추가). 이전의 ActorId·TargetId·ServerTime은 제거 | 송신자는 서버가 연결에서 도출(§5.1) |
 | 같은 폴더 `InteractionAction.cs` | Harvest~InspectGhostShip 9종 + RepairBoat·Rescue + Craft(12, 작업대 제작 완료, 2026-10-17) + None | 부식·검사·점화 등은 열거형에 없음. 추가 동작은 별도 계약 변경 필요 |
 | `05.Player/Control/PlayerController.cs` | InteractionRequested 이벤트(누를 때만, 로컬 플레이어·난파 아닐 때). 키 뗌 이벤트 없음 | 구독 어댑터는 최명기의 `05.Player/Control/PlayerInteractionInput`(전역 네임스페이스)이며 `tech.prefab`에 부착됨(2026-10-16 병합). Interaction 쪽 같은 이름 어댑터는 중복 부착을 막으려고 2026-10-17 삭제. 키 뗌이 없어 본편에서는 세션을 키 뗌으로 취소할 수 없음 |
 | `01.Network/`, `03.Interaction/` | JH01·JH07·JH02 구현(§4 배치의 구현 표시 참고) | `04.Lighthouse/`는 실행 코드 없음. 거래·등대 타입은 신규 구현 계획 |
@@ -150,7 +150,7 @@ Assets/01.Scripts/
 | ActorId | 아니요 | 서버가 Command의 송신 연결에서 ConnectionDirectory로 도출한다. 클라이언트가 보낸 값은 받지 않는다 |
 | RequestSequence | 예 | ActorId별 1부터 단조 증가하는 요청 번호. 응답 대조, 같은 입력의 이중 처리 방지, 검사 능력의 사용권 소비 키로 쓴다 |
 | 대상 참조 | 예 | 네트워크 객체 대상은 Mirror netId, 비네트워크 대상은 (DomainKind, 기존 식별자). 아래 대상 식별 참고 |
-| Action + 타입별 payload | 예 | 허용 동작·개수·슬롯·레시피 ID. Arg0/Arg1의 의미를 라우트별로 고정하고 범위 검사 |
+| Action + 타입별 payload | 예 | 허용 동작·개수·슬롯·레시피 ID. Arg0~Arg2의 의미를 라우트별로 고정하고 범위 검사(Arg2는 2026-10-18 작업대 투입 수량용으로 추가) |
 | ExpectedRevision | 필요할 때 | 해당 수신자가 볼 수 있는 PublicRevision 비교. 비밀 상태 변경으로 stale 여부를 드러내지 않음 |
 | MatchId | 아니요 | 서버 실행 한 번에 판 하나이므로 요청에 넣지 않는다. 서버 로그·이력에만 기록 |
 | ReceivedAt / CommittedAt | 아니요 | 서버가 생성. 기존 ServerTime 필드를 클라이언트 시간 근거로 신뢰하지 않음 |
