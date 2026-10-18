@@ -23,7 +23,7 @@ UI 화면·직군 능력·투표 계산·몬스터 AI·월드 생성·게임 최
 | 근거 | 확인 내용 | 설계에 미치는 영향 |
 |---|---|---|
 | `03.Interaction/Requests/Net/InteractionRequest.cs` | 2026-10-14 JH02 A-1에서 전송 구조체로 교체: 요청 번호·대상 종류·대상 netId·비네트워크 대상 키·Action·Arg0·Arg1. 이전의 ActorId·TargetId·ServerTime은 제거 | 송신자는 서버가 연결에서 도출(§5.1) |
-| 같은 폴더 `InteractionAction.cs` | Harvest~InspectGhostShip 9종 + RepairBoat·Rescue + None | 부식·검사·점화 등은 열거형에 없음. 추가 동작은 별도 계약 변경 필요 |
+| 같은 폴더 `InteractionAction.cs` | Harvest~InspectGhostShip 9종 + RepairBoat·Rescue + Craft(12, 작업대 제작 완료, 2026-10-17) + None | 부식·검사·점화 등은 열거형에 없음. 추가 동작은 별도 계약 변경 필요 |
 | `05.Player/Control/PlayerController.cs` | InteractionRequested 이벤트(누를 때만, 로컬 플레이어·난파 아닐 때). 키 뗌 이벤트 없음 | 구독 어댑터는 최명기의 `05.Player/Control/PlayerInteractionInput`(전역 네임스페이스)이며 `tech.prefab`에 부착됨(2026-10-16 병합). Interaction 쪽 같은 이름 어댑터는 중복 부착을 막으려고 2026-10-17 삭제. 키 뗌이 없어 본편에서는 세션을 키 뗌으로 취소할 수 없음 |
 | `01.Network/`, `03.Interaction/` | JH01·JH07·JH02 구현(§4 배치의 구현 표시 참고) | `04.Lighthouse/`는 실행 코드 없음. 거래·등대 타입은 신규 구현 계획 |
 | Mirror NetworkManager | 연결·Ready·AddPlayer·Disconnect 콜백 존재. 기본 Disconnect는 플레이어/소유 객체 파괴 | 게임 준비와 transport ready 분리, 보존/재결합 경로 필요 |

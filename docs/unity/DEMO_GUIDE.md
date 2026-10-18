@@ -49,7 +49,7 @@ Assets/ThirdParty/1조 Unity Asset/_Demo/<사람>/<주제>/   ← 데모. 이 �
 | `_Demo/Jihun/LighthouseArchipelago/` | 군도 맵. 본 맵은 `Map_LighthouseArchipelago_Far.unity` (생성기: `TheLightHouse/Build Archipelago Map (Far)`). 예전 규칙으로 만들어 네임스페이스(`TheLightHouse.*`)가 다르다 | 2026-10-14 로컬 체크아웃에 존재 확인 |
 | `_Demo/Jihun/GatherLoop/` | 1단계 채집 루프 (배·채집·인벤토리·등대 수리도). Far 맵 복사 + `TheLightHouse/Demo/GatherLoop/Build Scene` | 2026-10-14 로컬 체크아웃에 존재 확인. 실행 미확인 |
 | `_Demo/Jihun/LighthouseSearchlight/` | 기획 제안(확정 아님): 등대 탐조등 조종으로 안개를 걷고 괴물을 쫓아 귀항하는 배 엄호. 열린 맵 복사 + `TheLightHouse/Demo/LighthouseSearchlight/Build From Open Scene` | 2026-10-14 작성, Unity 컴파일 확인. 빌더·플레이 미확인. SVN 미커밋 |
-| `_Demo/Jihun/CrewMultiplayer/` | 4인 멀티: 팀 캐릭터 4종·애니메이션, 방 만들기/찾기/입장, 서버 판정 채집·등대 투입. 데모 전용 Mirror 동기화(본편 무수정). 열린 맵 복사 + `TheLightHouse/Demo/CrewMultiplayer/Build From Open Scene` | 2026-10-15 Unity 컴파일·빌더 실행 확인. 첫 빌드에서 섬 전체를 등대로 잡아 상자 0개 → 빌더 수정, 재빌드 필요. 4인 플레이 미확인. SVN 미커밋 |
+| `_Demo/Jihun/CrewMultiplayer/` | 4인 멀티: 팀 캐릭터 4종·애니메이션, 방 만들기/찾기/입장, 서버 판정 채집·등대 투입. 데모 전용 Mirror 동기화(본편 무수정). 열린 맵 복사 + `TheLightHouse/Demo/CrewMultiplayer/Build From Open Scene`. 2026-10-17 마피아 미니판 추가: 본편 `07.Mafia` 투표·확인·심해 규칙 클래스를 읽기 전용으로 호출, 점화 의식·최후 전투·종료 후 비밀 공개·규칙 비교 옵션. 기존 씬에는 `.../Add Mafia Round To Built Scene` | 2026-10-15 Unity 컴파일·빌더 실행 확인(현재 씬에 상자 8개 배치 확인). 2026-10-17 마피아 추가분 컴파일 확인, 패치 메뉴·4인 플레이 미확인. SVN 미커밋 |
 
 ## 폐기 목록
 더 이상 쓰지 않아 SVN에서 지운 데모다. 다시 필요하면 `마지막 리비전`에서 복원한다.

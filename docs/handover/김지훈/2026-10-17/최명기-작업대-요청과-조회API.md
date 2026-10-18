@@ -10,6 +10,7 @@
 |---|---|---|---|
 | `SelectRecipe` | 레시피 ID(`ModuleRecipe.Id`) | 0 | 아직 투입 전이고 상한 미달. 같은 레시피 재선택은 성공 |
 | `Deposit` | 자원 ID(`ResourceDefinition.Id`) | 요청 수량 | 서버가 `Min(요청, 남은 필요량)`으로 줄여 `TryRemoveTo`. 1개라도 빠지면 Success |
+| `Craft` | 0 | 0 | (2026-10-17 추가) 재료가 모두 찼을 때만 Success. 다 차도 자동 완성되지 않으며, 완성되면 작업대 보관 개수가 늘고 레시피가 비워진다. 버튼 활성 여부는 `WorkbenchNet.IsReadyToCraft()` |
 
 - 실패는 모두 `Rejected`(숨은 상태를 드러내지 않음). 쓰러짐·배 탑승 중 거절.
 - 실제 빠진 수량은 응답에 없다. 인벤토리 `ResourceCountChanged`와 작업대 `Changed`로 갱신한다.
