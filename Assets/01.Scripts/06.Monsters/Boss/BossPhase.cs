@@ -7,6 +7,7 @@ namespace Lighthouse.Monsters.Boss
         SpecialEndingReady,
         NormalBattleActive,
         LighthouseDestroyed,
-        BattleStopped
+        BattleStopped,
+        Wrapping
     }
 }

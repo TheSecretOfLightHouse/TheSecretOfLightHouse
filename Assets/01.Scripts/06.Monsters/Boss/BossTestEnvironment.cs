@@ -17,6 +17,12 @@ namespace Lighthouse.Monsters.Boss
 
         [SyncVar] private float _currentHealth;
         [SyncVar] private float _maxHealth;
+        [SyncVar] private float _wrapDuration;
+        [SyncVar] private float _squeezeDuration;
+        [SyncVar] private double _wrapStartedAt;
+        [SyncVar] private double _attackStartedAt;
+        [SyncVar] private double _visualStoppedAt;
+        [SyncVar] private uint _attackSequence;
         [SyncVar] private BossPhase _phase;
 
         private double _attackPower;
@@ -32,10 +38,22 @@ namespace Lighthouse.Monsters.Boss
         public float CurrentHealth => _currentHealth;
         public float MaxHealth => _maxHealth;
         public BossPhase Phase => _phase;
+        public float WrapDuration => _wrapDuration;
+        public float SqueezeDuration => _squeezeDuration;
+        public double WrapStartedAt => _wrapStartedAt;
+        public double AttackStartedAt => _attackStartedAt;
+        public double VisualStoppedAt => _visualStoppedAt;
+        public uint AttackSequence => _attackSequence;
         public bool HasSummoned => _phase != BossPhase.WaitingForSummon;
         public bool HasValidSetup => _settings != null && _lighthouseModel != null
             && _tentacleModel != null && _voting != null && IsPositiveFinite(_settings.TestLighthouseMaxHealth)
-            && IsPositiveFinite(_settings.AttackInterval) && IsPositiveFinite(_settings.SpecialEndingAttackThreshold);
+            && IsPositiveFinite(_settings.AttackInterval) && IsPositiveFinite(_settings.SpecialEndingAttackThreshold)
+            && IsPositiveFinite(_settings.WrapDuration) && IsPositiveFinite(_settings.SqueezeDuration)
+            && IsPositiveFinite(_settings.DamageNormalizedTime) && _settings.DamageNormalizedTime <= 1
+            && _settings.AttackInterval >= _settings.SqueezeDuration;
+
+        private bool CanContinueBattle => isServer && isActiveAndEnabled && _currentHealth > 0
+            && (_phase == BossPhase.Wrapping || _phase == BossPhase.NormalBattleActive);
 
         private void Awake()
         {
@@ -45,9 +63,9 @@ namespace Lighthouse.Monsters.Boss
         private void OnDisable()
         {
             StopDamageRoutine();
-            if (isServer && _phase == BossPhase.NormalBattleActive)
+            if (isServer)
             {
-                _phase = BossPhase.BattleStopped;
+                StopBattle();
             }
         }
 
@@ -61,6 +79,12 @@ namespace Lighthouse.Monsters.Boss
 
             _maxHealth = _settings.TestLighthouseMaxHealth;
             _currentHealth = _maxHealth;
+            _wrapDuration = _settings.WrapDuration;
+            _squeezeDuration = _settings.SqueezeDuration;
+            _wrapStartedAt = 0;
+            _attackStartedAt = 0;
+            _visualStoppedAt = 0;
+            _attackSequence = 0;
             _attackPower = 0;
             _phase = BossPhase.WaitingForSummon;
             _voting.SummonApproved += HandleSummonApproved;
@@ -79,6 +103,12 @@ namespace Lighthouse.Monsters.Boss
             _phase = BossPhase.WaitingForSummon;
             _currentHealth = 0;
             _maxHealth = 0;
+            _wrapDuration = 0;
+            _squeezeDuration = 0;
+            _wrapStartedAt = 0;
+            _attackStartedAt = 0;
+            _visualStoppedAt = 0;
+            _attackSequence = 0;
         }
 
         [Server]
@@ -99,22 +129,36 @@ namespace Lighthouse.Monsters.Boss
 
             // 고정된 공격력은 서버에만 보관하고, 클라이언트에는 진행 분기만 공개한다.
             _attackPower = snapshot.AttackPower;
+            _wrapStartedAt = NetworkTime.time;
             _phase = _attackPower >= _settings.SpecialEndingAttackThreshold ? BossPhase.SpecialEndingReady : BossPhase.NormalBattleReady;
             if (_phase == BossPhase.NormalBattleReady)
             {
-                _phase = BossPhase.NormalBattleActive;
-                _damageRoutine = StartCoroutine(DealPeriodicDamage(_settings.AttackInterval));
+                _phase = BossPhase.Wrapping;
+                _damageRoutine = StartCoroutine(DealPeriodicDamage(_settings.AttackInterval,
+                    _squeezeDuration * _settings.DamageNormalizedTime));
             }
         }
 
-        private IEnumerator DealPeriodicDamage(float attackInterval)
+        private IEnumerator DealPeriodicDamage(float attackInterval, float damageDelay)
         {
-            // 3단계에서는 첫 피해까지 한 주기를 기다리며, 연출 완료 시점과의 연결은 4단계에서 다룬다.
-            var delay = new WaitForSecondsRealtime(attackInterval);
-            while (isServer && _phase == BossPhase.NormalBattleActive && _currentHealth > 0)
+            // 클라이언트의 애니메이션 콜백 대신 서버의 시계로 감기와 타격 시점을 정한다.
+            yield return new WaitForSecondsRealtime(_wrapDuration);
+            if (!CanContinueBattle)
             {
-                yield return delay;
-                if (!isServer || _phase != BossPhase.NormalBattleActive || !isActiveAndEnabled)
+                _damageRoutine = null;
+                yield break;
+            }
+
+            _phase = BossPhase.NormalBattleActive;
+            yield return new WaitForSecondsRealtime(attackInterval);
+            var hitDelay = new WaitForSecondsRealtime(damageDelay);
+            var recoveryDelay = new WaitForSecondsRealtime(attackInterval - damageDelay);
+            while (CanContinueBattle)
+            {
+                _attackStartedAt = NetworkTime.time;
+                _attackSequence++;
+                yield return hitDelay;
+                if (!CanContinueBattle)
                 {
                     break;
                 }
@@ -123,7 +167,12 @@ namespace Lighthouse.Monsters.Boss
                 _currentHealth = (float)System.Math.Max(0d, _currentHealth - _attackPower);
                 if (_currentHealth <= 0)
                 {
+                    _visualStoppedAt = NetworkTime.time;
                     _phase = BossPhase.LighthouseDestroyed;
+                }
+                else if (recoveryDelay.waitTime > 0)
+                {
+                    yield return recoveryDelay;
                 }
             }
             _damageRoutine = null;
@@ -132,9 +181,16 @@ namespace Lighthouse.Monsters.Boss
         [Server]
         private void HandleVotingEnded()
         {
+            StopBattle();
+        }
+
+        [Server]
+        private void StopBattle()
+        {
             StopDamageRoutine();
-            if (_phase == BossPhase.NormalBattleActive)
+            if (HasSummoned && _phase != BossPhase.LighthouseDestroyed && _phase != BossPhase.BattleStopped)
             {
+                _visualStoppedAt = NetworkTime.time;
                 _phase = BossPhase.BattleStopped;
             }
         }
@@ -177,7 +233,7 @@ namespace Lighthouse.Monsters.Boss
             float width = Mathf.Max(140, Mathf.Min(300, Screen.width - leftWidth - 48));
             GUILayout.BeginArea(new Rect(Screen.width - width - 16,
                 Mathf.Max(16, Screen.height - 224), width, 208), _panelStyle);
-            GUILayout.Label("보스 시험 환경 · 3단계", _labelStyle);
+            GUILayout.Label("보스 시험 환경 · 4단계", _labelStyle);
             if (!HasValidSetup)
             {
                 GUILayout.Label("보스 설정과 모델 참조를 확인하세요.", _labelStyle);
@@ -191,6 +247,7 @@ namespace Lighthouse.Monsters.Boss
                 GUILayout.Label(hasServerState ? "서버 HP 상태" : "접속 전 설정 미리보기", _labelStyle);
                 GUILayout.Label($"공격 간격 {_settings.AttackInterval:0.##}초 · 특수 기준 {_settings.SpecialEndingAttackThreshold:0.##}", _labelStyle);
                 string phaseLabel = _phase == BossPhase.NormalBattleReady ? "일반 전투 준비"
+                    : _phase == BossPhase.Wrapping ? "촉수 감기"
                     : _phase == BossPhase.NormalBattleActive ? "일반 전투 진행"
                     : _phase == BossPhase.SpecialEndingReady ? "특수 종료 연출 준비"
                     : _phase == BossPhase.LighthouseDestroyed ? "등대 HP 소진"
@@ -200,7 +257,7 @@ namespace Lighthouse.Monsters.Boss
                 {
                     GUILayout.Label($"고정 공격력: {_attackPower:0.##} (서버 전용)", _labelStyle);
                 }
-                GUILayout.Label("시험 HP 주기 피해 · 연출/본편 승패 미연결", _labelStyle);
+                GUILayout.Label("촉수 연출·시험 피해 연결 · 본편 승패 미연결", _labelStyle);
             }
             GUILayout.EndArea();
         }
