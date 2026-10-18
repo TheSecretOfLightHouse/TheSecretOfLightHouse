@@ -1,3 +1,4 @@
+using System.Collections;
 using Lighthouse.Mafia.AbyssGauge.Rules;
 using Lighthouse.Mafia.Voting.Net;
 using Mirror;
@@ -19,6 +20,7 @@ namespace Lighthouse.Monsters.Boss
         [SyncVar] private BossPhase _phase;
 
         private double _attackPower;
+        private Coroutine _damageRoutine;
 
         private Font _font;
         private GUIStyle _panelStyle;
@@ -32,12 +34,21 @@ namespace Lighthouse.Monsters.Boss
         public BossPhase Phase => _phase;
         public bool HasSummoned => _phase != BossPhase.WaitingForSummon;
         public bool HasValidSetup => _settings != null && _lighthouseModel != null
-            && _tentacleModel != null && _voting != null && _settings.TestLighthouseMaxHealth > 0
-            && _settings.AttackInterval > 0 && _settings.SpecialEndingAttackThreshold > 0;
+            && _tentacleModel != null && _voting != null && IsPositiveFinite(_settings.TestLighthouseMaxHealth)
+            && IsPositiveFinite(_settings.AttackInterval) && IsPositiveFinite(_settings.SpecialEndingAttackThreshold);
 
         private void Awake()
         {
             _font = Font.CreateDynamicFontFromOSFont("Malgun Gothic", 16);
+        }
+
+        private void OnDisable()
+        {
+            StopDamageRoutine();
+            if (isServer && _phase == BossPhase.NormalBattleActive)
+            {
+                _phase = BossPhase.BattleStopped;
+            }
         }
 
         public override void OnStartServer()
@@ -53,13 +64,16 @@ namespace Lighthouse.Monsters.Boss
             _attackPower = 0;
             _phase = BossPhase.WaitingForSummon;
             _voting.SummonApproved += HandleSummonApproved;
+            _voting.VotingEnded += HandleVotingEnded;
         }
 
         public override void OnStopServer()
         {
+            StopDamageRoutine();
             if (_voting != null)
             {
                 _voting.SummonApproved -= HandleSummonApproved;
+                _voting.VotingEnded -= HandleVotingEnded;
             }
             _attackPower = 0;
             _phase = BossPhase.WaitingForSummon;
@@ -77,7 +91,7 @@ namespace Lighthouse.Monsters.Boss
         [Server]
         private void HandleSummonApproved(AbyssGaugeSnapshot snapshot)
         {
-            if (HasSummoned || !HasValidSetup || double.IsNaN(snapshot.AttackPower)
+            if (HasSummoned || !isActiveAndEnabled || !HasValidSetup || double.IsNaN(snapshot.AttackPower)
                 || double.IsInfinity(snapshot.AttackPower) || snapshot.AttackPower < 0)
             {
                 return;
@@ -86,6 +100,57 @@ namespace Lighthouse.Monsters.Boss
             // 고정된 공격력은 서버에만 보관하고, 클라이언트에는 진행 분기만 공개한다.
             _attackPower = snapshot.AttackPower;
             _phase = _attackPower >= _settings.SpecialEndingAttackThreshold ? BossPhase.SpecialEndingReady : BossPhase.NormalBattleReady;
+            if (_phase == BossPhase.NormalBattleReady)
+            {
+                _phase = BossPhase.NormalBattleActive;
+                _damageRoutine = StartCoroutine(DealPeriodicDamage(_settings.AttackInterval));
+            }
+        }
+
+        private IEnumerator DealPeriodicDamage(float attackInterval)
+        {
+            // 3단계에서는 첫 피해까지 한 주기를 기다리며, 연출 완료 시점과의 연결은 4단계에서 다룬다.
+            var delay = new WaitForSecondsRealtime(attackInterval);
+            while (isServer && _phase == BossPhase.NormalBattleActive && _currentHealth > 0)
+            {
+                yield return delay;
+                if (!isServer || _phase != BossPhase.NormalBattleActive || !isActiveAndEnabled)
+                {
+                    break;
+                }
+
+                // 고정 공격력의 정밀도를 유지하도록 double로 차감한 뒤 동기화할 HP 값으로 변환한다.
+                _currentHealth = (float)System.Math.Max(0d, _currentHealth - _attackPower);
+                if (_currentHealth <= 0)
+                {
+                    _phase = BossPhase.LighthouseDestroyed;
+                }
+            }
+            _damageRoutine = null;
+        }
+
+        [Server]
+        private void HandleVotingEnded()
+        {
+            StopDamageRoutine();
+            if (_phase == BossPhase.NormalBattleActive)
+            {
+                _phase = BossPhase.BattleStopped;
+            }
+        }
+
+        private void StopDamageRoutine()
+        {
+            if (_damageRoutine != null)
+            {
+                StopCoroutine(_damageRoutine);
+                _damageRoutine = null;
+            }
+        }
+
+        private static bool IsPositiveFinite(float value)
+        {
+            return !float.IsNaN(value) && !float.IsInfinity(value) && value > 0;
         }
 
         private void OnGUI()
@@ -112,7 +177,7 @@ namespace Lighthouse.Monsters.Boss
             float width = Mathf.Max(140, Mathf.Min(300, Screen.width - leftWidth - 48));
             GUILayout.BeginArea(new Rect(Screen.width - width - 16,
                 Mathf.Max(16, Screen.height - 224), width, 208), _panelStyle);
-            GUILayout.Label("보스 시험 환경 · 2단계", _labelStyle);
+            GUILayout.Label("보스 시험 환경 · 3단계", _labelStyle);
             if (!HasValidSetup)
             {
                 GUILayout.Label("보스 설정과 모델 참조를 확인하세요.", _labelStyle);
@@ -126,13 +191,16 @@ namespace Lighthouse.Monsters.Boss
                 GUILayout.Label(hasServerState ? "서버 HP 상태" : "접속 전 설정 미리보기", _labelStyle);
                 GUILayout.Label($"공격 간격 {_settings.AttackInterval:0.##}초 · 특수 기준 {_settings.SpecialEndingAttackThreshold:0.##}", _labelStyle);
                 string phaseLabel = _phase == BossPhase.NormalBattleReady ? "일반 전투 준비"
-                    : _phase == BossPhase.SpecialEndingReady ? "특수 종료 연출 준비" : "소환 대기";
+                    : _phase == BossPhase.NormalBattleActive ? "일반 전투 진행"
+                    : _phase == BossPhase.SpecialEndingReady ? "특수 종료 연출 준비"
+                    : _phase == BossPhase.LighthouseDestroyed ? "등대 HP 소진"
+                    : _phase == BossPhase.BattleStopped ? "시험 전투 중지" : "소환 대기";
                 GUILayout.Label($"소환: {(HasSummoned ? "승인됨" : "미승인")} · {phaseLabel}", _labelStyle);
                 if (isServer && HasSummoned)
                 {
                     GUILayout.Label($"고정 공격력: {_attackPower:0.##} (서버 전용)", _labelStyle);
                 }
-                GUILayout.Label("임시 테스트값 · 피해/연출/종료 미연결", _labelStyle);
+                GUILayout.Label("시험 HP 주기 피해 · 연출/본편 승패 미연결", _labelStyle);
             }
             GUILayout.EndArea();
         }

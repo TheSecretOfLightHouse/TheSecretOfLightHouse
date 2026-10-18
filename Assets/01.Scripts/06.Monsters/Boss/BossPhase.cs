@@ -4,6 +4,9 @@ namespace Lighthouse.Monsters.Boss
     {
         WaitingForSummon,
         NormalBattleReady,
-        SpecialEndingReady
+        SpecialEndingReady,
+        NormalBattleActive,
+        LighthouseDestroyed,
+        BattleStopped
     }
 }
