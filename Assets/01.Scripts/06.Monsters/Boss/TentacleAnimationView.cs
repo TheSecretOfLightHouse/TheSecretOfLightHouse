@@ -48,7 +48,7 @@ namespace Lighthouse.Monsters.Boss
         {
             // 씬 네트워크 객체는 스폰 전 Awake가 실행되지 않으므로 isClient를 직접 조회하지 않는다.
             bool visible = NetworkClient.isConnected && NetworkClient.ready && HasValidSetup && _boss.MaxHealth > 0
-                && _boss.HasSummoned && _boss.WrapDuration > 0 && _boss.SqueezeDuration > 0;
+                && _boss.HasSummoned && !_boss.IsSpecialEnding && _boss.WrapDuration > 0 && _boss.SqueezeDuration > 0;
             SetVisible(visible);
             if (!visible)
             {
