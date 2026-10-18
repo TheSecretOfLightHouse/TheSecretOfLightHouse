@@ -32,7 +32,8 @@ namespace Lighthouse.Dev.Workbench
 
         private void OnGUI()
         {
-            if (!_workbench || !NetworkClient.active || !_workbench.Catalog)
+            // In a build, Mirror keeps scene objects inactive on a client until spawned, and netId is not readable before.
+            if (!_workbench || !_workbench.isActiveAndEnabled || !NetworkClient.active || !_workbench.Catalog)
             {
                 return;
             }
