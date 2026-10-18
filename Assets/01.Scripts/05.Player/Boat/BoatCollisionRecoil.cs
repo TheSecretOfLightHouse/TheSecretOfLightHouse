@@ -8,6 +8,9 @@ public sealed class BoatCollisionRecoil : MonoBehaviour
 {
     private const float DirectionEpsilon = 0.0001f;
 
+    [SerializeField, Min(0f)]
+    private float _propulsionPauseDuration = 0.3f;
+
     private readonly Dictionary<BoatCollisionRecoilSource, float> _nextRecoilTimes = new Dictionary<BoatCollisionRecoilSource, float>();
 
     private BoatController _boat;
@@ -55,6 +58,13 @@ public sealed class BoatCollisionRecoil : MonoBehaviour
         _nextRecoilTimes[source] = Time.time + source.Cooldown;
 
         ApplyRecoil(direction, source.RecoilSpeed);
+
+        PlayerController owner = _boat.Owner;
+        if (_boat.IsOccupied && owner && owner.CurrentBoat == _boat && !owner.IsDowned
+            && owner.TryGetComponent(out PlayerActionEvents actionEvents))
+        {
+            actionEvents.Publish(PlayerAnimationAction.Stumble);
+        }
     }
 
     private bool CanApplyRecoil()
@@ -80,5 +90,6 @@ public sealed class BoatCollisionRecoil : MonoBehaviour
         }
 
         _rb.AddForce(direction * speed, ForceMode.VelocityChange);
+        _boat.PreserveCollisionRecoil(_propulsionPauseDuration);
     }
 }

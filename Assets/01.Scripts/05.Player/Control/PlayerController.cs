@@ -203,7 +203,17 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         if (!IsDowned)
         {
             Vector2 look = _lookAction != null ? _lookAction.ReadValue<Vector2>() : Vector2.zero;
-            _heading = Mathf.Repeat(_heading + look.x * _mouseSensitivity, 360f);
+            if (IsOnBoat)
+            {
+                if (_camera)
+                {
+                    _camera.ApplyHorizontalLook(look.x * _mouseSensitivity);
+                }
+            }
+            else
+            {
+                _heading = Mathf.Repeat(_heading + look.x * _mouseSensitivity, 360f);
+            }
             if (_camera)
             {
                 _camera.ApplyVerticalLook(look.y * _mouseSensitivity);
@@ -244,7 +254,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         if (IsOnBoat)
         {
-            _boatController.Move(this, _hfsm.MoveDirection,rotation, config,fixedDeltaTime);
+            _boatController.Move(this, _inputReader.MoveInput, config, fixedDeltaTime);
             return;
         }
 
@@ -410,6 +420,10 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         _boatController = boat;
         _heading = boat.transform.eulerAngles.y;
+        if (CanProcessLocalInput && _camera)
+        {
+            _camera.SetBoatOrbit(true, _heading);
+        }
         Transform anchor = boat.BoardingAnchor;
         _rb.position = anchor.position;
         _rb.rotation = anchor.rotation;
@@ -487,6 +501,10 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         if (_boatController.TrySetHeading(this, rotation))
         {
             _heading = rotation.eulerAngles.y;
+            if (_camera)
+            {
+                _camera.SetBoatOrbit(true, _heading);
+            }
         }
     }
 
@@ -507,6 +525,10 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         }
 
         _boatController = null;
+        if (CanProcessLocalInput && _camera)
+        {
+            _camera.SetBoatOrbit(false, _heading);
+        }
 
         _rb.position = landingPosition;
         _rb.rotation = Quaternion.Euler(0f, _heading, 0f);

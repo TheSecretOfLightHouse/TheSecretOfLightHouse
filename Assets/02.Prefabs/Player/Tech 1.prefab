@@ -1142,6 +1142,7 @@ GameObject:
   - component: {fileID: 8648408806980669002}
   - component: {fileID: 4766459115735376729}
   - component: {fileID: -3284874861307486675}
+  - component: {fileID: 2978310632326848306}
   m_Layer: 0
   m_Name: Tech 1
   m_TagString: Untagged
@@ -1351,7 +1352,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sceneId: 0
-  _assetId: 1864953731
+  _assetId: 0
   serverOnly: 0
   visibility: 0
   hasSpawned: 0
@@ -1418,6 +1419,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 558494c4e51d3b04d88e49eda547de1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _actionEvents: {fileID: 2978310632326848306}
 --- !u!114 &2415168992369603088
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1434,6 +1436,8 @@ MonoBehaviour:
   _minPitch: -60
   _maxPitch: 70
   _cameraPivot: {fileID: 440580148379586522}
+  _boatLookReturnDelay: 0.5
+  _boatLookReturnSpeed: 120
 --- !u!114 &-7914389096021402594
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1468,6 +1472,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   _relay: {fileID: 0}
+  _actionEvents: {fileID: 2978310632326848306}
 --- !u!114 &7947746884868856300
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1615,6 +1620,18 @@ MonoBehaviour:
   syncInterval: 0
   _dropOffset: {x: 0, y: 1, z: 0}
   _dropSpacing: 0.5
+--- !u!114 &2978310632326848306
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4492665440649449213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74dc2581977c22f48a293c49d3e1f930, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &4541714919809005310
 GameObject:
   m_ObjectHideFlags: 0
