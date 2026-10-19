@@ -36,6 +36,7 @@ namespace Lighthouse.World.MapGeneration.Net
         private IRegionGate _regions;
         private WorldQuerySession _querySession;
         private StormWallSession _stormWallSession;
+        private bool _isLayoutReady;
 
         public MapSeedInfo Info => _map;
         public MapLayout Layout => _layout;
@@ -45,6 +46,12 @@ namespace Lighthouse.World.MapGeneration.Net
             _stormWallSession != null
                 ? _stormWallSession.Fields
                 : Array.Empty<StormWallField>();
+
+        public event Action<MapLayout, MapSeedInfo> LayoutReady;
+        public event Action LayoutReleased;
+
+        public MapGenerationConfig Config => _config;
+        public bool IsLayoutReady => _isLayoutReady;
 
         private void Awake()
         {
@@ -126,6 +133,8 @@ namespace Lighthouse.World.MapGeneration.Net
 
         public override void OnStopServer()
         {
+            RaiseLayoutReleased();
+
             if (_spawnerSession != null)
             {
                 _spawnerSession.Dispose();
@@ -161,6 +170,8 @@ namespace Lighthouse.World.MapGeneration.Net
                 return;
             }
 
+            RaiseLayoutReleased();
+
             ReleaseWorldQueries();
 
             _layout = null;
@@ -184,6 +195,7 @@ namespace Lighthouse.World.MapGeneration.Net
                 return;
             }
 
+            RaiseLayoutReleased();
             _applied = info;
             MapChecksumResult result = MapChecksumResult.Match;
 
@@ -211,11 +223,40 @@ namespace Lighthouse.World.MapGeneration.Net
                 }
             }
 
+            if (result == MapChecksumResult.Match && _layout != null)
+            {
+                RaiseLayoutReady(info);
+            }
+
             NetworkClient.Send(new WorldReadyMessage
             {
                 LayoutHash = _layout != null ? _layout.Hash : 0u,
                 ContentHash = _contentHash
             });
+        }
+
+        private void RaiseLayoutReady(MapSeedInfo info)
+        {
+            _isLayoutReady = true;
+            try
+            {
+                LayoutReady?.Invoke(_layout, info);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError($"[{nameof(MapStateNet)}] LayoutReady handler failed: {exception.Message}");
+            }
+        }
+
+        private void RaiseLayoutReleased()
+        {
+            if (!_isLayoutReady)
+            {
+                return;
+            }
+
+            _isLayoutReady = false;
+            LayoutReleased?.Invoke();
         }
 
         private void HandleWorldReady(NetworkConnectionToClient conn, WorldReadyMessage message)
