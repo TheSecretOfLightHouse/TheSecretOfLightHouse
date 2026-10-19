@@ -21,7 +21,55 @@ MonoBehaviour:
     RefIds:
     - rid: -2
       type: {class: , ns: , asm: }
-    - rid: 149322908304670801
+    - rid: 149322908304671296
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 1
+          m_Value1: 0
+        Name: Monster
+        m_Value: {fileID: 0}
+    - rid: 149322908304671297
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 3939507408910004024
+          m_Value1: 5776833759762421790
+        Name: Boat
+        m_Value: {fileID: 0}
+    - rid: 149322908304671298
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 9724891354851918075
+          m_Value1: 17122638825611180285
+        Name: "\uC21C\uCC30 \uB300\uAE30 \uCD5C\uC18C"
+        m_Value: 1
+    - rid: 149322908304671299
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 4296321811690205611
+          m_Value1: 13006404833662482759
+        Name: "\uC21C\uCC30 \uB300\uAE30 \uCD5C\uB300"
+        m_Value: 3
+    - rid: 149322908304671300
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 1108972351930673315
+          m_Value1: 12325857350651331740
+        Name: "\uACF5\uACA9 \uC7AC\uC0AC\uC6A9 \uC2DC\uAC04"
+        m_Value: 2
+    - rid: 149322908304671301
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 1276705729408019489
+          m_Value1: 1459792126966936505
+        Name: "\uC644\uB8CC \uACF5\uACA9 \uC7AC\uC0AC\uC6A9 \uC2DC\uAC04"
+        m_Value: 0
+    - rid: 149322908304671308
       type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         GUID:
@@ -29,7 +77,7 @@ MonoBehaviour:
           m_Value1: 0
         Name: 
         m_Value: {fileID: 0}
-    - rid: 149322908304670805
+    - rid: 149322908304671312
       type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         GUID:
@@ -37,7 +85,7 @@ MonoBehaviour:
           m_Value1: 0
         Name: 
         m_Value: {fileID: 0}
-    - rid: 149322908304670814
+    - rid: 149322908304671321
       type: {class: Start, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -48,10 +96,10 @@ MonoBehaviour:
         m_Parent:
           rid: -2
         m_Child:
-          rid: 149322908304670815
+          rid: 149322908304671322
         Repeat: 1
         AllowMultipleRepeatsPerTick: 0
-    - rid: 149322908304670815
+    - rid: 149322908304671322
       type: {class: SequenceComposite, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -60,64 +108,16 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670814
+          rid: 149322908304671321
         m_Children:
-        - rid: 149322908304670822
-        - rid: 149322908304670823
-        - rid: 149322908304670824
-        - rid: 149322908304670825
-        - rid: 149322908304670826
-        - rid: 149322908304670827
+        - rid: 149322908304671323
+        - rid: 149322908304671324
+        - rid: 149322908304671325
+        - rid: 149322908304671326
+        - rid: 149322908304671327
+        - rid: 149322908304671328
         m_RegisteredObservers: []
-    - rid: 149322908304670816
-      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
-      data:
-        GUID:
-          m_Value0: 1
-          m_Value1: 0
-        Name: Monster
-        m_Value: {fileID: 0}
-    - rid: 149322908304670817
-      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
-      data:
-        GUID:
-          m_Value0: 3939507408910004024
-          m_Value1: 5776833759762421790
-        Name: Boat
-        m_Value: {fileID: 0}
-    - rid: 149322908304670818
-      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
-      data:
-        GUID:
-          m_Value0: 9724891354851918075
-          m_Value1: 17122638825611180285
-        Name: "\uC21C\uCC30 \uB300\uAE30 \uCD5C\uC18C"
-        m_Value: 1
-    - rid: 149322908304670819
-      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
-      data:
-        GUID:
-          m_Value0: 4296321811690205611
-          m_Value1: 13006404833662482759
-        Name: "\uC21C\uCC30 \uB300\uAE30 \uCD5C\uB300"
-        m_Value: 3
-    - rid: 149322908304670820
-      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
-      data:
-        GUID:
-          m_Value0: 1108972351930673315
-          m_Value1: 12325857350651331740
-        Name: "\uACF5\uACA9 \uC7AC\uC0AC\uC6A9 \uC2DC\uAC04"
-        m_Value: 2
-    - rid: 149322908304670821
-      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
-      data:
-        GUID:
-          m_Value0: 1276705729408019489
-          m_Value1: 1459792126966936505
-        Name: "\uC644\uB8CC \uACF5\uACA9 \uC7AC\uC0AC\uC6A9 \uC2DC\uAC04"
-        m_Value: 0
-    - rid: 149322908304670822
+    - rid: 149322908304671323
       type: {class: ReadMonsterSettingsAction, ns: Lighthouse.Monsters.AI.Server, asm: Lighthouse.Runtime}
       data:
         ID:
@@ -126,18 +126,18 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670815
+          rid: 149322908304671322
         _self:
-          rid: 149322908304670816
+          rid: 149322908304671296
         _targetBoat:
-          rid: 149322908304670817
+          rid: 149322908304671297
         _patrolWaitMin:
-          rid: 149322908304670818
+          rid: 149322908304671298
         _patrolWaitMax:
-          rid: 149322908304670819
+          rid: 149322908304671299
         _cooldownSeconds:
-          rid: 149322908304670820
-    - rid: 149322908304670823
+          rid: 149322908304671300
+    - rid: 149322908304671324
       type: {class: SetVariableValueAction, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -146,12 +146,12 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670815
+          rid: 149322908304671322
         Variable:
-          rid: 149322908304670817
+          rid: 149322908304671297
         Value:
-          rid: 149322908304670801
-    - rid: 149322908304670824
+          rid: 149322908304671308
+    - rid: 149322908304671325
       type: {class: ParallelAnyComposite, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -160,12 +160,12 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670815
+          rid: 149322908304671322
         m_Children:
-        - rid: 149322908304670828
-        - rid: 149322908304670829
+        - rid: 149322908304671329
+        - rid: 149322908304671330
         m_RegisteredObservers: []
-    - rid: 149322908304670825
+    - rid: 149322908304671326
       type: {class: RepeatUntilFailModifier, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -174,11 +174,11 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670815
+          rid: 149322908304671322
         m_Child:
-          rid: 149322908304670830
+          rid: 149322908304671331
         m_AllowMultipleRepeatsPerTick: 0
-    - rid: 149322908304670826
+    - rid: 149322908304671327
       type: {class: SetVariableValueAction, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -187,12 +187,12 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670815
+          rid: 149322908304671322
         Variable:
-          rid: 149322908304670817
+          rid: 149322908304671297
         Value:
-          rid: 149322908304670805
-    - rid: 149322908304670827
+          rid: 149322908304671312
+    - rid: 149322908304671328
       type: {class: ReturnToPatrolAction, ns: Lighthouse.Monsters.AI.Server, asm: Lighthouse.Runtime}
       data:
         ID:
@@ -201,12 +201,12 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670815
+          rid: 149322908304671322
         _self:
-          rid: 149322908304670816
+          rid: 149322908304671296
         _targetBoat:
-          rid: 149322908304670817
-    - rid: 149322908304670828
+          rid: 149322908304671297
+    - rid: 149322908304671329
       type: {class: RepeaterModifier, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -215,11 +215,11 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670824
+          rid: 149322908304671325
         m_Child:
-          rid: 149322908304670831
+          rid: 149322908304671332
         m_AllowMultipleRepeatsPerTick: 0
-    - rid: 149322908304670829
+    - rid: 149322908304671330
       type: {class: RepeatUntilSuccessModifier, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -228,11 +228,11 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670824
+          rid: 149322908304671325
         m_Child:
-          rid: 149322908304670832
+          rid: 149322908304671333
         m_AllowMultipleRepeatsPerTick: 0
-    - rid: 149322908304670830
+    - rid: 149322908304671331
       type: {class: SequenceComposite, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -241,12 +241,12 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670825
+          rid: 149322908304671326
         m_Children:
-        - rid: 149322908304670833
-        - rid: 149322908304670834
+        - rid: 149322908304671334
+        - rid: 149322908304671335
         m_RegisteredObservers: []
-    - rid: 149322908304670831
+    - rid: 149322908304671332
       type: {class: SequenceComposite, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -255,12 +255,12 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670828
+          rid: 149322908304671329
         m_Children:
-        - rid: 149322908304670835
-        - rid: 149322908304670836
+        - rid: 149322908304671336
+        - rid: 149322908304671337
         m_RegisteredObservers: []
-    - rid: 149322908304670832
+    - rid: 149322908304671333
       type: {class: AcquireBoatTargetAction, ns: Lighthouse.Monsters.AI.Server, asm: Lighthouse.Runtime}
       data:
         ID:
@@ -269,12 +269,12 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670829
+          rid: 149322908304671330
         _self:
-          rid: 149322908304670816
+          rid: 149322908304671296
         _targetBoat:
-          rid: 149322908304670817
-    - rid: 149322908304670833
+          rid: 149322908304671297
+    - rid: 149322908304671334
       type: {class: ConditionalGuardModifier, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -283,14 +283,14 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670830
+          rid: 149322908304671331
         m_Child:
-          rid: 149322908304670837
+          rid: 149322908304671338
         m_Conditions:
-        - rid: 149322908304670838
+        - rid: 149322908304671339
         m_RequiresAllConditions: 0
         m_ObserverType: 0
-    - rid: 149322908304670834
+    - rid: 149322908304671335
       type: {class: MantaRecoveryAction, ns: Lighthouse.Monsters.AI.Server, asm: Lighthouse.Runtime}
       data:
         ID:
@@ -299,12 +299,12 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670830
+          rid: 149322908304671331
         _self:
-          rid: 149322908304670816
+          rid: 149322908304671296
         _targetBoat:
-          rid: 149322908304670817
-    - rid: 149322908304670835
+          rid: 149322908304671297
+    - rid: 149322908304671336
       type: {class: WaitRangeAction, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         ID:
@@ -313,12 +313,12 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670831
+          rid: 149322908304671332
         Min:
-          rid: 149322908304670818
+          rid: 149322908304671298
         Max:
-          rid: 149322908304670819
-    - rid: 149322908304670836
+          rid: 149322908304671299
+    - rid: 149322908304671337
       type: {class: PatrolToPointAction, ns: Lighthouse.Monsters.AI.Server, asm: Lighthouse.Runtime}
       data:
         ID:
@@ -327,12 +327,12 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670831
+          rid: 149322908304671332
         _self:
-          rid: 149322908304670816
+          rid: 149322908304671296
         _targetBoat:
-          rid: 149322908304670817
-    - rid: 149322908304670837
+          rid: 149322908304671297
+    - rid: 149322908304671338
       type: {class: MantaRiseAction, ns: Lighthouse.Monsters.AI.Server, asm: Lighthouse.Runtime}
       data:
         ID:
@@ -341,20 +341,20 @@ MonoBehaviour:
         Graph:
           rid: 6255968569297207368
         m_Parent:
-          rid: 149322908304670833
+          rid: 149322908304671334
         _self:
-          rid: 149322908304670816
+          rid: 149322908304671296
         _targetBoat:
-          rid: 149322908304670817
-    - rid: 149322908304670838
+          rid: 149322908304671297
+    - rid: 149322908304671339
       type: {class: BoatTrackableCondition, ns: Lighthouse.Monsters.AI.Server, asm: Lighthouse.Runtime}
       data:
         Graph:
           rid: 6255968569297207368
         Self:
-          rid: 149322908304670816
+          rid: 149322908304671296
         TargetBoat:
-          rid: 149322908304670817
+          rid: 149322908304671297
     - rid: 6255968569297207368
       type: {class: BehaviorGraphModule, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
@@ -366,8 +366,8 @@ MonoBehaviour:
           rid: 6255968569297207369
         BlackboardGroupReferences: []
         Root:
-          rid: 149322908304670814
-        m_VersionTimestamp: 639280157426180118
+          rid: 149322908304671321
+        m_VersionTimestamp: 639280653223272672
     - rid: 6255968569297207369
       type: {class: BlackboardReference, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
@@ -378,12 +378,12 @@ MonoBehaviour:
       type: {class: Blackboard, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
         m_Variables:
-        - rid: 149322908304670816
-        - rid: 149322908304670817
-        - rid: 149322908304670818
-        - rid: 149322908304670819
-        - rid: 149322908304670820
-        - rid: 149322908304670821
+        - rid: 149322908304671296
+        - rid: 149322908304671297
+        - rid: 149322908304671298
+        - rid: 149322908304671299
+        - rid: 149322908304671300
+        - rid: 149322908304671301
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -417,7 +417,7 @@ MonoBehaviour:
   - rid: 6255968636935340476
   - rid: 6255968636935340699
   - rid: 6255968636935340700
-  m_VersionTimestamp: 639280157426180118
+  m_VersionTimestamp: 639280653223272672
   m_SerializedVersion: 3
   m_DebugInfo: {fileID: 48162156267709947}
   m_RuntimeGraph: {fileID: -1276845571039540674}
@@ -626,9 +626,9 @@ MonoBehaviour:
       Tooltip: 
     NamedChildren: []
     IsPlaceholder: 0
-  - Name: "\uBC30 \uC544\uB798\uC5D0\uC11C \uC0C1\uC2B9 \uD0C0\uACA9"
-    Story: "[Self]\uAC00 [TargetBoat] \uC544\uB798\uB85C \uC811\uADFC\uD574 \uD0C0\uACA9\uD558\uACE0
-      \uC7A0\uC218\uD55C\uB2E4"
+  - Name: "\uAC00\uC624\uB9AC \uC7A0\uC218 \uC811\uADFC"
+    Story: "[Self]\uAC00 [TargetBoat] \uC55E\uC758 \uC124\uCE58 \uC2DC\uC791\uC810\uC73C\uB85C
+      \uC7A0\uC218 \uC811\uADFC\uD55C\uB2E4"
     RuntimeTypeString: Lighthouse.Monsters.AI.Server.MantaRiseAction, Lighthouse.Runtime,
       Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     RuntimeTypeID:
@@ -657,9 +657,9 @@ MonoBehaviour:
     Variables: []
     NamedChildren: []
     IsPlaceholder: 0
-  - Name: "\uAC00\uC624\uB9AC \uC7A0\uC218 \uD6C4 \uD68C\uBCF5"
-    Story: "[Self]\uAC00 [TargetBoat] \uACF5\uACA9 \uB4A4 \uC7AC\uC0AC\uC6A9 \uC2DC\uAC04\uC744
-      \uAE30\uB2E4\uB9B0\uB2E4"
+  - Name: "\uAC00\uC624\uB9AC \uD68C\uBCF5 \uC9C4\uC785"
+    Story: "[Self]\uAC00 \uACF5\uACA9\uC744 \uB9C8\uCE58\uACE0 \uD68C\uBCF5 \uC0C1\uD0DC\uB85C
+      \uB4E4\uC5B4\uAC04\uB2E4"
     RuntimeTypeString: Lighthouse.Monsters.AI.Server.MantaRecoveryAction, Lighthouse.Runtime,
       Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     RuntimeTypeID:
@@ -1994,7 +1994,7 @@ MonoBehaviour:
   - rid: 6255968591876981300
   - rid: 6255968591876981302
   - rid: 6255968598240264635
-  m_VersionTimestamp: 639277638059420886
+  m_VersionTimestamp: 639280329221569439
   m_CommandBuffer:
     m_Commands: []
   m_RuntimeBlackboardAsset: {fileID: 8049932104730354357}
@@ -2073,10 +2073,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c02bb70996b49eba31d0c206e28da24, type: 3}
   m_Name: MantaBehavior Blackboard
   m_EditorClassIdentifier: 
-  VersionTimestamp: 639277638059420886
+  VersionTimestamp: 639280329221569439
   AssetID:
-    m_Value0: 6076000924819639988
-    m_Value1: 13208146473720379097
+    m_Value0: 10726297966285459388
+    m_Value1: 3465807749850317995
   m_Blackboard:
     m_Variables:
     - rid: 6255968569297207376

@@ -6,6 +6,8 @@ namespace Lighthouse.Monsters.AI.Rules
         Approaching,
         Preparing,
         Rising,
-        Diving
+        Diving,
+        Discharging,
+        Laying
     }
 }

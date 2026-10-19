@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Lighthouse.Monsters.AI.Server
 {
     [Serializable]
-    [NodeDescription(name: "배 아래에서 상승 타격", story: "[Self]가 [TargetBoat] 아래로 접근해 타격하고 잠수한다",
+    [NodeDescription(name: "배 앞쪽 꼬리 전깃줄 설치", story: "[Self]가 [TargetBoat] 앞을 가로질러 꼬리로 전깃줄을 남긴다",
         category: "행동/등대/몬스터", id: "0f8ac72a2b254a95aa97ef29d412d108")]
     public sealed class MantaRiseAction : MonsterAction
     {
