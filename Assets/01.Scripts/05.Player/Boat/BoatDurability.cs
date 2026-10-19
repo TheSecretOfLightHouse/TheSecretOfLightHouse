@@ -38,7 +38,7 @@ public sealed class BoatDurability : NetworkBehaviour
     }
 
     [Server]
-    public void ApplyDamage(float damage)
+    public void ApplyDamage(float damage, BoatDamageType damageType = BoatDamageType.None)
     {
         if (_isWrecked || damage <= 0f || float.IsNaN(damage) || float.IsInfinity(damage))
         {
