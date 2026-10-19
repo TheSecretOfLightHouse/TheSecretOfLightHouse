@@ -204,6 +204,42 @@ namespace Lighthouse.Workbench.Net
             return removed;
         }
 
+        // Mafia only (shared inventory decision, checked by the caller): takes deposited base resources of one recipe
+        // back into the sender's inventory. Finished modules never come out (2026-10-19 trial). If the recipe empties,
+        // its module record goes too, so the existence cap is not held by an empty recipe.
+        [Server]
+        public int Withdraw(PlayerInventory inventory, int recipeId, int resourceId, int requestedAmount, ModuleLedger ledger)
+        {
+            int slot = _isCatalogValid ? _catalog.IndexOf(recipeId) : -1;
+
+            if (slot < 0 || !inventory || ledger == null || requestedAmount <= 0)
+            {
+                return 0;
+            }
+
+            WorkbenchProgress progress = _progress[slot];
+            int index = progress.Recipe.IndexOf(resourceId);
+            int amount = index >= 0 ? Math.Min(requestedAmount, progress.GetDepositedAt(index)) : 0;
+
+            // The inventory takes it first, so a full inventory leaves the bench untouched.
+            if (amount <= 0 || !inventory.TryAdd(resourceId, amount))
+            {
+                return 0;
+            }
+
+            progress.Remove(resourceId, amount);
+            _deposited[_offsets[slot] + index] = progress.GetDepositedAt(index);
+
+            if (!progress.IsStarted && _craftingModuleIds[slot] != 0)
+            {
+                ledger.Remove(_craftingModuleIds[slot]);
+                _craftingModuleIds[slot] = 0;
+                _contributions[slot].Clear();
+            }
+
+            return amount;
+        }
+
         // A full recipe waits on the bench until someone presses craft (2026-10-17 decision). Requests are handled
         // one at a time on the server, so when two players press together only the first finds it still full.
         [Server]
@@ -217,6 +253,33 @@ namespace Lighthouse.Workbench.Net
             }
 
             Complete(actorId, slot, ledger);
+            return true;
+        }
+
+        // Hands one stored module of this recipe to whoever installs it. The caller moves the ledger state on.
+        [Server]
+        public bool TryTakeStored(int recipeId, out uint moduleId)
+        {
+            moduleId = 0;
+
+            if (!_storedModules.TryGetValue(recipeId, out List<uint> modules) || modules.Count == 0)
+            {
+                return false;
+            }
+
+            int last = modules.Count - 1;
+            moduleId = modules[last];
+            modules.RemoveAt(last);
+
+            if (modules.Count > 0)
+            {
+                _storedCounts[recipeId] = modules.Count;
+            }
+            else
+            {
+                _storedCounts.Remove(recipeId);
+            }
+
             return true;
         }
 

@@ -15,6 +15,11 @@ namespace Lighthouse.Interaction.Requests.Net
         RepairBoat = 10,
         Rescue = 11,
         // Finishes a workbench recipe whose ingredients are all in (2026-10-17: completion is a separate press).
-        Craft = 12
+        Craft = 12,
+        // Lighthouse match flow (2026-10-19 trial): start the ritual once fully repaired, pick up an abyss crystal
+        // after the summon, and spend crystals to relight the lantern room.
+        StartRitual = 13,
+        CollectAbyssCrystal = 14,
+        IgniteLantern = 15
     }
 }
