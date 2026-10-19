@@ -18,6 +18,7 @@ namespace Lighthouse.World.MapGeneration.Rules
             hash.Add(config.MaxBuildAttempts);
             hash.Add(config.RouteCellSize);
             hash.Add(config.ShipClearance);
+            hash.Add(config.SailingChannelWidth);
             AppendResources(hash, config.Resources);
             AppendArchetypes(hash, config);
             AppendZones(hash, config.Zones);
@@ -112,7 +113,7 @@ namespace Lighthouse.World.MapGeneration.Rules
                 hash.Add(zone.OuterRadius);
                 hash.Add(zone.MinIslands);
                 hash.Add(zone.MaxIslands);
-                hash.Add(zone.MinIslandDistance);
+                hash.Add(zone.ExtraIslandSpacing);
                 hash.Add(zone.MinReefs);
                 hash.Add(zone.MaxReefs);
                 hash.Add(zone.MinReefDistance);

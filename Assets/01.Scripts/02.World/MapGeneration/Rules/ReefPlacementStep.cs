@@ -27,7 +27,13 @@ namespace Lighthouse.World.MapGeneration.Rules
         private static void PlaceInZone(MapContext context, SeededRandom random, ZoneRing ring, List<Vector2> accepted, List<Vector2> candidates)
         {
             ZoneConfig config = ring.Config;
-            RingDomain domain = new RingDomain(Vector2.zero, ring.InnerRadius, ring.OuterRadius);
+            float margin = context.Config.GetReefZoneMargin(config.ReefRadius);
+            if (!ring.TryCreateDomain(margin, out RingDomain domain))
+            {
+                context.AddIssue($"{ring.Zone}: 구역 폭이 암초 마진({margin})의 2배 이하");
+                return;
+            }
+
             if (!PoissonDiskSampler.TrySample(random, domain, config.MinReefDistance, int.MaxValue, candidates, accepted))
             {
                 context.AddIssue($"{ring.Zone}: 암초 후보 샘플링 인자가 올바르지 않음");

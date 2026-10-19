@@ -18,6 +18,7 @@ namespace Lighthouse.World.MapGeneration.Rules
         [SerializeField, Min(1)] private int _maxBuildAttempts = 8;
         [SerializeField, Min(1f)] private float _routeCellSize = 10f;
         [SerializeField, Min(0f)] private float _shipClearance = 6f;
+        [SerializeField, Min(0f)] private float _sailingChannelWidth = 24f;
 
         public IslandArchetype LighthouseIsland => _lighthouseIsland;
         public ResourceCatalog Resources => _resources;
@@ -25,12 +26,43 @@ namespace Lighthouse.World.MapGeneration.Rules
         public int MaxBuildAttempts => _maxBuildAttempts;
         public float RouteCellSize => _routeCellSize;
         public float ShipClearance => _shipClearance;
+        public float SailingChannelWidth => _sailingChannelWidth;
 
         public IReadOnlyList<IslandArchetype> Archetypes => _archetypes ?? Array.Empty<IslandArchetype>();
 
         public IReadOnlyList<ZoneConfig> Zones => _zones ?? Array.Empty<ZoneConfig>();
 
         public IReadOnlyList<ResourceFloor> ResourceFloors => _resourceFloors ?? Array.Empty<ResourceFloor>();
+
+        public float MaxIslandRadius
+        {
+            get
+            {
+                float maxRadius = 0f;
+                IReadOnlyList<IslandArchetype> list = Archetypes;
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (list[i] != null && list[i].Radius > maxRadius)
+                    {
+                        maxRadius = list[i].Radius;
+                    }
+                }
+
+                return maxRadius;
+            }
+        }
+
+        public float IslandZoneMargin => MaxIslandRadius + _sailingChannelWidth * 0.5f;
+
+        public float GetReefZoneMargin(float reefRadius)
+        {
+            return reefRadius + _sailingChannelWidth * 0.5f;
+        }
+
+        public float GetMinIslandDistance(ZoneConfig zone)
+        {
+            return MaxIslandRadius * 2f + _sailingChannelWidth + (zone != null ? zone.ExtraIslandSpacing : 0f);
+        }
 
         public bool TryGetArchetype(int id, out IslandArchetype archetype)
         {

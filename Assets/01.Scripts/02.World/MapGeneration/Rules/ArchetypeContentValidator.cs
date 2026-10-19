@@ -58,7 +58,7 @@ namespace Lighthouse.World.MapGeneration.Rules
                 ValidateQuota(archetype, tag, errors);
             }
 
-            ValidateVariants(archetype, tag, errors);
+            ArchetypeVariantValidator.Validate(archetype, tag, errors);
             ValidateResources(archetype, tag, catalog, errors);
         }
 
@@ -72,28 +72,6 @@ namespace Lighthouse.World.MapGeneration.Rules
             if (archetype.HasMaxLimit && archetype.MaxPerMap < archetype.MinPerMap)
             {
                 errors.Add($"{tag}: MaxPerMap({archetype.MaxPerMap}) < MinPerMap({archetype.MinPerMap})");
-            }
-        }
-
-        private static void ValidateVariants(IslandArchetype archetype, string tag, List<string> errors)
-        {
-            if (archetype.Variants.Count == 0)
-            {
-                errors.Add($"{tag}: Variants 비어 있음");
-            }
-
-            if (archetype.Variants.Count > byte.MaxValue)
-            {
-                errors.Add($"{tag}: Variants는 {byte.MaxValue}개 이하여야 함");
-            }
-
-            for (int i = 0; i < archetype.Variants.Count; i++)
-            {
-                IslandVariant variant = archetype.Variants[i];
-                if (variant == null || variant.Prefab == null || variant.Weight <= 0f)
-                {
-                    errors.Add($"{tag}: Variants[{i}] 프리팹 없음 또는 가중치 0 이하");
-                }
             }
         }
 
