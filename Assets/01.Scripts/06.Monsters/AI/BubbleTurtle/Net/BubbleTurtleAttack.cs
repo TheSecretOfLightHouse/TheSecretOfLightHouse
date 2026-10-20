@@ -18,6 +18,8 @@ namespace Lighthouse.Monsters.AI.Net
         [SyncVar] private float _activePlaybackSpeed = 1f;
         [SyncVar] private uint _attackSequence;
         [SyncVar] private bool _isAttacking;
+        [SyncVar] private bool _hasFired;
+        [SyncVar] private float _preparationDuration;
 
         private SeaMonster _monster;
         private MonsterMotion _motion;
@@ -31,9 +33,10 @@ namespace Lighthouse.Monsters.AI.Net
         private double _fireAt;
         private double _endsAt;
         private double _nextAttackAt;
-        private bool _hasFired;
 
         public bool IsAttacking => _isAttacking;
+        public bool HasFired => _hasFired;
+        public float PreparationDuration => _preparationDuration;
         public bool HasCompleted { get; private set; }
         public double AttackStartedAt => _attackStartedAt;
         public float ActivePlaybackSpeed => _activePlaybackSpeed;
@@ -152,7 +155,8 @@ namespace Lighthouse.Monsters.AI.Net
             _activePlaybackSpeed = _playbackSpeed;
             _attackStartedAt = NetworkTime.time;
             double duration = _attackClip.length / _activePlaybackSpeed;
-            _fireAt = _attackStartedAt + duration * _fireNormalizedTime;
+            _preparationDuration = (float)(duration * _fireNormalizedTime);
+            _fireAt = _attackStartedAt + _preparationDuration;
             _endsAt = _attackStartedAt + duration;
             _attackSequence++;
             _isAttacking = true;

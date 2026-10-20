@@ -133,7 +133,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1600035957298383073, guid: 264c4f6a83299204881205b550c5f4bc, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1837855740687191228, guid: 264c4f6a83299204881205b550c5f4bc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -202,7 +202,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8612343004966537504, guid: ff5fd1403cac7a14e9190634981eb90b, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8993372868849537946, guid: ff5fd1403cac7a14e9190634981eb90b, type: 3}
       propertyPath: m_LocalPosition.x
@@ -303,7 +303,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3061826974098303317, guid: b1463a78e6ed26841b068d797a23320c, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8555244942052610540, guid: b1463a78e6ed26841b068d797a23320c, type: 3}
       propertyPath: sceneId
@@ -1021,7 +1021,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5239930098807933430, guid: ee2030eb01e0ca345bd72f0efe20e8e3, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5708818747357937531, guid: ee2030eb01e0ca345bd72f0efe20e8e3, type: 3}
       propertyPath: sceneId
@@ -1273,17 +1273,13 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 483196587154417994, guid: 928c6cb5d2c645946873e6ffd392dec7, type: 3}
-      propertyPath: m_Height
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 483196587154417994, guid: 928c6cb5d2c645946873e6ffd392dec7, type: 3}
-      propertyPath: m_Center.y
-      value: 0.15
-      objectReference: {fileID: 0}
     - target: {fileID: 622197146839384064, guid: 928c6cb5d2c645946873e6ffd392dec7, type: 3}
       propertyPath: m_Name
       value: BubbleTurtle
+      objectReference: {fileID: 0}
+    - target: {fileID: 5186254820659605411, guid: 928c6cb5d2c645946873e6ffd392dec7, type: 3}
+      propertyPath: sceneId
+      value: 495939610
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
