@@ -9,6 +9,7 @@ using Lighthouse.Tower.Net;
 using Lighthouse.Tower.Rules;
 using Lighthouse.Workbench.Net;
 using Lighthouse.Workbench.Rules;
+using Lighthouse.Workbench.View;
 using Mirror;
 using UnityEngine;
 
@@ -30,6 +31,17 @@ namespace Lighthouse.Dev.Tower
         private VotingNetworkController _voting;
         [SerializeField]
         private WorkbenchNet _workbench;
+        [Tooltip("In rack mode the mafia takes resources at the rack itself instead of with buttons here.")]
+        [SerializeField]
+        private WorkbenchRack _rack;
+        [Header("Screen mode (2026-10-18 UI), kept to compare with the rack")]
+        [SerializeField]
+        private GameObject _workbenchScreen;
+        [SerializeField]
+        private Behaviour _workbenchPanel;
+        [Tooltip("Plain bench block shown instead of the rack; walk up to it and press the screen's key.")]
+        [SerializeField]
+        private GameObject _screenBox;
 
         private readonly List<uint> _actors = new List<uint>();
         private InteractionRelay _relay;
@@ -38,6 +50,8 @@ namespace Lighthouse.Dev.Tower
         private string _lastResult = "-";
         private string _lastIdentity = "-";
         private Vector2 _scroll;
+        // Local to this machine: each tester may use either way of working the bench; the server rules are the same.
+        private bool _isRackMode = true;
 
         private void OnEnable()
         {
@@ -47,8 +61,27 @@ namespace Lighthouse.Dev.Tower
             }
         }
 
+        private void Start()
+        {
+            EnsureScreenBox();
+            ApplyWorkbenchMode();
+        }
+
+        private void Update()
+        {
+            if (_rack)
+            {
+                _rack.CanWithdraw = _isRackMode && CanWithdraw();
+            }
+        }
+
         private void OnDisable()
         {
+            if (_rack)
+            {
+                _rack.CanWithdraw = false;
+            }
+
             if (_voting)
             {
                 _voting.IdentityResponded -= HandleIdentityResponded;
@@ -72,6 +105,12 @@ namespace Lighthouse.Dev.Tower
             GUILayout.BeginArea(new Rect((Screen.width - Width) * 0.5f, 10f, Width, Screen.height * 0.6f), GUI.skin.box);
             _scroll = GUILayout.BeginScrollView(_scroll);
             GUILayout.Label($"판 진행 (JH04 시험안)  마지막 요청: {_lastResult}");
+
+            if (_rack && GUILayout.Button(_isRackMode ? "작업대: 선반 (눌러서 화면 UI로)" : "작업대: 화면 UI (눌러서 선반으로)"))
+            {
+                _isRackMode = !_isRackMode;
+                ApplyWorkbenchMode();
+            }
 
             if (!_round.IsStarted)
             {
@@ -323,11 +362,77 @@ namespace Lighthouse.Dev.Tower
             DrawWithdraw();
         }
 
+        // Scenes set up before the box existed have none assigned, so build the same 2x1x1 block on the rack's spot.
+        // The screen measures its range from the bench, which is where the rack and this box stand.
+        private void EnsureScreenBox()
+        {
+            if (_screenBox || !_rack || !_workbench)
+            {
+                return;
+            }
+
+            _screenBox = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            _screenBox.name = "WorkbenchBox";
+            Transform rack = _rack.transform;
+            _screenBox.transform.SetParent(_workbench.transform, false);
+            _screenBox.transform.SetPositionAndRotation(rack.position + Vector3.up * 0.5f, rack.rotation);
+            _screenBox.transform.localScale = new Vector3(2f, 1f, 1f);
+
+            // The bench's own (hidden) block keeps the project's lit material, which a bare primitive may lack in builds.
+            Renderer benchRenderer = _workbench.GetComponent<Renderer>();
+
+            if (benchRenderer)
+            {
+                _screenBox.GetComponent<Renderer>().sharedMaterial = benchRenderer.sharedMaterial;
+            }
+
+            _screenBox.SetActive(false);
+        }
+
+        // Rack mode shows the rack; screen mode shows a plain box where the screen opens. Both use F, so only one is on.
+        private void ApplyWorkbenchMode()
+        {
+            if (!_rack)
+            {
+                return;
+            }
+
+            _rack.IsInputEnabled = _isRackMode;
+            _rack.gameObject.SetActive(_isRackMode);
+
+            if (_screenBox)
+            {
+                _screenBox.SetActive(!_isRackMode);
+            }
+
+            if (_workbenchScreen)
+            {
+                _workbenchScreen.SetActive(!_isRackMode);
+            }
+
+            if (_workbenchPanel)
+            {
+                _workbenchPanel.enabled = !_isRackMode;
+            }
+        }
+
+        // Same window as the buttons below: the own mafia while repairing. The server still checks the role.
+        private bool CanWithdraw()
+        {
+            return _round && _round.isActiveAndEnabled && _round.IsStarted && _round.IsOwnMafia && _match && _match.Phase == TowerPhase.Repairing;
+        }
+
         // Base resources only; finished modules never come out (2026-10-19 trial).
         private void DrawWithdraw()
         {
             if (!_workbench || !_workbench.Catalog || _match.Phase != TowerPhase.Repairing)
             {
+                return;
+            }
+
+            if (_rack && _isRackMode)
+            {
+                GUILayout.Label($"작업대 선반 앞에서 [{_rack.WithdrawKey}]로 재료를 1개씩 몰래 뺀다. 빈 자리는 모두에게 빨갛게 보인다.");
                 return;
             }
 
