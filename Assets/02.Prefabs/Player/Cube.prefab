@@ -278,6 +278,7 @@ MonoBehaviour:
   _boardingAnchor: {fileID: 2839268660018932046}
   _speed: 8
   _acceleration: 4
+  _recoilRecoveryDuration: 0.4
   _turnSpeed: 45
   _maxTurnAngle: 30
   _reloadDuration: 2
@@ -451,6 +452,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f0e1219151c796d448c5d66067b3bd47, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _propulsionPauseDuration: 0.3
 --- !u!114 &-3258935007551200130
 MonoBehaviour:
   m_ObjectHideFlags: 0
