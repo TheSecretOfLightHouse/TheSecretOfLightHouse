@@ -18,8 +18,7 @@ public sealed class StabilizerModule : BoatModule
     {
         get
         {
-            if (!isClient || !isOwned || !IsApplied
-                || !_boat || !_body || _body.isKinematic)
+            if (!isClient || !isOwned || !IsApplied || !_boat || !_body || _body.isKinematic)
             {
                 return false;
             }
