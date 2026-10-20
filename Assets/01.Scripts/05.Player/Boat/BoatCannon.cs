@@ -97,7 +97,19 @@ public sealed class BoatCannon : NetworkBehaviour
             return;
         }
 
-        _nextServerFireTime = NetworkTime.time + _boat.ReloadDuration;
+        float reloadDurationMultiplier = 1f;
+
+        if (owner.TryGetComponent(out PlayerPassiveController passiveController))
+        {
+            reloadDurationMultiplier = passiveController.GetReloadDurationMultiplier(_boat);
+        }
+
+
+        float reloadDuration = _boat.ReloadDuration * reloadDurationMultiplier;
+        Debug.Log($"{reloadDuration}");
+
+        _nextServerFireTime = NetworkTime.time + reloadDuration;
+
         Cannonball projectile = Instantiate(_projectilePrefab, _muzzle.position, _muzzle.rotation);
 
         projectile.Initialize(_muzzle.forward * _launchSpeed,_damage, _boatColliders, owner.GetComponentsInChildren<Collider>(true));

@@ -551,6 +551,7 @@ GameObject:
   - component: {fileID: 1196650481}
   - component: {fileID: 1196650485}
   - component: {fileID: 1196650486}
+  - component: {fileID: 1196650487}
   m_Layer: 0
   m_Name: HarvestServer
   m_TagString: Untagged
@@ -656,6 +657,21 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   _resourceCatalog: {fileID: 11400000, guid: 66c600a3b8a9d5140aa198f8483a1cb4, type: 2}
+--- !u!114 &1196650487
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1196650480}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c8b2f612c0d5b94b85f0328fbe34eed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
 --- !u!1 &1438448875
 GameObject:
   m_ObjectHideFlags: 0
@@ -928,7 +944,7 @@ Transform:
   m_GameObject: {fileID: 1737889639}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 3.92, y: 0, z: -5.99}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

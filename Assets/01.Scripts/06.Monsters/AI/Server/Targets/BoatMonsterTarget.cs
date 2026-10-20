@@ -33,7 +33,7 @@ namespace Lighthouse.Monsters.AI.Server
             }
 
             float previousDurability = _durability.CurrentDurability;
-            _durability.ApplyDamage(damage);
+            _durability.ApplyDamage(damage, BoatDamageType.Monster);
             return _durability.CurrentDurability < previousDurability;
         }
     }

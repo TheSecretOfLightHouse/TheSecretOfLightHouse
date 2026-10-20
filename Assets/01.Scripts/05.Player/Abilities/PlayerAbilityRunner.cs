@@ -1,8 +1,14 @@
 using System;
 using UnityEngine;
 
+[DisallowMultipleComponent]
+[RequireComponent(typeof(PlayerController))]
 public sealed class PlayerAbilityRunner : MonoBehaviour, IPlayerAbilitySource
 {
+    [SerializeField]
+    private PlayerAbility _jobAbility;
+
+    private PlayerController _player;
     private IPlayerAbility _activeAbility;
 
     public bool IsExecuting => IsAvailable(_activeAbility);
@@ -12,6 +18,32 @@ public sealed class PlayerAbilityRunner : MonoBehaviour, IPlayerAbilitySource
     public event Action<IPlayerAbility> AbilityStarted;
 
     public event Action<IPlayerAbility, bool> AbilityEnded;
+
+    private void Awake()
+    {
+        _player = GetComponent<PlayerController>();
+    }
+
+    private void OnEnable()
+    {
+        _player.AbilityRequested += HandleAbilityRequested;
+    }
+
+    private void OnDisable()
+    {
+        if (_player)
+        {
+            _player.AbilityRequested -= HandleAbilityRequested;
+        }
+
+        Cancel();
+    }
+
+    public void SetJobAbility(PlayerAbility ability)
+    {
+        Cancel();
+        _jobAbility = ability;
+    }
 
     public bool TryExecute(IPlayerAbility ability, IPlayerAbilityContext context)
     {
@@ -69,9 +101,14 @@ public sealed class PlayerAbilityRunner : MonoBehaviour, IPlayerAbilitySource
         Finish(true);
     }
 
-    private void OnDisable()
+    private void HandleAbilityRequested(PlayerController player)
     {
-        Cancel();
+        if (player != _player || !player.isActiveAndEnabled)
+        {
+            return;
+        }
+
+        TryExecute(_jobAbility, player);
     }
 
     private void Finish(bool cancelled)
