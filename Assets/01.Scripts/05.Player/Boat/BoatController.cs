@@ -25,9 +25,6 @@ public sealed class BoatController : NetworkBehaviour
     [SerializeField, Min(0f)]
     private float _turnSpeed = 45f;
 
-    [SerializeField, Range(0f, 179f)]
-    private float _maxTurnAngle = 30f;
-
     [SerializeField, Min(0.01f)]
     private float _reloadDuration = 2f;
 
@@ -65,9 +62,6 @@ public sealed class BoatController : NetworkBehaviour
     private float _nextBoardTime;
     private float _nextDisembarkTime;
     private float _nextFireTime;
-    private float _steeringReferenceHeading;
-    private bool _hasSteeringReference;
-    private bool _isSteering;
     private float _recoilEndTime;
     private bool _isWreckPresentationApplied;
 
@@ -79,10 +73,14 @@ public sealed class BoatController : NetworkBehaviour
     public Transform BoardingAnchor => _boardingAnchor ? _boardingAnchor : transform;
     public event Action<PlayerController> CannonFired;
 
+    private DashModule _dashModule;
+    [SerializeField, Min(1f)]
+    private float _dashAccelerationMultiplier = 4f;
+
     private void Awake()
     {
         ResolveReferences();
-        _steeringReferenceHeading = _rb.rotation.eulerAngles.y;
+        _dashModule = GetComponent<DashModule>();
     }
 
     private void Reset()
@@ -261,43 +259,37 @@ public sealed class BoatController : NetworkBehaviour
         }
 
         float turn = Mathf.Clamp(input.x, -1f, 1f) * _turnSpeed * fixedDeltaTime;
-        float currentHeading = _rb.rotation.eulerAngles.y;
-
-        // Spawn/authority callbacks can run before the owner is ready to set a heading.
         bool isSteering = !Mathf.Approximately(input.x, 0f);
-        if (!_hasSteeringReference || (_isSteering && !isSteering))
-        {
-            _steeringReferenceHeading = currentHeading;
-            _hasSteeringReference = true;
-        }
-        _isSteering = isSteering;
-
-        float currentAngle = Mathf.DeltaAngle(_steeringReferenceHeading, currentHeading);
-        float targetAngle = Mathf.Clamp(currentAngle + turn, -_maxTurnAngle, _maxTurnAngle);
-        float headingChange = Mathf.DeltaAngle(currentHeading, _steeringReferenceHeading + targetAngle);
         if (isSteering)
         {
-            headingChange = input.x > 0f
-                ? Mathf.Clamp(headingChange, 0f, Mathf.Abs(turn))
-                : Mathf.Clamp(headingChange, -Mathf.Abs(turn), 0f);
-
-            // Contact yaw must not overpower the owner's steering on the next physics step.
             Vector3 angularVelocity = _rb.angularVelocity;
             angularVelocity.y = 0f;
             _rb.angularVelocity = angularVelocity;
         }
-        Quaternion rotation = Quaternion.AngleAxis(headingChange, Vector3.up) * _rb.rotation;
+        Quaternion rotation = Quaternion.AngleAxis(turn, Vector3.up) * _rb.rotation;
         Vector3 forward = Vector3.ProjectOnPlane(rotation * Vector3.forward, Vector3.up).normalized;
-        Vector3 targetVelocity = forward * Mathf.Clamp(input.y, -1f, 1f) * _speed * config.SpeedMultiplier;
+        bool isDashing = _dashModule && _dashModule.isActiveAndEnabled && _dashModule.IsDashing && !config.InputLocked && input.y > 0f;
+
+        float dashMultiplier = isDashing ? _dashModule.SpeedMultiplier : 1f;
+
+        Vector3 targetVelocity = forward * Mathf.Clamp(input.y, -1f, 1f) * _speed * config.SpeedMultiplier * dashMultiplier;
         Vector3 velocity = _rb.linearVelocity;
         Vector3 horizontal = new Vector3(velocity.x, 0f, velocity.z);
         if (Time.time >= _recoilEndTime)
         {
-            float recovery = _recoilEndTime > 0f && _recoilRecoveryDuration > 0f
-                ? Mathf.SmoothStep(0f, 1f, (Time.time - _recoilEndTime) / _recoilRecoveryDuration)
-                : 1f;
-            horizontal = Vector3.MoveTowards(horizontal, targetVelocity,
-                _acceleration * config.AccelerationMultiplier * recovery * fixedDeltaTime);
+            float recovery = _recoilEndTime > 0f && _recoilRecoveryDuration > 0f ? Mathf.SmoothStep(0f, 1f, (Time.time - _recoilEndTime) / _recoilRecoveryDuration) : 1f;
+            if (isDashing)
+            {
+                horizontal = targetVelocity;
+            }
+            else
+            {
+                horizontal = Vector3.MoveTowards(
+                    horizontal,
+                    targetVelocity,
+                    _acceleration * config.AccelerationMultiplier
+                        * recovery * fixedDeltaTime);
+            }
         }
         _rb.linearVelocity = new Vector3(horizontal.x, velocity.y, horizontal.z);
 
@@ -316,9 +308,6 @@ public sealed class BoatController : NetworkBehaviour
 
         _rb.rotation = rotation;
         _rb.angularVelocity = Vector3.zero;
-        _steeringReferenceHeading = rotation.eulerAngles.y;
-        _hasSteeringReference = true;
-        _isSteering = false;
         return true;
     }
 
@@ -341,8 +330,6 @@ public sealed class BoatController : NetworkBehaviour
 
     public void Stop()
     {
-        _hasSteeringReference = false;
-        _isSteering = false;
         _recoilEndTime = 0f;
 
         if (!_rb || _rb.isKinematic)

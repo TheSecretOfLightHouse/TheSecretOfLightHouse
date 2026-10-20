@@ -142,6 +142,7 @@ public sealed class BoatModuleEquipment : NetworkBehaviour
             case BoatModuleType.Searchlight:
             case BoatModuleType.DepthAlarm:
             case BoatModuleType.Stabilizer:
+            case BoatModuleType.Dash:
                 return true;
 
             default:
@@ -161,6 +162,39 @@ public sealed class BoatModuleEquipment : NetworkBehaviour
 
         bool installed = TryInstall(_boat.Owner, BoatModuleType.Searchlight);
         Debug.Log($"[{nameof(BoatModuleEquipment)}] Searchlight installed: {installed}", this);
+    }
+
+    [ContextMenu("Test/Install Dash (No Inventory)")]
+    private void TestInstallDash()
+    {
+        if (!isServer)
+        {
+            Debug.LogWarning($"[{nameof(BoatModuleEquipment)}] Use the running server boat.", this);
+            return;
+        }
+
+        bool installed = TryInstall(_boat.Owner, BoatModuleType.Dash);
+        Debug.Log($"[{nameof(BoatModuleEquipment)}] Dash installed: {installed}", this);
+    }
+
+    [ContextMenu("Test/Install Stabilizer (No Inventory)")]
+    private void TestInstallStabilizer()
+    {
+        if (!isServer)
+        {
+            Debug.LogWarning(
+                $"[{nameof(BoatModuleEquipment)}] Use the running server boat.",
+                this);
+            return;
+        }
+
+        bool installed = TryInstall(
+            _boat.Owner,
+            BoatModuleType.Stabilizer);
+
+        Debug.Log(
+            $"[{nameof(BoatModuleEquipment)}] Stabilizer installed: {installed}",
+            this);
     }
 
     [ContextMenu("Test/Wreck Boat")]

@@ -26,6 +26,8 @@ GameObject:
   - component: {fileID: 4282980830530306134}
   - component: {fileID: 6195364816586340433}
   - component: {fileID: 8130014831599437415}
+  - component: {fileID: 6855842405852785272}
+  - component: {fileID: 4521843409491974565}
   m_Layer: 0
   m_Name: Boat
   m_TagString: Untagged
@@ -179,12 +181,12 @@ MonoBehaviour:
   _acceleration: 4
   _recoilRecoveryDuration: 0.4
   _turnSpeed: 45
-  _maxTurnAngle: 30
   _reloadDuration: 2
   _boardingDistance: 1.5
   _departureProtectionDuration: 3
   _reboardDelay: 1
   _requestInterval: 0.2
+  _dashAccelerationMultiplier: 4
 --- !u!114 &3114592292295683167
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -392,9 +394,45 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3bad5cac8ad3b54b9d9290b79f01e1c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   _searchlight: {fileID: 4352435221421980176}
   _fillLight: {fileID: 2858582978113428021}
   _beamRenderer: {fileID: 0}
+--- !u!114 &6855842405852785272
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 633692041676541165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4290d6349f066464397e200708868c63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _duration: 0.8
+  _speedMultiplier: 1.8
+  _cooldown: 3
+--- !u!114 &4521843409491974565
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 633692041676541165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cda75f42dd61bef4ca401be7b349e683, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
 --- !u!1 &1604020406682442671
 GameObject:
   m_ObjectHideFlags: 0

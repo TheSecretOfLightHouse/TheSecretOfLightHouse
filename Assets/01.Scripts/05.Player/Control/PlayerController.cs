@@ -121,6 +121,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _inputReader.FireRequested += HandleFireRequested;
         _inputReader.AbilityRequested += HandleAbilityRequested;
         _inputReader.JumpRequested += HandleJumpRequested;
+        _inputReader.DashRequested += HandleDashRequested;
 
         RefreshLocalControl();
 
@@ -291,6 +292,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
             _inputReader.FireRequested -= HandleFireRequested;
             _inputReader.AbilityRequested -= HandleAbilityRequested;
             _inputReader.JumpRequested -= HandleJumpRequested;
+            _inputReader.DashRequested -= HandleDashRequested;
         }
 
         ClearActionRequests();
@@ -677,6 +679,18 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _abilityRequested = true;
     }
 
+    private void HandleDashRequested()
+    {
+        if (!CanProcessLocalInput || IsDowned || !IsOnBoat)
+        {
+            return;
+        }
+
+        if (_boatController.TryGetComponent(out DashModule dashModule))
+        {
+            dashModule.RequestDash();
+        }
+    }
     private void ClearActionRequests()
     {
         _interactRequested = false;
