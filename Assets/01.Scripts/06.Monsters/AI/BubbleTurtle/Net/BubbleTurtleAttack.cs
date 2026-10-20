@@ -25,6 +25,8 @@ namespace Lighthouse.Monsters.AI.Net
         private MonsterAttackRange _range;
         private Rigidbody _body;
         private NetworkIdentity _projectileIdentity;
+        private BubbleProjectile _projectileTemplate;
+        private MonsterBoatTarget _targetBoat;
         private GameObject _target;
         private double _fireAt;
         private double _endsAt;
@@ -42,6 +44,7 @@ namespace Lighthouse.Monsters.AI.Net
         public bool IsCooldownReady => isServer && NetworkTime.time >= _nextAttackAt;
         public bool HasValidSetup => _attackClip != null && IsPositive(_attackClip.length)
             && _firePoint != null && _projectilePrefab != null && _projectileIdentity != null
+            && _projectileTemplate != null && _projectileTemplate.HasValidSettings
             && IsPositive(_playbackSpeed) && IsFinite(_fireNormalizedTime)
             && _fireNormalizedTime >= 0f && _fireNormalizedTime <= 1f;
 
@@ -56,6 +59,7 @@ namespace Lighthouse.Monsters.AI.Net
             if (_projectilePrefab != null)
             {
                 _projectileIdentity = _projectilePrefab.GetComponent<NetworkIdentity>();
+                _projectileTemplate = _projectilePrefab.GetComponent<BubbleProjectile>();
             }
         }
 
@@ -126,6 +130,12 @@ namespace Lighthouse.Monsters.AI.Net
                 return false;
             }
 
+            MonsterBoatTarget targetBoat = target.GetComponent<MonsterBoatTarget>();
+            if (targetBoat == null || !targetBoat.IsEligible)
+            {
+                return false;
+            }
+
             Vector3 direction = target.transform.position - transform.position;
             direction.y = 0f;
 
@@ -136,6 +146,7 @@ namespace Lighthouse.Monsters.AI.Net
 
             _motion.SetMovementLocked(true);
             _target = target;
+            _targetBoat = targetBoat;
             _hasFired = false;
             HasCompleted = false;
             _activePlaybackSpeed = _playbackSpeed;
@@ -171,6 +182,14 @@ namespace Lighthouse.Monsters.AI.Net
             Vector3 direction = _target.transform.position - _firePoint.position;
             Quaternion rotation = direction.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(direction, Vector3.up) : transform.rotation;
             GameObject projectile = Instantiate(_projectilePrefab, _firePoint.position, rotation);
+            BubbleProjectile movement = projectile.GetComponent<BubbleProjectile>();
+            if (movement == null || !movement.Initialize(_targetBoat, netIdentity))
+            {
+                Destroy(projectile);
+                Cancel();
+                return;
+            }
+
             NetworkServer.Spawn(projectile);
             ShotCount++;
             LastFiredAt = now;
@@ -187,6 +206,7 @@ namespace Lighthouse.Monsters.AI.Net
             _isAttacking = false;
             HasCompleted = completed;
             _target = null;
+            _targetBoat = null;
 
             if (_motion != null)
             {
