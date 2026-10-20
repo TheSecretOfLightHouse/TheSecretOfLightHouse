@@ -1294,6 +1294,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 68a06270b9116434291146a22793416b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _jobAbility: {fileID: 0}
 --- !u!114 &138251903445457319
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1312,7 +1313,6 @@ MonoBehaviour:
   _inputReader: {fileID: 8723523970866525548}
   _motor: {fileID: 113840843347980692}
   _abilityRunner: {fileID: 3883244518200342464}
-  _jobAbility: {fileID: 0}
   _animationDriver: {fileID: 5711934861249212620}
   _camera: {fileID: 2415168992369603088}
   _runMultiplier: 1.5
@@ -1561,7 +1561,7 @@ MonoBehaviour:
   syncInterval: 0
   _interactionLayers:
     serializedVersion: 2
-    m_Bits: 8
+    m_Bits: 9
 --- !u!114 &2871332537301120215
 MonoBehaviour:
   m_ObjectHideFlags: 0
