@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 5410727289638523254}
   - component: {fileID: 4272518262497333127}
   - component: {fileID: 5598138768521619656}
+  - component: {fileID: 1360874288188241039}
   m_Layer: 0
   m_Name: BubbleTurtle
   m_TagString: Untagged
@@ -253,6 +254,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _attackRange: 4
+--- !u!114 &1360874288188241039
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 622197146839384064}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a991a0df1d14aaa46bfbe68f920b3638, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _attackClip: {fileID: 7400000, guid: 9102a6d034590334c98689b7f19f0070, type: 2}
+  _firePoint: {fileID: 4120678438693835987}
+  _projectilePrefab: {fileID: 1298697469569899995, guid: d17615de5866d5b4c9be2792f7cb3c81, type: 3}
+  _fireNormalizedTime: 0.5
+  _playbackSpeed: 1
 --- !u!1 &1334840889486595080
 GameObject:
   m_ObjectHideFlags: 0
@@ -336,7 +357,8 @@ Transform:
   m_LocalPosition: {x: -0, y: 0.0016124517, z: -3.7252902e-11}
   m_LocalScale: {x: 1, y: 1.0000001, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 4120678438693835987}
   m_Father: {fileID: 8612910570272679308}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3156850350340176982
@@ -433,6 +455,37 @@ Transform:
   m_Children:
   - {fileID: 2727622799290464983}
   m_Father: {fileID: 3456838327228829614}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &3777674061444171288
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4120678438693835987}
+  m_Layer: 0
+  m_Name: FirePoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4120678438693835987
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3777674061444171288}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.783913, y: -0, z: -0, w: 0.62087065}
+  m_LocalPosition: {x: 0, y: 0.0021415167, z: -0.0005038851}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 371358281908043225}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5280001639450644020
 GameObject:
