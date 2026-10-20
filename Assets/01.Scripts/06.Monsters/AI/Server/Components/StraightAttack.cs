@@ -6,7 +6,7 @@ namespace Lighthouse.Monsters.AI.Server
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(SeaMonster), typeof(MonsterMotion), typeof(SeaMonsterSensor))]
-    public sealed class StraightAttack : MonoBehaviour
+    public sealed class StraightAttack : MonoBehaviour, IMonsterAttackRange
     {
         private const int GizmoCircleSegments = 64;
         private const float ChargeArrivalTolerance = 0.001f;
