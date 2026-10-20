@@ -68,6 +68,7 @@ namespace Lighthouse.Dev.Tower
         private VoteChangeResult _voteReply;
         private int _passCount;
         private int _failCount;
+        private bool _hasCheckedReturn;
 
         public static bool IsEnabledInThisProcess { get; set; }
         public static string ScenarioInThisProcess { get; set; }
@@ -254,9 +255,34 @@ namespace Lighthouse.Dev.Tower
         private IEnumerator BuildFloor(int firstRecipe, int secondRecipe)
         {
             yield return Craft(firstRecipe);
+            yield return Carry(firstRecipe);
             yield return SendAndExpect($"install_{firstRecipe}", _match.netId, InteractionAction.InstallModule, firstRecipe, 0, 0, InteractionResultCode.Success);
             yield return Craft(secondRecipe);
+            yield return Carry(secondRecipe);
             yield return SendAndExpect($"install_{secondRecipe}", _match.netId, InteractionAction.InstallModule, secondRecipe, 0, 0, InteractionResultCode.Success);
+            yield return WaitFor("hands_empty", () => _workbench.OwnCarriedRecipe == 0, StateTimeoutSeconds);
+        }
+
+        // Modules reach the tower by hand (2026-10-20). The first carry also checks the full hand and putting it back.
+        private IEnumerator Carry(int recipeId)
+        {
+            yield return WaitFor($"stored_{recipeId}", () => _workbench.GetStoredCount(recipeId) > 0, StateTimeoutSeconds);
+            yield return SendAndExpect($"take_{recipeId}", _workbench.netId, InteractionAction.TakeModule, recipeId, 0, 0, InteractionResultCode.Success);
+            yield return WaitFor($"carried_{recipeId}", () => _workbench.OwnCarriedRecipe == recipeId, StateTimeoutSeconds);
+
+            if (_hasCheckedReturn)
+            {
+                yield break;
+            }
+
+            _hasCheckedReturn = true;
+            yield return SendAndExpect("take_while_carrying", _workbench.netId, InteractionAction.TakeModule, recipeId, 0, 0, InteractionResultCode.Rejected);
+            yield return SendAndExpect("return", _workbench.netId, InteractionAction.ReturnModule, 0, 0, 0, InteractionResultCode.Success);
+            yield return WaitFor("returned",
+                () => _workbench.OwnCarriedRecipe == 0 && _workbench.GetStoredCount(recipeId) > 0, StateTimeoutSeconds);
+            yield return SendAndExpect("return_empty", _workbench.netId, InteractionAction.ReturnModule, 0, 0, 0, InteractionResultCode.Rejected);
+            yield return SendAndExpect("take_again", _workbench.netId, InteractionAction.TakeModule, recipeId, 0, 0, InteractionResultCode.Success);
+            yield return WaitFor("carried_again", () => _workbench.OwnCarriedRecipe == recipeId, StateTimeoutSeconds);
         }
 
         private IEnumerator Craft(int recipeId)

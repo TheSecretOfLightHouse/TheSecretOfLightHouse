@@ -20,6 +20,10 @@ namespace Lighthouse.Interaction.Requests.Net
         // after the summon, and spend crystals to relight the lantern room.
         StartRitual = 13,
         CollectAbyssCrystal = 14,
-        IgniteLantern = 15
+        IgniteLantern = 15,
+        // Carrying a finished module (2026-10-20): take one out of the workbench into your hands, or put it back.
+        // Installing it is InstallModule on the lighthouse or on your own boat.
+        TakeModule = 16,
+        ReturnModule = 17
     }
 }

@@ -2,8 +2,8 @@ using UnityEngine;
 
 namespace Lighthouse.Workbench.Rules
 {
-    // A lighthouse module the shared workbench can build from base resources (2026-10-17 decision).
-    // Amounts and the existence cap are play-test values until the floor layout is decided.
+    // A module the shared workbench can build from base resources: a lighthouse module (2026-10-17 decision) or
+    // a personal boat module (2026-10-20). Amounts and the existence cap are play-test values.
     [CreateAssetMenu(fileName = "ModuleRecipe_New", menuName = "TheLightHouse/Lighthouse/ModuleRecipe")]
     public sealed class ModuleRecipe : ScriptableObject
     {
@@ -22,6 +22,12 @@ namespace Lighthouse.Workbench.Rules
         private bool _isTestValue = true;
         [SerializeField]
         private Sprite _icon;
+        [Tooltip("On for a personal boat module (2026-10-20). Off means it goes into the lighthouse.")]
+        [SerializeField]
+        private bool _isBoatModule;
+        [Tooltip("Kind the boat installs. None on a boat module means the boat does not support it yet, so installs are refused.")]
+        [SerializeField]
+        private BoatModuleType _boatModuleType;
 
         public int Id => _id;
         public string DisplayName => _displayName;
@@ -30,6 +36,8 @@ namespace Lighthouse.Workbench.Rules
         public int MaxExisting => _maxExisting;
         public bool HasExistenceLimit => _maxExisting > 0;
         public bool IsTestValue => _isTestValue;
+        public bool IsBoatModule => _isBoatModule;
+        public BoatModuleType BoatModuleType => _boatModuleType;
 
         public RecipeIngredient GetIngredient(int index)
         {
@@ -100,6 +108,11 @@ namespace Lighthouse.Workbench.Rules
                         return $"{name}: resource {ingredient.ResourceId} is listed twice.";
                     }
                 }
+            }
+
+            if (!_isBoatModule && _boatModuleType != BoatModuleType.None)
+            {
+                return $"{name}: a lighthouse module has boat kind {_boatModuleType}.";
             }
 
             return null;

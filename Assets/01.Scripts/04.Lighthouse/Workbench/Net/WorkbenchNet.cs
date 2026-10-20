@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Lighthouse.Modules.Rules;
 using Lighthouse.Modules.Server;
+using Lighthouse.Network.Session.Net;
 using Lighthouse.Workbench.Rules;
 using Mirror;
 using UnityEngine;
@@ -10,8 +11,9 @@ namespace Lighthouse.Workbench.Net
 {
     // The shared lighthouse workbench. Every recipe keeps its own progress (2026-10-18 decision), so each player
     // views and fills whichever recipe they like; there is no shared "current recipe". Partial deposits come from
-    // personal inventories and finished modules stay here by kind until installed. Progress and stock are public
-    // to everyone; who put in what stays on the server.
+    // personal inventories and finished modules stay here by kind until someone takes one out to carry it
+    // (2026-10-20: one per person, put back any time). Progress and stock are public to everyone. What a player carries
+    // goes to that player only (2026-10-21: holders are private), and who put in what stays on the server.
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkIdentity))]
     public sealed class WorkbenchNet : NetworkBehaviour
@@ -34,12 +36,20 @@ namespace Lighthouse.Workbench.Net
         // Units each actor put into a recipe. Kept for a later return or withdraw rule (W08); never synced.
         private Dictionary<uint, int>[] _contributions = new Dictionary<uint, int>[0];
         private readonly Dictionary<int, List<uint>> _storedModules = new Dictionary<int, List<uint>>();
+        // Server-only. What each actor carries from this bench: actor id -> module id / recipe id.
+        private readonly Dictionary<uint, uint> _carriedModules = new Dictionary<uint, uint>();
+        private readonly Dictionary<uint, int> _carriedRecipes = new Dictionary<uint, int>();
         private bool _isCatalogValid;
+        // Client-side. Recipe id of the module the local player carries from this bench, 0 when empty.
+        private int _ownCarriedRecipe;
 
         public ModuleRecipeCatalog Catalog => _catalog;
         public IReadOnlyDictionary<int, int> StoredCounts => _storedCounts;
+        // Recipe id of the module the local player carries from this bench, or 0. Only the owner is told.
+        public int OwnCarriedRecipe => _ownCarriedRecipe;
 
-        // Raised on every machine whenever the public progress or stock changes. For UI refresh.
+        // Raised on every machine whenever the public progress or stock changes, and on the owner's machine when
+        // what they carry changes. For UI refresh.
         public event Action Changed;
         // Server-only. (actorId, recipeId, moduleId) when a module finishes. For logs, history and tests.
         public event Action<uint, int, uint> ModuleCompleted;
@@ -79,6 +89,8 @@ namespace Lighthouse.Workbench.Net
             _craftingModuleIds = new uint[count];
             _contributions = new Dictionary<uint, int>[count];
             _deposited.Clear();
+            _carriedRecipes.Clear();
+            _carriedModules.Clear();
 
             for (int i = 0; i < count; i++)
             {
@@ -256,9 +268,62 @@ namespace Lighthouse.Workbench.Net
             return true;
         }
 
-        // Hands one stored module of this recipe to whoever installs it. The caller moves the ledger state on.
+        // Moves one stored module of this recipe into the actor's hands. One per person is checked by the caller
+        // across benches; this bench refuses an actor already carrying one from here.
         [Server]
-        public bool TryTakeStored(int recipeId, out uint moduleId)
+        public bool TryTakeToCarry(uint actorId, int recipeId, ModuleLedger ledger)
+        {
+            if (ledger == null || actorId == 0 || _carriedModules.ContainsKey(actorId) || !TryTakeStored(recipeId, out uint moduleId))
+            {
+                return false;
+            }
+
+            ledger.TrySetState(moduleId, ModuleState.Carried);
+            _carriedModules.Add(actorId, moduleId);
+            _carriedRecipes.Add(actorId, recipeId);
+            NotifyCarried(actorId, recipeId);
+            return true;
+        }
+
+        // Puts the carried module back into this bench's stock.
+        [Server]
+        public bool TryReturnCarried(uint actorId, ModuleLedger ledger)
+        {
+            if (ledger == null || !TryReleaseCarried(actorId, out int recipeId, out uint moduleId))
+            {
+                return false;
+            }
+
+            AddStored(recipeId, moduleId);
+            ledger.TrySetState(moduleId, ModuleState.Stored);
+            return true;
+        }
+
+        [Server]
+        public bool TryGetCarried(uint actorId, out int recipeId, out uint moduleId)
+        {
+            moduleId = 0;
+            return _carriedRecipes.TryGetValue(actorId, out recipeId) && _carriedModules.TryGetValue(actorId, out moduleId);
+        }
+
+        // Empties the actor's hands and hands the module to the caller, which moves the ledger state on
+        // (installed, on a boat, or removed). Check everything that can fail before calling this.
+        [Server]
+        public bool TryReleaseCarried(uint actorId, out int recipeId, out uint moduleId)
+        {
+            if (!TryGetCarried(actorId, out recipeId, out moduleId))
+            {
+                return false;
+            }
+
+            _carriedModules.Remove(actorId);
+            _carriedRecipes.Remove(actorId);
+            NotifyCarried(actorId, 0);
+            return true;
+        }
+
+        [Server]
+        private bool TryTakeStored(int recipeId, out uint moduleId)
         {
             moduleId = 0;
 
@@ -290,15 +355,7 @@ namespace Lighthouse.Workbench.Net
             int recipeId = progress.Recipe.Id;
             uint moduleId = _craftingModuleIds[slot];
             ledger.TrySetState(moduleId, ModuleState.Stored);
-
-            if (!_storedModules.TryGetValue(recipeId, out List<uint> modules))
-            {
-                modules = new List<uint>();
-                _storedModules.Add(recipeId, modules);
-            }
-
-            modules.Add(moduleId);
-            _storedCounts[recipeId] = modules.Count;
+            AddStored(recipeId, moduleId);
 
             // Resources were consumed as they went in; finishing takes nothing more from anyone.
             int ingredientCount = progress.Recipe.IngredientCount;
@@ -312,6 +369,19 @@ namespace Lighthouse.Workbench.Net
             }
 
             ModuleCompleted?.Invoke(actorId, recipeId, moduleId);
+        }
+
+        [Server]
+        private void AddStored(int recipeId, uint moduleId)
+        {
+            if (!_storedModules.TryGetValue(recipeId, out List<uint> modules))
+            {
+                modules = new List<uint>();
+                _storedModules.Add(recipeId, modules);
+            }
+
+            modules.Add(moduleId);
+            _storedCounts[recipeId] = modules.Count;
         }
 
         private void BuildOffsets()
@@ -346,6 +416,25 @@ namespace Lighthouse.Workbench.Net
 
         private void HandleStoredCountsChanged(SyncDictionary<int, int>.Operation operation, int key, int value)
         {
+            Changed?.Invoke();
+        }
+
+        // Holders are private (2026-10-21), so only the carrier's own connection hears about it.
+        [Server]
+        private void NotifyCarried(uint actorId, int recipeId)
+        {
+            LighthouseNetworkManager manager = LighthouseNetworkManager.Instance;
+
+            if (manager && manager.Connections.TryGetConnection(actorId, out NetworkConnectionToClient connection))
+            {
+                TargetCarriedChanged(connection, recipeId);
+            }
+        }
+
+        [TargetRpc]
+        private void TargetCarriedChanged(NetworkConnectionToClient target, int recipeId)
+        {
+            _ownCarriedRecipe = recipeId;
             Changed?.Invoke();
         }
     }

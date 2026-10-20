@@ -394,6 +394,8 @@ namespace Lighthouse.Dev.Tower
                 return;
             }
 
+            // The summon shuts the mafia's inventory, so a module in their hands is gone (2026-10-20).
+            _modules.DiscardCarried(_mafiaId);
             // The final battle has no deadline.
             _isClockStopped = true;
             _revealedMafiaId = _mafiaId;

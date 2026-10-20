@@ -8,7 +8,8 @@ using UnityEngine;
 
 namespace Lighthouse.Tower.Net
 {
-    // The lighthouse's module slots. Only finished modules from the shared workbench go in (2026-10-17), floors fill
+    // The lighthouse's module slots. Only finished modules from the shared workbench go in (2026-10-17), carried there
+    // by hand (2026-10-20), floors fill
     // bottom-up and repair counts installed modules (2026-10-19 trial). Which slots are filled is public; which module
     // id sits where stays on the server for the corrosion work (JH05). Installed modules never come back out by hand.
     [DisallowMultipleComponent]
@@ -17,7 +18,7 @@ namespace Lighthouse.Tower.Net
     {
         [SerializeField]
         private TowerLayout _layout;
-        [Tooltip("Bench whose stored modules are installed here.")]
+        [Tooltip("Bench whose modules, once taken out by hand, are installed here.")]
         [SerializeField]
         private WorkbenchNet _workbench;
 
@@ -131,14 +132,21 @@ namespace Lighthouse.Tower.Net
             return -1;
         }
 
-        // Takes one stored module of this recipe from the workbench into the lowest open slot that fits it.
-        // Requests run one at a time on the server, so two players installing together fill two slots or one fails.
+        // Installs the module the actor carries (taken out of this tower's workbench, 2026-10-20) into the lowest open
+        // slot that fits it. recipeId is what the sender's screen showed in their hands, so a stale screen cannot install
+        // something else. Requests run one at a time on the server, so two players installing together fill two slots or one fails.
         [Server]
         public bool TryInstall(uint actorId, int recipeId, ModuleLedger ledger)
         {
-            int slot = _isLayoutValid && _isInstallOpen ? FindOpenSlot(recipeId) : -1;
+            if (!_isLayoutValid || !_isInstallOpen || ledger == null
+                || !_workbench.TryGetCarried(actorId, out int carriedRecipeId, out _) || carriedRecipeId != recipeId)
+            {
+                return false;
+            }
 
-            if (slot < 0 || ledger == null || !_workbench.TryTakeStored(recipeId, out uint moduleId))
+            int slot = FindOpenSlot(recipeId);
+
+            if (slot < 0 || !_workbench.TryReleaseCarried(actorId, out _, out uint moduleId))
             {
                 return false;
             }
