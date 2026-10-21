@@ -12,7 +12,7 @@ namespace Lighthouse.World.MapGeneration.Rules
         [SerializeField, Min(0f)] private float _outerRadius;
         [SerializeField, Min(0)] private int _minIslands;
         [SerializeField, Min(0)] private int _maxIslands;
-        [SerializeField, Min(0f)] private float _minIslandDistance = 45f;
+        [SerializeField, Min(0f)] private float _extraIslandSpacing;
         [SerializeField, Min(0)] private int _minReefs;
         [SerializeField, Min(0)] private int _maxReefs;
         [SerializeField, Min(0f)] private float _minReefDistance = 25f;
@@ -23,7 +23,7 @@ namespace Lighthouse.World.MapGeneration.Rules
         public float OuterRadius => _outerRadius;
         public int MinIslands => _minIslands;
         public int MaxIslands => _maxIslands;
-        public float MinIslandDistance => _minIslandDistance;
+        public float ExtraIslandSpacing => _extraIslandSpacing;
         public int MinReefs => _minReefs;
         public int MaxReefs => _maxReefs;
         public float MinReefDistance => _minReefDistance;

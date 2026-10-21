@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Lighthouse.World.Harvest.Rules;
 using Lighthouse.World.Islands.Rules;
+using UnityEngine;
 
 namespace Lighthouse.World.MapGeneration.Rules
 {
@@ -18,6 +19,7 @@ namespace Lighthouse.World.MapGeneration.Rules
             hash.Add(config.MaxBuildAttempts);
             hash.Add(config.RouteCellSize);
             hash.Add(config.ShipClearance);
+            hash.Add(config.SailingChannelWidth);
             AppendResources(hash, config.Resources);
             AppendArchetypes(hash, config);
             AppendZones(hash, config.Zones);
@@ -82,7 +84,9 @@ namespace Lighthouse.World.MapGeneration.Rules
             hash.Add(archetype.Variants.Count);
             for (int i = 0; i < archetype.Variants.Count; i++)
             {
-                hash.Add(archetype.Variants[i] != null ? archetype.Variants[i].Weight : 0f);
+                IslandVariant variant = archetype.Variants[i];
+                hash.Add(variant != null ? variant.Weight : 0f);
+                AppendSpotFingerprint(hash, variant != null ? variant.Prefab : null);
             }
 
             hash.Add(archetype.Resources.Count);
@@ -92,6 +96,27 @@ namespace Lighthouse.World.MapGeneration.Rules
                 hash.Add(entry != null && entry.Resource != null ? entry.Resource.Id : 0);
                 hash.Add(entry != null ? entry.Weight : 0f);
                 AppendDeposit(hash, entry != null ? entry.Deposit : default);
+            }
+        }
+
+        private static void AppendSpotFingerprint(StableHash hash, GameObject prefab)
+        {
+            if (prefab == null)
+            {
+                hash.Add(-1);
+                return;
+            }
+
+            List<HarvestSpot> spots = new List<HarvestSpot>();
+            prefab.GetComponentsInChildren(true, spots);
+            hash.Add(spots.Count);
+            for (int i = 0; i < spots.Count; i++)
+            {
+                Vector3 local = prefab.transform.InverseTransformPoint(spots[i].transform.position);
+                hash.Add((int)spots[i].Category);
+                hash.Add(local.x);
+                hash.Add(local.y);
+                hash.Add(local.z);
             }
         }
 
@@ -112,7 +137,7 @@ namespace Lighthouse.World.MapGeneration.Rules
                 hash.Add(zone.OuterRadius);
                 hash.Add(zone.MinIslands);
                 hash.Add(zone.MaxIslands);
-                hash.Add(zone.MinIslandDistance);
+                hash.Add(zone.ExtraIslandSpacing);
                 hash.Add(zone.MinReefs);
                 hash.Add(zone.MaxReefs);
                 hash.Add(zone.MinReefDistance);

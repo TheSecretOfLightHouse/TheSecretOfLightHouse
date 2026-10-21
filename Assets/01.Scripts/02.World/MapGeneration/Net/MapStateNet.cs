@@ -22,6 +22,8 @@ namespace Lighthouse.World.MapGeneration.Net
         [SerializeField] private GameClock _gameClock;
         [SerializeField] private WaterSamplerHost _waterSampler;
         [SerializeField] private StormWallConfig _stormWallConfig;
+        [SerializeField] private bool _requireLocalBuild = true;
+        [SerializeField] private MonoBehaviour _localBuildSource;
 
         [SyncVar(hook = nameof(OnMapChanged))]
         private MapSeedInfo _map;
@@ -36,6 +38,9 @@ namespace Lighthouse.World.MapGeneration.Net
         private IRegionGate _regions;
         private WorldQuerySession _querySession;
         private StormWallSession _stormWallSession;
+        private bool _isLayoutReady;
+        private LocalMapBuildSession _localBuildSession;
+        private Coroutine _localBuildRoutine;
 
         public MapSeedInfo Info => _map;
         public MapLayout Layout => _layout;
@@ -45,6 +50,12 @@ namespace Lighthouse.World.MapGeneration.Net
             _stormWallSession != null
                 ? _stormWallSession.Fields
                 : Array.Empty<StormWallField>();
+
+        public event Action<MapLayout, MapSeedInfo> LayoutReady;
+        public event Action LayoutReleased;
+
+        public MapGenerationConfig Config => _config;
+        public bool IsLayoutReady => _isLayoutReady;
 
         private void Awake()
         {
@@ -63,6 +74,11 @@ namespace Lighthouse.World.MapGeneration.Net
             }
 
             _builder = MapBuilder.CreateDefault(_config);
+        }
+
+        private void OnDisable()
+        {
+            RaiseLayoutReleased();
         }
 
         public override void OnStartServer()
@@ -126,6 +142,8 @@ namespace Lighthouse.World.MapGeneration.Net
 
         public override void OnStopServer()
         {
+            RaiseLayoutReleased();
+
             if (_spawnerSession != null)
             {
                 _spawnerSession.Dispose();
@@ -161,6 +179,8 @@ namespace Lighthouse.World.MapGeneration.Net
                 return;
             }
 
+            RaiseLayoutReleased();
+
             ReleaseWorldQueries();
 
             _layout = null;
@@ -174,7 +194,8 @@ namespace Lighthouse.World.MapGeneration.Net
 
         private void Apply(MapSeedInfo info)
         {
-            if (_builder == null || !info.IsSet || info.Equals(_applied) || !NetworkClient.isConnected)
+            if (_builder == null || !info.IsSet || info.Equals(_applied)
+                || !NetworkClient.isConnected || !isActiveAndEnabled)
             {
                 return;
             }
@@ -184,20 +205,27 @@ namespace Lighthouse.World.MapGeneration.Net
                 return;
             }
 
+            RaiseLayoutReleased();
             _applied = info;
-            MapChecksumResult result = MapChecksumResult.Match;
 
-            if (!isServer)
-            {
-                result = LoadClientMap(info);
-            }
+            MapChecksumResult result = isServer
+                ? MapChecksumResult.Match
+                : LoadClientMap(info);
 
             if (result != MapChecksumResult.Match)
             {
                 Debug.LogError($"[{nameof(MapStateNet)}] Map checksum {result}. seed={info.Seed}");
+                SendWorldReady();
+                return;
             }
 
-            if (!isServer && result == MapChecksumResult.Match)
+            if (_layout == null)
+            {
+                Debug.LogError($"[{nameof(MapStateNet)}] Map layout is missing.");
+                return;
+            }
+
+            if (!isServer)
             {
                 try
                 {
@@ -211,11 +239,126 @@ namespace Lighthouse.World.MapGeneration.Net
                 }
             }
 
+            BeginLocalBuild(info);
+        }
+
+        private void BeginLocalBuild(MapSeedInfo info)
+        {
+            if (_localBuildSource == null)
+            {
+                if (_requireLocalBuild)
+                {
+                    Debug.LogError($"[{nameof(MapStateNet)}] Local map builder is required.");
+                    return;
+                }
+
+                HandleLocalBuildCompleted(info);
+                return;
+            }
+
+            if (!_localBuildSource.isActiveAndEnabled
+                || !(_localBuildSource is ILocalMapBuilder localBuilder))
+            {
+                Debug.LogError($"[{nameof(MapStateNet)}] Local map builder must be active and implement ILocalMapBuilder.");
+                return;
+            }
+
+            _localBuildSession = new LocalMapBuildSession(
+                _localBuildSource,
+                localBuilder);
+
+            _localBuildRoutine = StartCoroutine(
+                _localBuildSession.Run(
+                    _config,
+                    _layout,
+                    info,
+                    () => HandleLocalBuildCompleted(info)));
+        }
+
+        private void HandleLocalBuildCompleted(MapSeedInfo info)
+        {
+            if (!CanCompleteLocalBuild(info) || _isLayoutReady)
+            {
+                return;
+            }
+
+            _localBuildRoutine = null;
+            _isLayoutReady = true;
+
+            try
+            {
+                LayoutReady?.Invoke(_layout, info);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError($"[{nameof(MapStateNet)}] LayoutReady handler failed: {exception}");
+                RaiseLayoutReleased();
+                return;
+            }
+
+            if (_isLayoutReady && CanCompleteLocalBuild(info))
+            {
+                SendWorldReady();
+            }
+        }
+
+        private bool CanCompleteLocalBuild(MapSeedInfo info)
+        {
+            return isActiveAndEnabled
+                && NetworkClient.isConnected
+                && info.Equals(_applied)
+                && _layout != null;
+        }
+
+        private void SendWorldReady()
+        {
+            if (!NetworkClient.isConnected)
+            {
+                return;
+            }
+
             NetworkClient.Send(new WorldReadyMessage
             {
                 LayoutHash = _layout != null ? _layout.Hash : 0u,
                 ContentHash = _contentHash
             });
+        }
+
+        private void RaiseLayoutReleased()
+        {
+            CancelLocalBuild();
+
+            if (!_isLayoutReady)
+            {
+                return;
+            }
+
+            _isLayoutReady = false;
+
+            try
+            {
+                LayoutReleased?.Invoke();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError($"[{nameof(MapStateNet)}] LayoutReleased handler failed: {exception}");
+            }
+        }
+
+        private void CancelLocalBuild()
+        {
+            if (_localBuildRoutine != null)
+            {
+                StopCoroutine(_localBuildRoutine);
+                _localBuildRoutine = null;
+            }
+
+            if (_localBuildSession != null)
+            {
+                LocalMapBuildSession session = _localBuildSession;
+                _localBuildSession = null;
+                session.Cancel();
+            }
         }
 
         private void HandleWorldReady(NetworkConnectionToClient conn, WorldReadyMessage message)

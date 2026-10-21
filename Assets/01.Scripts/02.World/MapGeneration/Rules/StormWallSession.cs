@@ -35,6 +35,11 @@ namespace Lighthouse.World.MapGeneration.Rules
                 throw new ArgumentException("Zones must be Inner, Middle and Outer.");
             }
 
+            if (mapConfig.SailingChannelWidth < wallConfig.Width)
+            {
+                throw new ArgumentException("Sailing channel is narrower than the storm wall.");
+            }
+
             float middleRadius = mapConfig.Zones[0].OuterRadius * mapConfig.RadiusScale;
             float outerRadius = mapConfig.Zones[1].OuterRadius * mapConfig.RadiusScale;
             float halfWidth = wallConfig.Width * 0.5f;
