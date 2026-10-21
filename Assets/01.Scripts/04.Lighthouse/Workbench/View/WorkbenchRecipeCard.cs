@@ -50,13 +50,13 @@ namespace Lighthouse.Workbench.View
             _button.onClick.AddListener(HandleClicked);
         }
 
-        public void Bind(ModuleRecipe recipe, string detail, Sprite fallbackIcon, Action<ModuleRecipe> clicked)
+        public void Bind(ModuleRecipe recipe, string detail, Sprite fallbackIcon, Action<ModuleRecipe> clicked, Sprite iconOverride = null)
         {
             _recipe = recipe;
             _clicked = clicked;
             _name.text = recipe.DisplayName;
             _detail.text = detail;
-            _icon.sprite = recipe.Icon ? recipe.Icon : fallbackIcon;
+            _icon.sprite = iconOverride ? iconOverride : recipe.Icon ? recipe.Icon : fallbackIcon;
             _icon.enabled = _icon.sprite;
         }
 

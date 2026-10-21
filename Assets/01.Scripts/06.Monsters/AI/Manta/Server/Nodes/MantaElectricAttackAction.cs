@@ -4,12 +4,13 @@ using UnityEngine;
 
 namespace Lighthouse.Monsters.AI.Server
 {
+    [UnityEngine.Scripting.APIUpdating.MovedFrom(true, "Lighthouse.Monsters.AI.Server", "Lighthouse.Runtime", "MantaRiseAction")]
     [Serializable]
     [NodeDescription(name: "배 앞쪽 꼬리 전깃줄 설치", story: "[Self]가 [TargetBoat] 앞을 가로질러 꼬리로 전깃줄을 남긴다",
         category: "행동/등대/몬스터", id: "0f8ac72a2b254a95aa97ef29d412d108")]
-    public sealed class MantaRiseAction : MonsterAction
+    public sealed class MantaElectricAttackAction : MonsterAction
     {
-        [NonSerialized] private MantaRiseAttack _attack;
+        [NonSerialized] private MantaElectricAttack _attack;
         [NonSerialized] private GameObject _target;
 
         protected override Status OnStart()
@@ -20,7 +21,7 @@ namespace Lighthouse.Monsters.AI.Server
                 return Status.Failure;
             }
             _target = TargetBoat.Value;
-            _attack = Self.Value.GetComponent<MantaRiseAttack>();
+            _attack = Self.Value.GetComponent<MantaElectricAttack>();
             return _attack != null && _attack.BeginAttack(_target) ? Status.Running : Status.Failure;
         }
 

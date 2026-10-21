@@ -5,6 +5,8 @@ using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Interaction.Requests.Rules;
 using Lighthouse.Interaction.Targets.Net;
+using Lighthouse.Network.Session.View;
+using Lighthouse.Stations.View;
 using Lighthouse.Tower.Rules;
 using Lighthouse.Workbench.Net;
 using Lighthouse.Workbench.Rules;
@@ -24,7 +26,7 @@ namespace Lighthouse.Workbench.View
     // progress of every recipe is shared (2026-10-18). Everything shown comes from WorkbenchNet's public state
     // and the local inventory.
     [DisallowMultipleComponent]
-    public sealed class WorkbenchScreen : MonoBehaviour
+    public sealed class WorkbenchScreen : MonoBehaviour, IStationScreen
     {
         private const string IdleMessage = "레시피를 골라 진행도를 보고 자원을 넣으세요. 넣은 자원은 되돌릴 수 없습니다.";
 
@@ -35,12 +37,19 @@ namespace Lighthouse.Workbench.View
             public Sprite Icon;
         }
 
+        [Serializable]
+        private struct RecipeIcon
+        {
+            public ModuleRecipe Recipe;
+            public Sprite Icon;
+        }
+
         [SerializeField]
         private WorkbenchNet _workbench;
         [SerializeField]
         private InteractionTarget _target;
         [SerializeField]
-        private Key _openKey = Key.F;
+        private Key _openKey = Key.E;
 
         [Header("Screen")]
         [SerializeField]
@@ -65,6 +74,8 @@ namespace Lighthouse.Workbench.View
         private WorkbenchRecipeCard _cardTemplate;
         [SerializeField]
         private Sprite _recipeFallbackIcon;
+        [SerializeField]
+        private RecipeIcon[] _recipeIcons = new RecipeIcon[0];
 
         [Header("Progress")]
         [SerializeField]
@@ -73,10 +84,26 @@ namespace Lighthouse.Workbench.View
         private GameObject _progressEmpty;
         [SerializeField]
         private WorkbenchIngredientRow _rowTemplate;
-        [SerializeField]
+        [SerializeField, Tooltip("Optional.")]
         private Text _progressHint;
         [SerializeField]
         private Button _craftButton;
+
+        [Header("Sketch layout (optional)")]
+        [SerializeField]
+        private bool _isSketchLayout;
+        [SerializeField]
+        private Button _depositButton;
+        [SerializeField]
+        private RectTransform _overallFill;
+        [SerializeField]
+        private Button _takeButton;
+        [SerializeField]
+        private Button _previousStockPageButton;
+        [SerializeField]
+        private Button _nextStockPageButton;
+        [SerializeField]
+        private Text _stockPageText;
 
         [Header("Stock")]
         [SerializeField]
@@ -95,6 +122,8 @@ namespace Lighthouse.Workbench.View
         private Text _carryText;
         [SerializeField]
         private Button _returnButton;
+        [SerializeField]
+        private Button _returnShortcutButton;
 
         [Header("Recipe sections")]
         [Tooltip("Inactive heading in the recipe list, copied once for lighthouse and once for boat modules.")]
@@ -154,6 +183,12 @@ namespace Lighthouse.Workbench.View
         private InteractionAction _pendingAction;
         private int _pendingResourceId;
         private string _pendingRecipeName;
+        private int _selectedResourceId;
+        private int _selectedStoredRecipeId;
+        private int _stockPage;
+        private int _stockPageCount = 1;
+        // E acts on the last selected pane; choosing a material never takes a shelf module by accident.
+        private bool _isStockFocused;
 
         public bool IsOpen => _isOpen;
 
@@ -179,6 +214,34 @@ namespace Lighthouse.Workbench.View
                 _returnButton.onClick.AddListener(HandleReturnClicked);
             }
 
+            if (_returnShortcutButton)
+            {
+                _returnShortcutButton.onClick.AddListener(HandleReturnClicked);
+            }
+
+            if (_isSketchLayout)
+            {
+                if (_depositButton)
+                {
+                    _depositButton.onClick.AddListener(HandleSelectedDepositClicked);
+                }
+
+                if (_takeButton)
+                {
+                    _takeButton.onClick.AddListener(HandleSelectedTakeClicked);
+                }
+
+                if (_previousStockPageButton)
+                {
+                    _previousStockPageButton.onClick.AddListener(HandlePreviousStockPageClicked);
+                }
+
+                if (_nextStockPageButton)
+                {
+                    _nextStockPageButton.onClick.AddListener(HandleNextStockPageClicked);
+                }
+            }
+
             if (_sectionHeaderTemplate)
             {
                 _sectionHeaderTemplate.gameObject.SetActive(false);
@@ -199,6 +262,8 @@ namespace Lighthouse.Workbench.View
             {
                 _workbench.Changed += HandleWorkbenchChanged;
             }
+
+            StationScreenFocus.Register(this);
         }
 
         private void Update()
@@ -220,7 +285,8 @@ namespace Lighthouse.Workbench.View
                 }
             }
 
-            _prompt.SetActive(_isInRange && !_isOpen);
+            bool isFocused = _isInRange && StationScreenFocus.IsNearest(this);
+            _prompt.SetActive(isFocused && !_isOpen && !SessionScreen.IsGameplayOverlayOpen);
             Keyboard keyboard = Keyboard.current;
 
             if (keyboard == null)
@@ -228,11 +294,15 @@ namespace Lighthouse.Workbench.View
                 return;
             }
 
-            if (_isOpen && (keyboard.escapeKey.wasPressedThisFrame || keyboard[_openKey].wasPressedThisFrame))
+            if (_isOpen && (keyboard.escapeKey.wasPressedThisFrame || !_isSketchLayout && keyboard[_openKey].wasPressedThisFrame))
             {
                 Close();
             }
-            else if (!_isOpen && _isInRange && keyboard[_openKey].wasPressedThisFrame)
+            else if (_isOpen && _isSketchLayout)
+            {
+                HandleSketchInput(keyboard);
+            }
+            else if (!_isOpen && isFocused && keyboard[_openKey].wasPressedThisFrame && !SessionScreen.IsGameplayOverlayOpen)
             {
                 Open();
             }
@@ -245,6 +315,7 @@ namespace Lighthouse.Workbench.View
                 _workbench.Changed -= HandleWorkbenchChanged;
             }
 
+            StationScreenFocus.Unregister(this);
             Close();
             BindLocalPlayer(null);
         }
@@ -257,9 +328,12 @@ namespace Lighthouse.Workbench.View
             }
 
             _isOpen = true;
+            SessionScreen.SetGameplayOverlayOpen(this, true);
             EnsureEventSystem();
             BuildCards();
             PickDefaultRecipe();
+            _selectedResourceId = 0;
+            _isStockFocused = false;
             _window.SetActive(true);
             _prompt.SetActive(false);
             SetMessage(IdleMessage, _messageInfoColor);
@@ -275,8 +349,32 @@ namespace Lighthouse.Workbench.View
             }
 
             _isOpen = false;
+            SessionScreen.SetGameplayOverlayOpen(this, false);
             _window.SetActive(false);
             LockPlayer(false);
+        }
+
+        private void HandleSketchInput(Keyboard keyboard)
+        {
+            if (keyboard.eKey.wasPressedThisFrame)
+            {
+                if (_isStockFocused)
+                {
+                    HandleSelectedTakeClicked();
+                }
+                else
+                {
+                    HandleSelectedDepositClicked();
+                }
+            }
+            else if (keyboard.fKey.wasPressedThisFrame && _craftButton.interactable)
+            {
+                HandleCraftClicked();
+            }
+            else if (keyboard.gKey.wasPressedThisFrame)
+            {
+                HandleReturnClicked();
+            }
         }
 
         private void BindLocalPlayer(NetworkIdentity player)
@@ -305,6 +403,21 @@ namespace Lighthouse.Workbench.View
             {
                 _inventory.ResourceCountChanged += HandleResourceCountChanged;
             }
+        }
+
+        public bool TryGetLocalSqrDistance(out float sqrDistance)
+        {
+            NetworkIdentity player = NetworkClient.localPlayer;
+            sqrDistance = 0f;
+
+            if (!player || !_target || !_workbench || !_workbench.isActiveAndEnabled)
+            {
+                return false;
+            }
+
+            float range = _target.Range;
+            sqrDistance = (player.transform.position - _target.Position).sqrMagnitude;
+            return sqrDistance <= range * range;
         }
 
         private bool IsLocalPlayerInRange()
@@ -374,7 +487,7 @@ namespace Lighthouse.Workbench.View
                 if (isUsed)
                 {
                     ModuleRecipe recipe = catalog[i];
-                    _cards[i].Bind(recipe, DescribeCard(recipe), _recipeFallbackIcon, HandleRecipeClicked);
+                    _cards[i].Bind(recipe, DescribeCard(recipe), _recipeFallbackIcon, HandleRecipeClicked, GetRecipeIcon(recipe));
                 }
             }
 
@@ -500,14 +613,25 @@ namespace Lighthouse.Workbench.View
             RefreshProgressHeader(recipe);
             bool isReady = recipe && _workbench.IsReadyToCraft(recipe.Id);
             bool isCapped = recipe && IsCapped(recipe);
-            _progressHint.gameObject.SetActive(recipe);
-            _progressHint.text = isReady ? "재료가 모두 모였습니다. 제작을 누르면 완성됩니다."
-                : isCapped ? "보유 한도에 닿아 지금은 새로 만들 수 없습니다."
-                : recipe && _workbench.IsStarted(recipe.Id) ? "선원들이 함께 채우는 중입니다. 다른 레시피도 따로 채울 수 있습니다."
-                : "자원을 넣으면 제작이 시작됩니다.";
+            // The sketch layout has no hint line; the other prefabs still show it.
+            if (_progressHint)
+            {
+                _progressHint.gameObject.SetActive(recipe);
+                _progressHint.text = isReady ? "재료가 모두 모였습니다. 제작을 누르면 완성됩니다."
+                    : isCapped ? "보유 한도에 닿아 지금은 새로 만들 수 없습니다."
+                    : recipe && _workbench.IsStarted(recipe.Id) ? "선원들이 함께 채우는 중입니다. 다른 레시피도 따로 채울 수 있습니다."
+                    : "자원을 넣으면 제작이 시작됩니다.";
+            }
             _craftButton.gameObject.SetActive(recipe);
             _craftButton.interactable = isReady;
             int count = recipe ? recipe.IngredientCount : 0;
+            int depositedTotal = 0;
+            int requiredTotal = 0;
+
+            if (_isSketchLayout)
+            {
+                PickDefaultIngredient(recipe);
+            }
 
             while (_rows.Count < count)
             {
@@ -526,9 +650,53 @@ namespace Lighthouse.Workbench.View
 
                 RecipeIngredient ingredient = recipe.GetIngredient(i);
                 ResourceDefinition resource = ingredient.Resource;
-                _rows[i].Bind(ingredient.ResourceId, resource ? resource.DisplayName : "?", GetResourceIcon(resource), HandleDepositClicked);
-                _rows[i].SetProgress(_workbench.GetDepositedAt(recipe.Id, i), ingredient.Amount, Held(ingredient.ResourceId), !isCapped);
+                int deposited = _workbench.GetDepositedAt(recipe.Id, i);
+                _rows[i].Bind(ingredient.ResourceId, resource ? resource.DisplayName : "?", GetResourceIcon(resource),
+                    HandleDepositClicked, _isSketchLayout ? HandleIngredientSelected : null);
+                _rows[i].SetProgress(deposited, ingredient.Amount, Held(ingredient.ResourceId), !isCapped);
+                _rows[i].SetSelected(_isSketchLayout && !_isStockFocused && ingredient.ResourceId == _selectedResourceId);
+                depositedTotal += deposited;
+                requiredTotal += ingredient.Amount;
             }
+
+            if (_isSketchLayout && _overallFill)
+            {
+                float ratio = requiredTotal > 0 ? Mathf.Clamp01((float)depositedTotal / requiredTotal) : 0f;
+                _overallFill.anchorMax = new Vector2(ratio, 1f);
+                _overallFill.gameObject.SetActive(ratio > 0f);
+            }
+
+            if (_isSketchLayout && _depositButton)
+            {
+                _depositButton.interactable = CanDepositSelected();
+            }
+        }
+
+        private void PickDefaultIngredient(ModuleRecipe recipe)
+        {
+            if (!recipe || recipe.IndexOf(_selectedResourceId) >= 0)
+            {
+                return;
+            }
+
+            _selectedResourceId = recipe.IngredientCount > 0 ? recipe.GetIngredient(0).ResourceId : 0;
+
+            for (int i = 0; i < recipe.IngredientCount; i++)
+            {
+                int resourceId = recipe.GetIngredient(i).ResourceId;
+
+                if (Held(resourceId) > 0 && _workbench.GetRemaining(recipe.Id, resourceId) > 0)
+                {
+                    _selectedResourceId = resourceId;
+                    return;
+                }
+            }
+        }
+
+        private bool CanDepositSelected()
+        {
+            return _viewedRecipe && !IsCapped(_viewedRecipe) && _viewedRecipe.IndexOf(_selectedResourceId) >= 0
+                && Held(_selectedResourceId) > 0 && _workbench.GetRemaining(_viewedRecipe.Id, _selectedResourceId) > 0;
         }
 
         private void RefreshProgressHeader(ModuleRecipe recipe)
@@ -573,6 +741,14 @@ namespace Lighthouse.Workbench.View
             }
 
             ModuleRecipeCatalog catalog = _workbench.Catalog;
+
+            if (_isSketchLayout)
+            {
+                RefreshSketchStock(catalog);
+                RefreshCarry(catalog);
+                return;
+            }
+
             // One module at a time (2026-10-20): with one in hand every take button is off until it is put back.
             bool canTake = _workbench.OwnCarriedRecipe == 0;
             int slot = 0;
@@ -597,6 +773,80 @@ namespace Lighthouse.Workbench.View
             RefreshCarry(catalog);
         }
 
+        private void RefreshSketchStock(ModuleRecipeCatalog catalog)
+        {
+            int storedKinds = 0;
+
+            for (int i = 0; i < catalog.Count; i++)
+            {
+                if (_workbench.GetStoredCount(catalog[i].Id) > 0)
+                {
+                    storedKinds++;
+                }
+            }
+
+            int capacity = _storedSlots.Length;
+            _stockPageCount = capacity > 0 ? Mathf.Max(1, (storedKinds + capacity - 1) / capacity) : 1;
+            _stockPage = Mathf.Clamp(_stockPage, 0, _stockPageCount - 1);
+            int first = _stockPage * capacity;
+            int storedIndex = 0;
+            int slot = 0;
+            bool isSelectionVisible = false;
+
+            for (int i = 0; i < catalog.Count && slot < capacity; i++)
+            {
+                ModuleRecipe recipe = catalog[i];
+                int stored = _workbench.GetStoredCount(recipe.Id);
+
+                if (stored <= 0)
+                {
+                    continue;
+                }
+
+                if (storedIndex++ < first)
+                {
+                    continue;
+                }
+
+                bool isSelected = recipe.Id == _selectedStoredRecipeId;
+                isSelectionVisible |= isSelected;
+                _storedSlots[slot].Show(GetRecipeIcon(recipe), recipe.DisplayName, stored);
+                _storedSlots[slot].SetAction(recipe.Id, true, HandleStoredSelected);
+                _storedSlots[slot].SetSelected(isSelected && _isStockFocused);
+                slot++;
+            }
+
+            for (; slot < capacity; slot++)
+            {
+                _storedSlots[slot].Clear();
+            }
+
+            if (!isSelectionVisible)
+            {
+                _selectedStoredRecipeId = 0;
+            }
+
+            if (_takeButton)
+            {
+                _takeButton.interactable = _selectedStoredRecipeId != 0 && _workbench.OwnCarriedRecipe == 0;
+            }
+
+            if (_previousStockPageButton)
+            {
+                _previousStockPageButton.interactable = _stockPage > 0;
+            }
+
+            if (_nextStockPageButton)
+            {
+                _nextStockPageButton.interactable = _stockPage + 1 < _stockPageCount;
+            }
+
+            if (_stockPageText)
+            {
+                _stockPageText.text = $"{_stockPage + 1} / {_stockPageCount}";
+            }
+        }
+
         // Only this player's own module: who holds what is private (2026-10-21).
         private void RefreshCarry(ModuleRecipeCatalog catalog)
         {
@@ -607,7 +857,7 @@ namespace Lighthouse.Workbench.View
 
             int carriedId = _workbench.OwnCarriedRecipe;
             ModuleRecipe carried = carriedId != 0 && catalog.TryGetById(carriedId, out ModuleRecipe recipe) ? recipe : null;
-            _carryText.text = carried ? $"들고 있는 모듈: {carried.DisplayName}" : "들고 있는 모듈: 없음";
+            _carryText.text = carried ? $"인벤토리 모듈: {carried.DisplayName}" : "인벤토리 모듈: 없음";
 
             if (_carryIcon)
             {
@@ -617,7 +867,13 @@ namespace Lighthouse.Workbench.View
 
             if (_returnButton)
             {
-                _returnButton.gameObject.SetActive(carried);
+                _returnButton.gameObject.SetActive(_isSketchLayout || carried);
+                _returnButton.interactable = carried;
+            }
+
+            if (_returnShortcutButton)
+            {
+                _returnShortcutButton.interactable = carried;
             }
         }
 
@@ -637,8 +893,63 @@ namespace Lighthouse.Workbench.View
         private void HandleRecipeClicked(ModuleRecipe recipe)
         {
             _viewedRecipe = recipe;
+            _selectedResourceId = 0;
+            _isStockFocused = false;
             SetMessage(IdleMessage, _messageInfoColor);
             Refresh();
+        }
+
+        private void HandleIngredientSelected(int resourceId)
+        {
+            _selectedResourceId = resourceId;
+            _isStockFocused = false;
+            Refresh();
+        }
+
+        private void HandleStoredSelected(int recipeId)
+        {
+            _selectedStoredRecipeId = recipeId;
+            _isStockFocused = true;
+            Refresh();
+        }
+
+        private void HandleSelectedDepositClicked()
+        {
+            if (CanDepositSelected())
+            {
+                _isStockFocused = false;
+                HandleDepositClicked(_selectedResourceId, false);
+                Refresh();
+            }
+        }
+
+        private void HandleSelectedTakeClicked()
+        {
+            if (_selectedStoredRecipeId != 0 && _workbench.OwnCarriedRecipe == 0
+                && _workbench.GetStoredCount(_selectedStoredRecipeId) > 0)
+            {
+                HandleTakeClicked(_selectedStoredRecipeId);
+            }
+        }
+
+        private void HandlePreviousStockPageClicked()
+        {
+            if (_stockPage > 0)
+            {
+                _stockPage--;
+                _selectedStoredRecipeId = 0;
+                RefreshStock();
+            }
+        }
+
+        private void HandleNextStockPageClicked()
+        {
+            if (_stockPage + 1 < _stockPageCount)
+            {
+                _stockPage++;
+                _selectedStoredRecipeId = 0;
+                RefreshStock();
+            }
         }
 
         private void HandleDepositClicked(int resourceId, bool isAll)
@@ -755,7 +1066,8 @@ namespace Lighthouse.Workbench.View
 
         private void SetMessage(string text, Color color)
         {
-            _message.text = text;
+            // The sketch layout keeps the line empty until a request answers.
+            _message.text = _isSketchLayout && text == IdleMessage ? string.Empty : text;
             _message.color = color;
         }
 
@@ -793,24 +1105,32 @@ namespace Lighthouse.Workbench.View
                 return null;
             }
 
-            if (resource.Icon)
+            if (resource.Icon && !_isSketchLayout)
             {
                 return resource.Icon;
             }
 
             for (int i = 0; i < _resourceIcons.Length; i++)
             {
-                if (_resourceIcons[i].Resource == resource)
+                if (_resourceIcons[i].Resource == resource && _resourceIcons[i].Icon)
                 {
                     return _resourceIcons[i].Icon;
                 }
             }
 
-            return null;
+            return resource.Icon;
         }
 
         private Sprite GetRecipeIcon(ModuleRecipe recipe)
         {
+            for (int i = 0; i < _recipeIcons.Length; i++)
+            {
+                if (_recipeIcons[i].Recipe == recipe && _recipeIcons[i].Icon)
+                {
+                    return _recipeIcons[i].Icon;
+                }
+            }
+
             return recipe.Icon ? recipe.Icon : _recipeFallbackIcon;
         }
 

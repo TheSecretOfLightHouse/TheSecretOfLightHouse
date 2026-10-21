@@ -42,6 +42,9 @@ namespace Lighthouse.Dev.Tower
         [Tooltip("Plain bench block shown instead of the rack; walk up to it and press the screen's key.")]
         [SerializeField]
         private GameObject _screenBox;
+        [Tooltip("Starting mode on this machine. Each tester may use either way of working the bench; the server rules are the same.")]
+        [SerializeField]
+        private bool _isRackMode = true;
 
         private readonly List<uint> _actors = new List<uint>();
         private InteractionRelay _relay;
@@ -50,8 +53,6 @@ namespace Lighthouse.Dev.Tower
         private string _lastResult = "-";
         private string _lastIdentity = "-";
         private Vector2 _scroll;
-        // Local to this machine: each tester may use either way of working the bench; the server rules are the same.
-        private bool _isRackMode = true;
 
         private void OnEnable()
         {
