@@ -15,19 +15,7 @@ namespace Lighthouse.Monsters.AI.Rules
                 direction = Vector3.forward;
             }
             return position + direction * Mathf.Max(minimumLead, velocity.magnitude * predictionSeconds);
-        }
-
-        public static Vector3 LinePoint(Vector3 center, Vector3 direction, float length,
-            float zigzag, int index, int count)
-        {
-            direction.y = 0f;
-            direction.Normalize();
-            Vector3 along = Vector3.Cross(Vector3.up, direction);
-            float fraction = (float)index / (count - 1);
-            float bend = index == 0 || index == count - 1 ? 0f
-                : Mathf.Sin(index * 2.399963f) * zigzag;
-            return center + along * ((fraction - 0.5f) * length) + direction * bend;
-        }
+        }     
 
         public static bool Intersects(Vector3 previous, Vector3 current, Vector3 start, Vector3 end, float radius)
         {
