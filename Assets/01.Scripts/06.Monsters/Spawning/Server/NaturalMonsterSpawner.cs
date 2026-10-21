@@ -12,6 +12,7 @@ namespace Lighthouse.Monsters.Spawning.Server
     {
         [SerializeField] private MonsterCatalog _catalog = null;
         [SerializeField] private string _monsterId = string.Empty;
+        [SerializeField] private List<string> _additionalMonsterIds = new List<string>();
         [SerializeField, Min(1)] private int _maxAliveCount = 1;
         [SerializeField, Min(0f)] private float _respawnDelay = 30f;
         [SerializeField, Min(0f)] private float _spawnRadius = 10f;
@@ -22,15 +23,21 @@ namespace Lighthouse.Monsters.Spawning.Server
         private bool _hasStarted;
         private bool _wasServerActive;
         private int _pendingCount;
-        private MonsterBase _spawnPrefab;
-        private CapsuleCollider _spawnCapsule;
-        private Vector3 _prefabScale;
+        private readonly List<SpawnOption> _spawnOptions = new List<SpawnOption>();
+        private int _pendingOptionIndex = -1;
         private MonsterCatalog _startedCatalog;
-        private string _startedMonsterId;
+
+        private struct SpawnOption
+        {
+            public string Id;
+            public MonsterBase Prefab;
+            public CapsuleCollider Capsule;
+            public Vector3 Scale;
+        }
 
         // 설정에 사용하는 몬스터 목록을 반환한다.
         public MonsterCatalog Catalog => _catalog;
-        // <summary>선택한 몬스터의 고정 식별자를 반환한다.
+        // 기존 단일 종류 설정과의 호환성을 유지한다.
         public string MonsterId => _monsterId;
         //동시에 살아 있을 수 있는 최대 몬스터 수를 반환한다.
         public int MaxAliveCount => _maxAliveCount;
@@ -103,17 +110,27 @@ namespace Lighthouse.Monsters.Spawning.Server
             // 잘못된 설정도 시작 시도로 기록해 매 프레임 오류 로그가 반복되지 않게 한다.
             _hasStarted = true;
 
-            if (!TryGetSpawnPrefab(out MonsterBase prefab, out string error) || !HasValidCapsule(prefab))
+            if (!TryGetSpawnPrefab(out _, out string error))
             {
                 Debug.LogError($"[{nameof(NaturalMonsterSpawner)}] {error ?? "유효한 루트 CapsuleCollider가 필요합니다."}", this);
                 return false;
             }
             _pendingCount = Mathf.Max(0, _maxAliveCount - AliveCount);
-            _spawnPrefab = prefab;
-            _spawnCapsule = prefab.GetComponent<CapsuleCollider>();
-            _prefabScale = prefab.transform.lossyScale;
+            _spawnOptions.Clear();
+            for (int i = 0; i < SelectedCount; i++)
+            {
+                _catalog.TryResolve(GetSelectedId(i), out MonsterCatalogEntry entry, out _);
+                MonsterBase prefab = entry.Prefab;
+                _spawnOptions.Add(new SpawnOption
+                {
+                    Id = entry.Id,
+                    Prefab = prefab,
+                    Capsule = prefab.GetComponent<CapsuleCollider>(),
+                    Scale = prefab.transform.lossyScale
+                });
+            }
+            _pendingOptionIndex = -1;
             _startedCatalog = _catalog;
-            _startedMonsterId = _monsterId;
 
             if (_owned.Capacity < _maxAliveCount)
             {
@@ -131,6 +148,8 @@ namespace Lighthouse.Monsters.Spawning.Server
             _wasServerActive = NetworkServer.active;
             _hasStarted = false;
             _pendingCount = 0;
+            _pendingOptionIndex = -1;
+            _spawnOptions.Clear();
             MonsterSpawnScheduler.Cancel(this);
             if (NetworkServer.active)
             {
@@ -148,8 +167,7 @@ namespace Lighthouse.Monsters.Spawning.Server
             {
                 return false;
             }
-            if (_spawnPrefab == null || _spawnCapsule == null || _startedCatalog != _catalog
-                || _startedMonsterId != _monsterId || _maxAliveCount < 1
+            if (!HasUnchangedSelection() || _maxAliveCount < 1
                 || !IsFiniteNonNegative(_spawnRadius) || !IsFiniteNonNegative(_respawnDelay))
             {
                 _pendingCount = 0;
@@ -161,6 +179,12 @@ namespace Lighthouse.Monsters.Spawning.Server
                 _pendingCount = 0;
                 return false;
             }
+            // Keep the chosen type across blocked positions so larger monsters are not selected less often.
+            if (_pendingOptionIndex < 0)
+            {
+                _pendingOptionIndex = Random.Range(0, _spawnOptions.Count);
+            }
+            SpawnOption option = _spawnOptions[_pendingOptionIndex];
             PositionCheckCount++;
             Vector2 offset = Random.insideUnitCircle * _spawnRadius;
             Vector3 position = transform.position + new Vector3(offset.x, 0f, offset.y);
@@ -172,8 +196,8 @@ namespace Lighthouse.Monsters.Spawning.Server
             {
                 return true;
             }
-            Quaternion rotation = _spawnPrefab.transform.rotation;
-            if (!MonsterSpawnPlacement.IsClear(_spawnCapsule, _prefabScale, position, rotation))
+            Quaternion rotation = option.Prefab.transform.rotation;
+            if (!MonsterSpawnPlacement.IsClear(option.Capsule, option.Scale, position, rotation))
             {
                 return true;
             }
@@ -181,7 +205,7 @@ namespace Lighthouse.Monsters.Spawning.Server
             {
                 return true;
             }
-            MonsterBase monster = MonsterSpawnFactory.Spawn(_spawnPrefab, position, rotation);
+            MonsterBase monster = MonsterSpawnFactory.Spawn(option.Prefab, position, rotation);
             if (monster == null)
             {
                 // 초기화 실패는 위치가 막힌 경우와 구분해 설정 오류로 처리한다.
@@ -190,6 +214,7 @@ namespace Lighthouse.Monsters.Spawning.Server
             }
             _owned.Add(monster);
             _pendingCount--;
+            _pendingOptionIndex = -1;
             return true;
         }
 
@@ -210,17 +235,53 @@ namespace Lighthouse.Monsters.Spawning.Server
                 return false;
             }
 
-            if (!_catalog.TryResolve(_monsterId, out MonsterCatalogEntry entry, out error))
+            for (int i = 0; i < SelectedCount; i++)
+            {
+                string id = GetSelectedId(i);
+                for (int previous = 0; previous < i; previous++)
+                {
+                    if (GetSelectedId(previous) == id)
+                    {
+                        error = $"같은 몬스터 종류를 중복 선택할 수 없습니다: {id}";
+                        return false;
+                    }
+                }
+                if (!_catalog.TryResolve(id, out MonsterCatalogEntry entry, out error))
+                {
+                    return false;
+                }
+                if (!HasValidCapsule(entry.Prefab))
+                {
+                    error = $"{id}: 활성 몬스터 프리팹에 유효한 루트 CapsuleCollider가 필요합니다.";
+                    return false;
+                }
+            }
+
+            _catalog.TryResolve(_monsterId, out MonsterCatalogEntry first, out error);
+            prefab = first.Prefab;
+            return true;
+        }
+
+        private int SelectedCount => 1 + (_additionalMonsterIds == null ? 0 : _additionalMonsterIds.Count);
+
+        private string GetSelectedId(int index)
+        {
+            return index == 0 ? _monsterId : _additionalMonsterIds[index - 1];
+        }
+
+        private bool HasUnchangedSelection()
+        {
+            if (_startedCatalog != _catalog || _spawnOptions.Count != SelectedCount)
             {
                 return false;
             }
-
-            prefab = entry.Prefab;
-            if (!HasValidCapsule(prefab))
+            for (int i = 0; i < _spawnOptions.Count; i++)
             {
-                prefab = null;
-                error = "활성 몬스터 프리팹에 유효한 루트 CapsuleCollider가 필요합니다.";
-                return false;
+                SpawnOption option = _spawnOptions[i];
+                if (option.Id != GetSelectedId(i) || option.Prefab == null || option.Capsule == null)
+                {
+                    return false;
+                }
             }
             return true;
         }
