@@ -20,7 +20,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private PlayerAnimationDriver _animationDriver;
 
     [SerializeField]
-    private PlayerCamera _camera;
+    private PlayerCamera _camera; 
 
     private PlayerAnimationSource _animationSource;
 
@@ -133,7 +133,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void Start()
     {
-        if (!NetworkClient.active&& !NetworkServer.active&& _allowOfflineControl)
+        if (!NetworkClient.active && !NetworkServer.active&& _allowOfflineControl)
         {
             _camera?.Attach();
         }

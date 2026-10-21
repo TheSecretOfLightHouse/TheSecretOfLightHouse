@@ -7,6 +7,15 @@
             "id": "ba932fcf-e2f4-4b29-9ce7-9fcc19118896",
             "actions": [
                 {
+                    "name": "Inventory",
+                    "type": "Button",
+                    "id": "6786dd91-f5fc-42f4-bf32-20cc3c83f144",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Move",
                     "type": "Value",
                     "id": "aa8f614b-2d30-408a-b05b-742846b3143f",
@@ -71,6 +80,28 @@
                 }
             ],
             "bindings": [
+                {
+                    "name": "",
+                    "id": "7533c6d3-e815-4dab-823b-80339516877d",
+                    "path": "<Keyboard>/i",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "PC",
+                    "action": "Inventory",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "515d9019-d40a-4907-9c53-2c61c862ba64",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "PC",
+                    "action": "Inventory",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
                 {
                     "name": "WASD",
                     "id": "3422c101-6b4f-419e-a87d-032c2bd3d369",
