@@ -1,7 +1,8 @@
+using Mirror;
 using UnityEngine;
 
 [RequireComponent(typeof(BoatModuleEquipment))]
-public abstract class BoatModule : MonoBehaviour
+public abstract class BoatModule : NetworkBehaviour
 {
     private BoatModuleEquipment _equipment;
     private bool _isApplied;
