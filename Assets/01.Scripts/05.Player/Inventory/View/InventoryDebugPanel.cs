@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.Text;
+using Lighthouse.Workbench.Rules;
 using Lighthouse.World.Harvest.Rules;
 using Mirror;
 using UnityEngine;
+using UnityEngine.InputSystem;
 [DisallowMultipleComponent]
 [RequireComponent(typeof(PlayerInventory))]
 public sealed class InventoryDebugPanel : NetworkBehaviour
@@ -24,8 +26,14 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
 
     private readonly StringBuilder _builder = new StringBuilder();
     private PlayerInventory _inventory;
+    private PlayerController _player;
+    private BoatController _displayedBoat;
+    private BoatModuleEquipment _boatEquipment;
     private bool _isSubscribed;
     private string _contents = "보유 자원 없음";
+    private int _displayedModuleId;
+    private ModuleRecipe _displayedModuleRecipe;
+    private string _moduleContents = "없음";
     private Vector2 _scrollPosition;
     private string _testResourceId = "1";
     private string _testRequestedAmount = "4";
@@ -40,6 +48,8 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
     private void Awake()
     {
         _inventory = GetComponent<PlayerInventory>();
+        _player = GetComponent<PlayerController>();
+        _showPanel = false;
     }
 
     private void OnEnable()
@@ -63,8 +73,13 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
         float y = Mathf.Clamp(_margin, 0f, Screen.height - height);
 
         GUILayout.BeginArea(new Rect(x, y, width, height), GUI.skin.box);
-        GUILayout.Label("내 인벤토리 · 동기화 수량");
+        GUILayout.Label("내 인벤토리 · I / Tab으로 닫기");
         _scrollPosition = GUILayout.BeginScrollView(_scrollPosition);
+        RefreshModuleContents();
+        GUILayout.Label("운반 중인 모듈");
+        GUILayout.Label(_moduleContents);
+        DrawInstalledModules();
+        GUILayout.Label("보유 자원");
         GUILayout.Label(_contents);
         GUILayout.EndScrollView();
         if (Debug.isDebugBuild)
@@ -102,7 +117,18 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
 
     private void OnDisable()
     {
+        _showPanel = false;
         Unsubscribe();
+    }
+
+    public void OnInventory(InputValue value)
+    {
+        if (!isLocalPlayer || !isActiveAndEnabled || !value.isPressed)
+        {
+            return;
+        }
+
+        _showPanel = !_showPanel;
     }
 
     public override void OnStartLocalPlayer()
@@ -113,6 +139,7 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
 
     public override void OnStopLocalPlayer()
     {
+        _showPanel = false;
         Unsubscribe();
         base.OnStopLocalPlayer();
     }
@@ -219,5 +246,66 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
         }
 
         _contents = _builder.Length == 0 ? "보유 자원 없음" : _builder.ToString();
+    }
+
+    private void RefreshModuleContents()
+    {
+        int recipeId = _inventory.ModuleRecipeId;
+        ModuleRecipe recipe = _inventory.GetModuleRecipe();
+        if (_displayedModuleId == recipeId && _displayedModuleRecipe == recipe)
+        {
+            return;
+        }
+
+        _displayedModuleId = recipeId;
+        _displayedModuleRecipe = recipe;
+        _moduleContents = recipeId == 0
+            ? "없음"
+            : recipe
+                ? $"{recipe.DisplayName} (ID {recipeId}): 1개"
+                : $"모듈 (ID {recipeId}): 1개";
+    }
+
+    private void DrawInstalledModules()
+    {
+        BoatController ownedBoat = _player ? _player.OwnedBoat : null;
+        if (_displayedBoat != ownedBoat)
+        {
+            _displayedBoat = ownedBoat;
+            _boatEquipment = ownedBoat ? ownedBoat.GetComponent<BoatModuleEquipment>() : null;
+        }
+
+        GUILayout.Label("내 배에 장착된 모듈");
+        if (!_boatEquipment)
+        {
+            GUILayout.Label("배 장착 정보 없음");
+            return;
+        }
+
+        if (_boatEquipment.InstalledCount == 0)
+        {
+            GUILayout.Label("없음");
+            return;
+        }
+
+        if (_boatEquipment.HasModule(BoatModuleType.Searchlight))
+        {
+            GUILayout.Label("탐조등 · 장착됨");
+        }
+
+        if (_boatEquipment.HasModule(BoatModuleType.Dash))
+        {
+            GUILayout.Label("대쉬 · 장착됨");
+        }
+
+        if (_boatEquipment.HasModule(BoatModuleType.DepthAlarm))
+        {
+            GUILayout.Label("장애물 경보 · 장착됨");
+        }
+
+        if (_boatEquipment.HasModule(BoatModuleType.Stabilizer))
+        {
+            GUILayout.Label("선체 안정기 · 장착됨");
+        }
     }
 }
