@@ -21,6 +21,8 @@ namespace Lighthouse.Workbench.View
         [Tooltip("Optional button under the cell.")]
         [SerializeField]
         private Button _actionButton;
+        [SerializeField]
+        private Image _selection;
 
         private Action<int> _actionClicked;
         private int _actionId;
@@ -58,6 +60,15 @@ namespace Lighthouse.Workbench.View
             }
 
             SetAction(0, false, null);
+            SetSelected(false);
+        }
+
+        public void SetSelected(bool isSelected)
+        {
+            if (_selection)
+            {
+                _selection.enabled = isSelected;
+            }
         }
 
         // id is handed back to clicked. A null clicked hides the button.

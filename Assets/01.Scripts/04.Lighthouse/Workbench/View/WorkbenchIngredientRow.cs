@@ -25,21 +25,55 @@ namespace Lighthouse.Workbench.View
         private Button _addOneButton;
         [SerializeField]
         private Button _addAllButton;
+        [SerializeField]
+        private Button _selectButton;
+        [SerializeField]
+        private Image _selection;
+        [SerializeField]
+        private bool _isShortageTinted;
+        [SerializeField]
+        private Color _shortageColor = new Color(0.85f, 0.3f, 0.22f);
+        [SerializeField]
+        private Color _sufficientColor = new Color(0.96f, 0.91f, 0.76f);
 
         private int _resourceId;
         private Action<int, bool> _depositClicked;
+        private Action<int> _selected;
 
         private void Awake()
         {
-            _addOneButton.onClick.AddListener(HandleAddOneClicked);
-            _addAllButton.onClick.AddListener(HandleAddAllClicked);
+            if (_addOneButton)
+            {
+                _addOneButton.onClick.AddListener(HandleAddOneClicked);
+            }
+
+            if (_addAllButton)
+            {
+                _addAllButton.onClick.AddListener(HandleAddAllClicked);
+            }
+
+            if (_selectButton)
+            {
+                _selectButton.onClick.AddListener(HandleSelected);
+            }
         }
 
         public void Bind(int resourceId, string displayName, Sprite icon, Action<int, bool> depositClicked)
         {
+            Bind(resourceId, displayName, icon, depositClicked, null);
+        }
+
+        public void Bind(int resourceId, string displayName, Sprite icon, Action<int, bool> depositClicked, Action<int> selected)
+        {
             _resourceId = resourceId;
             _depositClicked = depositClicked;
-            _name.text = displayName;
+            _selected = selected;
+
+            if (_name)
+            {
+                _name.text = displayName;
+            }
+
             _icon.sprite = icon;
             _icon.enabled = icon;
         }
@@ -47,15 +81,55 @@ namespace Lighthouse.Workbench.View
         public void SetProgress(int deposited, int required, int held, bool isOpen)
         {
             float ratio = required > 0 ? Mathf.Clamp01((float)deposited / required) : 0f;
-            _fill.anchorMax = new Vector2(ratio, 1f);
-            _fill.gameObject.SetActive(ratio > 0f);
+            if (_fill)
+            {
+                _fill.anchorMax = new Vector2(ratio, 1f);
+                _fill.gameObject.SetActive(ratio > 0f);
+            }
+
             _count.text = $"{deposited} / {required}";
-            _held.text = $"보유 {held}";
+
+            if (_held)
+            {
+                _held.text = $"보유 {held}";
+            }
+
             bool isFull = deposited >= required;
-            _doneMark.SetActive(isFull);
+
+            if (_isShortageTinted)
+            {
+                _count.color = isFull || held >= required - deposited ? _sufficientColor : _shortageColor;
+            }
+
+            if (_doneMark)
+            {
+                _doneMark.SetActive(isFull);
+            }
+
             bool canDeposit = isOpen && !isFull && held > 0;
-            _addOneButton.interactable = canDeposit;
-            _addAllButton.interactable = canDeposit;
+
+            if (_addOneButton)
+            {
+                _addOneButton.interactable = canDeposit;
+            }
+
+            if (_addAllButton)
+            {
+                _addAllButton.interactable = canDeposit;
+            }
+        }
+
+        public void SetSelected(bool isSelected)
+        {
+            if (_selection)
+            {
+                _selection.enabled = isSelected;
+            }
+        }
+
+        private void HandleSelected()
+        {
+            _selected?.Invoke(_resourceId);
         }
 
         private void HandleAddOneClicked()
