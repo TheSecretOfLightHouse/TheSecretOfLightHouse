@@ -69,6 +69,7 @@ namespace Lighthouse.World.Ocean
             TryGetComponent(out _identity);
             body.mass = _mass;
             body.centerOfMass = _centerOfMassOffset;
+            body.useGravity = true;
         }
     }
 }
