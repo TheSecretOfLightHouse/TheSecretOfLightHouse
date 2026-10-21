@@ -694,11 +694,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ef5dda0596fc4ea2872229c7ce943612, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _catalog: {fileID: 11400000, guid: 7e98d26170001b041adddd349cf715e6, type: 2}
-  _monsterId: blue-shark
-  _maxAliveCount: 4
+  _catalog: {fileID: 11400000, guid: 4d3969feb08128a46999c5f1f6597dec, type: 2}
+  _monsterId: angler
+  _additionalMonsterIds:
+  - manta
+  - marline
+  - shark
+  - turtle
+  _maxAliveCount: 5
   _respawnDelay: 30
-  _spawnRadius: 15
+  _spawnRadius: 64.64
   _startWhenServerActive: 1
   _positionValidator: {fileID: 0}
 --- !u!4 &1431104734
@@ -882,8 +887,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ef5dda0596fc4ea2872229c7ce943612, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _catalog: {fileID: 11400000, guid: 7e98d26170001b041adddd349cf715e6, type: 2}
-  _monsterId: blue-marlin
+  _catalog: {fileID: 11400000, guid: 4d3969feb08128a46999c5f1f6597dec, type: 2}
+  _monsterId: manta
+  _additionalMonsterIds: []
   _maxAliveCount: 4
   _respawnDelay: 30
   _spawnRadius: 15
@@ -1086,8 +1092,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ef5dda0596fc4ea2872229c7ce943612, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _catalog: {fileID: 11400000, guid: 7e98d26170001b041adddd349cf715e6, type: 2}
-  _monsterId: blue-shark
+  _catalog: {fileID: 11400000, guid: 4d3969feb08128a46999c5f1f6597dec, type: 2}
+  _monsterId: marline
+  _additionalMonsterIds: []
   _maxAliveCount: 4
   _respawnDelay: 30
   _spawnRadius: 15

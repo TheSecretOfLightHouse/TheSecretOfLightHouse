@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Lighthouse.Monsters.Spawning.Rules;
 using Lighthouse.Monsters.Spawning.Server;
 using UnityEditor;
@@ -13,7 +14,7 @@ namespace Lighthouse.Monsters.Spawning.Editor
             serializedObject.Update();
             EditorGUILayout.PropertyField(serializedObject.FindProperty("_catalog"), new GUIContent("몬스터 목록"));
             DrawMonsterSelection();
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("_maxAliveCount"), new GUIContent("최대 생존 수"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("_maxAliveCount"), new GUIContent("최대 생존 수 (전체)"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("_respawnDelay"), new GUIContent("재생성 대기 시간 (초)"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("_spawnRadius"), new GUIContent("생성 반경 (m)"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("_startWhenServerActive"), new GUIContent("서버 시작 시 시험 생성"));
@@ -37,32 +38,81 @@ namespace Lighthouse.Monsters.Spawning.Editor
         {
             var catalog = serializedObject.FindProperty("_catalog").objectReferenceValue as MonsterCatalog;
             SerializedProperty id = serializedObject.FindProperty("_monsterId");
+            SerializedProperty additionalIds = serializedObject.FindProperty("_additionalMonsterIds");
+            var selectedIds = new List<string> { id.stringValue };
+            for (int i = 0; i < additionalIds.arraySize; i++)
+            {
+                selectedIds.Add(additionalIds.GetArrayElementAtIndex(i).stringValue);
+            }
+
+            EditorGUILayout.LabelField("몬스터 종류", EditorStyles.boldLabel);
+            bool changed = false;
+            int removeIndex = -1;
+            for (int i = 0; i < selectedIds.Count; i++)
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUI.BeginChangeCheck();
+                    string nextId = DrawMonsterDropdown(catalog, selectedIds[i], i);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        selectedIds[i] = nextId;
+                        changed = true;
+                    }
+                    using (new EditorGUI.DisabledScope(selectedIds.Count == 1))
+                    {
+                        if (GUILayout.Button(new GUIContent("−", "이 종류 삭제"), GUILayout.Width(26f)))
+                        {
+                            removeIndex = i;
+                        }
+                    }
+                }
+            }
+            if (removeIndex >= 0)
+            {
+                selectedIds.RemoveAt(removeIndex);
+                changed = true;
+            }
+            if (GUILayout.Button(new GUIContent("+", "몬스터 종류 추가"), GUILayout.Width(28f)))
+            {
+                selectedIds.Add(string.Empty);
+                changed = true;
+            }
+            if (changed)
+            {
+                id.stringValue = selectedIds[0];
+                additionalIds.arraySize = selectedIds.Count - 1;
+                for (int i = 1; i < selectedIds.Count; i++)
+                {
+                    additionalIds.GetArrayElementAtIndex(i - 1).stringValue = selectedIds[i];
+                }
+            }
+            EditorGUILayout.HelpBox("+ 버튼으로 종류를 추가하고 각 드롭다운에서 선택해 주세요. 선택한 종류 중 같은 확률로 무작위 생성하며 최대 생존 수는 전체 합계입니다. 실행 중 변경 시 중지 후 다시 시작해 주세요.", MessageType.Info);
+        }
+
+        private static string DrawMonsterDropdown(MonsterCatalog catalog, string id, int index)
+        {
             int count = catalog == null || catalog.Entries == null ? 0 : catalog.Entries.Count;
-
             var labels = new string[count + 1];
-            labels[0] = string.IsNullOrEmpty(id.stringValue) ? "선택 안 함" : $"미등록 ID: {id.stringValue}";
+            labels[0] = string.IsNullOrEmpty(id) ? "선택 안 함" : $"미등록 ID: {id}";
             int selected = 0;
-
             for (int i = 0; i < count; i++)
             {
                 MonsterCatalogEntry entry = catalog.Entries[i];
                 labels[i + 1] = entry == null ? "잘못된 항목" : $"{entry.DisplayName} ({entry.Id})";
-
-                if (entry != null && entry.Id == id.stringValue)
+                if (entry != null && entry.Id == id)
                 {
                     selected = i + 1;
                     labels[0] = "선택 안 함";
                 }
             }
-
-            EditorGUI.BeginChangeCheck();
-            int next = EditorGUILayout.Popup("몬스터 종류", selected, labels);
-
-            if (EditorGUI.EndChangeCheck())
+            int next = EditorGUILayout.Popup($"종류 {index + 1}", selected, labels);
+            // Preserve missing IDs until the user chooses another value.
+            if (next == selected)
             {
-                // 사용자가 직접 선택을 변경할 때까지 목록에서 사라진 식별자도 유지한다.
-                id.stringValue = next == 0 ? string.Empty : catalog.Entries[next - 1]?.Id ?? string.Empty;
+                return id;
             }
+            return next == 0 ? string.Empty : catalog.Entries[next - 1]?.Id ?? string.Empty;
         }
 
         private void OnSceneGUI()
