@@ -23,12 +23,34 @@ namespace Lighthouse.World.Islands.View
             Clear();
             for (int i = 0; i < plans.Count; i++)
             {
-                IslandSpawnPlan plan = plans[i];
-                GameObject instance = Instantiate(plan.Prefab, plan.Position, Quaternion.Euler(0f, plan.YawDegrees, 0f), transform);
-                instance.name = $"Island_{plan.Index}_{plan.Archetype.name}_v{plan.VariantIndex}";
-                _indices.Add(plan.Index);
-                _instances.Add(instance);
+                Create(plans[i]);
             }
+        }
+
+        public void Create(IslandSpawnPlan plan)
+        {
+            if (plan.Prefab == null || plan.Archetype == null)
+            {
+                throw new System.ArgumentException(
+                    $"Island {plan.Index}: prefab or archetype is missing.",
+                    nameof(plan));
+            }
+
+            if (_indices.Contains(plan.Index))
+            {
+                throw new System.InvalidOperationException(
+                    $"Island {plan.Index} already exists.");
+            }
+
+            GameObject instance = Instantiate(
+                plan.Prefab,
+                plan.Position,
+                Quaternion.Euler(0f, plan.YawDegrees, 0f),
+                transform);
+
+            _indices.Add(plan.Index);
+            _instances.Add(instance);
+            instance.name = $"Island_{plan.Index}_{plan.Archetype.name}_v{plan.VariantIndex}";
         }
 
         public void Clear()

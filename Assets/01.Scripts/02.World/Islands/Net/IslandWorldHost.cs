@@ -1,91 +1,139 @@
+using System;
 using System.Collections.Generic;
 using Lighthouse.World.Harvest.Rules;
 using Lighthouse.World.Islands.Rules;
 using Lighthouse.World.Islands.View;
-using Lighthouse.World.MapGeneration.Net;
 using Lighthouse.World.MapGeneration.Rules;
 using UnityEngine;
 
 namespace Lighthouse.World.Islands.Net
 {
     [DisallowMultipleComponent]
-    public class IslandWorldHost : MonoBehaviour
+    public class IslandWorldHost : MonoBehaviour, ILocalMapBuilder
     {
-        [SerializeField] private MapStateNet _map;
         [SerializeField] private IslandInstanceSet _instances;
 
         private readonly List<IslandSpawnPlan> _plans = new List<IslandSpawnPlan>();
         private readonly List<string> _errors = new List<string>();
         private readonly List<HarvestSpot> _spots = new List<HarvestSpot>();
+        private MapGenerationConfig _config;
+        private SeededRandom _random;
+        private int _nextIndex;
         private int _buildVersion;
+        private bool _isBuilding;
 
         public int BuildVersion => _buildVersion;
 
         private void Awake()
         {
-            if (_map == null || _instances == null)
+            if (_instances == null)
             {
-                Debug.LogError($"[{nameof(IslandWorldHost)}] MapStateNet and IslandInstanceSet are required.");
+                Debug.LogError($"[{nameof(IslandWorldHost)}] IslandInstanceSet is required.");
                 enabled = false;
-            }
-        }
-
-        private void OnEnable()
-        {
-            _map.LayoutReady += HandleLayoutReady;
-            _map.LayoutReleased += HandleLayoutReleased;
-            if (_map.IsLayoutReady && _map.Layout != null)
-            {
-                HandleLayoutReady(_map.Layout, _map.Info);
             }
         }
 
         private void OnDisable()
         {
-            _map.LayoutReady -= HandleLayoutReady;
-            _map.LayoutReleased -= HandleLayoutReleased;
-            _instances.Clear();
+            Cancel();
         }
 
-        private void HandleLayoutReady(MapLayout layout, MapSeedInfo info)
+        public void Begin(MapGenerationConfig config, MapLayout layout, MapSeedInfo info)
         {
-            _instances.Clear();
-            _errors.Clear();
-            if (!IslandSpawnPlanner.TryBuild(_map.Config, layout, _plans, _errors))
-            {
-                for (int i = 0; i < _errors.Count; i++)
-                {
-                    Debug.LogError($"[{nameof(IslandWorldHost)}] {_errors[i]}");
-                }
+            Cancel();
 
+            if (!isActiveAndEnabled || _instances == null)
+            {
+                throw new InvalidOperationException("Island builder is unavailable.");
+            }
+
+            if (config == null || layout == null || !info.IsSet)
+            {
+                throw new ArgumentException("Map configuration, layout and seed are required.");
+            }
+
+            _errors.Clear();
+            if (!IslandSpawnPlanner.TryBuild(config, layout, _plans, _errors))
+            {
+                throw new InvalidOperationException(string.Join("\n", _errors));
+            }
+
+            if (_plans.Count == 0)
+            {
+                throw new InvalidOperationException("Island spawn plan is empty.");
+            }
+
+            _config = config;
+            _random = new SeededRandom(info.Seed);
+            _nextIndex = 0;
+            _isBuilding = true;
+        }
+
+        public bool Step()
+        {
+            if (!_isBuilding || !isActiveAndEnabled || _instances == null)
+            {
+                throw new InvalidOperationException("Island build is not active.");
+            }
+
+            IslandSpawnPlan plan = _plans[_nextIndex];
+            _instances.Create(plan);
+
+            if (plan.Index != 0)
+            {
+                BindHarvestSpots(plan);
+            }
+
+            _nextIndex++;
+            if (_nextIndex < _plans.Count)
+            {
+                return false;
+            }
+
+            _isBuilding = false;
+            _buildVersion++;
+            return true;
+        }
+
+        public void Cancel()
+        {
+            _isBuilding = false;
+            _nextIndex = 0;
+            _config = null;
+            _random = null;
+            _plans.Clear();
+            _errors.Clear();
+            _spots.Clear();
+
+            if (_instances != null)
+            {
+                _instances.Clear();
+            }
+        }
+
+        private void BindHarvestSpots(IslandSpawnPlan plan)
+        {
+            if (!_instances.TryGetSpots(plan.Index, _spots))
+            {
+                throw new InvalidOperationException(
+                    $"Island {plan.Index}: instance is missing.");
+            }
+
+            if (_spots.Count == 0)
+            {
                 return;
             }
 
-            _instances.Build(_plans);
-            BindHarvestSpots(info);
-            _buildVersion++;
-        }
-
-        private void HandleLayoutReleased()
-        {
-            _instances.Clear();
-        }
-
-        private void BindHarvestSpots(MapSeedInfo info)
-        {
-            SeededRandom random = new SeededRandom(info.Seed);
-            for (int i = 0; i < _plans.Count; i++)
+            if (!HarvestIslandSetup.TryRegister(
+                null,
+                _config.Resources,
+                plan.Archetype,
+                plan.Index,
+                _random,
+                _spots))
             {
-                IslandSpawnPlan plan = _plans[i];
-                if (!_instances.TryGetSpots(plan.Index, _spots) || _spots.Count == 0)
-                {
-                    continue;
-                }
-
-                if (!HarvestIslandSetup.TryRegister(null, _map.Config.Resources, plan.Archetype, plan.Index, random, _spots))
-                {
-                    Debug.LogError($"[{nameof(IslandWorldHost)}] Island {plan.Index} harvest spot binding failed.");
-                }
+                throw new InvalidOperationException(
+                    $"Island {plan.Index}: harvest spot binding failed.");
             }
         }
     }
