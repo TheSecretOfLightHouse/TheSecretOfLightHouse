@@ -330,6 +330,7 @@ MonoBehaviour:
   _label: {fileID: 1123006462412315633}
   _name: {fileID: 3129964632620856855}
   _actionButton: {fileID: 0}
+  _selection: {fileID: 0}
 --- !u!1 &451852953823709788
 GameObject:
   m_ObjectHideFlags: 0
@@ -909,6 +910,7 @@ MonoBehaviour:
   _label: {fileID: 1975928650866422128}
   _name: {fileID: 7488408369198072379}
   _actionButton: {fileID: 4666097179280196586}
+  _selection: {fileID: 0}
 --- !u!1 &713800593871513945
 GameObject:
   m_ObjectHideFlags: 0
@@ -1160,6 +1162,7 @@ MonoBehaviour:
   _label: {fileID: 6414096214667462115}
   _name: {fileID: 4032432677222380598}
   _actionButton: {fileID: 0}
+  _selection: {fileID: 0}
 --- !u!1 &1093269680147186190
 GameObject:
   m_ObjectHideFlags: 0
@@ -2426,6 +2429,7 @@ MonoBehaviour:
   _label: {fileID: 1911354138851294904}
   _name: {fileID: 5400892642939935502}
   _actionButton: {fileID: 0}
+  _selection: {fileID: 0}
 --- !u!1 &1774919124545706204
 GameObject:
   m_ObjectHideFlags: 0
@@ -2773,7 +2777,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _workbench: {fileID: 0}
   _target: {fileID: 0}
-  _openKey: 20
+  _openKey: 19
   _window: {fileID: 6151957943200275384}
   _prompt: {fileID: 4431036039558629065}
   _promptText: {fileID: 4367866718480596695}
@@ -2786,11 +2790,19 @@ MonoBehaviour:
   _messageRejectColor: {r: 0.9, g: 0.5, b: 0.45, a: 1}
   _cardTemplate: {fileID: 4544094054595756752}
   _recipeFallbackIcon: {fileID: 21300000, guid: c7483939ed673eb4fb3925206b184fd6, type: 3}
+  _recipeIcons: []
   _progressTitle: {fileID: 2714213419091651532}
   _progressEmpty: {fileID: 8428181114897728788}
   _rowTemplate: {fileID: 1123439376553017095}
   _progressHint: {fileID: 1478740290181620167}
   _craftButton: {fileID: 4194186450650151815}
+  _isSketchLayout: 0
+  _depositButton: {fileID: 0}
+  _overallFill: {fileID: 0}
+  _takeButton: {fileID: 0}
+  _previousStockPageButton: {fileID: 0}
+  _nextStockPageButton: {fileID: 0}
+  _stockPageText: {fileID: 0}
   _resourceSlots:
   - {fileID: 8056359026316977822}
   - {fileID: 6496277024195150789}
@@ -2826,6 +2838,7 @@ MonoBehaviour:
   _carryIcon: {fileID: 3514661701538870418}
   _carryText: {fileID: 752204777976895024}
   _returnButton: {fileID: 6529257031072443030}
+  _returnShortcutButton: {fileID: 0}
   _sectionHeaderTemplate: {fileID: 1114842203350239804}
   _sectionHeaderView: {fileID: 3693498763054444288}
   _lighthouseSectionIcon: {fileID: 21300000, guid: 5ea70ff6aeedd254a84fdb117c3d4d79, type: 3}
@@ -3769,6 +3782,7 @@ MonoBehaviour:
   _label: {fileID: 7806453007616211139}
   _name: {fileID: 7676744370991502748}
   _actionButton: {fileID: 0}
+  _selection: {fileID: 0}
 --- !u!1 &2622759168889997246
 GameObject:
   m_ObjectHideFlags: 0
@@ -4362,6 +4376,7 @@ MonoBehaviour:
   _label: {fileID: 7580165173811923352}
   _name: {fileID: 2554414288539014943}
   _actionButton: {fileID: 3037491715435163726}
+  _selection: {fileID: 0}
 --- !u!1 &2956641898095643827
 GameObject:
   m_ObjectHideFlags: 0
@@ -4624,6 +4639,11 @@ MonoBehaviour:
   _doneMark: {fileID: 9213508290123942933}
   _addOneButton: {fileID: 5163031684255758409}
   _addAllButton: {fileID: 4552179137895143232}
+  _selectButton: {fileID: 0}
+  _selection: {fileID: 0}
+  _isShortageTinted: 0
+  _shortageColor: {r: 0.85, g: 0.3, b: 0.22, a: 1}
+  _sufficientColor: {r: 0.96, g: 0.91, b: 0.76, a: 1}
 --- !u!1 &3256191461030373654
 GameObject:
   m_ObjectHideFlags: 0
@@ -4971,6 +4991,7 @@ MonoBehaviour:
   _label: {fileID: 1299499083425748635}
   _name: {fileID: 1910818180878848572}
   _actionButton: {fileID: 166311421459275226}
+  _selection: {fileID: 0}
 --- !u!1 &3447513578620324136
 GameObject:
   m_ObjectHideFlags: 0
@@ -5732,6 +5753,7 @@ MonoBehaviour:
   _label: {fileID: 8165098827495587899}
   _name: {fileID: 6680409770745877608}
   _actionButton: {fileID: 7891218039044889671}
+  _selection: {fileID: 0}
 --- !u!1 &3823689554762577458
 GameObject:
   m_ObjectHideFlags: 0
@@ -5905,6 +5927,7 @@ MonoBehaviour:
   _label: {fileID: 1642095361004498286}
   _name: {fileID: 5871690709536836529}
   _actionButton: {fileID: 55972148075289091}
+  _selection: {fileID: 0}
 --- !u!1 &3839013244165297972
 GameObject:
   m_ObjectHideFlags: 0
@@ -7761,6 +7784,7 @@ MonoBehaviour:
   _label: {fileID: 5081854852668746413}
   _name: {fileID: 4553320337788934472}
   _actionButton: {fileID: 575408899668220286}
+  _selection: {fileID: 0}
 --- !u!1 &4798319282733982276
 GameObject:
   m_ObjectHideFlags: 0
@@ -7937,6 +7961,7 @@ MonoBehaviour:
   _label: {fileID: 9082313176808920718}
   _name: {fileID: 4193772603123455127}
   _actionButton: {fileID: 0}
+  _selection: {fileID: 0}
 --- !u!1 &5061331043929996087
 GameObject:
   m_ObjectHideFlags: 0
@@ -8580,6 +8605,7 @@ MonoBehaviour:
   _label: {fileID: 2353194369520740375}
   _name: {fileID: 8814610107118221664}
   _actionButton: {fileID: 0}
+  _selection: {fileID: 0}
 --- !u!1 &5571854223635367305
 GameObject:
   m_ObjectHideFlags: 0
@@ -9202,6 +9228,7 @@ MonoBehaviour:
   _label: {fileID: 1077608420786781164}
   _name: {fileID: 1579649020835262104}
   _actionButton: {fileID: 838144693127211645}
+  _selection: {fileID: 0}
 --- !u!1 &5875548940226901448
 GameObject:
   m_ObjectHideFlags: 0
@@ -9568,6 +9595,7 @@ MonoBehaviour:
   _label: {fileID: 1510368779513943180}
   _name: {fileID: 3247769715479076742}
   _actionButton: {fileID: 0}
+  _selection: {fileID: 0}
 --- !u!1 &6151957943200275384
 GameObject:
   m_ObjectHideFlags: 0
@@ -9971,7 +9999,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "[F]  \uC791\uC5C5\uB300 \uC0AC\uC6A9"
+  m_Text: "[E]  \uC791\uC5C5\uB300 \uC0AC\uC6A9"
 --- !u!1 &6512519723884587046
 GameObject:
   m_ObjectHideFlags: 0
@@ -11751,6 +11779,7 @@ MonoBehaviour:
   _label: {fileID: 9144600137715007361}
   _name: {fileID: 8688911318034787802}
   _actionButton: {fileID: 0}
+  _selection: {fileID: 0}
 --- !u!1 &7661705026147104013
 GameObject:
   m_ObjectHideFlags: 0
@@ -12513,6 +12542,7 @@ MonoBehaviour:
   _label: {fileID: 1368793180611374242}
   _name: {fileID: 3627637682830728850}
   _actionButton: {fileID: 2407082906283553551}
+  _selection: {fileID: 0}
 --- !u!1 &8100100206249000729
 GameObject:
   m_ObjectHideFlags: 0
