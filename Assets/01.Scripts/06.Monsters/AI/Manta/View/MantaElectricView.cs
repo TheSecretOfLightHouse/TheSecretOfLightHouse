@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Lighthouse.Monsters.AI.View
 {
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(MantaRiseAttack))]
+    [RequireComponent(typeof(MantaElectricAttack))]
     public sealed class MantaElectricView : MonoBehaviour
     {
         private static readonly int ActivityId = Shader.PropertyToID("_Activity");
@@ -14,13 +14,13 @@ namespace Lighthouse.Monsters.AI.View
         [SerializeField] private Material _lineMaterial;
         [SerializeField] private Color _warningColor = new Color(1f, 0.65f, 0.1f, 0.5f);
         [SerializeField] private Color _electricColor = new Color(0.15f, 0.8f, 1f, 0.8f);
-        private MantaRiseAttack _attack;
+        private MantaElectricAttack _attack;
         private LineRenderer _area;
         private MaterialPropertyBlock _properties;
 
         private void Awake()
         {
-            _attack = GetComponent<MantaRiseAttack>();
+            _attack = GetComponent<MantaElectricAttack>();
             _area = CreateLine("ElectricArea");
             _properties = new MaterialPropertyBlock();
         }

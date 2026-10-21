@@ -239,13 +239,11 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  _submergeDepth: 3
   _interceptSpeed: 16
   _alignmentRadius: 0.6
   _predictionSeconds: 1.5
   _minimumLead: 4
   _fallbackWaterHeight: 0
-  _diveSpeed: 6
   _timeoutSeconds: 20
   _preparationSeconds: 0.7
   _electricDuration: 3
@@ -257,7 +255,8 @@ MonoBehaviour:
   _surfaceOffset: 0.15
   _layingForwardAngle: 30
   _layingSpeed: 10
-  _layingDepth: 0.2
+  _chaseTurnSpeed: 120
+  _postAttackAcceleration: 10
   _tailLocalOffset: {x: 0, y: 0, z: -2.7}
 --- !u!114 &7222896787540228908
 MonoBehaviour:

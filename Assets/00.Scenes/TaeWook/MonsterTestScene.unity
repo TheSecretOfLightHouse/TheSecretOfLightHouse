@@ -131,17 +131,13 @@ PrefabInstance:
       propertyPath: m_Name
       value: Manta
       objectReference: {fileID: 0}
-    - target: {fileID: 1600035957298383073, guid: 264c4f6a83299204881205b550c5f4bc, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 1837855740687191228, guid: 264c4f6a83299204881205b550c5f4bc, type: 3}
       propertyPath: m_LocalPosition.x
       value: 28.9
       objectReference: {fileID: 0}
     - target: {fileID: 1837855740687191228, guid: 264c4f6a83299204881205b550c5f4bc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -3
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1837855740687191228, guid: 264c4f6a83299204881205b550c5f4bc, type: 3}
       propertyPath: m_LocalPosition.z
@@ -199,10 +195,6 @@ PrefabInstance:
     - target: {fileID: 8612343004966537504, guid: ff5fd1403cac7a14e9190634981eb90b, type: 3}
       propertyPath: m_Name
       value: BlueMarline
-      objectReference: {fileID: 0}
-    - target: {fileID: 8612343004966537504, guid: ff5fd1403cac7a14e9190634981eb90b, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8993372868849537946, guid: ff5fd1403cac7a14e9190634981eb90b, type: 3}
       propertyPath: m_LocalPosition.x
@@ -300,10 +292,6 @@ PrefabInstance:
     - target: {fileID: 3061826974098303317, guid: b1463a78e6ed26841b068d797a23320c, type: 3}
       propertyPath: m_Name
       value: BlueShark
-      objectReference: {fileID: 0}
-    - target: {fileID: 3061826974098303317, guid: b1463a78e6ed26841b068d797a23320c, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8555244942052610540, guid: b1463a78e6ed26841b068d797a23320c, type: 3}
       propertyPath: sceneId
@@ -1018,10 +1006,6 @@ PrefabInstance:
     - target: {fileID: 5239930098807933430, guid: ee2030eb01e0ca345bd72f0efe20e8e3, type: 3}
       propertyPath: m_Name
       value: Angler
-      objectReference: {fileID: 0}
-    - target: {fileID: 5239930098807933430, guid: ee2030eb01e0ca345bd72f0efe20e8e3, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5708818747357937531, guid: ee2030eb01e0ca345bd72f0efe20e8e3, type: 3}
       propertyPath: sceneId
