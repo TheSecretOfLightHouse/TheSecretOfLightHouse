@@ -502,5 +502,14 @@ namespace Lighthouse.Monsters.AI.Server
         {
             return !float.IsNaN(value) && !float.IsInfinity(value) && value >= 0f;
         }
+
+        private void OnDrawGizmosSelected()
+        {
+            Vector3 tail = transform.TransformPoint(_tailLocalOffset);
+
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireSphere(tail, 0.15f);
+            Gizmos.DrawLine(transform.position, tail);
+        }
     }
 }
