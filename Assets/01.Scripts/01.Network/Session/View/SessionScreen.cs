@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Lighthouse.Network.Session.Net;
 using Lighthouse.Network.Session.Rules;
 using Mirror;
@@ -19,6 +20,8 @@ namespace Lighthouse.Network.Session.View
         private const string DefaultAddress = "localhost";
 
         private static SessionScreen _current;
+        private static readonly HashSet<Object> GameplayOverlays = new HashSet<Object>();
+        private static int _overlayClosedFrame = -1;
 
         [SerializeField]
         private GameObject _background;
@@ -158,6 +161,22 @@ namespace Lighthouse.Network.Session.View
             SceneManager.sceneLoaded -= HandleSceneLoaded;
         }
 
+        /// <summary>Reserves Escape for a local gameplay overlay, including the frame in which it closes.</summary>
+        public static void SetGameplayOverlayOpen(Object owner, bool isOpen)
+        {
+            if (isOpen && owner)
+            {
+                GameplayOverlays.Add(owner);
+            }
+            else if (GameplayOverlays.Remove(owner))
+            {
+                _overlayClosedFrame = Time.frameCount;
+            }
+        }
+
+        /// <summary>True while a gameplay overlay is open or closed this frame, so another overlay does not open on the same key press.</summary>
+        public static bool IsGameplayOverlayOpen => GameplayOverlays.Count > 0 || _overlayClosedFrame == Time.frameCount;
+
         private static Mode ResolveMode(LighthouseNetworkManager manager)
         {
             if (!manager)
@@ -285,6 +304,11 @@ namespace Lighthouse.Network.Session.View
 
         private void HandleEscape(Mode mode)
         {
+            if (mode == Mode.InGame && (GameplayOverlays.Count > 0 || _overlayClosedFrame == Time.frameCount))
+            {
+                return;
+            }
+
             Keyboard keyboard = Keyboard.current;
 
             if (keyboard == null || !keyboard.escapeKey.wasPressedThisFrame)

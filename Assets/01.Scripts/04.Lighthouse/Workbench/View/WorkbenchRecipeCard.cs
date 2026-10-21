@@ -50,13 +50,13 @@ namespace Lighthouse.Workbench.View
             _button.onClick.AddListener(HandleClicked);
         }
 
-        public void Bind(ModuleRecipe recipe, string detail, Sprite fallbackIcon, Action<ModuleRecipe> clicked)
+        public void Bind(ModuleRecipe recipe, string detail, Sprite fallbackIcon, Action<ModuleRecipe> clicked, Sprite iconOverride = null)
         {
             _recipe = recipe;
             _clicked = clicked;
             _name.text = recipe.DisplayName;
             _detail.text = detail;
-            _icon.sprite = recipe.Icon ? recipe.Icon : fallbackIcon;
+            _icon.sprite = iconOverride ? iconOverride : recipe.Icon ? recipe.Icon : fallbackIcon;
             _icon.enabled = _icon.sprite;
         }
 
@@ -73,6 +73,15 @@ namespace Lighthouse.Workbench.View
             if (hasBadge)
             {
                 _badgeText.text = badge;
+            }
+        }
+
+        // For badge sprites drawn white so one sprite can show every state.
+        public void SetBadgeColor(Color color)
+        {
+            if (_badge.TryGetComponent(out Image image))
+            {
+                image.color = color;
             }
         }
 

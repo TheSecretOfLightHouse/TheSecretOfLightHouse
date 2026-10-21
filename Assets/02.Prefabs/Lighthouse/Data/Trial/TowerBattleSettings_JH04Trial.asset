@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abc9aff088dbc1242ba333c1c0535e6d, type: 3}
+  m_Name: TowerBattleSettings_JH04Trial
+  m_EditorClassIdentifier: 
+  _ritualSeconds: 60
+  _ritualRequiredVotes: 2
+  _baseHealth: 300
+  _maxHealth: 1000
+  _specialEndingAttack: 100
+  _ignitionsToWin: 4
+  _crystalsPerIgnition: 1
+  _ignitionCost:
+  - _resource: {fileID: 11400000, guid: 8c7a2775b55dec340a1dfce8185c7fb5, type: 2}
+    _amount: 1
+  - _resource: {fileID: 11400000, guid: d08359d5654970348842cc01ffeb88bf, type: 2}
+    _amount: 1
+  _crystalRespawnSeconds: 20
+  _isTestValue: 1
