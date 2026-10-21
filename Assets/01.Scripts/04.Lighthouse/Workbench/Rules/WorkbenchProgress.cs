@@ -72,6 +72,21 @@ namespace Lighthouse.Workbench.Rules
             return index;
         }
 
+        // Returns the ingredient index that changed, or -1 when that much is not in.
+        public int Remove(int resourceId, int amount)
+        {
+            int index = _recipe.IndexOf(resourceId);
+
+            if (index < 0 || amount <= 0 || amount > _deposited[index])
+            {
+                return -1;
+            }
+
+            _deposited[index] -= amount;
+            _depositedTotal -= amount;
+            return index;
+        }
+
         public void Clear()
         {
             System.Array.Clear(_deposited, 0, _deposited.Length);

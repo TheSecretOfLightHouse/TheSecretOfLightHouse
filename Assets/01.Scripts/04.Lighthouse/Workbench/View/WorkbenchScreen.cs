@@ -5,6 +5,7 @@ using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Interaction.Requests.Rules;
 using Lighthouse.Interaction.Targets.Net;
+using Lighthouse.Tower.Rules;
 using Lighthouse.Workbench.Net;
 using Lighthouse.Workbench.Rules;
 using Lighthouse.World.Harvest.Rules;
@@ -85,6 +86,48 @@ namespace Lighthouse.Workbench.View
         [SerializeField]
         private ResourceIcon[] _resourceIcons = new ResourceIcon[0];
 
+        [Header("Carry (2026-10-20): take a stored module, put it back")]
+        [SerializeField]
+        private GameObject _carryBar;
+        [SerializeField]
+        private Image _carryIcon;
+        [SerializeField]
+        private Text _carryText;
+        [SerializeField]
+        private Button _returnButton;
+
+        [Header("Recipe sections")]
+        [Tooltip("Inactive heading in the recipe list, copied once for lighthouse and once for boat modules.")]
+        [SerializeField]
+        private Text _sectionHeaderTemplate;
+        [Tooltip("Optional. Used instead of the plain text heading when set (a plate with an icon).")]
+        [SerializeField]
+        private WorkbenchSectionHeader _sectionHeaderView;
+        [SerializeField]
+        private Sprite _lighthouseSectionIcon;
+        [SerializeField]
+        private Sprite _boatSectionIcon;
+
+        [Header("Optional progress header pieces")]
+        [SerializeField]
+        private Image _progressIcon;
+        [Tooltip("Shows where the module goes. Without it boat modules get \"(배 모듈)\" after the title.")]
+        [SerializeField]
+        private Text _progressKind;
+
+        [Header("Badge colors (only when the badge sprite is tinted)")]
+        [SerializeField]
+        private bool _isBadgeTinted;
+        [SerializeField]
+        private Color _badgeReadyColor = new Color(0.27f, 0.5f, 0.34f);
+        [SerializeField]
+        private Color _badgeProgressColor = new Color(0.78f, 0.45f, 0.18f);
+        [SerializeField]
+        private Color _badgeCappedColor = new Color(0.7f, 0.27f, 0.2f);
+        [Tooltip("Optional. Tells which floors each lighthouse recipe goes to, shown on its card.")]
+        [SerializeField]
+        private TowerLayout _towerLayout;
+
         [Header("Font")]
         [SerializeField]
         private bool _useOsFont = true;
@@ -94,6 +137,8 @@ namespace Lighthouse.Workbench.View
         private readonly List<WorkbenchRecipeCard> _cards = new List<WorkbenchRecipeCard>();
         private readonly List<WorkbenchIngredientRow> _rows = new List<WorkbenchIngredientRow>();
         private readonly StringBuilder _builder = new StringBuilder();
+        private GameObject _lighthouseHeader;
+        private GameObject _boatHeader;
         private NetworkIdentity _player;
         private InteractionRelay _relay;
         private PlayerInventory _inventory;
@@ -128,6 +173,22 @@ namespace Lighthouse.Workbench.View
             }
 
             _craftButton.onClick.AddListener(HandleCraftClicked);
+
+            if (_returnButton)
+            {
+                _returnButton.onClick.AddListener(HandleReturnClicked);
+            }
+
+            if (_sectionHeaderTemplate)
+            {
+                _sectionHeaderTemplate.gameObject.SetActive(false);
+            }
+
+            if (_sectionHeaderView)
+            {
+                _sectionHeaderView.gameObject.SetActive(false);
+            }
+
             _window.SetActive(false);
             _prompt.SetActive(false);
         }
@@ -313,7 +374,64 @@ namespace Lighthouse.Workbench.View
                 if (isUsed)
                 {
                     ModuleRecipe recipe = catalog[i];
-                    _cards[i].Bind(recipe, DescribeIngredients(recipe), _recipeFallbackIcon, HandleRecipeClicked);
+                    _cards[i].Bind(recipe, DescribeCard(recipe), _recipeFallbackIcon, HandleRecipeClicked);
+                }
+            }
+
+            ArrangeSections(catalog);
+        }
+
+        // Lighthouse recipes under one heading, boat recipes under another, whatever the catalog order.
+        private void ArrangeSections(ModuleRecipeCatalog catalog)
+        {
+            bool hasBoat = false;
+            bool hasLighthouse = false;
+
+            for (int i = 0; i < catalog.Count; i++)
+            {
+                hasBoat |= catalog[i].IsBoatModule;
+                hasLighthouse |= !catalog[i].IsBoatModule;
+            }
+
+            if ((_sectionHeaderView || _sectionHeaderTemplate) && !_lighthouseHeader)
+            {
+                _lighthouseHeader = CreateSectionHeader("등대 모듈", _lighthouseSectionIcon);
+                _boatHeader = CreateSectionHeader("배 모듈", _boatSectionIcon);
+            }
+
+            PlaceSection(_lighthouseHeader, hasLighthouse, false);
+            PlaceSection(_boatHeader, hasBoat, true);
+        }
+
+        private GameObject CreateSectionHeader(string title, Sprite icon)
+        {
+            Transform list = _cardTemplate.transform.parent;
+
+            if (_sectionHeaderView)
+            {
+                WorkbenchSectionHeader view = Instantiate(_sectionHeaderView, list);
+                view.Bind(title, icon);
+                return view.gameObject;
+            }
+
+            Text header = Instantiate(_sectionHeaderTemplate, list);
+            header.text = title;
+            return header.gameObject;
+        }
+
+        private void PlaceSection(GameObject header, bool isShown, bool isBoat)
+        {
+            if (header)
+            {
+                header.SetActive(isShown);
+                header.transform.SetAsLastSibling();
+            }
+
+            for (int i = 0; i < _cards.Count; i++)
+            {
+                if (_cards[i].gameObject.activeSelf && _cards[i].Recipe && _cards[i].Recipe.IsBoatModule == isBoat)
+                {
+                    _cards[i].transform.SetAsLastSibling();
                 }
             }
         }
@@ -366,13 +484,20 @@ namespace Lighthouse.Workbench.View
 
                 bool isSelected = recipe == _viewedRecipe;
                 card.SetState(isSelected, !isSelected, DescribeBadge(recipe));
+
+                if (_isBadgeTinted)
+                {
+                    card.SetBadgeColor(_workbench.IsReadyToCraft(recipe.Id) ? _badgeReadyColor
+                        : _workbench.IsStarted(recipe.Id) ? _badgeProgressColor
+                        : _badgeCappedColor);
+                }
             }
         }
 
         private void RefreshProgress(ModuleRecipe recipe)
         {
             _progressEmpty.SetActive(!recipe);
-            _progressTitle.text = recipe ? recipe.DisplayName : "레시피를 고르세요";
+            RefreshProgressHeader(recipe);
             bool isReady = recipe && _workbench.IsReadyToCraft(recipe.Id);
             bool isCapped = recipe && IsCapped(recipe);
             _progressHint.gameObject.SetActive(recipe);
@@ -406,6 +531,32 @@ namespace Lighthouse.Workbench.View
             }
         }
 
+        private void RefreshProgressHeader(ModuleRecipe recipe)
+        {
+            if (!_progressKind)
+            {
+                _progressTitle.text = !recipe ? "레시피를 고르세요" : recipe.IsBoatModule ? $"{recipe.DisplayName}  (배 모듈)" : recipe.DisplayName;
+            }
+            else
+            {
+                _progressTitle.text = recipe ? recipe.DisplayName : "레시피를 고르세요";
+                _builder.Clear();
+
+                if (recipe)
+                {
+                    AppendPlacement(recipe);
+                }
+
+                _progressKind.text = _builder.ToString();
+            }
+
+            if (_progressIcon)
+            {
+                _progressIcon.sprite = recipe ? GetRecipeIcon(recipe) : null;
+                _progressIcon.enabled = _progressIcon.sprite;
+            }
+        }
+
         private void RefreshStock()
         {
             for (int i = 0; i < _resourceSlots.Length; i++)
@@ -422,6 +573,8 @@ namespace Lighthouse.Workbench.View
             }
 
             ModuleRecipeCatalog catalog = _workbench.Catalog;
+            // One module at a time (2026-10-20): with one in hand every take button is off until it is put back.
+            bool canTake = _workbench.OwnCarriedRecipe == 0;
             int slot = 0;
 
             for (int i = 0; i < catalog.Count && slot < _storedSlots.Length; i++)
@@ -431,13 +584,40 @@ namespace Lighthouse.Workbench.View
                 if (stored > 0)
                 {
                     ModuleRecipe recipe = catalog[i];
-                    _storedSlots[slot++].Show(recipe.Icon ? recipe.Icon : _recipeFallbackIcon, recipe.DisplayName, stored);
+                    _storedSlots[slot].Show(GetRecipeIcon(recipe), recipe.DisplayName, stored);
+                    _storedSlots[slot++].SetAction(recipe.Id, canTake, HandleTakeClicked);
                 }
             }
 
             for (; slot < _storedSlots.Length; slot++)
             {
                 _storedSlots[slot].Clear();
+            }
+
+            RefreshCarry(catalog);
+        }
+
+        // Only this player's own module: who holds what is private (2026-10-21).
+        private void RefreshCarry(ModuleRecipeCatalog catalog)
+        {
+            if (!_carryBar)
+            {
+                return;
+            }
+
+            int carriedId = _workbench.OwnCarriedRecipe;
+            ModuleRecipe carried = carriedId != 0 && catalog.TryGetById(carriedId, out ModuleRecipe recipe) ? recipe : null;
+            _carryText.text = carried ? $"들고 있는 모듈: {carried.DisplayName}" : "들고 있는 모듈: 없음";
+
+            if (_carryIcon)
+            {
+                _carryIcon.sprite = carried ? GetRecipeIcon(carried) : null;
+                _carryIcon.enabled = _carryIcon.sprite;
+            }
+
+            if (_returnButton)
+            {
+                _returnButton.gameObject.SetActive(carried);
             }
         }
 
@@ -485,6 +665,24 @@ namespace Lighthouse.Workbench.View
             }
         }
 
+        private void HandleTakeClicked(int recipeId)
+        {
+            if (_workbench.Catalog.TryGetById(recipeId, out ModuleRecipe recipe) && Send(InteractionAction.TakeModule, recipeId, 0, 0))
+            {
+                _pendingRecipeName = recipe.DisplayName;
+            }
+        }
+
+        private void HandleReturnClicked()
+        {
+            int carriedId = _workbench.OwnCarriedRecipe;
+
+            if (carriedId != 0 && _workbench.Catalog.TryGetById(carriedId, out ModuleRecipe recipe) && Send(InteractionAction.ReturnModule, 0, 0, 0))
+            {
+                _pendingRecipeName = recipe.DisplayName;
+            }
+        }
+
         private void HandleResultReceived(InteractionResult result)
         {
             if (!_isOpen)
@@ -515,9 +713,14 @@ namespace Lighthouse.Workbench.View
                     return $"요청을 처리하지 못했습니다. ({code})";
             }
 
-            if (_pendingAction == InteractionAction.Craft)
+            switch (_pendingAction)
             {
-                return "제작할 수 없습니다. (재료가 모자라거나 다른 선원이 먼저 제작함, 쓰러짐·배 탑승 상태)";
+                case InteractionAction.Craft:
+                    return "제작할 수 없습니다. (재료가 모자라거나 다른 선원이 먼저 제작함, 쓰러짐·배 탑승 상태)";
+                case InteractionAction.TakeModule:
+                    return $"{_pendingRecipeName}을(를) 가져갈 수 없습니다. (이미 모듈을 들고 있거나 다른 선원이 먼저 가져감, 쓰러짐·배 탑승 상태)";
+                case InteractionAction.ReturnModule:
+                    return "되돌려놓을 수 없습니다. (이 작업대에서 가져온 모듈만, 쓰러짐·배 탑승 상태)";
             }
 
             return Held(_pendingResourceId) <= 0
@@ -531,6 +734,10 @@ namespace Lighthouse.Workbench.View
             {
                 case InteractionAction.Craft:
                     return $"{_pendingRecipeName} 제작 완료! 작업대 보관함에 넣었습니다.";
+                case InteractionAction.TakeModule:
+                    return $"{_pendingRecipeName}을(를) 가져갔습니다. 등대나 내 배에서 장착하세요.";
+                case InteractionAction.ReturnModule:
+                    return $"{_pendingRecipeName}을(를) 보관함에 되돌려놓았습니다.";
                 default:
                     return $"{_pendingRecipeName}에 자원을 넣었습니다.";
             }
@@ -602,10 +809,74 @@ namespace Lighthouse.Workbench.View
             return null;
         }
 
-        private string DescribeIngredients(ModuleRecipe recipe)
+        private Sprite GetRecipeIcon(ModuleRecipe recipe)
+        {
+            return recipe.Icon ? recipe.Icon : _recipeFallbackIcon;
+        }
+
+        // Ingredients on the first line, where the module goes on the second.
+        private string DescribeCard(ModuleRecipe recipe)
         {
             _builder.Clear();
+            AppendIngredients(recipe);
+            _builder.Append('\n');
+            AppendPlacement(recipe);
 
+            if (recipe.IsTestValue)
+            {
+                _builder.Append("  (시험값)");
+            }
+
+            return _builder.ToString();
+        }
+
+        // "배 모듈", or the lighthouse floors from the layout, such as "등대 1층~3층". Nothing is added without a layout.
+        private void AppendPlacement(ModuleRecipe recipe)
+        {
+            if (recipe.IsBoatModule)
+            {
+                _builder.Append("배 모듈");
+                return;
+            }
+
+            _builder.Append("등대");
+
+            if (!_towerLayout)
+            {
+                return;
+            }
+
+            int lowest = -1;
+            int highest = -1;
+
+            for (int i = 0; i < _towerLayout.SlotCount; i++)
+            {
+                TowerSlot slot = _towerLayout[i];
+
+                if (slot.RecipeId != recipe.Id)
+                {
+                    continue;
+                }
+
+                lowest = lowest < 0 ? slot.Floor : Mathf.Min(lowest, slot.Floor);
+                highest = Mathf.Max(highest, slot.Floor);
+            }
+
+            if (lowest < 0)
+            {
+                return;
+            }
+
+            _builder.Append(' ').Append(_towerLayout.GetFloorName(lowest));
+
+            if (highest != lowest)
+            {
+                _builder.Append('~').Append(_towerLayout.GetFloorName(highest));
+            }
+        }
+
+        private void AppendIngredients(ModuleRecipe recipe)
+        {
             for (int i = 0; i < recipe.IngredientCount; i++)
             {
                 RecipeIngredient ingredient = recipe.GetIngredient(i);
@@ -617,13 +888,6 @@ namespace Lighthouse.Workbench.View
 
                 _builder.Append(ingredient.Resource ? ingredient.Resource.DisplayName : "?").Append(' ').Append(ingredient.Amount);
             }
-
-            if (recipe.IsTestValue)
-            {
-                _builder.Append("  (시험값)");
-            }
-
-            return _builder.ToString();
         }
 
         private void EnsureEventSystem()
