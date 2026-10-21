@@ -76,6 +76,15 @@ namespace Lighthouse.Workbench.View
             }
         }
 
+        // For badge sprites drawn white so one sprite can show every state.
+        public void SetBadgeColor(Color color)
+        {
+            if (_badge.TryGetComponent(out Image image))
+            {
+                image.color = color;
+            }
+        }
+
         private void HandleClicked()
         {
             if (_recipe)
