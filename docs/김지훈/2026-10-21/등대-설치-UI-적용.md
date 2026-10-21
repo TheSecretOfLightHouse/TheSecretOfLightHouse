@@ -83,7 +83,7 @@ JH04Offline에서 사용자가 직접 조작해 확인 → 새 클라이언트�
 - develop 최신화: `origin/develop`(`b735247`, 몬스터 변경 258파일)으로 fast-forward했다. 로컬 변경 파일과 겹치는 파일은 없었다. 갱신 후 Unity 컴파일 오류 0.
 - 공유 문서 갱신: [등대·작업대 모듈 결정](../../design/lighthouse-module-decisions.md) 상태 줄에 "작업대·등대 화면 UI 연결, E 열기, 가까운 시설 하나만 열림, M0만 통과"를 추가했다.
 - 커밋 전 정리: `TowerTrialPanel._isRackMode`가 직렬화 필드로 옮겨지면서 떨어져 남은 주석을 Tooltip으로 옮겼다.
-- 로컬 변경을 관심사별로 커밋했다(작업대 손그림 화면·E 통일 / 등대 장착 화면·JH04 연결 / 목재 작업대 모델 / 작업 기록). `.vscode/settings.json`은 빈 개인 설정이라 제외했다.
+- 로컬 변경을 관심사별로 커밋했다(작업대 손그림 화면·E 통일 / 등대 장착 화면·JH04 연결 / 목재 작업대 모델 / 작업 기록). `.vscode/settings.json`은 빈 개인 설정이라 제외했다. PR #67(feature/jihun → develop) 생성.
 
 ## 관련 원문·인수인계
 
