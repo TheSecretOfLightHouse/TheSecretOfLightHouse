@@ -5,6 +5,8 @@ using Lighthouse.World.Islands.Rules;
 using Lighthouse.World.Islands.View;
 using Lighthouse.World.MapGeneration.Rules;
 using UnityEngine;
+using Lighthouse.World.Islands.Server;
+using Mirror;
 
 namespace Lighthouse.World.Islands.Net
 {
@@ -12,6 +14,7 @@ namespace Lighthouse.World.Islands.Net
     public class IslandWorldHost : MonoBehaviour, ILocalMapBuilder
     {
         [SerializeField] private IslandInstanceSet _instances;
+        [SerializeField] private IslandHarvestSession _harvestSession;
 
         private readonly List<IslandSpawnPlan> _plans = new List<IslandSpawnPlan>();
         private readonly List<string> _errors = new List<string>();
@@ -63,6 +66,17 @@ namespace Lighthouse.World.Islands.Net
                 throw new InvalidOperationException("Island spawn plan is empty.");
             }
 
+            if (NetworkServer.active)
+            {
+                if (_harvestSession == null)
+                {
+                    throw new InvalidOperationException(
+                        "IslandHarvestSession is required on the server.");
+                }
+
+                _harvestSession.Begin();
+            }
+
             _config = config;
             _random = new SeededRandom(info.Seed);
             _nextIndex = 0;
@@ -97,6 +111,11 @@ namespace Lighthouse.World.Islands.Net
 
         public void Cancel()
         {
+            if (_harvestSession != null)
+            {
+                _harvestSession.Release();
+            }
+
             _isBuilding = false;
             _nextIndex = 0;
             _config = null;
@@ -121,6 +140,19 @@ namespace Lighthouse.World.Islands.Net
 
             if (_spots.Count == 0)
             {
+                return;
+            }
+
+            if (NetworkServer.active)
+            {
+                if (_harvestSession == null)
+                {
+                    throw new InvalidOperationException(
+                        "IslandHarvestSession is required on the server.");
+                }
+
+                _harvestSession.Register(
+                    _config.Resources, plan, _random, _spots);
                 return;
             }
 
