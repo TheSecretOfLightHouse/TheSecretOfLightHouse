@@ -84,4 +84,4 @@ JH04Offline에서 플레이 → 호스트/준비 → 작업대 근처 F로 새 �
 
 - [모듈 운반 구현](모듈운반-꺼내기-장착-구현.md)
 - [모듈 결정](../../design/lighthouse-module-decisions.md)
-- [작업대 CRT 시안](작업대-CRT-화면시안.md)
+- [작업대 CRT 시안](images/workbench-crt-concept-v1.png)
