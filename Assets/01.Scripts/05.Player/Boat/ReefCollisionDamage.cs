@@ -92,7 +92,7 @@ public sealed class ReefCollisionDamage : MonoBehaviour
 
             if (!_previousContacts.Contains(durability))
             {
-                durability.ApplyDamage(_damage);
+                durability.ApplyDamage(_damage, BoatDamageType.Reef);
             }
         }
     }

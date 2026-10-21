@@ -17,9 +17,6 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private PlayerAbilityRunner _abilityRunner;
 
     [SerializeField]
-    private PlayerAbility _jobAbility;
-
-    [SerializeField]
     private PlayerAnimationDriver _animationDriver;
 
     [SerializeField]
@@ -90,6 +87,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     public event Action<PlayerController> InteractionRequested;
     public event Action<PlayerController> HarvestRequested;
+    public event Action<PlayerController> AbilityRequested;
     public event Action<BoatController> Boarded;
     public event Action<BoatController> Disembarked;
     public event Action<bool> DownedChanged;
@@ -600,12 +598,6 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         DownedChanged?.Invoke(value);
     }
 
-    public void SetJobAbility(PlayerAbility ability)
-    {
-        _abilityRunner.Cancel();
-        _jobAbility = ability;
-    }
-
     private void ProcessActionRequests()
     {
         bool interactRequested = _interactRequested;
@@ -655,7 +647,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         if (abilityRequested)
         {
-            _abilityRunner.TryExecute(_jobAbility, this);
+            AbilityRequested?.Invoke(this);
         }
     }
 
