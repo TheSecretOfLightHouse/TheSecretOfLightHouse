@@ -50,13 +50,40 @@ namespace Lighthouse.World.Harvest.Sandbox
         {
             if (!WorldServices.TryGet(out IHarvestSpotRegistry registry))
             {
-                Debug.LogWarning($"[{nameof(HarvestMockPlayer)}] HarvestHost가 필요합니다.");
+                Debug.LogWarning(
+                    $"[{nameof(HarvestMockPlayer)}] HarvestHost is required.");
                 return;
             }
 
-            int spotId = HarvestSpotIds.Compose(_islandIndex, (ushort)_localIndex);
-            bool isGranted = registry.TryConsume(spotId, _requestAmount, out ConsumeResult result);
-            Debug.Log($"[{nameof(HarvestMockPlayer)}] Consume spotId={spotId} requested={_requestAmount} ok={isGranted} resource={result.ResourceId} granted={result.Granted}");
+            int spotId = HarvestSpotIds.Compose(
+                _islandIndex, (ushort)_localIndex);
+
+            if (!registry.TryReserve(
+                    spotId, _requestAmount,
+                    out HarvestReservation reservation))
+            {
+                Debug.Log(
+                    $"[{nameof(HarvestMockPlayer)}] Reserve rejected: spotId={spotId}");
+                return;
+            }
+
+            bool isCommitted = false;
+            try
+            {
+                isCommitted = registry.TryCommit(reservation);
+            }
+            finally
+            {
+                if (!isCommitted)
+                {
+                    registry.TryCancel(reservation);
+                }
+            }
+
+            Debug.Log(
+                $"[{nameof(HarvestMockPlayer)}] Commit spotId={spotId} "
+                + $"ok={isCommitted} resource={reservation.ResourceId} "
+                + $"granted={reservation.Granted}");
         }
 
         [ContextMenu("Harvest/Start Manual Clock")]
