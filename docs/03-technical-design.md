@@ -55,6 +55,8 @@ Command 인자의 권한·범위·쿨타임은 서버에서 검증한다. 비밀
 
 ## 5. 현재 요청·데이터 계약
 
+2026-10-22 채집 결정: [원본별 공유 잔량](design/resource-gathering-decisions.md)을 따른다. 돌 한 원본은 전원 합계 3회이며 소진 후 원본은 유지한다. 현재 `HarvestInteractionHandler`는 요청자 `PlayerHarvestProgress`의 개인 잔량을 차감하므로 기획과 불일치한다. 전환 시 서버 World 잔량을 단일 원장으로 연결하고 드롭 생성 실패 복구·동일 지점 ID·변환기 중복 등록을 함께 확인한다. [구체적 수정 안내](최명기/2026-10-22/공유자원-잔량전환.md)는 제안이며 이번에는 코드를 수정하지 않았다.
+
 - `Assets/01.Scripts/03.Interaction/Requests/Net/InteractionRequest.cs`: 2026-10-14 JH02 A-1에서 요청 번호·대상 종류·대상 netId·비네트워크 대상 키·Action·Arg0·Arg1(2026-10-18 작업대 투입용 Arg2 추가, 기본 0)을 가진 전송 구조체로 바꿨다. ActorId와 ServerTime은 넣지 않고 서버가 연결에서 ActorId를 얻는다. 처리 경로는 `Relay/Net/InteractionRelay` → `Router/Server/InteractionRouter`(판 진행 중·송신자·요청 번호·대상·거리 검사 후 기능 처리기 호출)다.
 - `Assets/01.Scripts/03.Interaction/Requests/Net/InteractionAction.cs`: 상호작용 종류를 정의한다.
 - `Assets/01.Scripts/02.World/Harvest/Rules/ResourceDefinition.cs`: 자원 ID·표시명·아이콘·희귀도·픽업 프리팹의 ScriptableObject 정의다.
