@@ -24,9 +24,13 @@ namespace Lighthouse.Dev.Tower
     // IsEnabledInThisProcess (via MCP). The host plays the mafia and starts the round; every client is a citizen
     // and points at the host, assumed to hold the lowest actor id (the host registers first).
     //   ritual: host fills the tower, checks identity without summoning, starts the ritual -> citizens win.
-    //   final:  host installs one floor (25%), checks and summons -> health 475; citizens collect crystals and
-    //           relight the lantern room four times -> citizens win.
-    // Scenario: "-jh04Scenario=final" (default ritual). Players expected: "-jh04Players=3".
+    //   final:  host installs one floor (25%), checks and summons -> repair kept, health at the fixed maximum;
+    //           the revealed mafia cannot take modules; the first citizen builds the other three floors -> citizens win.
+    // One player alone (no voting, the panel's forced summon):
+    //   solo_final: citizen alone builds one floor, forces the summon -> repair kept, fixed health; builds the rest -> citizens win.
+    //   solo_full:  citizen alone builds all four floors and forces the summon -> citizens win at once, no final battle.
+    //   solo_mafia: mafia alone builds one floor, leaves a frame in the bench, forces the summon -> cannot take it out.
+    // Scenario: "-jh04Scenario=final" (default ritual). Players expected: "-jh04Players=3" (1 for the solo ones).
     public sealed class TowerTrialAutomation : MonoBehaviour
     {
         private const string AutoFlag = "-jh04Auto";
@@ -124,7 +128,11 @@ namespace Lighthouse.Dev.Tower
             yield return WaitFor("all_players_spawned", () => RefreshActors() >= players, 30f);
             Log($"START actor={actorId} host={NetworkServer.active} scenario={scenario} actors={_actors.Count}");
 
-            if (NetworkServer.active)
+            if (scenario.StartsWith("solo_", StringComparison.Ordinal))
+            {
+                yield return RunSolo(scenario);
+            }
+            else if (NetworkServer.active)
             {
                 yield return RunHost(scenario == "final", players - 1);
             }
@@ -181,14 +189,13 @@ namespace Lighthouse.Dev.Tower
 
             yield return Identity("summon", _voting.RequestSummon, IdentityActionResult.SummonApproved);
             yield return WaitFor("final_phase", () => _match.Phase == TowerPhase.FinalBattle, StateTimeoutSeconds);
-            // One floor of eight slots is 25%: 300 + 700 x 0.25.
-            Check("summon_health", Mathf.Approximately(_match.Health, 475f) && Mathf.Approximately(_match.MaxHealth, 1000f), Describe());
-            yield return SendAndExpect("install_closed", _match.netId, InteractionAction.InstallModule, FrameRecipe, 0, 0, InteractionResultCode.Rejected);
-            AbyssCrystalSpot spot = SortedSpots()[5];
-            yield return MoveTo(spot.transform.position + Vector3.right);
-            yield return SendAndExpect("mafia_collect", spot.netId, InteractionAction.CollectAbyssCrystal, 0, 0, 0, InteractionResultCode.Rejected);
+            // The first floor (2 of 8 slots) stays; the health is the fixed maximum, not a share of the repair.
+            Check("summon_carryover", _match.Tower.InstalledCount == 2 && Mathf.Approximately(_match.MaxHealth, _match.Settings.MaxHealth)
+                && _match.Health <= _match.MaxHealth && _match.Health > _match.MaxHealth * 0.5f, Describe());
+            // Nothing may be stored yet, so this refusal alone does not prove the closed hands; the panel test does.
+            yield return SendAndExpect("mafia_take_closed", _workbench.netId, InteractionAction.TakeModule, FrameRecipe, 0, 0, InteractionResultCode.Rejected);
             yield return WaitFor("ended", () => _match.Phase == TowerPhase.Ended, PhaseTimeoutSeconds);
-            Check("final_citizens_win", _match.Outcome == TowerOutcome.CitizensWin && _match.EndReason == TowerEndReason.LanternRelit
+            Check("final_citizens_win", _match.Outcome == TowerOutcome.CitizensWin && _match.EndReason == TowerEndReason.RepairCompleted
                 && _match.Health > 0f, Describe());
         }
 
@@ -219,37 +226,122 @@ namespace Lighthouse.Dev.Tower
             }
 
             yield return WaitFor("final_seen", () => _match.Phase == TowerPhase.FinalBattle, PhaseTimeoutSeconds);
-            Check("summon_health_synced", Mathf.Approximately(_match.Health, 475f) || _match.Health < 475f, Describe());
+            Check("summon_carryover_synced", _match.Tower.InstalledCount >= 2 && Mathf.Approximately(_match.MaxHealth, _match.Settings.MaxHealth), Describe());
             Check("mafia_revealed", _round.RevealedMafiaId == suspect, Describe());
-            _grant.RequestGrantAll();
-            yield return new WaitForSeconds(1f);
-            AbyssCrystalSpot[] spots = SortedSpots();
 
-            // Each citizen takes two spots of its own, then relights twice.
-            for (int i = 0; i < 2; i++)
+            // One citizen finishes the repair, so the floors go in order without two builders racing for a slot.
+            if (rank == 0)
             {
-                AbyssCrystalSpot spot = spots[rank * 2 + i];
-                yield return WaitFor($"crystal{i}_available", () => spot.IsAvailable, StateTimeoutSeconds);
-                yield return MoveTo(spot.transform.position + Vector3.right);
-                int carried = _match.OwnCrystalCount;
-                yield return SendAndExpect($"collect{i}", spot.netId, InteractionAction.CollectAbyssCrystal, 0, 0, 0, InteractionResultCode.Success);
-                yield return WaitFor($"carried{i}", () => _match.OwnCrystalCount == carried + 1, StateTimeoutSeconds);
-            }
-
-            yield return MoveTo(new Vector3(2f + rank, 0f, 1.5f));
-
-            for (int i = 0; i < 2; i++)
-            {
-                if (_match.Phase != TowerPhase.FinalBattle)
+                for (int i = 0; i < 4; i++)
                 {
-                    break;
+                    int stone = Held(Stone);
+                    _grant.RequestGrantAll();
+                    yield return WaitFor($"granted{i}", () => Held(Stone) > stone, StateTimeoutSeconds);
                 }
 
-                yield return SendAndExpect($"ignite{i}", _match.netId, InteractionAction.IgniteLantern, 0, 0, 0, InteractionResultCode.Success);
+                yield return MoveTo(new Vector3(2f, 0f, 1.5f));
+                yield return BuildFloor(FrameRecipe, GearRecipe);
+                yield return BuildFloor(FrameRecipe, GearRecipe);
+                yield return BuildFloor(LensRecipe, CoreRecipe);
             }
 
             yield return WaitFor("ended", () => _match.Phase == TowerPhase.Ended, PhaseTimeoutSeconds);
-            Check("final_citizens_win", _match.Outcome == TowerOutcome.CitizensWin && _match.EndReason == TowerEndReason.LanternRelit, Describe());
+            Check("final_citizens_win", _match.Outcome == TowerOutcome.CitizensWin && _match.EndReason == TowerEndReason.RepairCompleted
+                && _match.Tower.IsComplete, Describe());
+        }
+
+        private IEnumerator RunSolo(string scenario)
+        {
+            bool isMafia = scenario == "solo_mafia";
+            _round.RequestStart(isMafia ? TowerTrialRound.MafiaPick.Requester : TowerTrialRound.MafiaPick.Random);
+            yield return WaitFor("round_started", () => _round.IsStarted && _round.HasOwnRole && _round.IsOwnMafia == isMafia, StateTimeoutSeconds);
+            yield return MoveTo(new Vector3(2f, 0f, 2f));
+            yield return GrantFor(scenario == "solo_mafia"
+                ? new[] { FrameRecipe, GearRecipe, FrameRecipe }
+                : new[] { FrameRecipe, GearRecipe, FrameRecipe, GearRecipe, FrameRecipe, GearRecipe, LensRecipe, CoreRecipe });
+            yield return BuildFloor(FrameRecipe, GearRecipe);
+
+            if (scenario == "solo_full")
+            {
+                yield return BuildFloor(FrameRecipe, GearRecipe);
+                yield return BuildFloor(FrameRecipe, GearRecipe);
+                yield return BuildFloor(LensRecipe, CoreRecipe);
+                Check("tower_complete", _match.Tower.IsComplete && _match.Phase == TowerPhase.Repairing, Describe());
+                _round.RequestForceSummon();
+                yield return WaitFor("ended", () => _match.Phase == TowerPhase.Ended, StateTimeoutSeconds);
+                Check("full_summon_citizens_win", _match.Outcome == TowerOutcome.CitizensWin && _match.EndReason == TowerEndReason.RepairCompleted
+                    && Mathf.Approximately(_match.MaxHealth, 0f), Describe());
+                yield break;
+            }
+
+            if (isMafia)
+            {
+                yield return Craft(FrameRecipe);
+                yield return WaitFor("frame_stored", () => _workbench.GetStoredCount(FrameRecipe) > 0, StateTimeoutSeconds);
+            }
+
+            _round.RequestForceSummon();
+            yield return WaitFor("final_phase", () => _match.Phase == TowerPhase.FinalBattle, StateTimeoutSeconds);
+            Check("summon_carryover", _match.Tower.InstalledCount == 2 && Mathf.Approximately(_match.MaxHealth, _match.Settings.MaxHealth)
+                && _match.Health > _match.MaxHealth * 0.5f, Describe());
+
+            if (isMafia)
+            {
+                yield return SendAndExpect("mafia_take_closed", _workbench.netId, InteractionAction.TakeModule, FrameRecipe, 0, 0, InteractionResultCode.Rejected);
+                Check("mafia_hands_empty", _workbench.OwnCarriedRecipe == 0 && _workbench.GetStoredCount(FrameRecipe) > 0, Describe());
+                yield break;
+            }
+
+            yield return BuildFloor(FrameRecipe, GearRecipe);
+            yield return BuildFloor(FrameRecipe, GearRecipe);
+            Check("health_not_healed", _match.Health <= _match.MaxHealth && Mathf.Approximately(_match.MaxHealth, _match.Settings.MaxHealth), Describe());
+            yield return BuildFloor(LensRecipe, CoreRecipe);
+            yield return WaitFor("ended", () => _match.Phase == TowerPhase.Ended, StateTimeoutSeconds);
+            Check("final_citizens_win", _match.Outcome == TowerOutcome.CitizensWin && _match.EndReason == TowerEndReason.RepairCompleted
+                && _match.Health > 0f, Describe());
+        }
+
+        // Asks for the dev grant until the inventory holds every ingredient of these recipes together.
+        private IEnumerator GrantFor(int[] recipeIds)
+        {
+            var needs = new Dictionary<int, int>();
+
+            for (int i = 0; i < recipeIds.Length; i++)
+            {
+                if (!_workbench.Catalog.TryGetById(recipeIds[i], out Lighthouse.Workbench.Rules.ModuleRecipe recipe))
+                {
+                    continue;
+                }
+
+                for (int j = 0; j < recipe.IngredientCount; j++)
+                {
+                    Lighthouse.Workbench.Rules.RecipeIngredient ingredient = recipe.GetIngredient(j);
+                    needs.TryGetValue(ingredient.ResourceId, out int amount);
+                    needs[ingredient.ResourceId] = amount + ingredient.Amount;
+                }
+            }
+
+            for (int i = 0; i < 20 && !HasAll(needs); i++)
+            {
+                int stone = Held(Stone);
+                _grant.RequestGrantAll();
+                yield return WaitFor($"granted{i}", () => Held(Stone) > stone, StateTimeoutSeconds);
+            }
+
+            Check("resources_enough", HasAll(needs), Describe());
+        }
+
+        private bool HasAll(Dictionary<int, int> needs)
+        {
+            foreach (KeyValuePair<int, int> need in needs)
+            {
+                if (Held(need.Key) < need.Value)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private IEnumerator BuildFloor(int firstRecipe, int secondRecipe)
@@ -380,18 +472,11 @@ namespace Lighthouse.Dev.Tower
             return _actors.Count;
         }
 
-        // Position among the citizens (every actor but the lowest), so each takes different crystal spots.
+        // Position among the citizens (every actor but the lowest), so each stands in its own spot.
         private int CitizenRank(uint actorId)
         {
             int rank = _actors.IndexOf(actorId) - 1;
             return rank < 0 ? 0 : rank;
-        }
-
-        private AbyssCrystalSpot[] SortedSpots()
-        {
-            AbyssCrystalSpot[] spots = FindObjectsByType<AbyssCrystalSpot>(FindObjectsSortMode.None);
-            Array.Sort(spots, (a, b) => string.CompareOrdinal(a.name, b.name));
-            return spots;
         }
 
         private int Held(int resourceId)
@@ -402,7 +487,7 @@ namespace Lighthouse.Dev.Tower
         private string Describe()
         {
             return $"phase={_match.Phase} outcome={_match.Outcome} reason={_match.EndReason} hp={_match.Health:0.#}/{_match.MaxHealth:0} " +
-                $"ignitions={_match.Ignitions} carried={_match.OwnCrystalCount} installed={_match.Tower.InstalledCount} " +
+                $"installed={_match.Tower.InstalledCount} " +
                 $"day={_round.Day} mafia={_round.RevealedMafiaId} vote={(_voting.HasOwnVoteState ? _voting.OwnVoteState.TargetActorId : 0)} " +
                 $"locked={(_voting.HasOwnVoteState && _voting.OwnVoteState.IsLocked)}";
         }
