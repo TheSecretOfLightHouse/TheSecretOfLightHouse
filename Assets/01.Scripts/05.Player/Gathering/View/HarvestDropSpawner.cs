@@ -49,6 +49,30 @@ public sealed class HarvestDropSpawner : NetworkBehaviour
     }
 
     [Server]
+    public bool TrySpawnDrop(
+        Vector3 position,
+        int resourceId,
+        int amount,
+        GameObject pickupPrefab,
+        out ResourceDropHandle handle)
+    {
+        handle = default;
+
+        if (!isServer || !_resourceDropSpawner || !pickupPrefab)
+        {
+            return false;
+        }
+
+        return _resourceDropSpawner.TrySpawnDrop(
+            position + _dropOffset,
+            resourceId,
+            amount,
+            true,
+            pickupPrefab,
+            out handle);
+    }
+
+    [Server]
     public bool TryWithdrawDrop(ResourceDropHandle handle)
     {
         if (!isServer || !_resourceDropSpawner)
@@ -60,13 +84,13 @@ public sealed class HarvestDropSpawner : NetworkBehaviour
     }
 
     [Server]
-    public void UnlockDrop(ResourceDropHandle handle)
+    public bool TryUnlockDrop(ResourceDropHandle handle)
     {
         if (!isServer || !_resourceDropSpawner)
         {
-            return;
+            return false;
         }
 
-        _resourceDropSpawner.UnlockDrop(handle);
+        return _resourceDropSpawner.TryUnlockDrop(handle);
     }
 }

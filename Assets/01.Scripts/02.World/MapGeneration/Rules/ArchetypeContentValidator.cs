@@ -84,11 +84,13 @@ namespace Lighthouse.World.MapGeneration.Rules
                     && entry.Resource != null
                     && catalog != null
                     && catalog.TryGetById(entry.Resource.Id, out ResourceDefinition registered)
-                    && registered == entry.Resource;
+                    && registered.SpotCategory == entry.Resource.SpotCategory
+                    && registered.Rarity == entry.Resource.Rarity
+                    && registered.IsUbiquitous == entry.Resource.IsUbiquitous;
 
                 if (!isFound)
                 {
-                    errors.Add($"{tag}: Resources[{i}]가 비었거나 ResourceCatalog에 없음");
+                    errors.Add($"{tag}: Resources[{i}]의 카탈로그 자원ID 또는 범주/희귀도/공통 여부가 맞지 않음");
                 }
                 else if (entry.Weight <= 0f || !entry.Deposit.IsValid)
                 {

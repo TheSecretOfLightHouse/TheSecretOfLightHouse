@@ -100,9 +100,16 @@ public sealed class HarvestInteractionHandler
                 reservation.Position,
                 reservation.ResourceId,
                 reservation.Granted,
+                reservation.PickupPrefab,
                 out handle);
 
             if (!isSpawned)
+            {
+                return InteractionResultCode.Rejected;
+            }
+
+            // Keep this synchronous: commit publishes callbacks only after charging the deposit.
+            if (!_dropSpawner.TryUnlockDrop(handle))
             {
                 return InteractionResultCode.Rejected;
             }
@@ -114,7 +121,6 @@ public sealed class HarvestInteractionHandler
                 return InteractionResultCode.Rejected;
             }
 
-            _dropSpawner.UnlockDrop(handle);
             return InteractionResultCode.Success;
         }
         finally
