@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Lighthouse.Monsters.Boss
 {
-    [CreateAssetMenu(fileName = "BossSettings", menuName = "Lighthouse/Monsters/Boss Settings")]
+    [CreateAssetMenu(fileName = "BossSettings", menuName = "TheLightHouse/Monster/Boss Settings")]
     public sealed class BossSettings : ScriptableObject
     {
         [Header("Temporary test balance")]

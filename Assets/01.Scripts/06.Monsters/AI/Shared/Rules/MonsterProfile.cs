@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Lighthouse.Monsters.AI.Rules
 {
-    [CreateAssetMenu(fileName = "MonsterProfile", menuName = "Lighthouse/Monster/MonsterProfile")]
+    [CreateAssetMenu(fileName = "MonsterProfile", menuName = "TheLightHouse/Monster/MonsterProfile")]
     public class MonsterProfile : ScriptableObject
     {
         [Header("체력")]

@@ -6,16 +6,24 @@ public sealed class PlayerHarvestProgress : NetworkBehaviour
 {
     private PersonalHarvestData _data;
 
-    public override void OnStartServer()
-    {
-        base.OnStartServer();
-        _data = new PersonalHarvestData();
-    }
+    //public override void OnStartServer()
+    //{
+    //    _data = null;
+
+    //    base.OnStartServer();
+    //    //_data = new PersonalHarvestData();
+    //}
 
     public override void OnStopServer()
     {
         _data = null;
         base.OnStopServer();
+    }
+
+    [Server]
+    public void BindSharedData(PersonalHarvestData sharedData)
+    {
+        _data = sharedData;
     }
 
     [Server]

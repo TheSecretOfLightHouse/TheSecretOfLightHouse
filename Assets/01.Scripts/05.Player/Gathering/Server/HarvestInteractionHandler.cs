@@ -7,8 +7,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(NetworkIdentity))]
 [RequireComponent(typeof(HarvestDropSpawner))]
-public sealed class HarvestInteractionHandler :
-       NetworkBehaviour, IInteractionHandler, INonNetworkTargetAdapter
+public sealed class HarvestInteractionHandler : NetworkBehaviour, IInteractionHandler, INonNetworkTargetAdapter
 {
     [SerializeField]
     private LocalHarvestTestSpot[] _testSpots;
@@ -20,6 +19,8 @@ public sealed class HarvestInteractionHandler :
     private bool _isRegistered;
     private bool _isAdapterRegistered;
 
+    private PersonalHarvestData _sharedHarvestData;
+
     private void Awake()
     {
         _dropSpawner = GetComponent<HarvestDropSpawner>();
@@ -28,6 +29,8 @@ public sealed class HarvestInteractionHandler :
     public override void OnStartServer()
     {
         base.OnStartServer();
+
+        _sharedHarvestData = new PersonalHarvestData();
 
         _isAdapterRegistered = TargetResolver.RegisterAdapter(InteractionTargetKind.HarvestSpot,this);
 
@@ -59,6 +62,7 @@ public sealed class HarvestInteractionHandler :
             _isAdapterRegistered = false;
         }
 
+        _sharedHarvestData = null;
         base.OnStopServer();
     }
 
@@ -79,13 +83,12 @@ public sealed class HarvestInteractionHandler :
 
     public InteractionResultCode Handle(in InteractionContext context)
     {
-        if (!isServer || !_isRegistered || !_dropSpawner)
+        if (!isServer || !_isRegistered || !_dropSpawner || _sharedHarvestData == null)
         {
             return InteractionResultCode.Rejected;
         }
 
-        if (context.Action != InteractionAction.Harvest ||
-            context.Target.Kind != InteractionTargetKind.HarvestSpot)
+        if (context.Action != InteractionAction.Harvest || context.Target.Kind != InteractionTargetKind.HarvestSpot)
         {
             return InteractionResultCode.InvalidTarget;
         }
@@ -97,7 +100,7 @@ public sealed class HarvestInteractionHandler :
 
         PlayerController player = context.Sender.identity.GetComponent<PlayerController>();
 
-        if (!player ||!player.isActiveAndEnabled || player.IsDowned || player.IsOnBoat)
+        if (!player || !player.isActiveAndEnabled || player.IsDowned || player.IsOnBoat)
         {
             return InteractionResultCode.Rejected;
         }
@@ -114,10 +117,13 @@ public sealed class HarvestInteractionHandler :
             return InteractionResultCode.Rejected;
         }
 
+        // 모든 플레이어가 서버 처리기의 같은 잔량 원장을 사용한다.
+        progress.BindSharedData(_sharedHarvestData);
+
         int spotId = context.Target.Key;
         int initialCount = target.InitialCount;
 
-        if (!progress.TryConsumeOne(spotId, initialCount, out int remaining))
+        if (!progress.TryConsumeOne(spotId, initialCount, out _))
         {
             return InteractionResultCode.Rejected;
         }

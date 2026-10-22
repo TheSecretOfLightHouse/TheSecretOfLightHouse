@@ -45,7 +45,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private PlayerInput _playerInput;
     private InputAction _lookAction;
     private NetworkBehaviour _playerNetworkTransform;
-    private bool _savedNetworkTransformEnabled;
+    private System.Collections.IDictionary _serverMovementSnapshots;
+    private System.Collections.IDictionary _clientMovementSnapshots;
     private BoatController _boatController;
 
     private bool _initialIsKinematic;
@@ -154,6 +155,11 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
                 if (type.Name == "NetworkTransformBase")
                 {
                     _playerNetworkTransform = behaviour;
+                    // Mirror components live outside this runtime assembly's references.
+                    _serverMovementSnapshots = type.GetField("serverSnapshots").GetValue(behaviour)
+                        as System.Collections.IDictionary;
+                    _clientMovementSnapshots = type.GetField("clientSnapshots").GetValue(behaviour)
+                        as System.Collections.IDictionary;
                     return;
                 }
 
@@ -412,11 +418,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _rb.isKinematic = true;
         _rb.detectCollisions = false;
 
-        if (_playerNetworkTransform)
-        {
-            _savedNetworkTransformEnabled = _playerNetworkTransform.enabled;
-            _playerNetworkTransform.enabled = false;
-        }
+        ClearMovementSnapshots();
 
         _boatController = boat;
         _heading = boat.transform.eulerAngles.y;
@@ -543,10 +545,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
             _rb.angularVelocity = Vector3.zero;
         }
 
-        if (_playerNetworkTransform)
-        {
-            _playerNetworkTransform.enabled = _savedNetworkTransformEnabled;
-        }
+        ClearMovementSnapshots();
 
         _hfsm.SetOnBoat(false);
         RefreshState();
@@ -555,6 +554,17 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     }
 
     #endregion
+
+    private void ClearMovementSnapshots()
+    {
+        if (!_playerNetworkTransform)
+        {
+            return;
+        }
+
+        _serverMovementSnapshots?.Clear();
+        _clientMovementSnapshots?.Clear();
+    }
 
     public void SetDowned(bool value)
     {
