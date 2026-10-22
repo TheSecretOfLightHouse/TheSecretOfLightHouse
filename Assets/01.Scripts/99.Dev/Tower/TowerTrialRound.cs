@@ -193,8 +193,9 @@ namespace Lighthouse.Dev.Tower
             }
 
             _hasVoting = _mafiaId != 0 && _citizens.Count > 0 && _voting && _identitySettings && TryStartVoting();
-            _match.Configure(_hasVoting ? this : null, _mafiaId);
+            _match.Configure(_hasVoting ? this : null);
             _modules.MafiaCheck = IsMafia;
+            _modules.CarryCheck = CanCarry;
             _day = 1;
             _dayEndsAt = NetworkTime.time + _dayLengthSeconds;
             _isClockStopped = false;
@@ -318,6 +319,12 @@ namespace Lighthouse.Dev.Tower
             return _isStarted && actorId == _mafiaId;
         }
 
+        // The summon reveals the mafia and shuts their inventory for the rest of the match.
+        private bool CanCarry(uint actorId)
+        {
+            return _revealedMafiaId == 0 || actorId != _revealedMafiaId;
+        }
+
         [Server]
         private void AdvanceDay()
         {
@@ -389,7 +396,8 @@ namespace Lighthouse.Dev.Tower
         [Server]
         private void BeginFinalBattle(double attackPower)
         {
-            if (!_match.TryBeginFinalBattle(attackPower))
+            // A summon at 100% repair ends the match here for the citizens; the rest is harmless after the end.
+            if (!_match.TryBeginFinalBattle())
             {
                 return;
             }

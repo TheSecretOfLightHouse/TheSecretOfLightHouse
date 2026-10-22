@@ -50,6 +50,9 @@ namespace Lighthouse.Modules.Server
         public ModuleLedger Ledger => _ledger;
         // Server-only. Answers whether an actor is the mafia; roles belong to the match, not here. Unset rejects every withdraw.
         public Func<uint, bool> MafiaCheck { get; set; }
+        // Server-only. Answers whether an actor may still take a module into their hands; the match closes the revealed
+        // mafia's inventory (2026-10-20). Unset lets everyone carry.
+        public Func<uint, bool> CarryCheck { get; set; }
 
         public override void OnStartServer()
         {
@@ -81,6 +84,7 @@ namespace Lighthouse.Modules.Server
             _boats.Clear();
             _carrySources.Clear();
             MafiaCheck = null;
+            CarryCheck = null;
             _ledger = null;
             base.OnStopServer();
         }
@@ -196,7 +200,8 @@ namespace Lighthouse.Modules.Server
         // Citizens and the mafia alike may take one out; the mafia-only rule is for base resources (2026-10-20).
         private InteractionResultCode HandleTake(in InteractionContext context, WorkbenchNet workbench)
         {
-            if (_carrySources.ContainsKey(context.ActorId) || !workbench.TryTakeToCarry(context.ActorId, context.Arg0, _ledger))
+            if ((CarryCheck != null && !CarryCheck(context.ActorId)) || _carrySources.ContainsKey(context.ActorId)
+                || !workbench.TryTakeToCarry(context.ActorId, context.Arg0, _ledger))
             {
                 return InteractionResultCode.Rejected;
             }

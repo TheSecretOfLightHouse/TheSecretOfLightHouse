@@ -1,31 +1,26 @@
 using System;
-using System.Collections.Generic;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Interaction.Requests.Rules;
 using Lighthouse.Interaction.Router.Server;
 using Lighthouse.Tower.Rules;
-using Lighthouse.Workbench.Rules;
 using Mirror;
 using UnityEngine;
 
 namespace Lighthouse.Tower.Net
 {
-    // The lighthouse's part of the match: ritual, health after a summon, and relighting the lantern room.
+    // The lighthouse's part of the match: ritual and the final battle after a summon.
     //   Ritual (win/vote decisions 3·4): anyone starts it at 100% repair; when its time runs out the votes decide.
-    //   Summon (5, R10): health = base + (max - base) x repair, installs close, an attack power at or above the
-    //   special-ending value ends the match at once.
-    //   Relight (2026-10-19 trial): abyss crystals surface after the summon; spending them at the lantern room
-    //   fills the final gauge, and a full gauge wins for the citizens. The deadline is not the lighthouse's.
+    //   Summon (JH04 repair-carryover proposal, 2026-10-22): the repair and the installed modules carry over and the
+    //   health starts at the same fixed maximum whatever the repair. Citizens win by finishing the repair, the mafia
+    //   by bringing the health to 0. A summon at 100% repair is already that citizens' win. No special ending.
     // It reports the result through Ended; in the full game the match result owner (MK06) commits it.
-    // Requests: StartRitual and IgniteLantern target this object, CollectAbyssCrystal targets a crystal spot.
+    // Requests: StartRitual targets this object.
     [DisallowMultipleComponent]
     [RequireComponent(typeof(TowerNet))]
     public sealed class TowerMatchNet : NetworkBehaviour, IInteractionHandler
     {
         [SerializeField]
         private TowerBattleSettings _settings;
-        [SerializeField]
-        private AbyssCrystalSpot[] _crystalSpots = new AbyssCrystalSpot[0];
 
         [SyncVar]
         private TowerPhase _phase;
@@ -36,8 +31,6 @@ namespace Lighthouse.Tower.Net
         [SyncVar]
         private float _maxHealth;
         [SyncVar]
-        private int _ignitions;
-        [SyncVar]
         private TowerOutcome _outcome;
         [SyncVar]
         private TowerEndReason _endReason;
@@ -45,15 +38,11 @@ namespace Lighthouse.Tower.Net
         private TowerNet _tower;
 
         // Server-only.
-        private readonly Dictionary<uint, int> _carriedCrystals = new Dictionary<uint, int>();
         private IRitualVoteJudge _judge;
-        private uint _mafiaActorId;
         // Roles are known only after Configure; before that the ritual and the summon cannot start.
         private bool _isConfigured;
         private bool _isSettingsValid;
         private bool _isStartRitualRegistered;
-        private bool _isCollectRegistered;
-        private bool _isIgniteRegistered;
 
         public TowerBattleSettings Settings => _settings;
         public TowerNet Tower => _tower;
@@ -61,12 +50,9 @@ namespace Lighthouse.Tower.Net
         public double RitualEndsAt => _ritualEndsAt;
         public float Health => _health;
         public float MaxHealth => _maxHealth;
-        public int Ignitions => _ignitions;
         public TowerOutcome Outcome => _outcome;
         public TowerEndReason EndReason => _endReason;
         public bool CanStartRitual => _phase == TowerPhase.Repairing && _tower && _tower.IsComplete;
-        // Client-side: crystals the local player carries, sent to that player only.
-        public int OwnCrystalCount { get; private set; }
 
         // Server-only.
         public event Action<double> RitualStarted;
@@ -106,10 +92,8 @@ namespace Lighthouse.Tower.Net
             _phase = TowerPhase.Repairing;
             _outcome = TowerOutcome.None;
             _endReason = TowerEndReason.None;
-            _carriedCrystals.Clear();
+            _tower.ModuleInstalled += HandleModuleInstalled;
             _isStartRitualRegistered = InteractionRouter.RegisterHandler(InteractionAction.StartRitual, this);
-            _isCollectRegistered = InteractionRouter.RegisterHandler(InteractionAction.CollectAbyssCrystal, this);
-            _isIgniteRegistered = InteractionRouter.RegisterHandler(InteractionAction.IgniteLantern, this);
         }
 
         public override void OnStopServer()
@@ -120,65 +104,42 @@ namespace Lighthouse.Tower.Net
                 _isStartRitualRegistered = false;
             }
 
-            if (_isCollectRegistered)
-            {
-                InteractionRouter.UnregisterHandler(InteractionAction.CollectAbyssCrystal, this);
-                _isCollectRegistered = false;
-            }
-
-            if (_isIgniteRegistered)
-            {
-                InteractionRouter.UnregisterHandler(InteractionAction.IgniteLantern, this);
-                _isIgniteRegistered = false;
-            }
-
+            _tower.ModuleInstalled -= HandleModuleInstalled;
             _judge = null;
-            _mafiaActorId = 0;
             _isConfigured = false;
             base.OnStopServer();
         }
 
-        // Who the mafia is and who counts the votes. The mafia may still start the ritual (anyone can), but after
-        // the summon it is revealed and gets no crystals.
+        // Who counts the votes. Anyone, the mafia too, may start the ritual.
         [Server]
-        public void Configure(IRitualVoteJudge judge, uint mafiaActorId)
+        public void Configure(IRitualVoteJudge judge)
         {
             _judge = judge;
-            _mafiaActorId = mafiaActorId;
             _isConfigured = true;
         }
 
+        // A valid summon. The attack power is fixed by the monster side at the summon and never reaches the lighthouse.
+        // Returns false when no summon can happen now; true also when the summon ended the match at 100% repair.
         [Server]
-        public bool TryBeginFinalBattle(double attackPower)
+        public bool TryBeginFinalBattle()
         {
             if (!_isSettingsValid || !_isConfigured || (_phase != TowerPhase.Repairing && _phase != TowerPhase.Ritual))
             {
                 return false;
             }
 
-            // The summon removes the ritual timer; the health is fixed from the repair reached so far.
+            // The carried-over repair is already the final battle's goal (proposal 7, side change).
+            if (_tower.IsComplete)
+            {
+                return TryEnd(TowerOutcome.CitizensWin, TowerEndReason.RepairCompleted);
+            }
+
+            // The summon removes the ritual timer; modules and repair stay, the health does not depend on them.
             _phase = TowerPhase.FinalBattle;
             _ritualEndsAt = 0;
-            _tower.CloseInstalls();
             _maxHealth = _settings.MaxHealth;
-            _health = _settings.GetSummonHealth(_tower.RepairRatio);
-            _ignitions = 0;
+            _health = _maxHealth;
             FinalBattleStarted?.Invoke();
-
-            if (attackPower >= _settings.SpecialEndingAttack)
-            {
-                TryEnd(TowerOutcome.MafiaWin, TowerEndReason.SpecialEnding);
-                return true;
-            }
-
-            for (int i = 0; i < _crystalSpots.Length; i++)
-            {
-                if (_crystalSpots[i])
-                {
-                    _crystalSpots[i].Activate();
-                }
-            }
-
             return true;
         }
 
@@ -211,15 +172,6 @@ namespace Lighthouse.Tower.Net
             _phase = TowerPhase.Ended;
             _outcome = outcome;
             _endReason = reason;
-
-            for (int i = 0; i < _crystalSpots.Length; i++)
-            {
-                if (_crystalSpots[i])
-                {
-                    _crystalSpots[i].Deactivate();
-                }
-            }
-
             Ended?.Invoke(outcome, reason);
             return true;
         }
@@ -245,19 +197,13 @@ namespace Lighthouse.Tower.Net
                 return InteractionResultCode.InvalidTarget;
             }
 
-            switch (context.Action)
+            if (context.Action != InteractionAction.StartRitual)
             {
-                case InteractionAction.StartRitual:
-                    return target == netIdentity ? ToCode(TryStartRitual()) : InteractionResultCode.InvalidTarget;
-                case InteractionAction.CollectAbyssCrystal:
-                    return target.TryGetComponent(out AbyssCrystalSpot spot)
-                        ? ToCode(TryCollect(context.ActorId, context.Sender, spot))
-                        : InteractionResultCode.InvalidTarget;
-                case InteractionAction.IgniteLantern:
-                    return target == netIdentity ? ToCode(TryIgnite(context.ActorId, context.Sender)) : InteractionResultCode.InvalidTarget;
-                default:
-                    return InteractionResultCode.Rejected;
+                return InteractionResultCode.Rejected;
             }
+
+            return target != netIdentity ? InteractionResultCode.InvalidTarget
+                : TryStartRitual() ? InteractionResultCode.Success : InteractionResultCode.Rejected;
         }
 
         [Server]
@@ -274,81 +220,14 @@ namespace Lighthouse.Tower.Net
             return true;
         }
 
+        // Installs run one at a time on the server, so the last slot and a lethal hit cannot both win; the first sticks.
         [Server]
-        private bool TryCollect(uint actorId, NetworkConnectionToClient sender, AbyssCrystalSpot spot)
+        private void HandleModuleInstalled(uint actorId, int slot, uint moduleId)
         {
-            if (_phase != TowerPhase.FinalBattle || actorId == _mafiaActorId || !spot.TryTake(_settings.CrystalRespawnSeconds))
+            if (_phase == TowerPhase.FinalBattle && _tower.IsComplete)
             {
-                return false;
+                TryEnd(TowerOutcome.CitizensWin, TowerEndReason.RepairCompleted);
             }
-
-            int count = GetCarried(actorId) + 1;
-            _carriedCrystals[actorId] = count;
-            TargetCrystalCount(sender, count);
-            return true;
-        }
-
-        [Server]
-        private bool TryIgnite(uint actorId, NetworkConnectionToClient sender)
-        {
-            int carried = GetCarried(actorId);
-
-            if (_phase != TowerPhase.FinalBattle || actorId == _mafiaActorId || carried < _settings.CrystalsPerIgnition)
-            {
-                return false;
-            }
-
-            PlayerInventory inventory = sender.identity.GetComponent<PlayerInventory>();
-
-            if (!inventory)
-            {
-                return false;
-            }
-
-            // Check every cost before taking any, so a short inventory loses nothing.
-            for (int i = 0; i < _settings.IgnitionCostCount; i++)
-            {
-                RecipeIngredient cost = _settings.GetIgnitionCost(i);
-
-                if (inventory.GetCount(cost.ResourceId) < cost.Amount)
-                {
-                    return false;
-                }
-            }
-
-            for (int i = 0; i < _settings.IgnitionCostCount; i++)
-            {
-                RecipeIngredient cost = _settings.GetIgnitionCost(i);
-                inventory.TryRemoveTo(cost.ResourceId, cost.Amount);
-            }
-
-            carried -= _settings.CrystalsPerIgnition;
-            _carriedCrystals[actorId] = carried;
-            TargetCrystalCount(sender, carried);
-            _ignitions++;
-
-            if (_ignitions >= _settings.IgnitionsToWin)
-            {
-                TryEnd(TowerOutcome.CitizensWin, TowerEndReason.LanternRelit);
-            }
-
-            return true;
-        }
-
-        private int GetCarried(uint actorId)
-        {
-            return _carriedCrystals.TryGetValue(actorId, out int count) ? count : 0;
-        }
-
-        private static InteractionResultCode ToCode(bool isSuccess)
-        {
-            return isSuccess ? InteractionResultCode.Success : InteractionResultCode.Rejected;
-        }
-
-        [TargetRpc]
-        private void TargetCrystalCount(NetworkConnectionToClient target, int count)
-        {
-            OwnCrystalCount = count;
         }
     }
 }
