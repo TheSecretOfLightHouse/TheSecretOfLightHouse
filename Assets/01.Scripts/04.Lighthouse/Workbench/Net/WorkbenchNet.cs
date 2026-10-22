@@ -285,6 +285,25 @@ namespace Lighthouse.Workbench.Net
             return true;
         }
 
+        // Puts a module that already exists into the actor's hands, as when it is picked up off a shore (2026-10-22).
+        // It is held against this bench, so putting it back returns it here. The cap is not checked: one picked up after
+        // its recipe was made again is kept, and the lighthouse refuses it once that kind's slots are full.
+        [Server]
+        public bool TryCarryExisting(uint actorId, uint moduleId, ModuleLedger ledger)
+        {
+            if (!_isCatalogValid || ledger == null || actorId == 0 || _carriedModules.ContainsKey(actorId)
+                || !ledger.TryGet(moduleId, out ModuleRecord record) || _catalog.IndexOf(record.RecipeId) < 0)
+            {
+                return false;
+            }
+
+            ledger.TrySetState(moduleId, ModuleState.Carried);
+            _carriedModules.Add(actorId, moduleId);
+            _carriedRecipes.Add(actorId, record.RecipeId);
+            NotifyCarried(actorId, record.RecipeId);
+            return true;
+        }
+
         // Puts the carried module back into this bench's stock.
         [Server]
         public bool TryReturnCarried(uint actorId, ModuleLedger ledger)

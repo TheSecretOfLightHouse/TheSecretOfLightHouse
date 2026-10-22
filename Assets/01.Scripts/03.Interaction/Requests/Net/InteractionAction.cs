@@ -22,6 +22,8 @@ namespace Lighthouse.Interaction.Requests.Net
         // Carrying a finished module (2026-10-20): take one out of the workbench into your hands, or put it back.
         // Installing it is InstallModule on the lighthouse or on your own boat.
         TakeModule = 16,
-        ReturnModule = 17
+        ReturnModule = 17,
+        // Picking up a module left on a shore after a wreck (2026-10-22). Separate from PickUp, which is the resource drop.
+        PickUpModule = 18
     }
 }
