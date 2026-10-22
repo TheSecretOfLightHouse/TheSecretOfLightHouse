@@ -6,6 +6,7 @@ using Lighthouse.Mafia.IdentityCheck.Net;
 using Lighthouse.Mafia.Voting.Net;
 using Lighthouse.Mafia.Voting.Rules;
 using Lighthouse.Network.Connections.Net;
+using Lighthouse.Network.Session.Net;
 using Lighthouse.Tower.Net;
 using Lighthouse.Tower.Rules;
 using Lighthouse.Workbench.Net;
@@ -181,6 +182,15 @@ namespace Lighthouse.Dev.Tower
 
         private void DrawStart()
         {
+            // With the lobby flow the round starts by itself on entering the game scene.
+            LighthouseNetworkManager manager = LighthouseNetworkManager.Instance;
+
+            if (manager && manager.IsSessionFlowEnabled)
+            {
+                GUILayout.Label("판 시작 중");
+                return;
+            }
+
             if (!NetworkServer.active)
             {
                 GUILayout.Label("호스트가 판을 시작하기를 기다리는 중");
