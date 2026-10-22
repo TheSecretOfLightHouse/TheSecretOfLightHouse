@@ -32,8 +32,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
 
     private static readonly List<PlayerWreckRecovery> ActiveRecoveries = new List<PlayerWreckRecovery>();
 
-    private readonly List<KeyValuePair<int, int>> _plannedResources =
-    new List<KeyValuePair<int, int>>();
+    private readonly List<KeyValuePair<int, int>> _plannedResources = new List<KeyValuePair<int, int>>();
 
     private bool _hasDropPlan;
     private int _plannedModuleRecipeId;
@@ -106,10 +105,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
     }
 
     [Server]
-    public void ConfigureRecovery(
-    PlayerBoatSpawner boatSpawner,
-    Transform boatSpawnPoint,
-    uint actorId)
+    public void ConfigureRecovery(PlayerBoatSpawner boatSpawner, Transform boatSpawnPoint, uint actorId)
     {
         _boatSpawner = boatSpawner;
         _boatSpawnPoint = boatSpawnPoint;
@@ -152,20 +148,15 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
             return false;
         }
 
-        if (!_inventory || !_dropper
-    || !_boatSpawner || !_boatSpawnPoint
-    || !_boatSpawner.PlayerRecoveryPoint)
+        if (!_inventory || !_dropper || !_boatSpawner || !_boatSpawnPoint || !_boatSpawner.PlayerRecoveryPoint)
         {
             return false;
         }
 
             BoatController wreckedBoat = _player.OwnedBoat;
 
-        if (!wreckedBoat || !wreckedBoat.IsWrecked
-            || wreckedBoat.Owner != _player
-            || !_player.IsDowned
-            || !wreckedBoat.IsOccupied
-            || _player.CurrentBoat != wreckedBoat)
+        if (!wreckedBoat || !wreckedBoat.IsWrecked || wreckedBoat.Owner != _player || !_player.IsDowned
+            || !wreckedBoat.IsOccupied || _player.CurrentBoat != wreckedBoat)
         {
             return false;
         }
@@ -175,10 +166,6 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
 
         if (!TryFinishRecovery())
         {
-            Debug.LogError(
-                $"[{nameof(PlayerWreckRecovery)}] Recovery failed. Check inventory settlement and boat replacement.",
-                this);
-
             return false;
         }
 
@@ -213,28 +200,20 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
     [Server]
     private bool TryFinishRecovery()
     {
-        if (!_isCompletingRecovery || !_player
-            || !_boatSpawner || !_boatSpawnPoint
-            || !_boatSpawner.PlayerRecoveryPoint)
+        if (!_isCompletingRecovery || !_player || !_boatSpawner || !_boatSpawnPoint || !_boatSpawner.PlayerRecoveryPoint)
         {
             return false;
         }
 
         BoatController wreckedBoat = _player.OwnedBoat;
 
-        if (!wreckedBoat || !wreckedBoat.IsWrecked
-            || wreckedBoat.Owner != _player
-            || !_player.IsDowned
-            || !wreckedBoat.IsOccupied
-            || _player.CurrentBoat != wreckedBoat)
+        if (!wreckedBoat || !wreckedBoat.IsWrecked || wreckedBoat.Owner != _player || !_player.IsDowned
+            || !wreckedBoat.IsOccupied || _player.CurrentBoat != wreckedBoat)
         {
             return false;
         }
 
-        if (!_boatSpawner.TryCreateRecoveryBoat(
-            _player,
-            _boatSpawnPoint,
-            out BoatController replacementBoat))
+        if (!_boatSpawner.TryCreateRecoveryBoat(_player, _boatSpawnPoint, out BoatController replacementBoat))
         {
             return false;
         }
@@ -245,27 +224,17 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
             return false;
         }
 
-        Vector3 recoveryPosition =
-            _boatSpawner.PlayerRecoveryPoint.position;
+        Vector3 recoveryPosition = _boatSpawner.PlayerRecoveryPoint.position;
 
-        if (!wreckedBoat.TryDisembarkForRecovery(
-            _player,
-            recoveryPosition))
+        if (!wreckedBoat.TryDisembarkForRecovery(_player, recoveryPosition))
         {
             NetworkServer.Destroy(replacementBoat.gameObject);
             return false;
         }
 
-        if (!_player.TryReplaceWreckedBoat(
-            wreckedBoat,
-            replacementBoat))
+        if (!_player.TryReplaceWreckedBoat(wreckedBoat, replacementBoat))
         {
             NetworkServer.Destroy(replacementBoat.gameObject);
-
-            Debug.LogError(
-                $"[{nameof(PlayerWreckRecovery)}] Boat replacement failed after disembarking.",
-                this);
-
             return false;
         }
 
@@ -292,11 +261,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
             return true;
         }
 
-        if (!_inventory.TryBuildWreckDropPlan(
-            _recoveryResult,
-            _plannedResources,
-            out _plannedModuleRecipeId,
-            out _plannedModuleId))
+        if (!_inventory.TryBuildWreckDropPlan(_recoveryResult, _plannedResources, out _plannedModuleRecipeId,out _plannedModuleId))
         {
             return false;
         }
@@ -318,10 +283,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
             return true;
         }
 
-        if (!_dropper.TryDropResources(
-            _plannedResources,
-            _wreckPosition,
-            out WreckDropItem[] droppedItems))
+        if (!_dropper.TryDropResources(_plannedResources, _wreckPosition, out WreckDropItem[] droppedItems))
         {
             return false;
         }
@@ -332,20 +294,38 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
         return true;
     }
 
+    [Server]
+    public bool TryCopyResourceDropsTo(List<WreckDropItem> results)
+    {
+        if (results == null)
+        {
+            return false;
+        }
+
+        results.Clear();
+
+        if (!isServer || !_hasDroppedResources)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < _resourceDrops.Length; i++)
+        {
+            results.Add(_resourceDrops[i]);
+        }
+
+        return true;
+    }
+
     [ContextMenu("Test/Complete Rescue")]
     private void TestCompleteRescue()
     {
         if (!isServer)
         {
-            Debug.LogWarning(
-                $"[{nameof(PlayerWreckRecovery)}] Run this on the server player.",
-                this);
-
             return;
         }
 
-        bool succeeded =
-            TryBeginCompletion(WreckRecoveryResult.Rescued);
+        bool succeeded =TryBeginCompletion(WreckRecoveryResult.Rescued);
 
         Debug.Log(
             $"[{nameof(PlayerWreckRecovery)}] Rescue completed: {succeeded}",

@@ -22,8 +22,7 @@ public sealed class PlayerInventoryDropper : NetworkBehaviour
 
     private readonly List<KeyValuePair<int, int>> _removedContents = new List<KeyValuePair<int, int>>();
 
-    private readonly List<WreckDropItem> _droppedItems =
-    new List<WreckDropItem>();
+    private readonly List<WreckDropItem> _droppedItems = new List<WreckDropItem>();
 
     private bool _isDropping;
 
@@ -34,16 +33,11 @@ public sealed class PlayerInventoryDropper : NetworkBehaviour
     }
 
     [Server]
-    public bool TryDropResources(
-    IReadOnlyList<KeyValuePair<int, int>> resources,
-    Vector3 origin,
-    out WreckDropItem[] droppedItems)
+    public bool TryDropResources(IReadOnlyList<KeyValuePair<int, int>> resources, Vector3 origin, out WreckDropItem[] droppedItems)
     {
         droppedItems = System.Array.Empty<WreckDropItem>();
 
-        if (!isServer || _isDropping
-            || !_inventory || !_dropSpawner
-            || resources == null || !IsFinite(origin))
+        if (!isServer || _isDropping || !_inventory || !_dropSpawner || resources == null || !IsFinite(origin))
         {
             return false;
         }
@@ -80,9 +74,7 @@ public sealed class PlayerInventoryDropper : NetworkBehaviour
             {
                 KeyValuePair<int, int> entry = _contents[i];
 
-                Vector3 position = origin
-                    + _dropOffset
-                    + Vector3.right * (_dropSpacing * i);
+                Vector3 position = origin + _dropOffset+ Vector3.right * (_dropSpacing * i);
 
                 if (!TryDropResource(entry.Key, entry.Value, position))
                 {
@@ -107,9 +99,7 @@ public sealed class PlayerInventoryDropper : NetworkBehaviour
         {
             if (!succeeded && !TryRollbackDrops())
             {
-                Debug.LogError(
-                    $"[{nameof(PlayerInventoryDropper)}] Drop rollback is incomplete.",
-                    this);
+                Debug.LogError($"[{nameof(PlayerInventoryDropper)}] Drop rollback is incomplete.", this);
             }
 
             _contents.Clear();
@@ -118,29 +108,19 @@ public sealed class PlayerInventoryDropper : NetworkBehaviour
     }
 
     [Server]
-    private bool TryDropResource(
-    int resourceId,
-    int amount,
-    Vector3 position)
+    private bool TryDropResource(int resourceId, int amount, Vector3 position)
     {
-        if (!_inventory || !_dropSpawner
-            || amount <= 0 || !IsFinite(position))
+        if (!_inventory || !_dropSpawner || amount <= 0 || !IsFinite(position))
         {
             return false;
         }
 
-        if (_inventory.GetCount(resourceId) < amount
-            || !_dropSpawner.CanSpawn(resourceId))
+        if (_inventory.GetCount(resourceId) < amount || !_dropSpawner.CanSpawn(resourceId))
         {
             return false;
         }
 
-        if (!_dropSpawner.TrySpawnDrop(
-            position,
-            resourceId,
-            amount,
-            true,
-            out ResourceDropHandle handle))
+        if (!_dropSpawner.TrySpawnDrop(position, resourceId, amount,true, out ResourceDropHandle handle))
         {
             return false;
         }
@@ -151,8 +131,7 @@ public sealed class PlayerInventoryDropper : NetworkBehaviour
 
         if (removedAmount > 0)
         {
-            _removedContents.Add(
-                new KeyValuePair<int, int>(resourceId, removedAmount));
+            _removedContents.Add(new KeyValuePair<int, int>(resourceId, removedAmount));
         }
 
         if (removedAmount != amount)
@@ -160,12 +139,7 @@ public sealed class PlayerInventoryDropper : NetworkBehaviour
             return false;
         }
 
-        _droppedItems.Add(new WreckDropItem(
-            false,
-            resourceId,
-            amount,
-            position,
-            handle.Pickup.gameObject));
+        _droppedItems.Add(new WreckDropItem(false,resourceId,amount,position,handle.Pickup.gameObject));
 
         return true;
     }
@@ -184,12 +158,6 @@ public sealed class PlayerInventoryDropper : NetworkBehaviour
             {
                 _spawnedDrops.RemoveAt(i);
             }
-            else
-            {
-                Debug.LogError(
-                    $"[{nameof(PlayerInventoryDropper)}] Failed to withdraw a pending drop.",
-                    this);
-            }
         }
 
         if (_spawnedDrops.Count > 0)
@@ -204,12 +172,6 @@ public sealed class PlayerInventoryDropper : NetworkBehaviour
             if (_inventory.TryAdd(entry.Key, entry.Value))
             {
                 _removedContents.RemoveAt(i);
-            }
-            else
-            {
-                Debug.LogError(
-                    $"[{nameof(PlayerInventoryDropper)}] Failed to restore resource {entry.Key}, amount {entry.Value}.",
-                    this);
             }
         }
 
