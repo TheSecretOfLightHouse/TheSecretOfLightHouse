@@ -85,3 +85,37 @@ JH04Offline에서 플레이 → 호스트/준비 → 작업대 근처 F로 새 �
 - [모듈 운반 구현](모듈운반-꺼내기-장착-구현.md)
 - [모듈 결정](../../design/lighthouse-module-decisions.md)
 - [작업대 CRT 시안](images/workbench-crt-concept-v1.png)
+
+## 아이콘 교체(2026-10-22)
+
+사용자가 새 아이콘 시트(13개, 투명 배경)를 주며 해상도가 낮고 정렬·크기가 맞지 않는 작업대 아이콘을 교체해 달라고 요청했다.
+
+- 기존 아이콘은 이미 슬롯 틀(`ws_slot`)과 분리된 별도 스프라이트라 틀을 따로 빼낼 필요가 없었다. 문제는 아이콘마다 잘린 크기가 44~170px로 제각각이고 여백이 달라 `preserveAspect` 칸 안에서 크기·중심이 들쭉날쭉했던 점이다.
+- 시트에서 알파 영역으로 13개를 검출해 각각 256×256 투명 캔버스에 긴 변 240px로 맞춰 가운데 배치했다(LANCZOS 축소, 반투명 배경 노이즈 알파 16 미만 제거·240 이상은 불투명). 기존 11개 PNG를 같은 파일명으로 덮어써 `.meta`·GUID를 유지했으므로 프리팹·씬·빌더 수정은 없다.
+- 매핑: 새장→frame, 톱니→gear, 렌즈→lens, 랜턴→core, 탐조등→boat_searchlight, 계기판→boat_dash, 종→boat_alarm, 프로펠러→boat_stabilizer, 파편→glass, 주괴→iron, 결정→crystal. 대응 레시피·자원이 없는 삼각 판·고리는 `ws_icon_plate`·`ws_icon_ring`으로 추가만 하고 연결하지 않았다.
+- 같은 스프라이트를 쓰는 `TowerScreen_Sketch`(등대 설치 화면)도 함께 바뀐다.
+
+| 주장 | 수준 / 증거 | 실행 수단 | 실제 결과 | 상태 |
+|---|---|---|---|---|
+| GUID 유지·임포트 | L1 / 1 | Unity MCP 재임포트 후 스프라이트 rect·GUID 조회, git status | 13개 모두 256×256 Sprite, 기존 11개 meta 변경 없음 | 통과 |
+| 칸 안 정렬·크기 | L2 / 1 | 두 프리팹을 프리뷰 씬에서 1672×941 렌더(아이콘 강제 할당, 저장 안 함) | 선반·레시피·재료·운반·등대 칸에서 중앙 정렬, 크기 일정 | 통과 |
+| 런타임 표시 | L2 / 0 | 플레이 필요 | 이번에 실행하지 않음 | 검증 대기 |
+
+[아이콘 시트](images/workbench-icons-v2-sheet.png), [렌더 확인](images/workbench-icons-v2-render.png). 렌더 실행 뒤 콘솔에 Unity 내부 "PlayerLoop internal function has been called recursively" 오류가 남았으며, 수동 `Camera.Render` 호출로 인한 것으로 보인다(컴파일 오류 아님).
+
+## 프레임 교체(2026-10-22)
+
+사용자가 프레임만 분리한 부품 시트(1024×576, 글자 제거판과 글자 표기판)를 주고 이것으로 프레임을 다시 넣고 정렬·크기를 맞춰 달라고 요청했다.
+
+- 시트 배치(왼쪽 레시피 열, 가운데 제작 패널, 오른쪽 선반)는 기존 시안과 비율이 같다(약 1.24배). 그래서 화면 좌표는 유지하고 프레임 스프라이트와 9-slice 두께만 시트에 맞췄다.
+- 자르기: 15종을 원본에서 잘라 2배 LANCZOS 확대, 임포트 PPU 160으로 시안 선 굵기에 맞췄다. 패널 안에 함께 그려진 칸·버튼·바는 지우고 바탕색으로 채웠으며, 패널 테두리의 끊김·얼룩은 크림 테두리 닫힘 연산으로 메웠다. 패널 안에서 자른 칸·버튼은 바깥 바탕을 투명 처리했다.
+- 덮어씀(GUID 유지, 등대 화면 `TowerScreen_Sketch`에도 반영): `ws_panel_craft`, `ws_panel_shelf`, `ws_slot`(회청 테두리 재료 칸), `ws_slot_selected`(노랑), `ws_bar_track`, `ws_button_active`(노랑 채움), `ws_key`.
+- 새로 추가: `ws_card`·`ws_card_selected`(레시피 목록·운반·반환 칸), `ws_slot_shelf`(분홍 테두리 선반 칸), `ws_button_craft`(분홍 채움, 어두운 글자), `ws_button_outline_active`·`ws_button_outline`(가져가기·되돌려놓기), `ws_banner`(작업대 열기 안내). `ws_banner_header`는 대응 요소가 없어 미연결. 페이지 화살표는 기존 `ws_button` 유지.
+- `WorkbenchScreen_Sketch.prefab`은 재생성하지 않고 프리팹 내용을 직접 불러 스프라이트·레시피 카드 선택 스프라이트·제작 글자색만 바꿨다(오브젝트 ID 유지, 씬 재연결 불필요). 빌더 `WorkbenchScreenSketchSetup`도 같은 매핑·테두리·PPU로 갱신해 재생성 시 결과가 같다.
+
+| 주장 | 수준 / 증거 | 실행 수단 | 실제 결과 | 상태 |
+|---|---|---|---|---|
+| 컴파일·임포트 | L1 / 1 | Unity MCP 재컴파일·콘솔, 스프라이트 border·rect 조회 | `error CS` 0, 15종 Sprite·9-slice 경계 적용 | 통과 |
+| 작업대 정렬 | L2 / 1 | 실제 프리팹을 프리뷰 씬에서 1672×941 렌더(레시피 8·재료 3·선반 6 임시 채움, 저장 안 함) | [렌더](images/workbench-frames-v2-render.png): 카드·칸·버튼·키가 틀 안에서 정렬, 제작 글자 어두운색 | 통과 |
+| 등대 화면 영향 | L2 / 1 | `TowerScreen_Sketch` 같은 방식 렌더 | 칸·바·버튼·키·운반 패널 새 프레임으로 정상 표시 | 통과 |
+| 런타임·M2 | L2 / 0 | 플레이 필요 | 미실행. JH04Offline이 저장 안 된 상태(dirty)로 열려 있어 건드리지 않음 | 검증 대기 |

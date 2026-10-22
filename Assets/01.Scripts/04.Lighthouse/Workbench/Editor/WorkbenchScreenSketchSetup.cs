@@ -16,6 +16,7 @@ namespace Lighthouse.Workbench.Editor
         private const string PrefabPath = "Assets/02.Prefabs/UI/Workbench/WorkbenchScreen_Sketch.prefab";
         private const string SourcePath = "Assets/02.Prefabs/UI/Workbench/WorkbenchScreen_Wood.prefab";
         private const string SpriteFolder = "Assets/03.Images/WorkbenchUiSketch/";
+        private const float FramePixelsPerUnit = 160f;
         private static readonly Color Cream = new Color(0.98f, 0.92f, 0.79f);
         private static readonly Color Muted = new Color(0.72f, 0.67f, 0.56f);
         private static readonly Color Gold = new Color(1f, 0.78f, 0.27f);
@@ -83,7 +84,7 @@ namespace Lighthouse.Workbench.Editor
                 Image fill = Picture("Fill", track.transform, "ws_bar_fill", 4f, 4f, 314f, 18f);
                 Stretch((RectTransform)fill.transform, 4f);
                 Button deposit = MakeButton("Deposit", progress.transform, "투입", "ws_button_active", 26f, 378f, 146f, 48f, 21, true);
-                Button craft = MakeButton("Craft", progress.transform, "제작", "ws_button", 191f, 378f, 154f, 48f, 21);
+                Button craft = MakeButton("Craft", progress.transform, "제작", "ws_button_craft", 191f, 378f, 154f, 48f, 21, true);
                 Keycap(progress.transform, "E", 81f, 420f);
                 Keycap(progress.transform, "F", 254f, 420f);
 
@@ -94,8 +95,8 @@ namespace Lighthouse.Workbench.Editor
                 Text page = Label("Page", shelf.transform, "1 / 1", 13, 206f, 25f, 44f, 24f);
                 Button next = MakeButton("NextPage", shelf.transform, "›", "ws_button", 252f, 25f, 26f, 24f, 16);
                 WorkbenchItemSlot[] slots = BuildStoredSlots(shelf.transform);
-                Button take = MakeButton("Take", shelf.transform, "가져가기", "ws_button", 24f, 274f, 104f, 42f, 17);
-                Button putBack = MakeButton("Return", shelf.transform, "되돌려놓기", "ws_button", 153f, 274f, 128f, 42f, 17);
+                Button take = MakeButton("Take", shelf.transform, "가져가기", "ws_button_outline_active", 24f, 274f, 104f, 42f, 17);
+                Button putBack = MakeButton("Return", shelf.transform, "되돌려놓기", "ws_button_outline", 153f, 274f, 128f, 42f, 17);
                 Keycap(shelf.transform, "E", 61f, 319f);
                 Keycap(shelf.transform, "G", 202f, 319f);
                 Text carryText = Label("CarryText", shelf.transform, "인벤토리 모듈: 없음", 16, 22f, 354f, 261f, 28f);
@@ -103,11 +104,11 @@ namespace Lighthouse.Workbench.Editor
                 carryText.resizeTextMinSize = 12;
                 carryText.resizeTextMaxSize = 16;
 
-                Image carry = Picture("CarriedModule", frame, "ws_slot", 744f, 793f, 90f, 90f);
+                Image carry = Picture("CarriedModule", frame, "ws_card", 744f, 793f, 90f, 90f);
                 Image carryIcon = Picture("Icon", carry.transform, null, 15f, 12f, 60f, 62f);
                 carryIcon.preserveAspect = true;
                 // The sketch draws this as an empty slot with only the key.
-                Button returnShortcut = MakeButton("ReturnShortcut", frame, string.Empty, "ws_slot", 845f, 793f, 86f, 90f, 16);
+                Button returnShortcut = MakeButton("ReturnShortcut", frame, string.Empty, "ws_card", 845f, 793f, 86f, 90f, 16);
                 Keycap(returnShortcut.transform, "G", 59f, 58f);
                 Text message = Label("Message", frame, string.Empty, 16, 627f, 712f, 373f, 30f);
                 message.resizeTextForBestFit = true;
@@ -116,7 +117,7 @@ namespace Lighthouse.Workbench.Editor
                 Outline messageOutline = message.gameObject.AddComponent<Outline>();
                 messageOutline.effectColor = new Color(0.12f, 0.09f, 0.05f, 0.85f);
                 messageOutline.effectDistance = new Vector2(1.5f, -1.5f);
-                Image prompt = Picture("Prompt", root.transform, "ws_button", 0f, 0f, 270f, 48f);
+                Image prompt = Picture("Prompt", root.transform, "ws_banner", 0f, 0f, 270f, 48f);
                 RectTransform promptRect = (RectTransform)prompt.transform;
                 promptRect.anchorMin = promptRect.anchorMax = new Vector2(0.5f, 0f);
                 promptRect.pivot = new Vector2(0.5f, 0f);
@@ -271,7 +272,7 @@ namespace Lighthouse.Workbench.Editor
             outline.effectColor = new Color(0.12f, 0.09f, 0.05f, 0.85f);
             outline.effectDistance = new Vector2(1.5f, -1.5f);
             section.gameObject.SetActive(false);
-            Image cardImage = Picture("RecipeCard", list, "ws_slot", 0f, 0f, 84f, 61f);
+            Image cardImage = Picture("RecipeCard", list, "ws_card", 0f, 0f, 84f, 61f);
             cardImage.raycastTarget = true;
             cardImage.gameObject.AddComponent<LayoutElement>().preferredHeight = 61f;
             Button button = cardImage.gameObject.AddComponent<Button>();
@@ -299,8 +300,8 @@ namespace Lighthouse.Workbench.Editor
             Set(serialized, "_badge", badge.gameObject);
             Set(serialized, "_badgeText", badgeText);
             Set(serialized, "_group", group);
-            Set(serialized, "_normalSprite", Load("ws_slot"));
-            Set(serialized, "_selectedSprite", Load("ws_slot_selected"));
+            Set(serialized, "_normalSprite", Load("ws_card"));
+            Set(serialized, "_selectedSprite", Load("ws_card_selected"));
             serialized.ApplyModifiedPropertiesWithoutUndo();
             card.gameObject.SetActive(false);
             return card;
@@ -362,7 +363,7 @@ namespace Lighthouse.Workbench.Editor
 
             for (int i = 0; i < slots.Length; i++)
             {
-                Image cell = Picture($"Slot{i + 1}", parent, "ws_slot", 17f + (i % 3) * 93f, 65f + (i / 3) * 100f, 86f, 88f);
+                Image cell = Picture($"Slot{i + 1}", parent, "ws_slot_shelf", 17f + (i % 3) * 93f, 65f + (i / 3) * 100f, 86f, 88f);
                 Image selection = Picture("Selection", cell.transform, "ws_slot_selected", 0f, 0f, 86f, 88f);
                 Stretch(selection.rectTransform);
                 Image icon = Picture("Icon", cell.transform, null, 12f, 12f, 62f, 62f);
@@ -447,15 +448,29 @@ namespace Lighthouse.Workbench.Editor
                 importer.wrapMode = TextureWrapMode.Clamp;
                 importer.maxTextureSize = 1024;
                 string name = System.IO.Path.GetFileNameWithoutExtension(path);
-                float border = name.Contains("panel") ? 30f : name.Contains("slot") ? 12f
-                    : name.Contains("button") ? 12f : name.Contains("track") ? 10f : name == "ws_key" ? 8f : 0f;
+                float border = SpriteBorder(name);
                 importer.spriteBorder = new Vector4(border, border, border, border);
+                // Frames are cut at 2x; 160 keeps their sliced edges at the sketch's line weight.
+                importer.spritePixelsPerUnit = border > 0f && name != "ws_button" ? FramePixelsPerUnit : 100f;
                 TextureImporterSettings settings = new TextureImporterSettings();
                 importer.ReadTextureSettings(settings);
                 settings.spriteMeshType = SpriteMeshType.FullRect;
                 importer.SetTextureSettings(settings);
                 importer.SaveAndReimport();
             }
+        }
+
+        private static float SpriteBorder(string name)
+        {
+            // Old single-scale frames kept for the page arrows.
+            if (name == "ws_button")
+            {
+                return 12f;
+            }
+
+            return name.Contains("panel") ? 34f : name.Contains("slot") || name.Contains("card") ? 24f
+                : name.Contains("button") || name.Contains("banner") ? 22f : name.Contains("track") ? 20f
+                : name == "ws_key" ? 18f : 0f;
         }
 
         private static Button MakeButton(string name, Transform parent, string caption, string sprite, float x, float y, float width, float height, int fontSize, bool isFilled = false)
