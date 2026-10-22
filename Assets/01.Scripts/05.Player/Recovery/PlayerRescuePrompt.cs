@@ -1,6 +1,5 @@
 using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
-using log4net.Util;
 using Mirror;
 using System;
 using System.Collections.Generic;
