@@ -10,6 +10,15 @@ namespace Lighthouse.World.Harvest.Rules
         private readonly int[] _maxAmounts;
         private readonly float[] _regenRates;
         private readonly int[] _remaining;
+        private readonly int[] _reserved;
+
+        private readonly Dictionary<HarvestReservation, int> _pending =
+            new Dictionary<HarvestReservation, int>();
+        private readonly HarvestNotificationQueue<(int LocalIndex, int Remaining)> _notifications;
+
+        public int Count => _remaining.Length;
+
+        public event Action<int, int> RemainingChanged;
 
         public ResourceDeposit(IReadOnlyList<SpotAssignment> assignments)
         {
@@ -18,6 +27,9 @@ namespace Lighthouse.World.Harvest.Rules
             _maxAmounts = new int[count];
             _regenRates = new float[count];
             _remaining = new int[count];
+            _reserved = new int[count];
+            _notifications =
+                new HarvestNotificationQueue<(int LocalIndex, int Remaining)>(DispatchRemainingChanged);
 
             for (int i = 0; i < count; i++)
             {
@@ -25,19 +37,16 @@ namespace Lighthouse.World.Harvest.Rules
                 _resourceIds[i] = assignment.ResourceId;
                 _maxAmounts[i] = Mathf.Max(0, assignment.MaxAmount);
                 _regenRates[i] = assignment.DailyRegenRate;
-                _remaining[i] = Mathf.Clamp(assignment.InitialAmount, 0, _maxAmounts[i]);
+                _remaining[i] = Mathf.Clamp(
+                    assignment.InitialAmount, 0, _maxAmounts[i]);
             }
         }
 
-        public event Action<int, int> RemainingChanged;
-
-        public int Count => _remaining.Length;
-
         public bool TryGetResourceId(int localIndex, out int resourceId)
         {
+            resourceId = 0;
             if (!IsAssigned(localIndex))
             {
-                resourceId = 0;
                 return false;
             }
 
@@ -47,9 +56,9 @@ namespace Lighthouse.World.Harvest.Rules
 
         public bool TryGetRemaining(int localIndex, out int remaining)
         {
+            remaining = 0;
             if (!IsAssigned(localIndex))
             {
-                remaining = 0;
                 return false;
             }
 
@@ -57,24 +66,65 @@ namespace Lighthouse.World.Harvest.Rules
             return true;
         }
 
-        public bool TryConsume(int localIndex, int requested, out ConsumeResult result)
+        internal bool TryReserve(
+            int localIndex,
+            int spotId,
+            Vector3 position,
+            int requested,
+            out HarvestReservation reservation)
         {
-            if (!IsAssigned(localIndex))
+            reservation = null;
+            if (!IsAssigned(localIndex) || requested <= 0)
             {
-                result = default;
                 return false;
             }
 
-            int granted = requested > 0 ? Mathf.Min(_remaining[localIndex], requested) : 0;
-            _remaining[localIndex] -= granted;
-            result = new ConsumeResult(_resourceIds[localIndex], granted);
-
-            if (granted > 0)
+            int available = _remaining[localIndex] - _reserved[localIndex];
+            int granted = Mathf.Min(available, requested);
+            if (granted <= 0)
             {
-                RemainingChanged?.Invoke(localIndex, _remaining[localIndex]);
+                return false;
             }
 
-            return granted > 0;
+            HarvestReservation created = new HarvestReservation(
+                spotId, position, _resourceIds[localIndex], granted);
+
+            _pending.Add(created, localIndex);
+            _reserved[localIndex] += granted;
+            reservation = created;
+            return true;
+        }
+
+        internal bool TryCommit(HarvestReservation reservation)
+        {
+            if (!TryTakeReservation(reservation, out int localIndex))
+            {
+                return false;
+            }
+
+            _reserved[localIndex] -= reservation.Granted;
+            _remaining[localIndex] -= reservation.Granted;
+
+            _notifications.Publish((localIndex, _remaining[localIndex]));
+
+            return true;
+        }
+
+        internal bool TryCancel(HarvestReservation reservation)
+        {
+            if (!TryTakeReservation(reservation, out int localIndex))
+            {
+                return false;
+            }
+
+            _reserved[localIndex] -= reservation.Granted;
+            return true;
+        }
+
+        internal void InvalidateReservations()
+        {
+            _pending.Clear();
+            Array.Clear(_reserved, 0, _reserved.Length);
         }
 
         public int Regenerate(IRegenPolicy policy, int days)
@@ -87,30 +137,60 @@ namespace Lighthouse.World.Harvest.Rules
             int changed = 0;
             for (int i = 0; i < _remaining.Length; i++)
             {
-                if (_resourceIds[i] == 0)
+                if (!IsAssigned(i))
                 {
                     continue;
                 }
 
-                int amount = policy.GetRegenAmount(_maxAmounts[i], _regenRates[i], _remaining[i], days);
-                if (amount > 0)
+                // Reserved units still belong to the deposit until commit.
+                int room = _maxAmounts[i] - _remaining[i];
+                int amount = policy.GetRegenAmount(
+                    _maxAmounts[i], _regenRates[i], _remaining[i], days);
+
+                int added = Mathf.Clamp(amount, 0, room);
+                if (added == 0)
                 {
-                    int next = Mathf.Min(_maxAmounts[i], _remaining[i] + amount);
-                    if (next != _remaining[i])
-                    {
-                        _remaining[i] = next;
-                        changed++;
-                        RemainingChanged?.Invoke(i, next);
-                    }
+                    continue;
                 }
+
+                _remaining[i] += added;
+                changed++;
+
+                _notifications.Publish((i, _remaining[i]));
             }
 
             return changed;
         }
 
+        private bool TryTakeReservation(
+            HarvestReservation reservation,
+            out int localIndex)
+        {
+            localIndex = 0;
+            if (reservation == null
+                || !_pending.TryGetValue(reservation, out localIndex))
+            {
+                return false;
+            }
+
+            // Remove before callbacks can re-enter the settlement path.
+            _pending.Remove(reservation);
+            return true;
+        }
+
         private bool IsAssigned(int localIndex)
         {
-            return localIndex >= 0 && localIndex < _resourceIds.Length && _resourceIds[localIndex] != 0;
+            return localIndex >= 0
+                && localIndex < _resourceIds.Length
+                && _resourceIds[localIndex] != 0;
+        }
+
+        private void DispatchRemainingChanged((int LocalIndex, int Remaining) notification)
+        {
+            HarvestChangeNotification.Publish(
+                RemainingChanged,
+                notification.LocalIndex,
+                notification.Remaining);
         }
     }
 }
