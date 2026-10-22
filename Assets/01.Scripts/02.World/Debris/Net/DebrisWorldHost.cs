@@ -76,7 +76,6 @@ namespace Lighthouse.World.Debris.Net
             _tracker = new DebrisLifetimeTracker(clock, _config);
             WorldServices.Register<IShoreDropLocator>(_locator);
             WorldServices.Register<IDebrisTracker>(_tracker);
-            Debug.Log($"[{nameof(DebrisWorldHost)}] Registered shore locator and tracker.");
         }
 
         private void HandleLayoutReleased()
