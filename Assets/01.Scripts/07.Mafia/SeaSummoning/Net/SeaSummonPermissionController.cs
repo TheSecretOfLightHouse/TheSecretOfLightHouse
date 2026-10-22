@@ -1,3 +1,4 @@
+using System;
 using Lighthouse.Mafia.SeaSummoning.Rules;
 using Mirror;
 using UnityEngine;
@@ -14,6 +15,7 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         public bool HasPermissionResponse { get; private set; }
         public bool HasOwnPermission => _hasOwnPermission && IsPlayerBoarded(NetworkClient.localPlayer);
         public SeaSummonSettings Settings => _settings;
+        public event Action<bool> PermissionResponded;
 
         public override void OnStartServer()
         {
@@ -70,6 +72,7 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         {
             HasPermissionResponse = true;
             _hasOwnPermission = allowed;
+            PermissionResponded?.Invoke(allowed);
         }
 
         private static bool IsPlayerBoarded(NetworkIdentity identity)
