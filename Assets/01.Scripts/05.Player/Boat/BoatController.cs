@@ -127,23 +127,17 @@ public sealed class BoatController : NetworkBehaviour
             return;
         }
 
-        try
+        if (!Owner.TryGetComponent(out PlayerWreckRecovery recovery))
         {
-            if (!Owner.TryGetComponent(
-                out PlayerInventoryDropper dropper))
-            {
-                return;
-            }
+            Debug.LogError(
+                $"[{nameof(BoatController)}] Missing {nameof(PlayerWreckRecovery)} on {Owner.name}.",
+                Owner);
 
-            if (!dropper.TryDropAll(transform.position))
-            {
-                return;
-            }
-        }
-        finally
-        {
             Owner.SetDowned(true);
+            return;
         }
+
+        recovery.TryBeginRecovery(transform.position);
     }
 
     private void ApplyWreckPresentation()
@@ -186,6 +180,43 @@ public sealed class BoatController : NetworkBehaviour
         Stop();
         _rb.isKinematic = true;
         base.OnStopAuthority();
+    }
+
+    [Server]
+    public bool TryDisembarkForRecovery(PlayerController player, Vector3 recoveryPosition)
+    {
+        if (!player || Owner != player || !IsWrecked || !player.IsDowned)
+        {
+            return false;
+        }
+
+        if (!_isOccupied || player.CurrentBoat != this)
+        {
+            return false;
+        }
+
+        _landingPosition = recoveryPosition;
+        _isOccupied = false;
+        ApplyOccupiedState();
+
+        if (player.IsOnBoat)
+        {
+            return false;
+        }
+
+        RpcDisembarkForRecovery(recoveryPosition);
+        return true;
+    }
+
+    [ClientRpc]
+    private void RpcDisembarkForRecovery(Vector3 recoveryPosition)
+    {
+        if (isServer || !Owner)
+        {
+            return;
+        }
+
+        Owner.ApplyDisembarking(this, recoveryPosition);
     }
 
     [Server]
@@ -289,11 +320,7 @@ public sealed class BoatController : NetworkBehaviour
             }
             else
             {
-                horizontal = Vector3.MoveTowards(
-                    horizontal,
-                    targetVelocity,
-                    _acceleration * config.AccelerationMultiplier
-                        * recovery * fixedDeltaTime);
+                horizontal = Vector3.MoveTowards(horizontal, targetVelocity, _acceleration * config.AccelerationMultiplier * recovery * fixedDeltaTime);
             }
         }
         _rb.linearVelocity = new Vector3(horizontal.x, velocity.y, horizontal.z);

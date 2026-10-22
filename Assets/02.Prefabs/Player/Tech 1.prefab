@@ -1145,6 +1145,9 @@ GameObject:
   - component: {fileID: 2978310632326848306}
   - component: {fileID: 4723354263730723869}
   - component: {fileID: -7043577674245993386}
+  - component: {fileID: -6903594242035383426}
+  - component: {fileID: 5389645162508250533}
+  - component: {fileID: 4679596249801812496}
   m_Layer: 0
   m_Name: Tech 1
   m_TagString: Untagged
@@ -1276,6 +1279,10 @@ MonoBehaviour:
   _rb: {fileID: 5824913117910255073}
   _speed: 5
   _originAcceleration: 10
+  _groundAcceleration: 30
+  _stopDeceleration: 60
+  _turnAcceleration: 60
+  _turnAngle: 15
   _jumpSpeed: 5
   _groundCheckDistance: 0.15
   _minimumGroundNormalY: 0.65
@@ -1663,6 +1670,53 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _reloadDurationMultiplier: 0.5
+--- !u!114 &-6903594242035383426
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4492665440649449213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12c3bce354470b24fbe7a79ac2a83d18, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _recoveryDuration: 90
+--- !u!114 &5389645162508250533
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4492665440649449213}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ada3de8c79de565459f6cbb86fa5b96d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _defaultAction: 11
+  _supportedActions: 0b
+  _range: 3
+  _serverRangeSlack: 1.5
+--- !u!114 &4679596249801812496
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4492665440649449213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 017a56b48cc20924096e5211e5f91d88, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
 --- !u!1 &4541714919809005310
 GameObject:
   m_ObjectHideFlags: 0
