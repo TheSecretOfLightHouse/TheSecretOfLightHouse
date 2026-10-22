@@ -20,7 +20,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private PlayerAnimationDriver _animationDriver;
 
     [SerializeField]
-    private PlayerCamera _camera;
+    private PlayerCamera _camera; 
 
     private PlayerAnimationSource _animationSource;
 
@@ -121,6 +121,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _inputReader.FireRequested += HandleFireRequested;
         _inputReader.AbilityRequested += HandleAbilityRequested;
         _inputReader.JumpRequested += HandleJumpRequested;
+        _inputReader.DashRequested += HandleDashRequested;
 
         RefreshLocalControl();
 
@@ -132,7 +133,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void Start()
     {
-        if (!NetworkClient.active&& !NetworkServer.active&& _allowOfflineControl)
+        if (!NetworkClient.active && !NetworkServer.active&& _allowOfflineControl)
         {
             _camera?.Attach();
         }
@@ -291,6 +292,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
             _inputReader.FireRequested -= HandleFireRequested;
             _inputReader.AbilityRequested -= HandleAbilityRequested;
             _inputReader.JumpRequested -= HandleJumpRequested;
+            _inputReader.DashRequested -= HandleDashRequested;
         }
 
         ClearActionRequests();
@@ -677,6 +679,18 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _abilityRequested = true;
     }
 
+    private void HandleDashRequested()
+    {
+        if (!CanProcessLocalInput || IsDowned || !IsOnBoat)
+        {
+            return;
+        }
+
+        if (_boatController.TryGetComponent(out DashModule dashModule))
+        {
+            dashModule.RequestDash();
+        }
+    }
     private void ClearActionRequests()
     {
         _interactRequested = false;

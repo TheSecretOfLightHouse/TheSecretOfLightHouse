@@ -1,4 +1,5 @@
 using Lighthouse.World.Ocean.Rules;
+using UnityEngine;
 
 namespace Lighthouse.World.MapGeneration.Rules
 {
@@ -15,6 +16,15 @@ namespace Lighthouse.World.MapGeneration.Rules
             Zone = config.Zone;
             InnerRadius = config.InnerRadius * radiusScale;
             OuterRadius = config.OuterRadius * radiusScale;
+        }
+
+        public bool TryCreateDomain(float margin, out RingDomain domain)
+        {
+            float inner = InnerRadius + margin;
+            float outer = OuterRadius - margin;
+            bool isValid = margin >= 0f && outer > inner;
+            domain = isValid ? new RingDomain(Vector2.zero, inner, outer) : default;
+            return isValid;
         }
     }
 }

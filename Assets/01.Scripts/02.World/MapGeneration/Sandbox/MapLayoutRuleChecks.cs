@@ -83,7 +83,7 @@ namespace Lighthouse.World.MapGeneration.Sandbox
 
                 indexErrors += CountIndexErrors(layout);
                 ringErrors += CountRingErrors(config, layout);
-                islandOverlaps += CountIslandOverlaps(layout);
+                islandOverlaps += CountIslandOverlaps(layout, config.SailingChannelWidth);
                 reefErrors += CountReefErrors(config, layout);
             }
 
@@ -150,29 +150,44 @@ namespace Lighthouse.World.MapGeneration.Sandbox
 
         private static int CountRingErrors(MapGenerationConfig config, MapLayout layout)
         {
+            float halfChannel = config.SailingChannelWidth * 0.5f;
             int errors = 0;
             for (int i = 1; i < layout.Islands.Count; i++)
             {
                 IslandPlacement island = layout.Islands[i];
-                ZoneConfig zone = FindZone(config, island.Zone);
-                float distance = island.Position.magnitude;
-                bool isInside = zone != null
-                    && distance >= zone.InnerRadius * config.RadiusScale - Epsilon
-                    && distance <= zone.OuterRadius * config.RadiusScale + Epsilon;
-                errors += isInside ? 0 : 1;
+                errors += IsInsideZone(config, island.Zone, island.Position, island.Radius + halfChannel) ? 0 : 1;
+            }
+
+            for (int i = 0; i < layout.Reefs.Count; i++)
+            {
+                ReefPlacement reef = layout.Reefs[i];
+                errors += IsInsideZone(config, reef.Zone, reef.Position, reef.Radius + halfChannel) ? 0 : 1;
             }
 
             return errors;
         }
 
-        private static int CountIslandOverlaps(MapLayout layout)
+        private static bool IsInsideZone(MapGenerationConfig config, SeaZone zoneId, Vector2 position, float margin)
+        {
+            ZoneConfig zone = FindZone(config, zoneId);
+            if (zone == null)
+            {
+                return false;
+            }
+
+            float distance = position.magnitude;
+            return distance >= zone.InnerRadius * config.RadiusScale + margin - Epsilon
+                && distance <= zone.OuterRadius * config.RadiusScale - margin + Epsilon;
+        }
+
+        private static int CountIslandOverlaps(MapLayout layout, float channelWidth)
         {
             int overlaps = 0;
             for (int i = 0; i < layout.Islands.Count; i++)
             {
                 for (int j = i + 1; j < layout.Islands.Count; j++)
                 {
-                    float reach = layout.Islands[i].Radius + layout.Islands[j].Radius;
+                    float reach = layout.Islands[i].Radius + layout.Islands[j].Radius + channelWidth;
                     float distance = (layout.Islands[i].Position - layout.Islands[j].Position).magnitude;
                     overlaps += distance < reach - Epsilon ? 1 : 0;
                 }

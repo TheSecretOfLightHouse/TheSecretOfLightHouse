@@ -12,6 +12,7 @@ public class PlayerInputReader : MonoBehaviour
     public event Action FireRequested;
     public event Action AbilityRequested;
     public event Action JumpRequested;
+    public event Action DashRequested;
 
     public void OnMove(InputValue value)
     {
@@ -25,7 +26,12 @@ public class PlayerInputReader : MonoBehaviour
 
     public void OnRun(InputValue value)
     {
-        RunHeld = value.isPressed;
+        bool isPressed = value.isPressed;
+        if(isPressed && !RunHeld)
+        {
+            DashRequested?.Invoke();
+        }
+        RunHeld = isPressed;
     }
 
     public void OnInteract(InputValue value)

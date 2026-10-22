@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: SearchlightBeam
-  m_Shader: {fileID: 4800000, guid: f599b8bfbaa83ed48bc63555e25e6611, type: 3}
+  m_Name: SearchlightVolume
+  m_Shader: {fileID: 4800000, guid: d64a110d5cb8cbc4db6c1b4978be22e2, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -24,8 +24,9 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Density: 0.12
     m_Colors:
-    - _Tint: {r: 1, g: 1, b: 1, a: 0.055}
+    - _Tint: {r: 0.65, g: 0.78, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

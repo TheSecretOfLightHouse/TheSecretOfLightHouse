@@ -29,8 +29,20 @@ namespace Lighthouse.World.MapGeneration.Rules
         private static void PlaceInZone(MapContext context, SeededRandom random, ZoneRing ring, List<Vector2> existing, List<Vector2> candidates)
         {
             ZoneConfig config = ring.Config;
-            RingDomain domain = new RingDomain(Vector2.zero, ring.InnerRadius, ring.OuterRadius);
-            if (!PoissonDiskSampler.TrySample(random, domain, config.MinIslandDistance, int.MaxValue, candidates, existing))
+            if (config.MaxIslands <= 0)
+            {
+                return;
+            }
+
+            float margin = context.Config.IslandZoneMargin;
+            if (!ring.TryCreateDomain(margin, out RingDomain domain))
+            {
+                context.AddIssue($"{ring.Zone}: 구역 폭이 섬 마진({margin})의 2배 이하");
+                return;
+            }
+
+            float minDistance = context.Config.GetMinIslandDistance(config);
+            if (!PoissonDiskSampler.TrySample(random, domain, minDistance, int.MaxValue, candidates, existing))
             {
                 context.AddIssue($"{ring.Zone}: 섬 후보 샘플링 인자가 올바르지 않음");
                 return;

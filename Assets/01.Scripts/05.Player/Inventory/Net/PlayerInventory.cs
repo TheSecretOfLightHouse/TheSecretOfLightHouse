@@ -1,8 +1,10 @@
+using Lighthouse.Workbench.Net;
+using Lighthouse.Workbench.Rules;
 using Lighthouse.World.Harvest.Rules;
 using Mirror;
-using UnityEngine;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
+using UnityEngine;
 
 public sealed class PlayerInventory : NetworkBehaviour
 {
@@ -20,6 +22,12 @@ public sealed class PlayerInventory : NetworkBehaviour
     [SerializeField]
     private int _testResourceId;
 
+
+    private WorkbenchNet _moduleSource;
+
+    public int ModuleRecipeId => _moduleSource ? _moduleSource.OwnCarriedRecipe : 0;
+
+    public bool HasModule => ModuleRecipeId != 0;
 
     private void Awake()
     {
@@ -147,6 +155,35 @@ public sealed class PlayerInventory : NetworkBehaviour
     public void CopyContentsTo(List<KeyValuePair<int, int>> results)
     {
         _data.CopyTo(results);
+    }
+
+    public ModuleRecipe GetModuleRecipe()
+    {
+        if (!_moduleSource || !_moduleSource.Catalog)
+        {
+            return null;
+        }
+
+        int recipeId = ModuleRecipeId;
+
+        if (recipeId == 0)
+        {
+            return null;
+        }
+
+        _moduleSource.Catalog.TryGetById(recipeId, out ModuleRecipe recipe);
+
+        return recipe;
+    }
+
+    public void BindModuleSource(WorkbenchNet workbench)
+    {
+        if (!isLocalPlayer)
+        {
+            return;
+        }
+
+        _moduleSource = workbench;
     }
 
     //[ContextMenu("Test/Add Resource On Server")]

@@ -765,6 +765,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 68a06270b9116434291146a22793416b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _jobAbility: {fileID: 0}
 --- !u!114 &7035255034526539804
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -783,7 +784,6 @@ MonoBehaviour:
   _inputReader: {fileID: 7739987094259714832}
   _motor: {fileID: 3079936067432699403}
   _abilityRunner: {fileID: 70972110759783325}
-  _jobAbility: {fileID: 0}
   _animationDriver: {fileID: 2348127701861222325}
   _camera: {fileID: 6568711687284579916}
   _runMultiplier: 1.5
@@ -825,7 +825,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sceneId: 0
-  _assetId: 0
+  _assetId: 3114722876
   serverOnly: 0
   visibility: 0
   hasSpawned: 0
