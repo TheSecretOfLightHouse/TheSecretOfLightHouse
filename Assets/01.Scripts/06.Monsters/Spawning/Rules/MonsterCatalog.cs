@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Lighthouse.Monsters.Spawning.Rules
 {
-    [CreateAssetMenu(fileName = "MonsterCatalog", menuName = "Lighthouse/Monster/Monster Catalog")]
+    [CreateAssetMenu(fileName = "MonsterCatalog", menuName = "TheLightHouse/Monster/Monster Catalog")]
     public sealed class MonsterCatalog : ScriptableObject
     {
         [SerializeField] private List<MonsterCatalogEntry> _entries = new List<MonsterCatalogEntry>();
