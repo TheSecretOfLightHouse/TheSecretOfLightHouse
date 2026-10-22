@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Lighthouse.Mafia.AbyssGauge.Rules
 {
-    [CreateAssetMenu(fileName = "AbyssBalanceSettings", menuName = "Lighthouse/Mafia/Abyss Balance")]
+    [CreateAssetMenu(fileName = "AbyssBalanceSettings", menuName = "TheLightHouse/Mafia/Abyss Balance")]
     public sealed class AbyssBalanceSettings : ScriptableObject
     {
         [Header("하루 기본 심해 충전량")]
