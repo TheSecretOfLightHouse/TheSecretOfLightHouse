@@ -30,19 +30,43 @@ public sealed class HarvestDropSpawner : NetworkBehaviour
         return _resourceDropSpawner.TrySpawnDrop(position, target.Resource.Id, target.AmountPerHarvest);
     }
 
-    //[ContextMenu("Test/Spawn Drop On Server")]
-    //private void TestSpawnDropOnServer()
-    //{
-    //    if (!isServer)
-    //    {
-    //        Debug.LogWarning(
-    //            $"[{nameof(HarvestDropSpawner)}] Run on a server-spawned object.");
-    //        return;
-    //    }
+    [Server]
+    public bool TrySpawnDrop(Vector3 position, int resourceId, int amount, out ResourceDropHandle handle)
+    {
+        handle = default;
 
-    //    bool success = TrySpawnDrop(_testTarget);
+        if (!isServer || !_resourceDropSpawner)
+        {
+            return false;
+        }
 
-    //    Debug.Log(
-    //        $"[{nameof(HarvestDropSpawner)}] Spawn success={success}");
-    //}
+        return _resourceDropSpawner.TrySpawnDrop(
+            position + _dropOffset,
+            resourceId,
+            amount,
+            true,
+            out handle);
+    }
+
+    [Server]
+    public bool TryWithdrawDrop(ResourceDropHandle handle)
+    {
+        if (!isServer || !_resourceDropSpawner)
+        {
+            return false;
+        }
+
+        return _resourceDropSpawner.TryWithdrawDrop(handle);
+    }
+
+    [Server]
+    public void UnlockDrop(ResourceDropHandle handle)
+    {
+        if (!isServer || !_resourceDropSpawner)
+        {
+            return;
+        }
+
+        _resourceDropSpawner.UnlockDrop(handle);
+    }
 }

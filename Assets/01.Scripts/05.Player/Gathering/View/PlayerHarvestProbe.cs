@@ -1,6 +1,7 @@
 using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Interaction.Requests.Rules;
+using Lighthouse.World.Harvest.Rules;
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -122,18 +123,9 @@ public sealed class PlayerHarvestProbe : MonoBehaviour
 
         RaycastHit nearestHit = _hits[nearestIndex];
 
-        HarvestTarget target =
-            nearestHit.collider.GetComponentInParent<HarvestTarget>();
+        HarvestSpot spot = nearestHit.collider.GetComponentInParent<HarvestSpot>();
 
-        if (!target || !target.IsConfigured)
-        {
-            return;
-        }
-
-        LocalHarvestTestSpot spot =
-            target.GetComponent<LocalHarvestTestSpot>();
-
-        if (!spot || !spot.isActiveAndEnabled || spot.SpotId <= 0)
+        if (!spot || !spot.isActiveAndEnabled || !spot.IsBound)
         {
             return;
         }
@@ -145,7 +137,6 @@ public sealed class PlayerHarvestProbe : MonoBehaviour
             return;
         }
 
-        // The local gesture does not confirm a server-side harvest result.
         if (_actionEvents)
         {
             _actionEvents.Publish(PlayerAnimationAction.Dig);

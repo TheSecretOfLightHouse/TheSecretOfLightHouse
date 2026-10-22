@@ -13,6 +13,9 @@ public sealed class ResourceDropSpawner : NetworkBehaviour
     private readonly Dictionary<GameObject, Stack<ResourcePickup>> _availableDrops = new Dictionary<GameObject, Stack<ResourcePickup>>();
     private readonly Dictionary<ResourcePickup, GameObject> _prefabByPickup = new Dictionary<ResourcePickup, GameObject>();
 
+    private readonly Dictionary<ResourcePickup, ulong> _activeGenerations = new Dictionary<ResourcePickup, ulong>();
+
+    private ulong _nextGeneration;
     public override void OnStopServer()
     {
         foreach (KeyValuePair<ResourcePickup, GameObject> entry in _prefabByPickup)
@@ -36,6 +39,7 @@ public sealed class ResourceDropSpawner : NetworkBehaviour
 
         _availableDrops.Clear();
         _prefabByPickup.Clear();
+        _activeGenerations.Clear();
         base.OnStopServer();
     }
 
@@ -46,9 +50,51 @@ public sealed class ResourceDropSpawner : NetworkBehaviour
     }
 
     [Server]
+    public bool TryWithdrawDrop(ResourceDropHandle handle)
+    {
+        if (!TryGetActivePickup(handle, out ResourcePickup pickup))
+        {
+            return false;
+        }
+
+        if (pickup.netId != 0)
+        {
+            NetworkServer.UnSpawn(pickup.gameObject);
+        }
+
+        ReturnDrop(pickup);
+        return true;
+    }
+
+    [Server]
+    public void UnlockDrop(ResourceDropHandle handle)
+    {
+        if (!TryGetActivePickup(handle, out ResourcePickup pickup))
+        {
+            return;
+        }
+
+        pickup.UnlockCollection();
+    }
+
+    [Server]
     public bool TrySpawnDrop(Vector3 position, int resourceId, int amount)
     {
-        if (!isServer || amount <= 0 || !IsFinite(position))
+        return TrySpawnDrop(position, resourceId, amount, false, out _);
+    }
+
+    [Server]
+    public bool TrySpawnDrop(
+    Vector3 position,
+    int resourceId,
+    int amount,
+    bool isCollectionLocked,
+    out ResourceDropHandle handle)
+    {
+        handle = default;
+
+        if (!isServer || amount <= 0 || !IsFinite(position)
+            || _nextGeneration == ulong.MaxValue)
         {
             return false;
         }
@@ -58,30 +104,65 @@ public sealed class ResourceDropSpawner : NetworkBehaviour
             return false;
         }
 
-        ResourcePickup pickup = GetOrCreateDrop(prefab);
-        if (!pickup.TryResetForReuse() || !pickup.TryInitialize(resourceId, amount))
+        ResourcePickup pickup = null;
+        bool isSpawned = false;
+
+        try
         {
-            ReturnDrop(pickup);
+            pickup = GetOrCreateDrop(prefab);
+
+            if (!pickup
+                || !pickup.TryResetForReuse()
+                || !pickup.TryInitialize(
+                    resourceId, amount, isCollectionLocked))
+            {
+                return false;
+            }
+
+            ulong generation = ++_nextGeneration;
+            _activeGenerations.Add(pickup, generation);
+
+            GameObject drop = pickup.gameObject;
+            drop.transform.SetPositionAndRotation(
+                position, Quaternion.identity);
+
+            drop.SetActive(true);
+
+            if (drop.TryGetComponent(out Rigidbody body)
+                && !body.isKinematic)
+            {
+                body.linearVelocity = Vector3.zero;
+                body.angularVelocity = Vector3.zero;
+            }
+
+            NetworkServer.Spawn(drop);
+
+            if (pickup.netId == 0)
+            {
+                return false;
+            }
+
+            handle = new ResourceDropHandle(pickup, generation);
+            isSpawned = true;
+            return true;
+        }
+        catch (System.Exception exception)
+        {
+            Debug.LogException(exception, this);
             return false;
         }
-
-        GameObject drop = pickup.gameObject;
-        drop.transform.SetPositionAndRotation(position, Quaternion.identity);
-        drop.SetActive(true);
-        if (drop.TryGetComponent(out Rigidbody body) && !body.isKinematic)
+        finally
         {
-            body.linearVelocity = Vector3.zero;
-            body.angularVelocity = Vector3.zero;
-        }
+            if (!isSpawned && pickup)
+            {
+                if (pickup.netId != 0)
+                {
+                    NetworkServer.UnSpawn(pickup.gameObject);
+                }
 
-        NetworkServer.Spawn(drop);
-        if (pickup.netId == 0)
-        {
-            ReturnDrop(pickup);
-            return false;
+                ReturnDrop(pickup);
+            }
         }
-
-        return true;
     }
 
     private bool TryGetPrefab(int resourceId, out GameObject prefab)
@@ -116,12 +197,44 @@ public sealed class ResourceDropSpawner : NetworkBehaviour
             _prefabByPickup.Remove(pickup);
         }
 
-        GameObject drop = Instantiate(prefab);
-        drop.SetActive(false);
-        ResourcePickup createdPickup = drop.GetComponent<ResourcePickup>();
-        createdPickup.RecycleRequested += HandleRecycleRequested;
-        _prefabByPickup.Add(createdPickup, prefab);
-        return createdPickup;
+        GameObject drop = null;
+        ResourcePickup createdPickup = null;
+        bool isPrepared = false;
+
+        try
+        {
+            drop = Instantiate(prefab);
+            drop.SetActive(false);
+
+            createdPickup = drop.GetComponent<ResourcePickup>();
+
+            if (!createdPickup)
+            {
+                return null;
+            }
+
+            _prefabByPickup.Add(createdPickup, prefab);
+            createdPickup.RecycleRequested += HandleRecycleRequested;
+
+            isPrepared = true;
+            return createdPickup;
+        }
+        finally
+        {
+            if (!isPrepared)
+            {
+                if (createdPickup)
+                {
+                    createdPickup.RecycleRequested -= HandleRecycleRequested;
+                    _prefabByPickup.Remove(createdPickup);
+                }
+
+                if (drop)
+                {
+                    Destroy(drop);
+                }
+            }
+        }
     }
 
     [Server]
@@ -139,8 +252,20 @@ public sealed class ResourceDropSpawner : NetworkBehaviour
     [Server]
     private void ReturnDrop(ResourcePickup pickup)
     {
+        _activeGenerations.Remove(pickup);
+
         pickup.gameObject.SetActive(false);
         _availableDrops[_prefabByPickup[pickup]].Push(pickup);
+    }
+
+    private bool TryGetActivePickup(ResourceDropHandle handle, out ResourcePickup pickup)
+    {
+        pickup = handle.Pickup;
+
+        return pickup
+            && _activeGenerations.TryGetValue(
+                pickup, out ulong generation)
+            && generation == handle.Generation;
     }
 
     private static bool IsFinite(Vector3 position)
