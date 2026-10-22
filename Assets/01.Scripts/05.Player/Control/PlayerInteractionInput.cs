@@ -53,6 +53,11 @@ public sealed class PlayerInteractionInput : MonoBehaviour
             return;
         }
 
+        if (_selectedAction == InteractionAction.Rescue)
+        {
+            return;
+        }
+
         _selector.TryInteract();
 
         if (!player.IsOnBoat &&

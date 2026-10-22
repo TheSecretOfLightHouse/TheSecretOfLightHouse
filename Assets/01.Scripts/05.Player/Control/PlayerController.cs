@@ -53,6 +53,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private bool _savedIsKinematic;
     private bool _savedDetectCollisions;
 
+    private bool _isRescuePromptOpen;
+    private int _rescuePromptClosedFrame = -1;
     private bool _interactRequested;
     private bool _harvestRequested;
     private bool _fireRequested;
@@ -205,7 +207,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
             SetDowned(true);
         }
 
-        if (!IsDowned)
+        if (!IsDowned && !_isRescuePromptOpen)
         {
             Vector2 look = _lookAction != null ? _lookAction.ReadValue<Vector2>() : Vector2.zero;
             if (IsOnBoat)
@@ -458,6 +460,34 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         return AssignOwnedBoat(boat);
     }
 
+    [Server]
+    public bool TryReplaceWreckedBoat(
+    BoatController wreckedBoat,
+    BoatController replacementBoat)
+    {
+        if (!IsDowned || IsOnBoat)
+        {
+            return false;
+        }
+
+        if (!wreckedBoat || OwnedBoat != wreckedBoat
+            || wreckedBoat.Owner != this || !wreckedBoat.IsWrecked)
+        {
+            return false;
+        }
+
+        if (!replacementBoat || replacementBoat == wreckedBoat
+            || replacementBoat.Owner != this
+            || replacementBoat.IsWrecked
+            || replacementBoat.IsOccupied)
+        {
+            return false;
+        }
+
+        _ownedBoat = replacementBoat;
+        return true;
+    }
+
     public bool TryAssignOfflineOwnedBoat(BoatController boat)
     {
         return !NetworkClient.active && !NetworkServer.active && AssignOwnedBoat(boat);
@@ -610,6 +640,23 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         DownedChanged?.Invoke(value);
     }
 
+    public void SetRescuePromptOpen(bool isOpen)
+    {
+        if (_isRescuePromptOpen == isOpen)
+        {
+            return;
+        }
+
+        _isRescuePromptOpen = isOpen;
+        ClearActionRequests();
+
+        if (!isOpen)
+        {
+            // The button release must not become a gameplay action in the same frame.
+            _rescuePromptClosedFrame = Time.frameCount;
+        }
+    }
+
     private void ProcessActionRequests()
     {
         bool interactRequested = _interactRequested;
@@ -622,7 +669,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _fireRequested = false;
         _abilityRequested = false;
 
-        if (IsDowned)
+        if (IsDowned || _isRescuePromptOpen
+            || Time.frameCount <= _rescuePromptClosedFrame)
         {
             return;
         }
