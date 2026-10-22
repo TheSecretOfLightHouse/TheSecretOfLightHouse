@@ -14,12 +14,22 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         [SerializeField] private SeaSummonPointController _points;
         private readonly Dictionary<int, (uint PlayerId, ulong RequestId, bool Success, string Reason, uint MonsterId)> _results = new();
         private readonly List<(uint PlayerId, MonsterBase Monster)> _summoned = new();
+        private readonly Dictionary<uint, int> _usedCounts = new();
         private ulong _nextRequestId;
         private ulong _pendingRequestId;
         public bool IsPending { get; private set; }
         public string OwnResult { get; private set; } = "";
         public uint OwnMonsterId { get; private set; }
+        public bool HasOwnQuota { get; private set; }
+        public int OwnRemainingCount { get; private set; }
+        public int OwnDailyLimit { get; private set; }
         public event Action<bool> SummonResponded;
+        public event Action QuotaChanged;
+
+        public override void OnStartClient()
+        {
+            _permission.PermissionResponded += HandlePermissionResponded;
+        }
 
         public override void OnStopServer()
         {
@@ -32,14 +42,69 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             }
             _results.Clear();
             _summoned.Clear();
+            _usedCounts.Clear();
         }
 
         public override void OnStopClient()
         {
+            _permission.PermissionResponded -= HandlePermissionResponded;
             IsPending = false;
             _nextRequestId = 0;
             _pendingRequestId = 0;
             OwnMonsterId = 0;
+            SetOwnQuota(false, 0, 0);
+        }
+
+        [Client]
+        public void RequestOwnQuota()
+        {
+            if (NetworkClient.ready)
+            {
+                CmdRequestQuota();
+            }
+        }
+
+        [Server]
+        public bool TryGetQuota(NetworkConnectionToClient sender, out int remaining, out int limit)
+        {
+            remaining = 0;
+            limit = 0;
+            if (_permission == null || !_permission.CanRequest(sender))
+            {
+                return false;
+            }
+            limit = _permission.Settings.DailyLimit;
+            _usedCounts.TryGetValue(sender.identity.netId, out int used);
+            remaining = Mathf.Max(0, limit - used);
+            return true;
+        }
+
+        private void HandlePermissionResponded(bool allowed)
+        {
+            if (allowed)
+            {
+                RequestOwnQuota();
+            }
+            else
+            {
+                SetOwnQuota(false, 0, 0);
+            }
+        }
+
+        [Command(requiresAuthority = false)]
+        private void CmdRequestQuota(NetworkConnectionToClient sender = null)
+        {
+            if (sender != null)
+            {
+                bool available = TryGetQuota(sender, out int remaining, out int limit);
+                TargetQuota(sender, available, remaining, limit);
+            }
+        }
+
+        [TargetRpc]
+        private void TargetQuota(NetworkConnectionToClient target, bool available, int remaining, int limit)
+        {
+            SetOwnQuota(available, remaining, limit);
         }
 
         [Client]
@@ -68,18 +133,18 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             {
                 if (requestId == previous.RequestId)
                 {
-                    TargetSummonResult(sender, requestId, previous.Success, previous.Reason, previous.MonsterId);
+                    SendSummonResult(sender, requestId, previous.Success, previous.Reason, previous.MonsterId);
                 }
                 else
                 {
-                    TargetSummonResult(sender, requestId, false, "이미 처리된 이전 요청입니다.", 0);
+                    SendSummonResult(sender, requestId, false, "이미 처리된 이전 요청입니다.", 0);
                 }
                 return;
             }
             bool success = TrySpawn(sender, monsterId, token, out string reason, out MonsterBase monster);
             uint spawnedId = monster != null ? monster.netId : 0;
             _results[sender.connectionId] = (playerId, requestId, success, reason, spawnedId);
-            TargetSummonResult(sender, requestId, success, reason, spawnedId);
+            SendSummonResult(sender, requestId, success, reason, spawnedId);
         }
 
         private bool TrySpawn(NetworkConnectionToClient sender, string monsterId, ulong token,
@@ -88,6 +153,11 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             monster = null;
             reason = "소환 권한 또는 탑승 상태가 바뀌었습니다.";
             if (_permission == null || !_permission.CanRequest(sender))
+            {
+                return false;
+            }
+            reason = "오늘 소환 횟수를 모두 사용했습니다.";
+            if (!TryGetQuota(sender, out int remaining, out _) || remaining <= 0)
             {
                 return false;
             }
@@ -120,6 +190,9 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             {
                 return false;
             }
+            // 실제 네트워크 생성과 초기화가 성공한 뒤에만 사용 횟수를 기록한다.
+            _usedCounts.TryGetValue(sender.identity.netId, out int used);
+            _usedCounts[sender.identity.netId] = used + 1;
             // 소환 출처와 요청자는 서버에서만 보관하며 공개 동기화 상태에 넣지 않는다.
             _summoned.Add((sender.identity.netId, monster));
             monster.Died += HandleMonsterDied;
@@ -140,9 +213,18 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             MonsterSpawnFactory.Despawn(monster);
         }
 
-        [TargetRpc]
-        private void TargetSummonResult(NetworkConnectionToClient target, ulong requestId, bool success, string reason, uint monsterId)
+        [Server]
+        private void SendSummonResult(NetworkConnectionToClient sender, ulong requestId, bool success, string reason, uint monsterId)
         {
+            bool available = TryGetQuota(sender, out int remaining, out int limit);
+            TargetSummonResult(sender, requestId, success, reason, monsterId, available, remaining, limit);
+        }
+
+        [TargetRpc]
+        private void TargetSummonResult(NetworkConnectionToClient target, ulong requestId, bool success, string reason,
+            uint monsterId, bool available, int remaining, int limit)
+        {
+            SetOwnQuota(available, remaining, limit);
             if (!IsPending || requestId != _pendingRequestId)
             {
                 return;
@@ -151,6 +233,14 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             OwnResult = reason;
             OwnMonsterId = monsterId;
             SummonResponded?.Invoke(success);
+        }
+
+        private void SetOwnQuota(bool available, int remaining, int limit)
+        {
+            HasOwnQuota = available;
+            OwnRemainingCount = remaining;
+            OwnDailyLimit = limit;
+            QuotaChanged?.Invoke();
         }
     }
 }

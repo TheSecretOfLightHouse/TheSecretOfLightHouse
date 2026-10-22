@@ -36,6 +36,7 @@ namespace Lighthouse.Mafia.SeaSummoning.View
         {
             _points.SelectionResponded += HandleSelectionResponded;
             _spawn.SummonResponded += HandleSummonResponded;
+            _spawn.QuotaChanged += HandleQuotaChanged;
         }
 
         private void LateUpdate()
@@ -66,9 +67,10 @@ namespace Lighthouse.Mafia.SeaSummoning.View
                 _hover = hover;
                 _wheel.SetState(hover, _enabledSlots, pending);
                 _centerLabel.text = pending ? "소환 중…" : hover >= 0
-                    ? _permission.Settings.Options[hover].DisplayName + (_enabledSlots[hover] ? "\n\n클릭하여 소환" : "\n\n준비 중")
+                    ? _permission.Settings.Options[hover].DisplayName + (_enabledSlots[hover] ? "\n\n클릭하여 소환"
+                        : _permission.Settings.Options[hover].IsEnabled ? "\n\n오늘 횟수 소진" : "\n\n준비 중")
                     : "몬스터 선택\n\n칸을 클릭하면\n즉시 소환됩니다";
-                _footer.text = pending ? "서버 응답을 기다리는 중입니다" : "X: 지점 다시 선택    ·    Q: 탑뷰 종료";
+                _footer.text = pending ? "서버 응답을 기다리는 중입니다" : GetQuotaText() + "\nX: 지점 다시 선택    ·    Q: 탑뷰 종료";
             }
             if (Time.frameCount <= _openedFrame || pending || !Mouse.current.leftButton.wasPressedThisFrame)
             {
@@ -90,6 +92,7 @@ namespace Lighthouse.Mafia.SeaSummoning.View
         {
             _points.SelectionResponded -= HandleSelectionResponded;
             _spawn.SummonResponded -= HandleSummonResponded;
+            _spawn.QuotaChanged -= HandleQuotaChanged;
             CloseMenu(false);
         }
 
@@ -122,9 +125,9 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             for (int i = 0; i < 7; i++)
             {
                 var option = _permission.Settings.Options[i];
-                _enabledSlots[i] = option.IsEnabled;
-                _labels[i].text = option.DisplayName + (option.IsEnabled ? "" : "\n준비 중");
-                _labels[i].color = option.IsEnabled ? Color.white : new Color(0.5f, 0.53f, 0.58f);
+                _enabledSlots[i] = option.IsEnabled && (!_spawn.HasOwnQuota || _spawn.OwnRemainingCount > 0);
+                _labels[i].text = option.DisplayName + (!option.IsEnabled ? "\n준비 중" : !_enabledSlots[i] ? "\n횟수 소진" : "");
+                _labels[i].color = _enabledSlots[i] ? Color.white : new Color(0.5f, 0.53f, 0.58f);
             }
             IsOpen = true;
             _hasFailure = false;
@@ -133,6 +136,28 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             _canvasObject.SetActive(true);
             _pointView.IsSelectionBlocked = true;
             Status = "몬스터 종류를 클릭하면 즉시 소환합니다.";
+        }
+
+        private void HandleQuotaChanged()
+        {
+            if (IsOpen)
+            {
+                for (int i = 0; i < 7; i++)
+                {
+                    var option = _permission.Settings.Options[i];
+                    _enabledSlots[i] = option.IsEnabled && (!_spawn.HasOwnQuota || _spawn.OwnRemainingCount > 0);
+                    _labels[i].text = option.DisplayName + (!option.IsEnabled ? "\n준비 중" : !_enabledSlots[i] ? "\n횟수 소진" : "");
+                    _labels[i].color = _enabledSlots[i] ? Color.white : new Color(0.5f, 0.53f, 0.58f);
+                }
+                _wheel.SetVerticesDirty();
+                _hover = -2;
+            }
+        }
+
+        private string GetQuotaText()
+        {
+            return _spawn.HasOwnQuota ? $"오늘 남은 소환: {_spawn.OwnRemainingCount}/{_spawn.OwnDailyLimit}"
+                : "소환 횟수 확인 중";
         }
 
         private void HandleSummonResponded(bool success)
@@ -194,7 +219,7 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             MakeText("Title", "바다 몬스터 소환", new Vector2(0, 375), new Vector2(640, 60), 34);
             MakeText("Close", "X", new Vector2(315, 350), new Vector2(60, 60), 28);
             _centerLabel = MakeText("Center", "몬스터 선택", Vector2.zero, new Vector2(240, 200), 24);
-            _footer = MakeText("Footer", "", new Vector2(0, -370), new Vector2(800, 50), 22);
+            _footer = MakeText("Footer", "", new Vector2(0, -370), new Vector2(800, 75), 22);
             for (int i = 0; i < 7; i++)
             {
                 float angle = i * Mathf.PI * 2f / 7f;
