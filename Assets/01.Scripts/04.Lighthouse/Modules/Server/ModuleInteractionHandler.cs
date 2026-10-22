@@ -5,6 +5,7 @@ using Lighthouse.Interaction.Requests.Rules;
 using Lighthouse.Interaction.Router.Server;
 using Lighthouse.Modules.Net;
 using Lighthouse.Modules.Rules;
+using Lighthouse.Network.Session.Net;
 using Lighthouse.Tower.Net;
 using Lighthouse.Workbench.Net;
 using Lighthouse.Workbench.Rules;
@@ -63,7 +64,8 @@ namespace Lighthouse.Modules.Server
 
         // Server-only. Valid between OnStartServer and OnStopServer.
         public ModuleLedger Ledger => _ledger;
-        // Server-only. Answers whether an actor is the mafia; roles belong to the match, not here. Unset rejects every withdraw.
+        // Server-only. Answers whether an actor is the mafia; roles belong to the match, not here.
+        // Unset falls back to the session's roles (2026-10-22); a test round sets it to play its own mafia.
         public Func<uint, bool> MafiaCheck { get; set; }
         // Server-only. Answers whether an actor may still take a module into their hands; the match closes the revealed
         // mafia's inventory (2026-10-20). Unset lets everyone carry.
@@ -272,7 +274,7 @@ namespace Lighthouse.Modules.Server
         private InteractionResultCode HandleWithdraw(in InteractionContext context, WorkbenchNet workbench)
         {
             // The role is checked here on the server; hiding the button on other clients is not the check.
-            if (MafiaCheck == null || !MafiaCheck(context.ActorId))
+            if (!IsMafia(context.ActorId))
             {
                 return InteractionResultCode.Rejected;
             }
@@ -280,6 +282,17 @@ namespace Lighthouse.Modules.Server
             PlayerInventory inventory = context.Sender.identity.GetComponent<PlayerInventory>();
             int moved = workbench.Withdraw(inventory, context.Arg0, context.Arg1, context.Arg2, _ledger);
             return moved > 0 ? InteractionResultCode.Success : InteractionResultCode.Rejected;
+        }
+
+        private bool IsMafia(uint actorId)
+        {
+            if (MafiaCheck != null)
+            {
+                return MafiaCheck(actorId);
+            }
+
+            LighthouseNetworkManager manager = LighthouseNetworkManager.Instance;
+            return manager && manager.Roles.IsMafia(actorId);
         }
 
         // Citizens and the mafia alike may take one out; the mafia-only rule is for base resources (2026-10-20).

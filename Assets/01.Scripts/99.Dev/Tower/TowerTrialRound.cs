@@ -113,10 +113,29 @@ namespace Lighthouse.Dev.Tower
             {
                 _voting.SummonApproved += HandleSummonApproved;
             }
+
+            // With the lobby flow the match starts on entering the game scene, with the mafia the manager picked.
+            if (_manager && _manager.IsSessionFlowEnabled)
+            {
+                if (_manager.Roles.IsAssigned)
+                {
+                    BuildRoster();
+                    StartRound(_manager.Roles.MafiaActorId);
+                }
+                else
+                {
+                    _manager.MatchStarted += HandleSessionMatchStarted;
+                }
+            }
         }
 
         public override void OnStopServer()
         {
+            if (_manager)
+            {
+                _manager.MatchStarted -= HandleSessionMatchStarted;
+            }
+
             _match.RitualStarted -= HandleRitualStarted;
             _match.Ended -= HandleMatchEnded;
 
@@ -170,18 +189,33 @@ namespace Lighthouse.Dev.Tower
             return count;
         }
 
-        // The host starts the match from the panel, so the tester can pick who plays the mafia.
+        // Single-scene mode only: there is no lobby start, so the host starts from the panel and picks the mafia.
         [Command(requiresAuthority = false)]
         private void CmdStartRound(MafiaPick pick, NetworkConnectionToClient sender = null)
         {
             if (_isStarted || sender == null || sender != NetworkServer.localConnection || !_manager
-                || !_manager.Connections.TryGetActorId(sender, out uint requesterId))
+                || _manager.IsSessionFlowEnabled || !_manager.Connections.TryGetActorId(sender, out uint requesterId))
             {
                 return;
             }
 
             BuildRoster();
-            _mafiaId = PickMafia(pick, requesterId);
+            StartRound(PickMafia(pick, requesterId));
+        }
+
+        [Server]
+        private void HandleSessionMatchStarted(uint matchId, double startTime, IReadOnlyList<uint> roster)
+        {
+            _manager.MatchStarted -= HandleSessionMatchStarted;
+            BuildRoster();
+            StartRound(_manager.Roles.MafiaActorId);
+        }
+
+        // Needs the roster built first. 0 = no mafia.
+        [Server]
+        private void StartRound(uint mafiaId)
+        {
+            _mafiaId = mafiaId;
             _citizens.Clear();
 
             for (int i = 0; i < _roster.Count; i++)

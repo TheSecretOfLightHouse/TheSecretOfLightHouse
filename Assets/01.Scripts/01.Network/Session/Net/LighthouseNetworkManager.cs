@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Lighthouse.Network.Connections.Net;
 using Lighthouse.Network.Connections.Server;
 using Lighthouse.Network.Session.Rules;
+using Lighthouse.Network.Session.Server;
 using Mirror;
 using UnityEngine;
 
@@ -55,6 +56,7 @@ namespace Lighthouse.Network.Session.Net
         //private GameObject[] _playerPrefabs = new GameObject[MaxPlayers];
 
         private readonly ConnectionDirectory _connections = new ConnectionDirectory();
+        private readonly MatchRoles _roles = new MatchRoles();
         private readonly List<uint> _roster = new List<uint>(MaxPlayers);
         private readonly HashSet<uint> _joinedActors = new HashSet<uint>();
         private readonly List<NetworkConnectionToClient> _rejectedConnections = new List<NetworkConnectionToClient>(MaxPlayers);
@@ -86,6 +88,8 @@ namespace Lighthouse.Network.Session.Net
 
         // Server-only. Feature servers resolve Command senders here instead of trusting ids sent by clients.
         public ConnectionDirectory Connections => _connections;
+        // Server-only. Assigned when the match starts, before MatchStarted; empty in single-scene mode.
+        public MatchRoles Roles => _roles;
 
         public bool IsSessionFlowEnabled => _lobbyPlayerPrefab && !string.IsNullOrEmpty(_gameScene);
         public int StartPlayerCount => _startPlayerCount;
@@ -100,6 +104,8 @@ namespace Lighthouse.Network.Session.Net
         public SessionStateMessage ClientState { get; private set; }
         public bool HasSessionEnd => _hasSessionEnd;
         public SessionEndedMessage LastSessionEnd => _lastSessionEnd;
+        // Client-side. This player's own role only; None until the match starts.
+        public MatchRole OwnRole { get; private set; }
 
         // Raised on the server after the game player object is spawned, and before it is destroyed.
         // With the session flow these fire only in the game scene, once per actor per match; lobby players never raise them.
@@ -114,6 +120,7 @@ namespace Lighthouse.Network.Session.Net
         // Client-side.
         public event Action<SessionStateMessage> ClientStateChanged;
         public event Action<SessionEndedMessage> SessionEnded;
+        public event Action<MatchRole> OwnRoleReceived;
 
         public override void OnValidate()
         {
@@ -355,11 +362,13 @@ namespace Lighthouse.Network.Session.Net
             base.OnStartClient();
 
             ClientState = default;
+            OwnRole = MatchRole.None;
             _isClientLeaving = false;
             ClearSessionEnd();
 
             NetworkClient.ReplaceHandler<SessionStateMessage>(HandleSessionState);
             NetworkClient.ReplaceHandler<SessionEndedMessage>(HandleSessionEnded);
+            NetworkClient.ReplaceHandler<OwnRoleMessage>(HandleOwnRole);
         }
 
         public override void OnClientDisconnect()
@@ -563,7 +572,24 @@ namespace Lighthouse.Network.Session.Net
 
             Debug.Log($"[{nameof(LighthouseNetworkManager)}] Match {_matchId} started. players={_roster.Count}");
             BroadcastState();
+            AssignRoles();
             MatchStarted?.Invoke(_matchId, startTime, _roster);
+        }
+
+        // One mafia among the participants (v4). Roles are settled before MatchStarted so its handlers can read them.
+        // The mafia id is not logged: the host's log file would give it away.
+        [Server]
+        private void AssignRoles()
+        {
+            _roles.Assign(_roster, UnityEngine.Random.Range(0, _roster.Count));
+
+            for (int i = 0; i < _roster.Count; i++)
+            {
+                if (_connections.TryGetConnection(_roster[i], out NetworkConnectionToClient conn))
+                {
+                    conn.Send(new OwnRoleMessage { Role = _roles.GetRole(_roster[i]) });
+                }
+            }
         }
 
         private bool AreStartGatesReady()
@@ -696,6 +722,7 @@ namespace Lighthouse.Network.Session.Net
         private void ResetServerSession()
         {
             _connections.Clear();
+            _roles.Clear();
             _roster.Clear();
             _joinedActors.Clear();
             _rejectedConnections.Clear();
@@ -735,6 +762,12 @@ namespace Lighthouse.Network.Session.Net
         {
             ClientState = message;
             ClientStateChanged?.Invoke(message);
+        }
+
+        private void HandleOwnRole(OwnRoleMessage message)
+        {
+            OwnRole = message.Role;
+            OwnRoleReceived?.Invoke(message.Role);
         }
 
         private void HandleSessionEnded(SessionEndedMessage message)
