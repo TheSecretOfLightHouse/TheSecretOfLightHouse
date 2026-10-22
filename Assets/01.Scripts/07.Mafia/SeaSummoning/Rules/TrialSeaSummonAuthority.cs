@@ -2,16 +2,16 @@ namespace Lighthouse.Mafia.SeaSummoning.Rules
 {
     public sealed class TrialSeaSummonAuthority : ISeaSummonAuthority
     {
-        private readonly uint _playerNetId;
+        private readonly uint _actorId;
 
-        public TrialSeaSummonAuthority(uint playerNetId)
+        public TrialSeaSummonAuthority(uint actorId)
         {
-            _playerNetId = playerNetId;
+            _actorId = actorId;
         }
 
-        public bool CanSummon(uint playerNetId)
+        public bool CanSummon(uint actorId)
         {
-            return _playerNetId != 0 && playerNetId == _playerNetId;
+            return _actorId != 0 && actorId == _actorId;
         }
     }
 }

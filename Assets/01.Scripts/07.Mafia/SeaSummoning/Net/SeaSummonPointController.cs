@@ -11,7 +11,7 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
     {
         [SerializeField] private SeaSummonPermissionController _permission;
         [SerializeField] private SeaSummonPointValidator _validator;
-        private readonly Dictionary<int, (uint PlayerId, uint BoatId, Vector3 Point, float Aspect, ulong Token)> _selectedPoints = new();
+        private readonly Dictionary<int, (uint ActorId, uint BoatId, Vector3 Point, float Aspect, ulong Token)> _selectedPoints = new();
         private ulong _selectionSequence;
         private uint _requestId;
         public bool HasOwnSelection { get; private set; }
@@ -64,7 +64,8 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             point = default;
             return sender != null && sender.identity != null
                 && _selectedPoints.TryGetValue(sender.connectionId, out var selection)
-                && selection.PlayerId == sender.identity.netId
+                && _permission != null && _permission.TryGetActorId(sender, out uint actorId)
+                && selection.ActorId == actorId
                 && sender.identity.TryGetComponent(out PlayerController player) && player.CurrentBoat != null
                 && selection.BoatId == player.CurrentBoat.netId
                 && TryValidate(sender, selection.Point, selection.Aspect, out point, out _);
@@ -104,10 +105,12 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
                 return;
             }
             bool accepted = TryValidate(sender, candidate, aspect, out Vector3 point, out string reason);
+            uint actorId = 0;
+            accepted = accepted && _permission.TryGetActorId(sender, out actorId);
             _selectedPoints.Remove(sender.connectionId);
             if (accepted)
             {
-                _selectedPoints[sender.connectionId] = (sender.identity.netId,
+                _selectedPoints[sender.connectionId] = (actorId,
                     sender.identity.GetComponent<PlayerController>().CurrentBoat.netId, point, aspect, ++_selectionSequence);
             }
             TargetPointResult(sender, requestId, accepted, point, reason, accepted ? _selectionSequence : 0);
