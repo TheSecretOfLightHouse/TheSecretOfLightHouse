@@ -219,25 +219,30 @@ public sealed class BoatController : NetworkBehaviour
         return player.CurrentBoat == this;
     }
 
-    public bool RequestDisembark(PlayerController player)
+    public bool RequestDisembark(
+    PlayerController player,
+    bool isManual = false)
     {
-        if (!CanRequest(player) || !_isOccupied || player.CurrentBoat != this)
+        if (!CanRequest(player)
+            || !_isOccupied
+            || player.CurrentBoat != this)
         {
             return false;
         }
 
         _nextLocalRequestTime = Time.unscaledTime + _requestInterval;
+
         if (IsNetworkActive)
         {
-            CmdRequestDisembark();
+            CmdRequestDisembark(isManual);
         }
         else
         {
-            TryDisembarkCore();
+            TryDisembarkCore(isManual);
         }
+
         return player.CurrentBoat != this;
     }
-
     public void Disembark(PlayerController player)
     {
         if (player == Owner && (isOwned || !IsNetworkActive))
@@ -353,8 +358,12 @@ public sealed class BoatController : NetworkBehaviour
 
     private void TryBoardCore()
     {
-        if (_isOccupied || Owner.IsOnBoat
-            || Time.time < _nextBoardTime || !_bodyCollider)
+        if (_isOccupied || Owner.IsOnBoat || Time.time < _nextBoardTime || !_bodyCollider)
+        {
+            return;
+        }
+
+        if (!_contact || !_contact.TryGetDockZone(out DockZone dock) || !dock.ContainsPosition(Owner.transform.position))
         {
             return;
         }
@@ -374,23 +383,42 @@ public sealed class BoatController : NetworkBehaviour
     }
 
     [Command]
-    private void CmdRequestDisembark()
+    private void CmdRequestDisembark(bool isManual)
     {
         if (CanAcceptRequest())
         {
-            TryDisembarkCore();
+            TryDisembarkCore(isManual);
         }
     }
 
-    private void TryDisembarkCore()
+    private void TryDisembarkCore(bool isManual = false)
     {
         if (!_isOccupied
-            || Time.time < _nextDisembarkTime)
+        || Time.time < _nextDisembarkTime)
         {
             return;
         }
 
-        if (!_contact.TryFindLandingPosition(Owner, out Vector3 position))
+        if (!_contact || !_contact.TryGetDockZone(out DockZone dock))
+        {
+            return;
+        }
+
+        Vector3 position;
+        bool hasLandingPosition;
+
+        if (isManual)
+        {
+            hasLandingPosition =
+                _contact.TryFindDockLandingPosition(Owner, out position);
+        }
+        else
+        {
+            hasLandingPosition =
+                _contact.TryFindLandingPosition(Owner, out position);
+        }
+
+        if (!hasLandingPosition)
         {
             return;
         }

@@ -12,20 +12,23 @@ namespace Lighthouse.Player.Boat
         [SerializeField]
         private BoatController _boatPrefab;
         [SerializeField]
-        private Vector3 _spawnOffset = new Vector3(1.5f, -0.2f, 0f);
+        private Transform[] _boatSpawnPoints = new Transform[0];
+
         [SerializeField]
         private LayerMask _landLayers;
 
+        private int _nextBoatSpawnIndex;
+
         private void Awake()
         {
-            if (!_networkManager)
-            {
-                _networkManager = GetComponent<LighthouseNetworkManager>();
-            }
+            ResolveNetworkManager();
         }
 
         private void OnEnable()
         {
+            _nextBoatSpawnIndex = 0;
+            ResolveNetworkManager();
+
             if (!_networkManager)
             {
                 return;
@@ -56,8 +59,15 @@ namespace Lighthouse.Player.Boat
                 return;
             }
 
-            Vector3 position = player.transform.position + player.transform.rotation * _spawnOffset;
-            BoatController boat = Instantiate(_boatPrefab, position, player.transform.rotation);
+            if (_nextBoatSpawnIndex >= _boatSpawnPoints.Length || !_boatSpawnPoints[_nextBoatSpawnIndex])
+            {
+                return;
+            }
+
+            Transform spawnPoint = _boatSpawnPoints[_nextBoatSpawnIndex];
+
+            BoatController boat = Instantiate(_boatPrefab, spawnPoint.position, spawnPoint.rotation);
+
             boat.name = $"{_boatPrefab.name} [actor={actorId}]";
             boat.GetComponent<BoatContactBoarding>().ConfigureLandLayers(_landLayers);
             if (!boat.TrySetOwner(player))
@@ -70,6 +80,23 @@ namespace Lighthouse.Player.Boat
             if (!player.TryAssignOwnedBoat(boat))
             {
                 NetworkServer.Destroy(boat.gameObject);
+                return;
+            }
+
+            _nextBoatSpawnIndex++;
+        }
+
+        private void ResolveNetworkManager()
+        {
+            if (_networkManager)
+            {
+                return;
+            }
+
+            _networkManager = GetComponent<LighthouseNetworkManager>();
+            if (!_networkManager)
+            {
+                _networkManager = NetworkManager.singleton as LighthouseNetworkManager;
             }
         }
     }
