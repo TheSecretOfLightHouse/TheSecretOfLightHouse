@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Lighthouse.Mafia.SeaSummoning.Rules;
 using Mirror;
 using UnityEngine;
@@ -11,20 +12,24 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         [SerializeField] private SeaSummonSettings _settings;
         private ISeaSummonAuthority _authority;
         private bool _hasOwnPermission;
+        private readonly Dictionary<uint, (uint BoatId, float Yaw)> _topViewFrames = new();
 
         public bool HasPermissionResponse { get; private set; }
         public bool HasOwnPermission => _hasOwnPermission && IsPlayerBoarded(NetworkClient.localPlayer);
         public SeaSummonSettings Settings => _settings;
+        public float OwnTopViewYaw { get; private set; }
         public event Action<bool> PermissionResponded;
 
         public override void OnStartServer()
         {
             _authority = null;
+            _topViewFrames.Clear();
         }
 
         public override void OnStopServer()
         {
             _authority = null;
+            _topViewFrames.Clear();
         }
 
         public override void OnStopClient()
@@ -57,21 +62,44 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             }
         }
 
+        [Server]
+        public bool TryGetTopViewFrame(NetworkConnectionToClient sender, out BoatController boat, out float yaw)
+        {
+            boat = null;
+            yaw = 0f;
+            if (!CanRequest(sender) || !_topViewFrames.TryGetValue(sender.identity.netId, out var frame))
+            {
+                return false;
+            }
+            boat = sender.identity.GetComponent<PlayerController>().CurrentBoat;
+            yaw = frame.Yaw;
+            return boat.netId == frame.BoatId;
+        }
+
         // 요청자가 보낸 ID 대신 Mirror가 제공하는 접속 정보로 본인을 확인한다.
         [Command(requiresAuthority = false)]
         private void CmdRequestOwnPermission(NetworkConnectionToClient sender = null)
         {
             if (sender != null)
             {
-                TargetPermission(sender, CanRequest(sender));
+                bool allowed = CanRequest(sender);
+                float yaw = 0f;
+                if (allowed)
+                {
+                    BoatController boat = sender.identity.GetComponent<PlayerController>().CurrentBoat;
+                    yaw = boat.transform.eulerAngles.y;
+                    _topViewFrames[sender.identity.netId] = (boat.netId, yaw);
+                }
+                TargetPermission(sender, allowed, yaw);
             }
         }
 
         [TargetRpc]
-        private void TargetPermission(NetworkConnectionToClient target, bool allowed)
+        private void TargetPermission(NetworkConnectionToClient target, bool allowed, float yaw)
         {
             HasPermissionResponse = true;
             _hasOwnPermission = allowed;
+            OwnTopViewYaw = yaw;
             PermissionResponded?.Invoke(allowed);
         }
 

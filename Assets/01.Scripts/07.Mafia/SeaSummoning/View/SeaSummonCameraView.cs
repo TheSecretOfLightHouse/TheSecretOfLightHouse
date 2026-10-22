@@ -31,6 +31,8 @@ namespace Lighthouse.Mafia.SeaSummoning.View
         private float _requestedAt;
         private float _transitionStartedAt;
         private float _topYaw;
+        private float _savedFieldOfView;
+        private bool _savedOrthographic;
 
         public bool IsTopViewActive => _hasCameraControl && !_isReturning;
         public bool IsTransitioning => _hasCameraControl && _permission != null && _permission.Settings != null
@@ -158,6 +160,10 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             _savedLocalRotation = _camera.localRotation;
             _savedWorldPosition = _camera.position;
             _savedWorldRotation = _camera.rotation;
+            _savedFieldOfView = mainCamera.fieldOfView;
+            _savedOrthographic = mainCamera.orthographic;
+            mainCamera.orthographic = false;
+            mainCamera.fieldOfView = _permission.Settings.TopViewFieldOfView;
             _savedCursorLock = Cursor.lockState;
             _savedCursorVisible = Cursor.visible;
             _wasInputActive = _playerInput.inputIsActive;
@@ -167,7 +173,7 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             _camera.SetParent(null, true);
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
-            _topYaw = _boat.transform.eulerAngles.y;
+            _topYaw = _permission.OwnTopViewYaw;
             _hasCameraControl = true;
             _isReturning = false;
             StartTransition();
@@ -201,6 +207,9 @@ namespace Lighthouse.Mafia.SeaSummoning.View
                 && NetworkClient.localPlayer.gameObject == _player.gameObject;
             if (_camera != null)
             {
+                Camera cameraComponent = _camera.GetComponent<Camera>();
+                cameraComponent.fieldOfView = _savedFieldOfView;
+                cameraComponent.orthographic = _savedOrthographic;
                 // 접속 종료 때 파괴될 플레이어에게 카메라를 다시 붙이지 않는다.
                 _camera.SetParent(isSameLocalPlayer ? _savedParent : null, false);
                 if (isSameLocalPlayer && _savedParent != null)

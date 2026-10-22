@@ -9,11 +9,12 @@ namespace Lighthouse.Mafia.SeaSummoning.Testing
     {
         [SerializeField] private SeaSummonPermissionController _permission;
         [SerializeField] private SeaSummonCameraView _cameraView;
+        [SerializeField] private SeaSummonPointView _pointView;
 
         private void OnGUI()
         {
-            GUILayout.BeginArea(new Rect(15, 110, 460, 300), GUI.skin.box);
-            GUILayout.Label("마피아 바다 몬스터 소환 — 2단계");
+            GUILayout.BeginArea(new Rect(15, 110, 460, 360), GUI.skin.box);
+            GUILayout.Label("마피아 바다 몬스터 소환 — 3단계");
             GUILayout.Label("시험 권한: 배에 탑승한 호스트의 Tech 1만 허용");
             PlayerController player = NetworkClient.localPlayer != null
                 ? NetworkClient.localPlayer.GetComponent<PlayerController>() : null;
@@ -43,6 +44,9 @@ namespace Lighthouse.Mafia.SeaSummoning.Testing
                 ? (_permission.HasOwnPermission ? "현재 사용 가능: 서버 허용·탑승 확인" : "현재 사용 불가: 미탑승 또는 서버 거절") : "서버 응답 대기");
             GUILayout.Label("하선은 출항 보호 종료 후 육지 인접 상태에서 가능");
             GUILayout.Label(_cameraView != null ? _cameraView.Status : "카메라 미연결");
+            GUILayout.Label(_pointView != null ? _pointView.Status : "지점 선택 미연결");
+            GUILayout.Label("초록: 선택 가능 / 빨강: 불가 / 청록: 서버 승인");
+            GUILayout.Label("노란 원: 안전지대 / 부두: 육지");
             GUILayout.Label("실제 소환·횟수 차감은 후속 단계");
             GUILayout.EndArea();
         }
