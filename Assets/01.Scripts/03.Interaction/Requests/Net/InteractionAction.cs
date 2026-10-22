@@ -16,14 +16,14 @@ namespace Lighthouse.Interaction.Requests.Net
         Rescue = 11,
         // Finishes a workbench recipe whose ingredients are all in (2026-10-17: completion is a separate press).
         Craft = 12,
-        // Lighthouse match flow (2026-10-19 trial): start the ritual once fully repaired, pick up an abyss crystal
-        // after the summon, and spend crystals to relight the lantern room.
+        // Lighthouse match flow: start the ritual once fully repaired. 14 and 15 were the crystal relight, dropped on
+        // 2026-10-22 when the final battle started carrying the repair over; do not reuse them.
         StartRitual = 13,
-        CollectAbyssCrystal = 14,
-        IgniteLantern = 15,
         // Carrying a finished module (2026-10-20): take one out of the workbench into your hands, or put it back.
         // Installing it is InstallModule on the lighthouse or on your own boat.
         TakeModule = 16,
-        ReturnModule = 17
+        ReturnModule = 17,
+        // Picking up a module left on a shore after a wreck (2026-10-22). Separate from PickUp, which is the resource drop.
+        PickUpModule = 18
     }
 }

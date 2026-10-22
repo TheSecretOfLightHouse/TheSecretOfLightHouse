@@ -5,6 +5,7 @@ namespace Lighthouse.Modules.Server
 {
     // Server-only record of every module that exists in this match. The existence cap counts records,
     // so a module stays here from its first deposit until it is disassembled (JH05 calls Remove).
+    // A module lying on a shore keeps its record but leaves the count (2026-10-22), and comes back in when picked up.
     // Ids are never reused: one match is one server run.
     public sealed class ModuleLedger
     {
@@ -14,6 +15,7 @@ namespace Lighthouse.Modules.Server
 
         public int Count => _records.Count;
 
+        // Modules of the recipe that count toward its cap, so shore modules are left out.
         public int CountExisting(int recipeId)
         {
             return _existingByRecipe.TryGetValue(recipeId, out int count) ? count : 0;
@@ -28,7 +30,12 @@ namespace Lighthouse.Modules.Server
         {
             uint moduleId = _nextModuleId++;
             _records.Add(moduleId, new ModuleRecord(moduleId, recipeId, state));
-            _existingByRecipe[recipeId] = CountExisting(recipeId) + 1;
+
+            if (IsCounted(state))
+            {
+                AddCount(recipeId, 1);
+            }
+
             return moduleId;
         }
 
@@ -45,6 +52,14 @@ namespace Lighthouse.Modules.Server
             }
 
             _records[moduleId] = record.WithState(state);
+            bool wasCounted = IsCounted(record.State);
+            bool isCounted = IsCounted(state);
+
+            if (wasCounted != isCounted)
+            {
+                AddCount(record.RecipeId, isCounted ? 1 : -1);
+            }
+
             return true;
         }
 
@@ -57,18 +72,32 @@ namespace Lighthouse.Modules.Server
             }
 
             _records.Remove(moduleId);
-            int remaining = CountExisting(record.RecipeId) - 1;
 
-            if (remaining > 0)
+            if (IsCounted(record.State))
             {
-                _existingByRecipe[record.RecipeId] = remaining;
-            }
-            else
-            {
-                _existingByRecipe.Remove(record.RecipeId);
+                AddCount(record.RecipeId, -1);
             }
 
             return true;
+        }
+
+        private static bool IsCounted(ModuleState state)
+        {
+            return state != ModuleState.OnGround;
+        }
+
+        private void AddCount(int recipeId, int delta)
+        {
+            int count = CountExisting(recipeId) + delta;
+
+            if (count > 0)
+            {
+                _existingByRecipe[recipeId] = count;
+            }
+            else
+            {
+                _existingByRecipe.Remove(recipeId);
+            }
         }
     }
 }

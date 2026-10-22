@@ -17,6 +17,7 @@ namespace Lighthouse.Network.Session.View
     public sealed class SessionScreen : MonoBehaviour
     {
         private const string AddressKey = "Lighthouse.Session.LastAddress";
+        private const string NicknameKey = "Lighthouse.Session.Nickname";
         private const string DefaultAddress = "localhost";
 
         private static SessionScreen _current;
@@ -97,6 +98,7 @@ namespace Lighthouse.Network.Session.View
             _title.CancelRequested += HandleCancelJoin;
             _title.QuitRequested += HandleQuit;
             _title.Address = PlayerPrefs.GetString(AddressKey, DefaultAddress);
+            _title.Nickname = PlayerPrefs.GetString(NicknameKey, string.Empty);
             _lobby.LeaveRequested += HandleLeaveLobby;
             _gameMenuLeave.onClick.AddListener(ShowLeaveMatch);
 
@@ -320,6 +322,14 @@ namespace Lighthouse.Network.Session.View
             {
                 _dialog.Hide();
             }
+            else if (mode == Mode.Title)
+            {
+                HandleQuit();
+            }
+            else if (mode == Mode.Lobby)
+            {
+                HandleLeaveLobby();
+            }
             else if (mode == Mode.InGame)
             {
                 ShowLeaveMatch();
@@ -344,7 +354,7 @@ namespace Lighthouse.Network.Session.View
             }
 
             PlayerPrefs.SetString(AddressKey, address);
-            PlayerPrefs.Save();
+            SaveNickname();
             _isCancelling = false;
             manager.networkAddress = address;
             manager.StartClient();
@@ -356,8 +366,18 @@ namespace Lighthouse.Network.Session.View
 
             if (manager)
             {
+                SaveNickname();
                 manager.StartHost();
             }
+        }
+
+        // Also saves the address set just before; PlayerPrefs.Save writes every pending key.
+        private void SaveNickname()
+        {
+            string nickname = _title.Nickname;
+            LobbyPlayer.LocalNickname = nickname;
+            PlayerPrefs.SetString(NicknameKey, nickname);
+            PlayerPrefs.Save();
         }
 
         private void HandleCancelJoin()
@@ -373,14 +393,14 @@ namespace Lighthouse.Network.Session.View
 
         private void HandleQuit()
         {
-            _dialog.Show("게임 종료", "게임을 종료할까요?", "종료", Application.Quit, "취소", null);
+            _dialog.Show("게임 종료", "게임을 종료할까요?", "종료", Application.Quit, "취소", null, true);
         }
 
         private void HandleLeaveLobby()
         {
             if (NetworkServer.active)
             {
-                _dialog.Show("방 닫기", "방을 닫으면 모든 선원이\n첫 화면으로 돌아갑니다.", "방 닫기", LeaveSession, "취소", null);
+                _dialog.Show("방 닫기", "방을 닫으면 모든 선원이\n첫 화면으로 돌아갑니다.", "방 닫기", LeaveSession, "취소", null, true);
                 return;
             }
 
@@ -395,7 +415,7 @@ namespace Lighthouse.Network.Session.View
             }
 
             SaveCursor();
-            _dialog.Show("판 나가기", "지금 나가면 모든 선원의\n판이 종료됩니다.", "나가기", LeaveSession, "계속하기", null);
+            _dialog.Show("판 나가기", "지금 나가면 모든 선원의\n판이 종료됩니다.", "나가기", LeaveSession, "계속하기", null, true);
         }
 
         private static void LeaveSession()

@@ -1,4 +1,6 @@
+using Lighthouse.Modules.Server;
 using Lighthouse.Network.Session.Net;
+using Lighthouse.Workbench.Net;
 using Mirror;
 using UnityEngine;
 
@@ -17,7 +19,18 @@ namespace Lighthouse.Player.Boat
         [SerializeField]
         private LayerMask _landLayers;
 
+        [SerializeField]
+        private Transform _playerRecoveryPoint;
+
+        [SerializeField]
+        private WorkbenchNet _moduleWorkbench;
+        [SerializeField]
+        private ModuleInteractionHandler _moduleHandler;
+
         private int _nextBoatSpawnIndex;
+
+
+        public Transform PlayerRecoveryPoint => _playerRecoveryPoint;
 
         private void Awake()
         {
@@ -64,7 +77,20 @@ namespace Lighthouse.Player.Boat
                 return;
             }
 
+            if (!player.TryGetComponent(out PlayerWreckRecovery recovery))
+            {
+                return;
+            }
+
             Transform spawnPoint = _boatSpawnPoints[_nextBoatSpawnIndex];
+            if (!_moduleWorkbench || !_moduleHandler || !player.TryGetComponent(out PlayerInventory inventory))
+            {
+                return;
+            }
+
+            inventory.BindServerModuleSource(_moduleWorkbench, _moduleHandler, actorId);
+
+            recovery.ConfigureRecovery(this, spawnPoint, actorId);
 
             BoatController boat = Instantiate(_boatPrefab, spawnPoint.position, spawnPoint.rotation);
 
@@ -84,6 +110,44 @@ namespace Lighthouse.Player.Boat
             }
 
             _nextBoatSpawnIndex++;
+        }
+
+        [Server]
+        public bool TryCreateRecoveryBoat(PlayerController player, Transform spawnPoint, out BoatController boat)
+        {
+            boat = null;
+
+            if (!player || !player.IsDowned || !spawnPoint)
+            {
+                return false;
+            }
+
+            NetworkConnectionToClient connection = player.connectionToClient;
+
+            if (connection == null || connection.identity != player.netIdentity)
+            {
+                return false;
+            }
+
+            if (!_networkManager || !_boatPrefab || !_networkManager.spawnPrefabs.Contains(_boatPrefab.gameObject))
+            {
+                return false;
+            }
+
+            BoatController instance = Instantiate(_boatPrefab, spawnPoint.position, spawnPoint.rotation);
+
+            instance.GetComponent<BoatContactBoarding>().ConfigureLandLayers(_landLayers);
+
+            if (!instance.TrySetOwner(player))
+            {
+                Destroy(instance.gameObject);
+                return false;
+            }
+
+            NetworkServer.Spawn(instance.gameObject, connection);
+            boat = instance;
+
+            return true;
         }
 
         private void ResolveNetworkManager()

@@ -113,6 +113,7 @@ History는 상태 원본을 대신하는 이벤트 소싱 저장소가 아니다
 Assets/01.Scripts/
   01.Network/
     Session/{Net,Rules}/            LighthouseNetworkManager, LobbyPlayer, SessionJoinAuthenticator, 세션 메시지 / MatchPhase, SessionEndReason (구현, JH07)
+    Session/Server/                 MatchRoles (구현, 2026-10-22 마피아 배정. 역할 종류 MatchRole은 Rules, 본인 역할 OwnRoleMessage는 Net)
     Connections/Server/             ConnectionDirectory (구현)
     Connections/Net/                NetworkActor (구현, 플레이어 객체의 공개 ActorId)
     SpawnRegistry/{Rules,Server}/   NetworkPrefabCatalog, SpawnRegistration
@@ -293,6 +294,8 @@ stateDiagram-v2
 
 표류 모듈의 생성/회수/분해 수명은 지훈, 파도·해역 경계·판정 위치 제공은 강민서와 계약한다. 바다 연출 위치만으로 회수 거리를 판정하지 않는다. 난파 및 인벤토리에서 떨어질 화물 결정은 최명기와 연결하고, 표류 잔해 객체·동기화는 v4 12.1의 World 범위(강민서)로 대조해 세부 경계를 합의한다. 같은 모듈 처리기로 전체 난파 화물 소유권을 합치지 않는다. 공통 픽업 계약이 필요하면 따로 조율한다.
 
+2026-10-22(T34): 난파 화물은 표류 없이 해안에 바로 생긴다. 강민서가 해안 위치(`IShoreDropLocator`)와 만료 타이머(`IDebrisTracker`)를 서버 서비스로 제공하고, 모듈 아이템(`GroundModule`)의 생성·줍기(`PickUpModule`)·만료 시 장부 정리는 지훈, 자원 드롭은 최명기가 맡는다. 해안 모듈은 장부 `OnGround`로 두고 제작 상한에서 뺀다. 규칙은 [모듈 결정](lighthouse-module-decisions.md) 난파·구조 절. 부식 낙하(위 상태도의 `Drifting`)를 같은 해안 생성으로 맞출지는 JH05에서 정한다.
+
 ## 7. 등대·의식과 최종 승패 경계
 
 등대 상태는 RepairProgress, CurrentHp, MaxHp, InstalledSlots, RitualAttemptId/State, Revision을 분리한다. 수리도→최대 HP 함수, 초기 HP, 수리 비용·회복량, 임계 보상 유지/해제는 설정 정책이며 미정 수치를 기본값으로 확정하지 않는다. 보상 효과 적용은 최명기 계약을 통해 instance/revision 기준으로 한 번 반영한다.
@@ -321,6 +324,8 @@ NetworkManager는 연결 콜백과 프리팹 등록 진입점, ConnectionDirecto
 로비의 호스트 열기·참가 요청·정원 4명·연결/준비 상태 집계와 첫 화면·로비 화면·버튼·로딩 표시·종료 사유 화면은 지훈이 맡는다(2026-10-13 결정, 이전에는 버튼/화면이 최명기였다). 사용자가 선택한 접속 방식의 진입점을 연결한다. 판 시작 전 4명의 승인된 슬롯·호환 빌드·월드 준비를 확인하고 시작 가능 상태를 Systems에 전달한다. 판 시작 후 새 참가는 거절한다(2026-10-13 결정, [승패·투표 결정 §8](win-vote-decisions.md#disconnection)). 시작 조건도 같은 날 정했다. 서버가 ActorId별 준비 상태를 집계하고, 시작 인원(설정값, 기본 4)이 모두 준비하면 자동으로 게임 씬으로 넘어간다. 준비는 취소할 수 있고, 로비에서 나가면 그 사람의 준비도 사라진다. 시작 신호 이후는 판 진행 중으로 본다. 구현은 JH07에서 한다. Mirror `NetworkRoomManager`는 쓰지 않는다. 로비 구조는 2026-10-13 로비 씬·게임 씬 전환 방식으로 결정했다. 로비 씬(Online Scene)에 로비 전용 플레이어(`LobbyPlayer`+`NetworkActor`)를 만들고, 전원 준비 시 서버가 로비 플레이어를 제거한 뒤 게임 씬으로 바꾼다. 게임 씬 로딩을 마친 클라이언트가 AddPlayer를 다시 보내면 게임 플레이어를 만들며, 이 도착을 그 클라이언트의 로딩 완료로 본다. ActorId는 로비에서 발급해 게임 씬에서 그대로 쓴다. `ActorJoined`·`ActorLeft`는 게임 플레이어에 대해서만 판당 한 번 발생하고 로비 플레이어는 발생시키지 않는다. 판 시작 시 서버 전용 `MatchStarted(matchId, startTime, 참가자)`를 낸다. 월드 준비처럼 시작 전에 끝나야 하는 기능별 준비는 판 시작 게이트(`IMatchStartGate`, 2026-10-16)로 받는다. 기능이 서버에서 게이트를 등록하면 매니저는 전원 로딩과 모든 게이트 준비 뒤에만 시작한다. 게이트가 없을 때 바로 시작할지는 매니저 설정 `_requireStartGate`(기본 false)로 씬마다 정한다. 로비 프리팹이나 게임 씬을 지정하지 않은 매니저는 기존 단일 씬 방식(접속 즉시 게임 플레이어·`ActorJoined`)으로 동작한다. 2026-10-14 결정으로 이 방식을 쓰는 기존 시험 씬은 모두 폐기 예정이며, 팀원 시험 씬은 로비가 있는 방식으로 옮긴다. JH02 이후 기능은 단일 씬 방식을 지원하지 않는다. 매니저의 단일 씬 분기 코드 제거는 팀원 씬 이전이 끝난 뒤 한다. 플레이어별 로비 정보(준비, 이후 직군 선택 가능성)는 로비 플레이어에 둔다.
 
 본편 플레이어 프리팹·NetworkIdentity 및 PlayerController 연결은 최명기와 합의한다. 직군별 프리팹은 매니저가 제공하는 선택 훅(actorId → 프리팹)에 최명기 코드가 답하는 방식이다(2026-10-13 결정). 직군 배정 시점(접속 시/게임 시작 시)은 D06 결정에 따르며, 매니저의 주석 처리된 무작위 배정 코드는 훅을 추가할 때 정리한다. 지훈은 자신의 InteractionRelay 컴포넌트와 등록/AddPlayer 경로를 제공한다. 프리팹에 Relay를 붙이는 수정은 최명기 영역 안내·합의 대상이다. IdentityValidated 뒤 OnServerAddPlayer 경로에서 플레이어 한 개만 생성/연결하고, ActorId 매핑·소유권 설정을 완료한 뒤 Systems의 직군/역할 초기화와 준비 확인을 거친다. 복귀자는 새 역할 배정/새 플레이어 생성을 타지 않는다.
+
+**마피아 배정(2026-10-22 구현, 최명기·박태욱 합의 완료).** 판이 시작되는 순간(`TryStartMatch`, 전원 로딩·시작 게이트 통과 뒤) 매니저가 참가자 중 마피아 1명을 무작위로 정해 서버 전용 `MatchRoles`에 둔다. `MatchStarted`보다 먼저 정하므로 그 이벤트의 처리기는 `manager.Roles.IsMafia(actorId)`·`MafiaActorId`를 바로 읽을 수 있다. 사람은 ActorId로 구분한다. 플레이어 객체의 netId는 로비→게임 씬에서 새로 생기므로 역할 키로 쓰지 않는다. 각 참가자에게는 자기 역할만 `OwnRoleMessage`로 보내며 시민도 받는다(받았는지 여부로 마피아가 드러나지 않게). 클라이언트는 `OwnRole`·`OwnRoleReceived`로 읽는다. 호스트 로그에도 마피아 ID를 남기지 않는다. 서버 실행 한 번에 판 하나라 재배정은 없다. 단일 씬 방식에서는 배정하지 않는다(`IsMafia`는 항상 false). 모듈 기본 자원 회수(`Withdraw`)는 `MafiaCheck`가 비어 있으면 이 배정을 쓴다. JH04 시험 판(`TowerTrialRound`)도 로비 흐름에서는 따로 시작 버튼 없이 `MatchStarted`에서 이 배정의 마피아로 바로 시작하고, 마피아를 고르는 시작 버튼은 로비 없는 단일 씬 방식에만 남는다(2026-10-23). 투표 초기화(`InitializeVoting`)의 본편 호출 위치, 바다 소환 권한의 ActorId 전환은 박태욱 결정이고, 역할 안내 UI·승패 소비는 최명기 범위다. 직군 배정은 D06 결정 뒤 같은 흐름에 붙인다.
 
 A단계에서 본편 플레이어가 준비되지 않았다면 `99.Dev`의 시험용 NetworkIdentity+Relay 플레이어와 테스트 진입 씬을 별도 범위로 구현한다. 지훈의 테스트 쓰기 범위를 배타적으로 배정하고 자신의 Jihun 개발 씬만 수정한다. 이는 본편 Player 연결 완료가 아니며 최명기의 프리팹 연동 검증을 별도로 남긴다. JH01 구현에서 시험 스크립트는 `99.Dev/Network/ActorIdProbe.cs`, 시험용 플레이어 프리팹은 `Assets/02.Prefabs/_Net/NetworkTestPlayer.prefab`, 진입 씬은 `Assets/00.Scenes/Jihun/JH01TestScene.unity`다. JH02에서 이 프리팹에 `InteractionRelay`·`InteractionSelector`와 시험용 `DevInteractionKeyInput`·`InteractionTestAutomation`을 붙였다(2026-10-14). JH02 시험은 JH07 씬(`JH07Offline` → `JH07Lobby` → `JH07Game`, 시작 인원 2)에서 한다. 절차는 [멀티플레이 테스트 씬 기록](../ai/04_MULTIPLAYER_TEST_PROTOCOL.md#테스트-씬-기록). 시험용 플레이어에는 `PlayerController`가 없으므로, Interaction 컴포넌트는 입력 원천과 분리해 "상호작용 시도" 진입점만 두고, 본편은 `PlayerController.InteractionRequested`를 구독하는 어댑터가, 시험용은 `99.Dev`의 입력 어댑터가 그 진입점을 부른다.
 

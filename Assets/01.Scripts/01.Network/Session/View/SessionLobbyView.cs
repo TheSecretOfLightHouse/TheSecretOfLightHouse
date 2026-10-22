@@ -56,6 +56,22 @@ namespace Lighthouse.Network.Session.View
         private Color _pipJoinedColor = new Color32(122, 94, 72, 255);
         [SerializeField]
         private float _pipEmptyAlpha = 0.25f;
+        [Tooltip("Optional open pip for empty seats; drawn at full alpha instead of fading the joined pip.")]
+        [SerializeField]
+        private Sprite _pipEmptySprite;
+        [Tooltip("Optional \"joined / seats\" count.")]
+        [SerializeField]
+        private Text _crewCount;
+        [Tooltip("Optional one-line crew summary next to the list title.")]
+        [SerializeField]
+        private Text _crewSummary;
+        [Tooltip("Optional crew icons, one per boat seat.")]
+        [SerializeField]
+        private Image[] _crewIcons = new Image[LighthouseNetworkManager.MaxPlayers];
+        [SerializeField]
+        private Sprite _crewIconJoined;
+        [SerializeField]
+        private Sprite _crewIconEmpty;
         [SerializeField]
         private Button _copyAddress;
         [SerializeField]
@@ -87,6 +103,7 @@ namespace Lighthouse.Network.Session.View
         // Last drawn values; texts are rebuilt only when one of these changes.
         private readonly uint[] _shownIds = new uint[LighthouseNetworkManager.MaxPlayers];
         private readonly byte[] _shownFlags = new byte[LighthouseNetworkManager.MaxPlayers];
+        private readonly string[] _shownNames = new string[LighthouseNetworkManager.MaxPlayers];
         private int _shownPlayers = -1;
         private int _shownStart = -1;
         private int _shownHost = -1;
@@ -95,6 +112,7 @@ namespace Lighthouse.Network.Session.View
         // Crew seen at the last refresh, for join/leave notices. Taken once our own player exists so the
         // players already aboard when we enter are not announced as joining.
         private readonly uint[] _knownIds = new uint[LighthouseNetworkManager.MaxPlayers];
+        private readonly string[] _knownNames = new string[LighthouseNetworkManager.MaxPlayers];
         private int _knownCount;
         private bool _hasKnownCrew;
 
@@ -156,7 +174,7 @@ namespace Lighthouse.Network.Session.View
                     readyCount++;
                 }
 
-                if (_shownIds[i] != player.ActorId || _shownFlags[i] != FlagsOf(player))
+                if (_shownIds[i] != player.ActorId || _shownFlags[i] != FlagsOf(player) || _shownNames[i] != player.DisplayName)
                 {
                     isDirty = true;
                 }
@@ -191,6 +209,7 @@ namespace Lighthouse.Network.Session.View
                     LobbyPlayer player = _sorted[i];
                     _shownIds[i] = player.ActorId;
                     _shownFlags[i] = FlagsOf(player);
+                    _shownNames[i] = player.DisplayName;
 
                     if (player.isLocalPlayer)
                     {
@@ -206,6 +225,7 @@ namespace Lighthouse.Network.Session.View
                     {
                         _shownIds[i] = 0;
                         _shownFlags[i] = 0;
+                        _shownNames[i] = null;
                     }
 
                     _slots[i].ShowEmpty();
@@ -234,7 +254,41 @@ namespace Lighthouse.Network.Session.View
             }
 
             ShowReadyPips(startPlayerCount, count, readyCount);
+            ShowCrew(count);
             AnnounceCrewChanges(count);
+        }
+
+        // Counts against the boat's seats, not the start count: a solo test scene starts with 1 but still seats 4.
+        private void ShowCrew(int count)
+        {
+            if (_crewCount)
+            {
+                _crewCount.text = $"{count} / {LighthouseNetworkManager.MaxPlayers}";
+            }
+
+            if (_crewSummary)
+            {
+                _crewSummary.text = $"선원 {count}명 승선";
+            }
+
+            for (int i = 0; i < _crewIcons.Length; i++)
+            {
+                Image icon = _crewIcons[i];
+
+                if (!icon)
+                {
+                    continue;
+                }
+
+                bool isUsed = i < LighthouseNetworkManager.MaxPlayers;
+                icon.gameObject.SetActive(isUsed);
+                Sprite sprite = i < count ? _crewIconJoined : _crewIconEmpty;
+
+                if (isUsed && sprite)
+                {
+                    icon.sprite = sprite;
+                }
+            }
         }
 
         private static byte FlagsOf(LobbyPlayer player)
@@ -304,6 +358,10 @@ namespace Lighthouse.Network.Session.View
                 {
                     SetPip(pip, _pipJoinedSprite, _pipJoinedColor, 1f);
                 }
+                else if (_pipEmptySprite)
+                {
+                    SetPip(pip, _pipEmptySprite, _pipJoinedColor, 1f);
+                }
                 else
                 {
                     SetPip(pip, _pipJoinedSprite, _pipJoinedColor, _pipEmptyAlpha);
@@ -344,17 +402,18 @@ namespace Lighthouse.Network.Session.View
 
             int joined = 0;
             int left = 0;
-            uint joinedId = 0;
-            uint leftId = 0;
+            string joinedName = null;
+            string leftName = null;
 
             for (int i = 0; i < count; i++)
             {
-                uint id = _sorted[i].ActorId;
+                LobbyPlayer player = _sorted[i];
 
-                if (Array.IndexOf(_knownIds, id, 0, _knownCount) < 0)
+                // A new player is announced once its nickname arrives, so the notice and its card agree.
+                if (player.HasNickname && Array.IndexOf(_knownIds, player.ActorId, 0, _knownCount) < 0)
                 {
                     joined++;
-                    joinedId = id;
+                    joinedName = player.DisplayName;
                 }
             }
 
@@ -363,7 +422,7 @@ namespace Lighthouse.Network.Session.View
                 if (!IsAboard(_knownIds[i], count))
                 {
                     left++;
-                    leftId = _knownIds[i];
+                    leftName = _knownNames[i];
                 }
             }
 
@@ -372,11 +431,11 @@ namespace Lighthouse.Network.Session.View
             // Leaving matters more than joining when both land in one refresh.
             if (left > 0)
             {
-                ShowNotice(left == 1 ? $"플레이어 {leftId}님이 배에서 내렸습니다." : $"선원 {left}명이 배에서 내렸습니다.");
+                ShowNotice(left == 1 ? $"{leftName}님이 배에서 내렸습니다." : $"선원 {left}명이 배에서 내렸습니다.");
             }
             else if (joined > 0)
             {
-                ShowNotice(joined == 1 ? $"플레이어 {joinedId}님이 승선했습니다." : $"선원 {joined}명이 승선했습니다.");
+                ShowNotice(joined == 1 ? $"{joinedName}님이 승선했습니다." : $"선원 {joined}명이 승선했습니다.");
             }
         }
 
@@ -393,14 +452,22 @@ namespace Lighthouse.Network.Session.View
             return false;
         }
 
+        // Unnamed players are left out so they are announced once named; the departed keep their last name.
         private void RememberCrew(int count)
         {
+            _knownCount = 0;
+
             for (int i = 0; i < count; i++)
             {
-                _knownIds[i] = _sorted[i].ActorId;
-            }
+                LobbyPlayer player = _sorted[i];
 
-            _knownCount = count;
+                if (player.HasNickname)
+                {
+                    _knownIds[_knownCount] = player.ActorId;
+                    _knownNames[_knownCount] = player.DisplayName;
+                    _knownCount++;
+                }
+            }
         }
 
         private void ShowNotice(string message)

@@ -21,6 +21,16 @@ namespace Lighthouse.Network.Session.View
         private Button _secondary;
         [SerializeField]
         private Text _secondaryLabel;
+        [Tooltip("Optional close button: acts as the secondary choice, or as the only choice of a one-button notice.")]
+        [SerializeField]
+        private Button _close;
+        [Tooltip("Optional primary art swapped for destructive choices (quit, close room, leave).")]
+        [SerializeField]
+        private Image _primaryImage;
+        [SerializeField]
+        private Sprite _primarySprite;
+        [SerializeField]
+        private Sprite _dangerSprite;
 
         private Action _onPrimary;
         private Action _onSecondary;
@@ -31,10 +41,22 @@ namespace Lighthouse.Network.Session.View
         {
             _primary.onClick.AddListener(HandlePrimary);
             _secondary.onClick.AddListener(HandleSecondary);
+
+            if (_close)
+            {
+                _close.onClick.AddListener(HandleClose);
+            }
         }
 
-        public void Show(string title, string message, string primaryLabel, Action onPrimary, string secondaryLabel = null, Action onSecondary = null)
+        public void Show(string title, string message, string primaryLabel, Action onPrimary, string secondaryLabel = null, Action onSecondary = null, bool isDanger = false)
         {
+            Sprite primarySprite = isDanger ? _dangerSprite : _primarySprite;
+
+            if (_primaryImage && primarySprite)
+            {
+                _primaryImage.sprite = primarySprite;
+            }
+
             _title.text = title;
             _message.text = message;
             _primaryLabel.text = primaryLabel;
@@ -72,6 +94,18 @@ namespace Lighthouse.Network.Session.View
             Action action = _onSecondary;
             Hide();
             action?.Invoke();
+        }
+
+        private void HandleClose()
+        {
+            if (_secondary.gameObject.activeSelf)
+            {
+                HandleSecondary();
+            }
+            else
+            {
+                HandlePrimary();
+            }
         }
     }
 }

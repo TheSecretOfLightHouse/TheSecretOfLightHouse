@@ -1,4 +1,5 @@
 using System;
+using Lighthouse.Network.Session.Net;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,6 +11,9 @@ namespace Lighthouse.Network.Session.View
     {
         [SerializeField]
         private InputField _address;
+        [Tooltip("Optional nickname field. Its character limit is set from LobbyPlayer.MaxNicknameLength.")]
+        [SerializeField]
+        private InputField _nickname;
         [SerializeField]
         private Text _status;
         [SerializeField]
@@ -35,8 +39,25 @@ namespace Lighthouse.Network.Session.View
             set => _address.text = value;
         }
 
+        public string Nickname
+        {
+            get => _nickname ? _nickname.text.Trim() : string.Empty;
+            set
+            {
+                if (_nickname)
+                {
+                    _nickname.text = value;
+                }
+            }
+        }
+
         private void Awake()
         {
+            if (_nickname)
+            {
+                _nickname.characterLimit = LobbyPlayer.MaxNicknameLength;
+            }
+
             _join.onClick.AddListener(HandleJoin);
             _host.onClick.AddListener(HandleHost);
             _quit.onClick.AddListener(HandleQuit);
@@ -54,6 +75,12 @@ namespace Lighthouse.Network.Session.View
             _joinLabel.text = isConnecting ? "연결 취소" : "참가하기";
             _host.interactable = !isConnecting;
             _address.interactable = !isConnecting;
+
+            if (_nickname)
+            {
+                _nickname.interactable = !isConnecting;
+            }
+
             _status.text = isConnecting ? "호스트에 연결하는 중…" : string.Empty;
         }
 

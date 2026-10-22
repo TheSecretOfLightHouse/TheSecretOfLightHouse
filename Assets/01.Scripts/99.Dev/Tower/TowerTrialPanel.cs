@@ -4,7 +4,9 @@ using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Mafia.IdentityCheck.Net;
 using Lighthouse.Mafia.Voting.Net;
+using Lighthouse.Mafia.Voting.Rules;
 using Lighthouse.Network.Connections.Net;
+using Lighthouse.Network.Session.Net;
 using Lighthouse.Tower.Net;
 using Lighthouse.Tower.Rules;
 using Lighthouse.Workbench.Net;
@@ -53,12 +55,20 @@ namespace Lighthouse.Dev.Tower
         private string _lastResult = "-";
         private string _lastIdentity = "-";
         private Vector2 _scroll;
+        // Vote awaiting the confirm box; 0 = none.
+        private uint _pendingVoteTarget;
+        private string _voteNotice = string.Empty;
+        // The mafia cannot vote, but its screen must look like a citizen's (2026-10-22), so it keeps a pretend vote here
+        // and never sends it.
+        private uint _fakeVoteTarget;
+        private int _fakeRemaining = VoteService.MaxVoteCount;
 
         private void OnEnable()
         {
             if (_voting)
             {
                 _voting.IdentityResponded += HandleIdentityResponded;
+                _voting.VoteResponded += HandleVoteResponded;
             }
         }
 
@@ -86,6 +96,7 @@ namespace Lighthouse.Dev.Tower
             if (_voting)
             {
                 _voting.IdentityResponded -= HandleIdentityResponded;
+                _voting.VoteResponded -= HandleVoteResponded;
             }
 
             if (_relay)
@@ -115,6 +126,7 @@ namespace Lighthouse.Dev.Tower
 
             if (!_round.IsStarted)
             {
+                ResetVoteScreen();
                 DrawStart();
             }
             else
@@ -170,6 +182,15 @@ namespace Lighthouse.Dev.Tower
 
         private void DrawStart()
         {
+            // With the lobby flow the round starts by itself on entering the game scene.
+            LighthouseNetworkManager manager = LighthouseNetworkManager.Instance;
+
+            if (manager && manager.IsSessionFlowEnabled)
+            {
+                GUILayout.Label("판 시작 중");
+                return;
+            }
+
             if (!NetworkServer.active)
             {
                 GUILayout.Label("호스트가 판을 시작하기를 기다리는 중");
@@ -245,7 +266,7 @@ namespace Lighthouse.Dev.Tower
                     GUILayout.Label($"끝날 때 마피아를 지목한 시민이 {(settings ? settings.RitualRequiredVotes : 0)}명 이상이면 시민 승리, 아니면 마피아 승리.");
                     break;
                 case TowerPhase.FinalBattle:
-                    DrawFinalBattle(settings);
+                    DrawFinalBattle();
                     break;
                 case TowerPhase.Ended:
                     GUILayout.Label($"==== {(_match.Outcome == TowerOutcome.CitizensWin ? "시민 승리" : "마피아 승리")} ====");
@@ -255,41 +276,19 @@ namespace Lighthouse.Dev.Tower
             }
         }
 
-        private void DrawFinalBattle(TowerBattleSettings settings)
+        // Proposal 2026-10-22: the repair carries over and the health starts fixed; finishing the repair wins.
+        private void DrawFinalBattle()
         {
-            if (!settings)
-            {
-                return;
-            }
-
+            TowerNet tower = _match.Tower;
             GUILayout.Label($"최후 전투: 마피아({MafiaText(_round.RevealedMafiaId)})가 괴물을 불렀다.");
-            GUILayout.Label($"등대 HP {_match.Health:0}/{_match.MaxHealth:0}  (회복 없음)");
-            GUILayout.Label($"등실 재점화 {_match.Ignitions}/{settings.IgnitionsToWin}  — 다 채우면 시민 승리");
-
-            if (_round.IsOwnMafia)
-            {
-                GUILayout.Label("마피아는 결정을 줍거나 점화할 수 없다.");
-                return;
-            }
-
-            GUILayout.Label($"내 심연 결정 {_match.OwnCrystalCount}개. 점화 1회 = 결정 {settings.CrystalsPerIgnition}개 + {CostText(settings)}");
-            AbyssCrystalSpot nearest = FindNearestCrystal();
-
-            GUI.enabled = nearest;
-
-            if (GUILayout.Button(nearest ? "가까운 심연 결정 줍기" : "근처에 심연 결정 없음"))
-            {
-                Send(nearest.netId, InteractionAction.CollectAbyssCrystal);
-            }
-
-            GUI.enabled = true;
-
-            if (GUILayout.Button("등실 점화 (등대 근처에서)"))
-            {
-                Send(_match.netId, InteractionAction.IgniteLantern);
-            }
+            GUILayout.Label($"등대 HP {_match.Health:0}/{_match.MaxHealth:0}  (장착해도 회복 없음)");
+            GUILayout.Label($"수리도 {tower.RepairRatio * 100f:0}% ({tower.InstalledCount}/{(tower.Layout ? tower.Layout.SlotCount : 0)})  — 100%가 되면 시민 승리");
+            GUILayout.Label(_round.IsOwnMafia
+                ? "마피아는 모듈을 더 들 수 없다. 등대 HP가 0이 되면 승리."
+                : "남은 모듈을 작업대에서 만들어 들고 와 등대에 장착한다.");
         }
 
+        // Votes: one confirm box before a vote is spent (2026-10-22). The mafia sees the same screen with a pretend count.
         private void DrawVotes()
         {
             if (!_round.HasVoting)
@@ -298,33 +297,119 @@ namespace Lighthouse.Dev.Tower
                 return;
             }
 
-            if (_round.IsOwnMafia || !_voting.HasOwnVoteState)
+            if (!_voting.HasOwnVoteState)
             {
                 return;
             }
 
+            bool isMafia = _round.IsOwnMafia;
             VoteResponse vote = _voting.OwnVoteState;
-            string target = vote.TargetActorId != 0 ? $"플레이어 {vote.TargetActorId}" : "없음";
-            GUILayout.Label($"내 지목: {target}  (남은 변경 {vote.RemainingVoteCount}회{(vote.IsLocked ? ", 잠김" : string.Empty)})");
-            GUILayout.BeginHorizontal();
+            uint current = isMafia ? _fakeVoteTarget : vote.TargetActorId;
+            int remaining = isMafia ? _fakeRemaining : vote.RemainingVoteCount;
+            // The mafia gets the same lock state as everyone; the phase covers a state that has not arrived yet.
+            bool isLocked = vote.IsLocked || _match.Phase != TowerPhase.Repairing;
 
-            for (int i = 0; i < _actors.Count; i++)
+            if (isLocked && _pendingVoteTarget != 0)
             {
-                uint actorId = _actors[i];
-
-                if (actorId != _ownActorId && GUILayout.Button($"P{actorId} 지목"))
-                {
-                    _voting.RequestVote(actorId);
-                }
+                _pendingVoteTarget = 0;
+                _voteNotice = "투표가 잠겼다.";
             }
 
-            GUILayout.EndHorizontal();
+            string target = current != 0 ? $"플레이어 {current}" : "없음";
+            GUILayout.Label($"내 지목: {target}  (남은 기회 {remaining}회{(isLocked ? ", 잠김" : string.Empty)})");
+
+            if (_pendingVoteTarget != 0)
+            {
+                DrawVoteConfirm(isMafia, remaining);
+            }
+            else
+            {
+                GUI.enabled = !isLocked;
+                GUILayout.BeginHorizontal();
+
+                for (int i = 0; i < _actors.Count; i++)
+                {
+                    uint actorId = _actors[i];
+
+                    if (actorId != _ownActorId && GUILayout.Button($"P{actorId} 지목"))
+                    {
+                        SelectVote(actorId, current, remaining);
+                    }
+                }
+
+                GUILayout.EndHorizontal();
+                GUI.enabled = true;
+            }
+
+            if (_voteNotice.Length > 0)
+            {
+                GUILayout.Label(_voteNotice);
+            }
+
             IReadOnlyList<uint> revealed = _voting.RevealedCitizenIds;
 
             for (int i = 0; i < revealed.Count; i++)
             {
                 GUILayout.Label($"바다가 응답하지 않았다: 플레이어 {revealed[i]}는 시민");
             }
+        }
+
+        private void SelectVote(uint actorId, uint current, int remaining)
+        {
+            // Re-picking the current target is free and needs no box; an empty count only says so.
+            if (actorId == current)
+            {
+                _voteNotice = "이미 지목하고 있다.";
+            }
+            else if (remaining <= 0)
+            {
+                _voteNotice = "남은 투표 기회가 없다.";
+            }
+            else
+            {
+                _voteNotice = string.Empty;
+                _pendingVoteTarget = actorId;
+            }
+        }
+
+        private void DrawVoteConfirm(bool isMafia, int remaining)
+        {
+            GUILayout.BeginVertical(GUI.skin.box);
+            GUILayout.Label($"플레이어 {_pendingVoteTarget}을(를) 지목할까?");
+            GUILayout.Label($"투표 기회 1회가 사용된다. 남은 기회 {remaining}회 → {remaining - 1}회.");
+            GUILayout.Label("사용한 기회는 회복되지 않고, 지목을 철회할 수 없다.");
+            GUILayout.BeginHorizontal();
+
+            if (GUILayout.Button("지목 확정"))
+            {
+                if (isMafia)
+                {
+                    _fakeVoteTarget = _pendingVoteTarget;
+                    _fakeRemaining--;
+                }
+                else
+                {
+                    _voting.RequestVote(_pendingVoteTarget);
+                }
+
+                _pendingVoteTarget = 0;
+            }
+
+            if (GUILayout.Button("취소"))
+            {
+                _pendingVoteTarget = 0;
+            }
+
+            GUILayout.EndHorizontal();
+            GUILayout.EndVertical();
+        }
+
+        private void ResetVoteScreen()
+        {
+            _pendingVoteTarget = 0;
+            _voteNotice = string.Empty;
+            _fakeVoteTarget = 0;
+            _fakeRemaining = VoteService.MaxVoteCount;
         }
 
         private void DrawMafia()
@@ -358,6 +443,11 @@ namespace Lighthouse.Dev.Tower
 
                 GUI.enabled = true;
                 GUILayout.EndHorizontal();
+
+                if (_match.Tower.IsComplete && (_match.Phase == TowerPhase.Repairing || _match.Phase == TowerPhase.Ritual))
+                {
+                    GUILayout.Label("수리도가 이미 100%라 지금 소환하면 시민이 승리한다.");
+                }
             }
 
             DrawWithdraw();
@@ -480,36 +570,6 @@ namespace Lighthouse.Dev.Tower
             GUILayout.EndHorizontal();
         }
 
-        private AbyssCrystalSpot FindNearestCrystal()
-        {
-            if (!NetworkClient.localPlayer)
-            {
-                return null;
-            }
-
-            Vector3 position = NetworkClient.localPlayer.transform.position;
-            AbyssCrystalSpot nearest = null;
-            float best = float.MaxValue;
-
-            foreach (NetworkIdentity identity in NetworkClient.spawned.Values)
-            {
-                if (!identity || !identity.TryGetComponent(out AbyssCrystalSpot spot) || !spot.IsAvailable)
-                {
-                    continue;
-                }
-
-                float distance = (spot.transform.position - position).sqrMagnitude;
-
-                if (distance < best)
-                {
-                    best = distance;
-                    nearest = spot;
-                }
-            }
-
-            return nearest;
-        }
-
         private void Send(uint targetNetId, InteractionAction action, int arg0 = 0, int arg1 = 0, int arg2 = 0)
         {
             if (!_relay || !_relay.TrySendToNetworkTarget(targetNetId, action, arg0, arg1, arg2))
@@ -523,25 +583,39 @@ namespace Lighthouse.Dev.Tower
             _lastResult = result.Code.ToString();
         }
 
+        // The server has the last word: a refused vote closes the box and says why.
+        private void HandleVoteResponded(VoteResponse response)
+        {
+            switch (response.Result)
+            {
+                case VoteChangeResult.Changed:
+                    _voteNotice = "지목했다.";
+                    break;
+                case VoteChangeResult.VotingLocked:
+                case VoteChangeResult.GameEnded:
+                    _pendingVoteTarget = 0;
+                    _voteNotice = "투표가 잠겼다.";
+                    break;
+                case VoteChangeResult.NoVotesRemaining:
+                    _pendingVoteTarget = 0;
+                    _voteNotice = "남은 투표 기회가 없다.";
+                    break;
+                case VoteChangeResult.Unchanged:
+                case VoteChangeResult.StateRetrieved:
+                    break;
+                default:
+                    _pendingVoteTarget = 0;
+                    _voteNotice = $"지목하지 못했다 ({response.Result}).";
+                    break;
+            }
+        }
+
         private void HandleIdentityResponded(IdentityResponse response)
         {
             if (response.IsNewDecision)
             {
                 _lastIdentity = response.Result.ToString();
             }
-        }
-
-        private static string CostText(TowerBattleSettings settings)
-        {
-            string text = string.Empty;
-
-            for (int i = 0; i < settings.IgnitionCostCount; i++)
-            {
-                RecipeIngredient cost = settings.GetIgnitionCost(i);
-                text += $"{(i > 0 ? " + " : string.Empty)}{(cost.Resource ? cost.Resource.DisplayName : "?")} {cost.Amount}";
-            }
-
-            return text.Length > 0 ? text : "추가 비용 없음";
         }
 
         private static string MafiaText(uint actorId)
@@ -557,12 +631,10 @@ namespace Lighthouse.Dev.Tower
                     return "의식이 끝날 때 시민들이 마피아를 지목하고 있었다";
                 case TowerEndReason.RitualFailed:
                     return "의식이 끝날 때 마피아를 지목한 시민이 모자랐다";
-                case TowerEndReason.LanternRelit:
-                    return "등실을 다시 밝혔다";
+                case TowerEndReason.RepairCompleted:
+                    return "등대 수리도 100%를 채웠다";
                 case TowerEndReason.LighthouseDestroyed:
                     return "등대가 무너졌다";
-                case TowerEndReason.SpecialEnding:
-                    return "깨어난 괴물이 너무 강했다 (특수 종료)";
                 case TowerEndReason.Deadline:
                     return "기한까지 등대가 켜지지 않았다";
                 default:

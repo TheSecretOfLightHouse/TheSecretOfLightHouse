@@ -28,8 +28,6 @@ namespace Lighthouse.Tower.Net
         // Server-only, indexed like the layout's slots. 0 = empty.
         private uint[] _installedModuleIds = new uint[0];
         private bool _isLayoutValid;
-        // Server-only. Closed for good once the final battle starts; the lantern is relit with crystals instead.
-        private bool _isInstallOpen = true;
 
         public TowerLayout Layout => _layout;
         public WorkbenchNet Workbench => _workbench;
@@ -85,7 +83,6 @@ namespace Lighthouse.Tower.Net
             }
 
             _installedModuleIds = new uint[_layout.SlotCount];
-            _isInstallOpen = true;
             _installed.Clear();
 
             for (int i = 0; i < _layout.SlotCount; i++)
@@ -133,12 +130,12 @@ namespace Lighthouse.Tower.Net
         }
 
         // Installs the module the actor carries (taken out of this tower's workbench, 2026-10-20) into the lowest open
-        // slot that fits it. recipeId is what the sender's screen showed in their hands, so a stale screen cannot install
-        // something else. Requests run one at a time on the server, so two players installing together fill two slots or one fails.
+        // slot that fits it. Installs stay open after the summon, since the final battle finishes the same repair (2026-10-22).
+        // recipeId is what the sender's screen showed in their hands, so a stale screen cannot install something else. Requests run one at a time on the server, so two players installing together fill two slots or one fails.
         [Server]
         public bool TryInstall(uint actorId, int recipeId, ModuleLedger ledger)
         {
-            if (!_isLayoutValid || !_isInstallOpen || ledger == null
+            if (!_isLayoutValid || ledger == null
                 || !_workbench.TryGetCarried(actorId, out int carriedRecipeId, out _) || carriedRecipeId != recipeId)
             {
                 return false;
@@ -156,12 +153,6 @@ namespace Lighthouse.Tower.Net
             _installed[slot] = true;
             ModuleInstalled?.Invoke(actorId, slot, moduleId);
             return true;
-        }
-
-        [Server]
-        public void CloseInstalls()
-        {
-            _isInstallOpen = false;
         }
 
         private void HandleInstalledChanged(SyncList<bool>.Operation operation, int index, bool value)

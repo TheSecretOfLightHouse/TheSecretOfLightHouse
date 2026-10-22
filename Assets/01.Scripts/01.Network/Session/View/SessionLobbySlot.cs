@@ -33,6 +33,15 @@ namespace Lighthouse.Network.Session.View
         private Color _nameColor = new Color32(74, 50, 34, 255);
         [SerializeField]
         private Color _emptyColor = new Color32(122, 94, 72, 140);
+        [Tooltip("Optional card frame swapped between a taken and an empty seat.")]
+        [SerializeField]
+        private Image _frame;
+        [SerializeField]
+        private Sprite _frameSprite;
+        [SerializeField]
+        private Sprite _emptyFrameSprite;
+        [SerializeField]
+        private string _emptyState = string.Empty;
 
         private Color _avatarColor;
 
@@ -47,10 +56,11 @@ namespace Lighthouse.Network.Session.View
             _highlight.enabled = player.isLocalPlayer;
             _avatar.color = _avatarColor;
             _name.color = _nameColor;
-            _name.text = player.isLocalPlayer ? $"플레이어 {player.ActorId} (나)" : $"플레이어 {player.ActorId}";
+            _name.text = player.isLocalPlayer ? $"{player.DisplayName} (나)" : player.DisplayName;
             _state.text = isReady ? "준비 완료" : "대기 중";
             _state.color = isReady ? _readyColor : _idleColor;
             _dot.enabled = true;
+            SetFrame(_frameSprite);
 
             if (_hostBadge)
             {
@@ -78,12 +88,22 @@ namespace Lighthouse.Network.Session.View
             _avatar.color = faded;
             _name.color = _emptyColor;
             _name.text = "빈 자리";
-            _state.text = string.Empty;
+            _state.text = _emptyState;
+            _state.color = _emptyColor;
             _dot.enabled = false;
+            SetFrame(_emptyFrameSprite);
 
             if (_hostBadge)
             {
                 _hostBadge.enabled = false;
+            }
+        }
+
+        private void SetFrame(Sprite sprite)
+        {
+            if (_frame && sprite)
+            {
+                _frame.sprite = sprite;
             }
         }
     }
