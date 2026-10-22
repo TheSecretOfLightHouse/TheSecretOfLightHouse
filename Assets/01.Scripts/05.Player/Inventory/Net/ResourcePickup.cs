@@ -13,6 +13,8 @@ public sealed class ResourcePickup : NetworkBehaviour
     private bool _isInitialized;
     private bool _isTaken;
 
+    private bool _isCollectionLocked;
+
     public int ResourceId => _resourceId;
     public int Amount => _amount;
 
@@ -30,11 +32,12 @@ public sealed class ResourcePickup : NetworkBehaviour
         _amount = 0;
         _isInitialized = false;
         _isTaken = false;
+        _isCollectionLocked = false;
         return true;
     }
 
     [Server]
-    public bool TryInitialize(int resourceId, int amount)
+    public bool TryInitialize(int resourceId, int amount, bool isCollectionLocked = false)
     {
         if (_isInitialized || amount <= 0)
         {
@@ -43,14 +46,21 @@ public sealed class ResourcePickup : NetworkBehaviour
 
         _resourceId = resourceId;
         _amount = amount;
+        _isCollectionLocked = isCollectionLocked;
         _isInitialized = true;
         return true;
     }
 
     [Server]
+    public void UnlockCollection()
+    {
+        _isCollectionLocked = false;
+    }
+
+    [Server]
     public bool TryCollect(PlayerInventory inventory)
     {
-        if (!_isInitialized || _isTaken || !inventory)
+        if (!_isInitialized || _isTaken || _isCollectionLocked || !inventory)
         {
             return false;
         }

@@ -1277,7 +1277,7 @@ MonoBehaviour:
   _speed: 5
   _originAcceleration: 10
   _jumpSpeed: 5
-  _groundCheckDistance: 0.08
+  _groundCheckDistance: 0.15
   _minimumGroundNormalY: 0.65
   _groundLayers:
     serializedVersion: 2
@@ -1438,7 +1438,7 @@ MonoBehaviour:
   _minPitch: -60
   _maxPitch: 70
   _cameraPivot: {fileID: 440580148379586522}
-  _boatLookReturnDelay: 0.5
+  _boatLookReturnDelay: 3
   _boatLookReturnSpeed: 120
 --- !u!114 &-7914389096021402594
 MonoBehaviour:

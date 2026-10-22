@@ -392,7 +392,6 @@ GameObject:
   - component: {fileID: 1737995833}
   - component: {fileID: 1737995834}
   - component: {fileID: 1737995835}
-  - component: {fileID: 1737995836}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -563,24 +562,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _manager: {fileID: 1737995830}
---- !u!114 &1737995836
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1737995828}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3792ab6ad33d9114185e3e827bb526eb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _networkManager: {fileID: 1737995830}
-  _boatPrefab: {fileID: 2050603305816487322, guid: 7029604b97a61da46b62f0e58800192f, type: 3}
-  _spawnOffset: {x: 1.5, y: -0.2, z: 0}
-  _landLayers:
-    serializedVersion: 2
-    m_Bits: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
