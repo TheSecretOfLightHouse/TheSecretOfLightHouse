@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Lighthouse.World.Islands.View
 {
     [DisallowMultipleComponent]
-    public class IslandInstanceSet : MonoBehaviour
+    public class IslandInstanceSet : MonoBehaviour, IIslandRootSource
     {
         private readonly List<short> _indices = new List<short>();
         private readonly List<GameObject> _instances = new List<GameObject>();
@@ -76,6 +76,21 @@ namespace Lighthouse.World.Islands.View
         public Transform GetTransform(int position)
         {
             return _instances[position].transform;
+        }
+
+        public bool TryGetRoot(short islandIndex, out Transform root)
+        {
+            for (int i = 0; i < _indices.Count; i++)
+            {
+                if (_indices[i] == islandIndex && _instances[i] != null)
+                {
+                    root = _instances[i].transform;
+                    return true;
+                }
+            }
+
+            root = null;
+            return false;
         }
 
         public bool TryGetSpots(short islandIndex, List<HarvestSpot> results)
