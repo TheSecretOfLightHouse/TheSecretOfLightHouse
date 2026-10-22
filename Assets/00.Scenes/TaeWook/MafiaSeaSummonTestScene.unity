@@ -371,6 +371,7 @@ MonoBehaviour:
   _permission: {fileID: 498573142}
   _cameraView: {fileID: 498573145}
   _pointView: {fileID: 498573146}
+  _radialMenu: {fileID: 498573149}
 --- !u!114 &233312942
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -416,6 +417,11 @@ MonoBehaviour:
   playerSpawnMethod: 0
   spawnPrefabs:
   - {fileID: 633692041676541165, guid: 7029604b97a61da46b62f0e58800192f, type: 3}
+  - {fileID: 5239930098807933430, guid: ee2030eb01e0ca345bd72f0efe20e8e3, type: 3}
+  - {fileID: 1600035957298383073, guid: 264c4f6a83299204881205b550c5f4bc, type: 3}
+  - {fileID: 8612343004966537504, guid: ff5fd1403cac7a14e9190634981eb90b, type: 3}
+  - {fileID: 3061826974098303317, guid: b1463a78e6ed26841b068d797a23320c, type: 3}
+  - {fileID: 622197146839384064, guid: 928c6cb5d2c645946873e6ffd392dec7, type: 3}
   exceptionsDisconnect: 1
   snapshotSettings:
     bufferTimeMultiplier: 2
@@ -700,6 +706,8 @@ GameObject:
   - component: {fileID: 498573148}
   - component: {fileID: 498573147}
   - component: {fileID: 498573146}
+  - component: {fileID: 498573150}
+  - component: {fileID: 498573149}
   m_Layer: 0
   m_Name: Sea Summon Permission
   m_TagString: Untagged
@@ -824,6 +832,40 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1
   _landProbeHeight: 1000
+--- !u!114 &498573149
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 498573141}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4753e0c6b5ab30b41be4880b9e442c8f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _permission: {fileID: 498573142}
+  _points: {fileID: 498573147}
+  _spawn: {fileID: 498573150}
+  _pointView: {fileID: 498573146}
+  _cameraView: {fileID: 498573145}
+--- !u!114 &498573150
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 498573141}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e51c999b7343a545b21a828af617788, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _permission: {fileID: 498573142}
+  _points: {fileID: 498573147}
 --- !u!1 &544063952
 GameObject:
   m_ObjectHideFlags: 0

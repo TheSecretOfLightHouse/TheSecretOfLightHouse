@@ -11,10 +11,12 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
     {
         [SerializeField] private SeaSummonPermissionController _permission;
         [SerializeField] private SeaSummonPointValidator _validator;
-        private readonly Dictionary<int, (uint PlayerId, uint BoatId, Vector3 Point, float Aspect)> _selectedPoints = new();
+        private readonly Dictionary<int, (uint PlayerId, uint BoatId, Vector3 Point, float Aspect, ulong Token)> _selectedPoints = new();
+        private ulong _selectionSequence;
         private uint _requestId;
         public bool HasOwnSelection { get; private set; }
         public Vector3 OwnSelection { get; private set; }
+        public ulong OwnSelectionToken { get; private set; }
         public string OwnResult { get; private set; } = "지점을 선택해 주세요";
         public SeaSummonPointValidator Validator => _validator;
         public event Action SelectionResponded;
@@ -28,6 +30,7 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         {
             HasOwnSelection = false;
             OwnSelection = default;
+            OwnSelectionToken = 0;
             _requestId = 0;
         }
 
@@ -47,6 +50,7 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         {
             HasOwnSelection = false;
             OwnSelection = default;
+            OwnSelectionToken = 0;
             OwnResult = "선택 취소";
             if (NetworkClient.ready)
             {
@@ -78,6 +82,20 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
                     _permission.Settings, out point, out reason);
         }
 
+        [Server]
+        public bool TryConsumeSelection(NetworkConnectionToClient sender, ulong token, out Vector3 point)
+        {
+            point = default;
+            if (sender == null || token == 0 || !_selectedPoints.TryGetValue(sender.connectionId, out var selection)
+                || selection.Token != token || !TryGetSelectedPoint(sender, out point))
+            {
+                return false;
+            }
+            // 동일 선택을 다른 요청 번호로 다시 사용해도 생성은 한 번만 허용한다.
+            _selectedPoints.Remove(sender.connectionId);
+            return true;
+        }
+
         [Command(requiresAuthority = false)]
         private void CmdSelectPoint(Vector3 candidate, float aspect, uint requestId, NetworkConnectionToClient sender = null)
         {
@@ -90,9 +108,9 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             if (accepted)
             {
                 _selectedPoints[sender.connectionId] = (sender.identity.netId,
-                    sender.identity.GetComponent<PlayerController>().CurrentBoat.netId, point, aspect);
+                    sender.identity.GetComponent<PlayerController>().CurrentBoat.netId, point, aspect, ++_selectionSequence);
             }
-            TargetPointResult(sender, requestId, accepted, point, reason);
+            TargetPointResult(sender, requestId, accepted, point, reason, accepted ? _selectionSequence : 0);
         }
 
         [Command(requiresAuthority = false)]
@@ -105,7 +123,7 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         }
 
         [TargetRpc]
-        private void TargetPointResult(NetworkConnectionToClient target, uint requestId, bool accepted, Vector3 point, string reason)
+        private void TargetPointResult(NetworkConnectionToClient target, uint requestId, bool accepted, Vector3 point, string reason, ulong token)
         {
             // 탑뷰를 닫은 뒤 도착한 이전 응답으로 취소된 선택을 되살리지 않는다.
             if (requestId != _requestId)
@@ -114,6 +132,7 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             }
             HasOwnSelection = accepted;
             OwnSelection = accepted ? point : default;
+            OwnSelectionToken = accepted ? token : 0;
             OwnResult = accepted ? "서버 승인: 지점 선택 완료" : reason;
             SelectionResponded?.Invoke();
         }

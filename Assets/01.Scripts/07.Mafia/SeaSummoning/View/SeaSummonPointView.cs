@@ -20,6 +20,7 @@ namespace Lighthouse.Mafia.SeaSummoning.View
         private bool _isHoverValid;
         private Vector3 _hoverPoint;
         private string _hoverReason;
+        public bool IsSelectionBlocked { get; set; }
         public string Status => _hasHover && !_isHoverValid ? _hoverReason : _points != null && _points.HasOwnSelection
             ? _points.OwnResult : (_hasHover ? _hoverReason : "탑뷰에서 바다를 클릭해 주세요");
 
@@ -33,6 +34,10 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             }
             _wasSelecting = true;
             _hasHover = false;
+            if (IsSelectionBlocked)
+            {
+                return;
+            }
             if (_points == null || _permission == null || Mouse.current == null || _viewCamera == null
                 || _points.Validator == null || !WorldServices.TryGet<IWorldQuery>(out var world)
                 || NetworkClient.localPlayer == null)
@@ -81,7 +86,7 @@ namespace Lighthouse.Mafia.SeaSummoning.View
 
         private void OnGUI()
         {
-            if (!_wasSelecting || _viewCamera == null)
+            if (!_wasSelecting || _viewCamera == null || IsSelectionBlocked)
             {
                 return;
             }

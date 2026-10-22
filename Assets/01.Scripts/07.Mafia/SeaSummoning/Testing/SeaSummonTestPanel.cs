@@ -10,11 +10,16 @@ namespace Lighthouse.Mafia.SeaSummoning.Testing
         [SerializeField] private SeaSummonPermissionController _permission;
         [SerializeField] private SeaSummonCameraView _cameraView;
         [SerializeField] private SeaSummonPointView _pointView;
+        [SerializeField] private SeaSummonRadialMenu _radialMenu;
 
         private void OnGUI()
         {
+            if (_radialMenu != null && _radialMenu.IsOpen)
+            {
+                return;
+            }
             GUILayout.BeginArea(new Rect(15, 110, 460, 360), GUI.skin.box);
-            GUILayout.Label("마피아 바다 몬스터 소환 — 3단계");
+            GUILayout.Label("마피아 바다 몬스터 소환 — 4단계");
             GUILayout.Label("시험 권한: 배에 탑승한 호스트의 Tech 1만 허용");
             PlayerController player = NetworkClient.localPlayer != null
                 ? NetworkClient.localPlayer.GetComponent<PlayerController>() : null;
@@ -47,7 +52,8 @@ namespace Lighthouse.Mafia.SeaSummoning.Testing
             GUILayout.Label(_pointView != null ? _pointView.Status : "지점 선택 미연결");
             GUILayout.Label("초록: 선택 가능 / 빨강: 불가 / 청록: 서버 승인");
             GUILayout.Label("노란 원: 안전지대 / 부두: 육지");
-            GUILayout.Label("실제 소환·횟수 차감은 후속 단계");
+            GUILayout.Label(_radialMenu != null ? _radialMenu.Status : "종류 선택 메뉴 미연결");
+            GUILayout.Label("하루 횟수 제한·날짜 전환 제거는 5단계");
             GUILayout.EndArea();
         }
     }
