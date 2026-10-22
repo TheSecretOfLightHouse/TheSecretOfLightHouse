@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Lighthouse.Mafia.IdentityCheck.Rules
 {
-    [CreateAssetMenu(fileName = "IdentityCheckSettings", menuName = "Lighthouse/Mafia/Identity Check")]
+    [CreateAssetMenu(fileName = "IdentityCheckSettings", menuName = "TheLightHouse/Mafia/Identity Check")]
     public sealed class IdentityCheckSettings : ScriptableObject
     {
         [Header("정체 확인 횟수")]
