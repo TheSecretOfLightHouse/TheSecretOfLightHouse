@@ -2,6 +2,7 @@ using Lighthouse.World.Harvest.Rules;
 using Lighthouse.World.Islands.Rules;
 using Lighthouse.World.MapGeneration.Rules;
 using Lighthouse.World.Query.Rules;
+using Mirror;
 using UnityEngine;
 
 namespace Lighthouse.World.Harvest.Sandbox
@@ -24,6 +25,11 @@ namespace Lighthouse.World.Harvest.Sandbox
 
             if (!WorldServices.TryGet(out IHarvestIslandRegistrar registrar))
             {
+                registrar = null;
+            }
+
+            if (registrar == null && NetworkServer.active)
+            {
                 Debug.LogError($"[{nameof(HarvestSandboxIsland)}] HarvestHost가 씬에 필요합니다.");
                 enabled = false;
                 return;
@@ -31,7 +37,22 @@ namespace Lighthouse.World.Harvest.Sandbox
 
             HarvestSpot[] spots = GetComponentsInChildren<HarvestSpot>(true);
             bool isRegistered = HarvestIslandSetup.TryRegister(registrar, _catalog, _archetype, _islandIndex, new SeededRandom(_seed), spots);
-            Debug.Log($"[{nameof(HarvestSandboxIsland)}] registered={isRegistered}, island={_islandIndex}, spots={spots.Length}");
+            string mode = registrar != null ? "register" : "bind-only";
+            Debug.Log($"[{nameof(HarvestSandboxIsland)}] done={isRegistered}, mode={mode}, island={_islandIndex}, spots={spots.Length}, bound={CountBound(spots)}");
+        }
+
+        private static int CountBound(HarvestSpot[] spots)
+        {
+            int count = 0;
+            for (int i = 0; i < spots.Length; i++)
+            {
+                if (spots[i].IsBound)
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
     }
 }
