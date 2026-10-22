@@ -15,11 +15,14 @@ namespace Lighthouse.Mafia.Voting.Net
     public sealed class VotingNetworkController : NetworkBehaviour
     {
         [SerializeField] private AbyssBalanceSettings _abyssSettings;
+        [SerializeField] private bool _initializeOnMatchStart;
+        [SerializeField] private IdentityCheckSettings _sessionIdentitySettings;
 
         private LighthouseNetworkManager _manager;
         private VoteService _votes;
         private uint[] _participantIds;
         private IdentityCheckService _identity;
+        private PlayerController _sessionMafiaPlayer;
         private uint _mafiaActorId;
         private ulong _nextCheckRequestId;
         private ulong _nextSummonRequestId;
@@ -40,6 +43,11 @@ namespace Lighthouse.Mafia.Voting.Net
         {
             _manager = LighthouseNetworkManager.Instance;
             _revealedCitizens.Clear();
+            // 기존 수동 초기화 시험 씬과 함께 호출되지 않도록 씬에서 명시적으로 선택한다.
+            if (_initializeOnMatchStart && _manager != null && _manager.IsSessionFlowEnabled)
+            {
+                _manager.MatchStarted += HandleMatchStarted;
+            }
         }
 
         public override void OnStartClient()
@@ -57,11 +65,43 @@ namespace Lighthouse.Mafia.Voting.Net
 
         public override void OnStopServer()
         {
+            if (_sessionMafiaPlayer != null)
+            {
+                _sessionMafiaPlayer.DownedChanged -= HandleMafiaDownedChanged;
+            }
+            _sessionMafiaPlayer = null;
+            if (_manager != null)
+            {
+                _manager.MatchStarted -= HandleMatchStarted;
+            }
             _votes = null;
             _participantIds = null;
             _manager = null;
             _identity = null;
             _mafiaActorId = 0;
+        }
+
+        private void HandleMatchStarted(uint matchId, double startTime, IReadOnlyList<uint> roster)
+        {
+            InitializeVoting(roster, _manager.Roles.MafiaActorId);
+            if (_sessionIdentitySettings != null)
+            {
+                InitializeIdentityCheck(_sessionIdentitySettings.CreateSnapshot());
+                if (_manager.Connections.TryGetConnection(_mafiaActorId, out NetworkConnectionToClient connection)
+                    && connection.identity != null
+                    && connection.identity.TryGetComponent(out PlayerController player))
+                {
+                    _sessionMafiaPlayer = player;
+                    _sessionMafiaPlayer.DownedChanged += HandleMafiaDownedChanged;
+                    SetMafiaDowned(player.IsDowned);
+                }
+                // 상태를 확인할 수 없으면 확인 서비스를 미확인 상태로 두어 요청을 허용하지 않는다.
+            }
+        }
+
+        private void HandleMafiaDownedChanged(bool isDowned)
+        {
+            SetMafiaDowned(isDowned);
         }
 
         public override void OnStopClient()
