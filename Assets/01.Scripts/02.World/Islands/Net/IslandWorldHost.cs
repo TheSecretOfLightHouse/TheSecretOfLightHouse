@@ -7,6 +7,7 @@ using Lighthouse.World.MapGeneration.Rules;
 using UnityEngine;
 using Lighthouse.World.Islands.Server;
 using Mirror;
+using Lighthouse.World.Query.Rules;
 
 namespace Lighthouse.World.Islands.Net
 {
@@ -27,17 +28,35 @@ namespace Lighthouse.World.Islands.Net
 
         public int BuildVersion => _buildVersion;
 
+        private IslandGroundHeightSource _ground;
+
         private void Awake()
         {
             if (_instances == null)
             {
                 Debug.LogError($"[{nameof(IslandWorldHost)}] IslandInstanceSet is required.");
                 enabled = false;
+                return;
+            }
+
+            _ground = new IslandGroundHeightSource(_instances);
+        }
+
+        private void OnEnable()
+        {
+            if (_ground != null)
+            {
+                WorldServices.Register<IGroundHeightSource>(_ground);
             }
         }
 
         private void OnDisable()
         {
+            if (_ground != null)
+            {
+                WorldServices.Unregister<IGroundHeightSource>(_ground);
+            }
+
             Cancel();
         }
 

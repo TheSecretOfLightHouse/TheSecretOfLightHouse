@@ -10,6 +10,8 @@ namespace Lighthouse.World.Debris.Sandbox
         {
             bool isPassed = ShoreChecks.RunAll();
             isPassed &= DebrisExpiryChecks.RunAll();
+            isPassed &= DebrisLocatorChecks.RunAll();
+            isPassed &= DebrisTrackerChecks.RunAll();
             Debug.Log($"[{nameof(DebrisCheckRunner)}] {(isPassed ? "PASS" : "FAIL")}");
         }
     }

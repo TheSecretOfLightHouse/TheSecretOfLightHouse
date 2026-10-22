@@ -49,6 +49,12 @@ namespace Lighthouse.World.Debris.Rules
             _entries.Clear();
         }
 
+        public void Drain(List<DebrisExpiryEntry> results)
+        {
+            results.AddRange(_entries);
+            _entries.Clear();
+        }
+
         private void RemoveAtSwap(int index)
         {
             int last = _entries.Count - 1;
