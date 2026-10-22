@@ -25,9 +25,21 @@ MonoBehaviour:
   - _prefab: {fileID: 6492456706704889656, guid: 9e27e438dbafc3048bd39797a86d6953, type: 3}
     _weight: 1
   _resources:
-  - _resource: {fileID: 11400000, guid: 36e7424a8f7dc8844a1df2dbe6997f06, type: 2}
+  - _resource: {fileID: 11400000, guid: 8cfcb1731fa7e7a4396f1235763cb5e8, type: 2}
     _weight: 1
     _deposit:
-      _initialAmount: 8
-      _maxAmount: 12
-      _dailyRegenRate: 0.2
+      _initialAmount: 5
+      _maxAmount: 6
+      _dailyRegenRate: 0.16666667
+  - _resource: {fileID: 11400000, guid: 34ea615bf6a5ac3479bf3ced8b874d91, type: 2}
+    _weight: 1
+    _deposit:
+      _initialAmount: 6
+      _maxAmount: 8
+      _dailyRegenRate: 0.25
+  - _resource: {fileID: 11400000, guid: 3a5669b6eb5a2b64ebbf6346c117869c, type: 2}
+    _weight: 1
+    _deposit:
+      _initialAmount: 2
+      _maxAmount: 3
+      _dailyRegenRate: 0.33333334
