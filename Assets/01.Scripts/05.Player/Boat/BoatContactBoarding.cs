@@ -27,6 +27,7 @@ public sealed class BoatContactBoarding : MonoBehaviour
 
     private readonly Collider[] _lands = new Collider[QueryCapacity];
     private readonly Collider[] _obstacles = new Collider[QueryCapacity];
+    private readonly Collider[] _dockCandidates = new Collider[QueryCapacity];
     private BoxCollider _body;
     private readonly Collider[] _departureLands = new Collider[QueryCapacity];
     private int _departureLandCount;
@@ -185,7 +186,10 @@ public sealed class BoatContactBoarding : MonoBehaviour
 
         if (!_boat.IsOccupied)
         {
-            if (collision.rigidbody && collision.rigidbody.gameObject == owner.gameObject)
+            if (collision.rigidbody
+                && collision.rigidbody.gameObject == owner.gameObject
+                && TryGetDockZone(out DockZone dock)
+                && dock.ContainsPosition(owner.transform.position))
             {
                 _boat.RequestBoard(owner);
             }
@@ -193,7 +197,11 @@ public sealed class BoatContactBoarding : MonoBehaviour
             return;
         }
 
-        if (IsLand(collision.collider))
+        int dockLayer = LayerMask.NameToLayer("Dock");
+
+        if (dockLayer >= 0
+            && collision.collider.gameObject.layer == dockLayer
+            && TryGetDockZone(out DockZone dockZone))
         {
             _boat.RequestDisembark(owner);
         }
@@ -201,15 +209,21 @@ public sealed class BoatContactBoarding : MonoBehaviour
 
     private int CollectLand()
     {
-        if (!_body)
+        int dockLayer = LayerMask.NameToLayer("Dock");
+
+        if (!_body || dockLayer < 0)
         {
             return 0;
         }
 
         Bounds bounds = _body.bounds;
-        int count = Physics.OverlapBoxNonAlloc(bounds.center,
+
+        int count = Physics.OverlapBoxNonAlloc(
+            bounds.center,
             bounds.extents + Vector3.one * _contactTolerance,
-            _lands, Quaternion.identity, _landLayers.value != 0 ? _landLayers.value : Physics.AllLayers,
+            _lands,
+            Quaternion.identity,
+            1 << dockLayer,
             QueryTriggerInteraction.Ignore);
 
         return count == _lands.Length ? 0 : count;
@@ -304,26 +318,116 @@ public sealed class BoatContactBoarding : MonoBehaviour
 
     private bool IsLand(Collider collider)
     {
-        if (!collider)
+        if (!collider || collider.isTrigger)
         {
             return false;
         }
 
         Rigidbody body = collider.attachedRigidbody;
-        if (body && (body.TryGetComponent<PlayerController>(out _) || body.TryGetComponent<BoatController>(out _)))
+
+        if (body
+            && (body.TryGetComponent<PlayerController>(out _)
+                || body.TryGetComponent<BoatController>(out _)))
         {
             return false;
         }
 
-        if ((_landLayers.value & (1 << collider.gameObject.layer)) != 0)
+        int dockLayer = LayerMask.NameToLayer("Dock");
+
+        return dockLayer >= 0
+            && collider.gameObject.layer == dockLayer;
+    }
+
+    public bool TryFindDockLandingPosition(
+    PlayerController player,
+    out Vector3 position)
+    {
+        position = default;
+
+        if (!_body || !player
+            || !player.TryGetComponent(out CapsuleCollider capsule)
+            || capsule.direction != 1)
         {
-            return true;
+            return false;
         }
 
-        for (int i = 0; i < _landColliders.Length; i++)
+        if (!TryGetDockZone(out DockZone dock))
         {
-            if (_landColliders[i] == collider)
+            return false;
+        }
+
+        Collider[] surfaces = dock.LandingSurfaces;
+
+        if (surfaces == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < surfaces.Length; i++)
+        {
+            Collider surface = surfaces[i];
+
+            if (!surface || !surface.enabled
+                || !surface.gameObject.activeInHierarchy
+                || !IsLand(surface))
             {
+                continue;
+            }
+
+            for (int j = 0; j < LandingDirectionCount; j++)
+            {
+                float angle = j * (360f / LandingDirectionCount);
+
+                Vector3 direction =
+                    Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
+
+                if (TryGetLandingPosition(
+                    surface, capsule, direction, out position))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public bool TryGetDockZone(out DockZone dock)
+    {
+        dock = null;
+
+        if (!_body)
+        {
+            return false;
+        }
+
+        Bounds bounds = _body.bounds;
+
+        int count = Physics.OverlapBoxNonAlloc(
+            bounds.center,
+            bounds.extents,
+            _dockCandidates,
+            Quaternion.identity,
+            Physics.AllLayers,
+            QueryTriggerInteraction.Collide);
+
+        if (count == _dockCandidates.Length)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            Collider candidate = _dockCandidates[i];
+
+            if (!candidate || !candidate.isTrigger || !candidate.TryGetComponent(out DockZone zone) || !zone.isActiveAndEnabled)
+            {
+                continue;
+            }
+
+            if (zone.ContainsPosition(bounds.center))
+            {
+                dock = zone;
                 return true;
             }
         }

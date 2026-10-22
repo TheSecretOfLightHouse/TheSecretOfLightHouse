@@ -48,6 +48,11 @@ public sealed class PlayerInteractionInput : MonoBehaviour
             return;
         }
 
+        if (TryHandleDockInteraction(player))
+        {
+            return;
+        }
+
         _selector.TryInteract();
 
         if (!player.IsOnBoat &&
@@ -57,9 +62,40 @@ public sealed class PlayerInteractionInput : MonoBehaviour
         }
     }
 
+    private bool TryHandleDockInteraction(PlayerController player)
+    {
+        BoatController boat = player.IsOnBoat
+            ? player.CurrentBoat
+            : player.OwnedBoat;
+
+        if (!boat || boat.Owner != player || boat.IsWrecked)
+        {
+            return false;
+        }
+
+        if (!boat.TryGetComponent(out BoatContactBoarding contact)
+            || !contact.TryGetDockZone(out DockZone dock))
+        {
+            return false;
+        }
+
+        if (player.IsOnBoat)
+        {
+            boat.RequestDisembark(player, true);
+            return true;
+        }
+
+        if (!dock.ContainsPosition(player.transform.position))
+        {
+            return false;
+        }
+
+        boat.RequestBoard(player);
+        return true;
+    }
+
     private void HandleSelectedChanged(InteractionTarget target)
     {
-        // Cache the action before a host request can recycle the selected drop.
         _selectedAction = target ? target.DefaultAction : InteractionAction.None;
     }
 }
