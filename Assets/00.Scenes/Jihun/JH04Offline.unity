@@ -343,6 +343,14 @@ PrefabInstance:
       propertyPath: m_AnchorMin.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7626939116030121058, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7626939116030121058, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8226921450041886218, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -357,6 +365,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8226921450041886218, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
       propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8226921450041886218, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8226921450041886218, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8621933023151784120, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
@@ -746,6 +762,7 @@ MonoBehaviour:
   playerSpawnMethod: 0
   spawnPrefabs:
   - {fileID: 2411459328641944667, guid: 47d9ed5a167e0b54e99d439b5716765c, type: 3}
+  - {fileID: 2531086164323655231, guid: 3df3409d3b3d0354c90bf06e68c0cc18, type: 3}
   exceptionsDisconnect: 1
   snapshotSettings:
     bufferTimeMultiplier: 2
