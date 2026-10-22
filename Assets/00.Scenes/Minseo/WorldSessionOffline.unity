@@ -219,6 +219,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2391006981019922993, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2391006981019922993, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2391006981019922993, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5038977769244652651, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
       propertyPath: m_Pivot.x
       value: 0
@@ -332,6 +344,54 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7142267234980182255, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7626939116030121058, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7626939116030121058, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7626939116030121058, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7626939116030121058, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7626939116030121058, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7626939116030121058, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8226921450041886218, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8226921450041886218, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8226921450041886218, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8226921450041886218, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8226921450041886218, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8226921450041886218, guid: c50ccf2f672d14542ba801e31dfe84b1, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
@@ -601,12 +661,26 @@ MonoBehaviour:
   disconnectInactiveConnections: 0
   disconnectInactiveTimeout: 60
   authenticator: {fileID: 1634620709}
-  playerPrefab: {fileID: 714264842823113898, guid: 178e3b32a3fec5c45993de99acd67984, type: 3}
+  playerPrefab: {fileID: 4492665440649449213, guid: e6cf129f5165840418bde70c61110401, type: 3}
   autoCreatePlayer: 1
   playerSpawnMethod: 0
   spawnPrefabs:
   - {fileID: 2411459328641944667, guid: 47d9ed5a167e0b54e99d439b5716765c, type: 3}
   - {fileID: 3407621367655920845, guid: c14497fcd7d6f1f4a8a5c3e5f5c70213, type: 3}
+  - {fileID: 2495762641138123397, guid: a2df1ba9f612d304499b5aa1e38f3e33, type: 3}
+  - {fileID: 5374215133388643019, guid: d815130263c690740b8e7e73bf2a0017, type: 3}
+  - {fileID: 6365681130000948523, guid: a31670c27d18bcd4f8332613abb6fb45, type: 3}
+  - {fileID: 8476720134014034918, guid: 81e05a4b93ac5f24c875ff088ea7b2fb, type: 3}
+  - {fileID: 6780804901703132423, guid: c900e9c33631b974687e5e81cacc31e2, type: 3}
+  - {fileID: 8160193022538735030, guid: 84042fa444f1ed04ca720a9a998e3896, type: 3}
+  - {fileID: 5523399363180523552, guid: 8acf9ed09784c9541852480970f6f925, type: 3}
+  - {fileID: 6842361541984437362, guid: 75e0b5b3dca64a945980804186fcd5f9, type: 3}
+  - {fileID: 7063936095496801477, guid: 621a16ff5aceb1243960224fec315717, type: 3}
+  - {fileID: 5532789045410283863, guid: 3dcf274fb8f922042861161608d01566, type: 3}
+  - {fileID: 5285408009266464735, guid: 4ce4a7de53007d84593b94afa7750828, type: 3}
+  - {fileID: 612422297167621078, guid: 7745b1e8a02f6ea458f9378b3e8134c3, type: 3}
+  - {fileID: 2518657025137996995, guid: b76b5d6613b9abd4fbb00edc2ece0f9c, type: 3}
+  - {fileID: 7480506382067260472, guid: 8b47f1364640b134386a506fd2c57ee8, type: 3}
   exceptionsDisconnect: 1
   snapshotSettings:
     bufferTimeMultiplier: 2
