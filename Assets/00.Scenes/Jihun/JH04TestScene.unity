@@ -1248,6 +1248,7 @@ GameObject:
   - component: {fileID: 669481734}
   - component: {fileID: 669481735}
   - component: {fileID: 669481740}
+  - component: {fileID: 669481741}
   m_Layer: 0
   m_Name: Lighthouse
   m_TagString: Untagged
@@ -1393,6 +1394,23 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   _settings: {fileID: 11400000, guid: 24b81aba477edfa498452bb7b95532f3, type: 2}
+--- !u!114 &669481741
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 669481733}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 052ab9adcae664848ac88c6bd84a0ba0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _modules: {fileID: 999882370}
+  _voting: {fileID: 1743248119}
 --- !u!1 &711764174
 GameObject:
   m_ObjectHideFlags: 0
@@ -2212,13 +2230,11 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   _match: {fileID: 669481740}
-  _modules: {fileID: 999882370}
   _voting: {fileID: 1743248119}
+  _isVotingStartedHere: 1
   _identitySettings: {fileID: 11400000, guid: b95929fea02909a4ab72bb4442b9796e, type: 2}
   _bossSettings: {fileID: 11400000, guid: 556732e820a224543b60dea7e8e5be52, type: 2}
   _tentacleBoss: {fileID: 0}
-  _dayLengthSeconds: 180
-  _deadlineDays: 5
   _devSummonAttackPower: 10
 --- !u!114 &1449044440
 MonoBehaviour:
@@ -2237,6 +2253,88 @@ MonoBehaviour:
   _voting: {fileID: 1743248119}
   _workbench: {fileID: 1781499503}
   _grant: {fileID: 1449044435}
+--- !u!1 &1512286797
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1512286801}
+  - component: {fileID: 1512286800}
+  - component: {fileID: 1512286799}
+  - component: {fileID: 1512286798}
+  m_Layer: 0
+  m_Name: WorldClock
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1512286798
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1512286797}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64d7e6b2af476ae4784c2c102a242491, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _gameClock: {fileID: 1512286800}
+  _isBeginOnStartServer: 1
+--- !u!114 &1512286799
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1512286797}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sceneId: 2576469955
+  _assetId: 0
+  serverOnly: 0
+  visibility: 0
+  hasSpawned: 0
+--- !u!114 &1512286800
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1512286797}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 994c1d23e038ab44796b63dcc8f9f21f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _config: {fileID: 11400000, guid: b73ba107cee85d64b94890856cc111ac, type: 2}
+  _isStartedOnStart: 0
+--- !u!4 &1512286801
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1512286797}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1545017515
 GameObject:
   m_ObjectHideFlags: 0
@@ -4135,3 +4233,4 @@ SceneRoots:
   - {fileID: 763197046}
   - {fileID: 2076976568}
   - {fileID: 347138887}
+  - {fileID: 1512286801}

@@ -32,16 +32,27 @@
 
 - 실행: 에디터 새로 고침 후 컴파일 오류 0. 경고는 기존 `BoatController` CS0414 1건뿐이다.
 - 미실행: 플레이 검증 전부(M0·M2), JH04 회귀, 자동 시험, 정식 빌드.
-- 씬 미연결: JH04 `Lighthouse` 오브젝트에 `TowerMatchFlow`가 아직 없다. **연결 전까지 JH04에서는 `TowerTrialRound`가 오류를 기록하고, 의식·소환을 시작할 수 없다.** 미커밋 HUD·작업대 씬 변경과 섞이지 않도록 씬 작업은 사용자 커밋 뒤로 미뤘다.
+- 커밋: `a9b0dea`(최후 전투 HUD), `77b88a6`(나무 작업대·개발자 창 스위치), `43e1701`(이 작업 코드·문서). push 안 함.
+
+### JH04 씬 연결 (같은 날 이어서)
+
+- 에디터에서 `JH04TestScene` 연결을 마쳤다.
+  - `Lighthouse`에 `TowerMatchFlow`를 추가했다(`_modules` = ModuleInteractionHandler, `_voting` = Voting).
+  - 새 오브젝트 `WorldClock`을 만들었다: `GameClock`(`DayCycleConfig`, 낮 300초 + 밤 120초, 자동 시작 끔) + `NetworkIdentity`(sceneId 부여) + `WorldStateNet`(`_gameClock` 연결, 서버 시작 시 자동 시작 켬 → 단일 씬 모드에서도 시계가 돈다).
+  - 씬을 저장했다. 저장하면서 삭제된 `TowerTrialRound` 필드가 정리됐다.
+- 시험용 설정(`DayCycleConfig_Test`, 하루 18초)을 쓰지 않은 이유: 5일이 90초라 시간이 긴 자동 시험 시나리오(대기 최대 240초)가 마감에 걸린다. 기한은 "다음 날로"로 시험한다.
+- **M0 실행 (에디터, 호스트 1명, `JH04Offline` → `JH07Lobby` → `JH04TestScene`):**
+  - (가) 자동 시험 `solo_mafia`: 35/35 통과, 실패 0, 게임 오류·경고 0. 판 시작(Flow Begin) → 소환 강제 → 최후 전투, 마피아 공개(`mafia=1`), 마피아 손 닫힘(`mafia_take_closed` Rejected). 시험 종료 후 `DevPinnedMafiaActorId` = 0으로 풀린 것도 확인.
+  - (나) 마감: 시작 시 `GameClock` 1일차 낮, `TotalDays` 5, Flow `DeadlineDays` 5. "다음 날로"를 4번 눌러 5일째가 돼도 판은 `Repairing`으로 진행. 5번째(6일째 아침)에 `Ended`, `MafiaWin`, `Deadline`, 마피아 공개. 오류 0.
+- 미실행:
+  - 2인 이상(M2): 투표 켬, 아침 정산 실제 값, 의식 → 투표 잠금, 승인된 소환, 원격 클라이언트에서 날짜 표시·자동 시험 시민 경로
+  - 정식 빌드
+  - `GameClock` 자연 경과에 따른 날짜 전환(빠른 넘김만 확인)
 
 ## 남은 일
 
-1. 사용자: JH04Offline 저장, HUD·작업대 변경 커밋.
-2. JH04TestScene 연결:
-   - `Lighthouse`에 `TowerMatchFlow` 추가(`_modules`, `_voting`)
-   - `GameClock`(`DayCycleConfig_Test`)과 `WorldStateNet` 추가
-   - 기존 `TowerTrialRound`의 삭제된 필드는 저장 시 정리됨
-   - 2인 회귀
+1. JH04 씬 연결 커밋(사용자 승인 후).
+2. 2인 M2: 자동 시험 `ritual`·`final` 시나리오(호스트 마피아 고정 경로).
 3. `MainOffline`·`MainLobby` 생성(`00.Scenes/Main/`, CODEOWNERS 항목 추가), JH04 프리팹 묶기.
 4. 박태욱에게 알릴 것: 아침 정산을 김지훈 `TowerMatchFlow`가 호출함, 본편 씬은 `_initializeOnMatchStart` 켬.
 5. 강민서: 섬 프리팹 6개, 남은 커밋 병합.
