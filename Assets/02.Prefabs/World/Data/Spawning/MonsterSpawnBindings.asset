@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2ec975e7f57bee4aab943cd39a9dff1, type: 3}
+  m_Name: MonsterSpawnBindings
+  m_EditorClassIdentifier: 
+  _bindings:
+  - _profile: {fileID: 11400000, guid: 3abb74b7b5b59e2479e6c4332576ebe6, type: 2}
+    _data: {fileID: 11400000, guid: d9aac9b8f46a91943a31d88dd8ff48e4, type: 2}
+  - _profile: {fileID: 11400000, guid: 1b8f4547dee8547418c4c41c996fe1d5, type: 2}
+    _data: {fileID: 11400000, guid: c00eca62eb0309b40b6b3127f43c72fd, type: 2}
+  - _profile: {fileID: 11400000, guid: 957103557a1d2cd418ac00e2c7636955, type: 2}
+    _data: {fileID: 11400000, guid: 2323e31fa333a134cb1545f46422b4b0, type: 2}
