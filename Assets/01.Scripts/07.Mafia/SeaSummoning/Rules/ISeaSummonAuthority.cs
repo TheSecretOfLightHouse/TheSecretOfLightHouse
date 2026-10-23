@@ -1,8 +1,8 @@
 namespace Lighthouse.Mafia.SeaSummoning.Rules
 {
-    // 실제 역할 배정이 생기면 이 계약의 구현만 교체한다. 식별자는 서버의 플레이어 netId다.
+    // 역할 판정 구현은 시험 환경과 본편에서 구분하며, 사람 식별자는 서버의 ActorId를 사용한다.
     public interface ISeaSummonAuthority
     {
-        bool CanSummon(uint playerNetId);
+        bool CanSummon(uint actorId);
     }
 }

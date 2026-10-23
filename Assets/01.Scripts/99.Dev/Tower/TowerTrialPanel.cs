@@ -12,6 +12,8 @@ using Lighthouse.Tower.Rules;
 using Lighthouse.Workbench.Net;
 using Lighthouse.Workbench.Rules;
 using Lighthouse.Workbench.View;
+using Lighthouse.World.Clock.Rules;
+using Lighthouse.World.Query.Rules;
 using Mirror;
 using UnityEngine;
 
@@ -235,8 +237,10 @@ namespace Lighthouse.Dev.Tower
             }
             else if (_match.Phase == TowerPhase.Repairing)
             {
-                double left = System.Math.Max(0d, _round.DayEndsAt - NetworkTime.time);
-                GUILayout.Label($"{_round.Day}일차 / 기한 {_round.DeadlineDays}일 — 오늘 남은 시간 {(int)left / 60}:{(int)left % 60:00}");
+                // Days run on the World clock; the deadline is the end of the last day's night.
+                string deadline = _round.DeadlineDays > 0 ? $"기한 {_round.DeadlineDays}일 밤까지" : "기한 없음 (씬에 GameClock 없음)";
+                string phase = WorldServices.TryGet(out IGameClock clock) ? PhaseText(clock.Phase) : "-";
+                GUILayout.Label($"{_round.Day}일차 {phase} / {deadline}");
             }
         }
 
@@ -621,6 +625,19 @@ namespace Lighthouse.Dev.Tower
         private static string MafiaText(uint actorId)
         {
             return actorId != 0 ? $"플레이어 {actorId}" : "없음(혼자 시험)";
+        }
+
+        private static string PhaseText(DayPhase phase)
+        {
+            switch (phase)
+            {
+                case DayPhase.Dusk:
+                    return "해질녘";
+                case DayPhase.Night:
+                    return "밤";
+                default:
+                    return "낮";
+            }
         }
 
         private static string ReasonText(TowerEndReason reason)

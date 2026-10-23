@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98396ddb5df8e464ea29db467bfd191e, type: 3}
+  m_Name: MonsterSpawnerData_Inner
+  m_EditorClassIdentifier: 
+  _catalog: {fileID: 11400000, guid: 4d3969feb08128a46999c5f1f6597dec, type: 2}
+  _monsterIds:
+  - angler
+  - shark
+  _initialCount: 1
+  _maxAliveCount: 1
+  _spawnRadius: 10
+  _canRespawn: 1
+  _respawnDelay: 30

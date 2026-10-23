@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
 using Lighthouse.Mafia.SeaSummoning.Rules;
+using Lighthouse.Mafia.SeaSummoning.Server;
+using Lighthouse.Network.Connections.Net;
+using Lighthouse.Network.Session.Net;
+using Lighthouse.Mafia.SeaSummoning.Testing;
 using Mirror;
 using UnityEngine;
 
@@ -23,6 +27,10 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         public override void OnStartServer()
         {
             _authority = null;
+            if (NetworkManager.singleton is LighthouseNetworkManager manager)
+            {
+                _authority = new SessionSeaSummonAuthority(manager);
+            }
             _topViewFrames.Clear();
         }
 
@@ -49,8 +57,31 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         {
             return sender != null && sender.isReady && sender.identity != null
                 && _settings != null && _settings.TryValidate(out _)
-                && _authority != null && _authority.CanSummon(sender.identity.netId)
+                && TryGetActorId(sender, out uint actorId)
+                && _authority != null && _authority.CanSummon(actorId)
                 && IsPlayerBoarded(sender.identity);
+        }
+
+        [Server]
+        public bool TryGetActorId(NetworkConnectionToClient sender, out uint actorId)
+        {
+            actorId = 0;
+            if (sender == null || sender.identity == null)
+            {
+                return false;
+            }
+            if (NetworkManager.singleton is LighthouseNetworkManager manager)
+            {
+                return manager.Connections.TryGetActorId(sender, out actorId);
+            }
+            // 독립 시험 매니저는 세션 연결 목록 없이 서버에서 ActorId를 부여한다.
+            if (NetworkManager.singleton is SeaSummonTestNetworkManager
+                && sender.identity.TryGetComponent(out NetworkActor actor))
+            {
+                actorId = actor.ActorId;
+                return actorId != 0;
+            }
+            return false;
         }
 
         [Client]
@@ -67,7 +98,8 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         {
             boat = null;
             yaw = 0f;
-            if (!CanRequest(sender) || !_topViewFrames.TryGetValue(sender.identity.netId, out var frame))
+            if (!CanRequest(sender) || !TryGetActorId(sender, out uint actorId)
+                || !_topViewFrames.TryGetValue(actorId, out var frame))
             {
                 return false;
             }
@@ -82,13 +114,13 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         {
             if (sender != null)
             {
-                bool allowed = CanRequest(sender);
+                bool allowed = TryGetActorId(sender, out uint actorId) && CanRequest(sender);
                 float yaw = 0f;
                 if (allowed)
                 {
                     BoatController boat = sender.identity.GetComponent<PlayerController>().CurrentBoat;
                     yaw = boat.transform.eulerAngles.y;
-                    _topViewFrames[sender.identity.netId] = (boat.netId, yaw);
+                    _topViewFrames[actorId] = (boat.netId, yaw);
                 }
                 TargetPermission(sender, allowed, yaw);
             }

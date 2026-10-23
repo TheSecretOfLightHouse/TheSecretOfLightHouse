@@ -12,8 +12,8 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
     {
         [SerializeField] private SeaSummonPermissionController _permission;
         [SerializeField] private SeaSummonPointController _points;
-        private readonly Dictionary<int, (uint PlayerId, ulong RequestId, bool Success, string Reason, uint MonsterId)> _results = new();
-        private readonly List<(uint PlayerId, MonsterBase Monster)> _summoned = new();
+        private readonly Dictionary<int, (uint ActorId, ulong RequestId, bool Success, string Reason, uint MonsterId)> _results = new();
+        private readonly List<(uint ActorId, MonsterBase Monster)> _summoned = new();
         private readonly Dictionary<uint, int> _usedCounts = new();
         private ulong _nextRequestId;
         private ulong _pendingRequestId;
@@ -69,12 +69,13 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         {
             remaining = 0;
             limit = 0;
-            if (_permission == null || !_permission.CanRequest(sender))
+            if (_permission == null || !_permission.CanRequest(sender)
+                || !_permission.TryGetActorId(sender, out uint actorId))
             {
                 return false;
             }
             limit = _permission.Settings.DailyLimit;
-            _usedCounts.TryGetValue(sender.identity.netId, out int used);
+            _usedCounts.TryGetValue(actorId, out int used);
             remaining = Mathf.Max(0, limit - used);
             return true;
         }
@@ -127,8 +128,12 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             {
                 return;
             }
-            uint playerId = sender.identity.netId;
-            if (_results.TryGetValue(sender.connectionId, out var previous) && previous.PlayerId == playerId
+            if (_permission == null || !_permission.TryGetActorId(sender, out uint actorId))
+            {
+                SendSummonResult(sender, requestId, false, "참가자 정보를 확인할 수 없습니다.", 0);
+                return;
+            }
+            if (_results.TryGetValue(sender.connectionId, out var previous) && previous.ActorId == actorId
                 && requestId <= previous.RequestId)
             {
                 if (requestId == previous.RequestId)
@@ -143,7 +148,7 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             }
             bool success = TrySpawn(sender, monsterId, token, out string reason, out MonsterBase monster);
             uint spawnedId = monster != null ? monster.netId : 0;
-            _results[sender.connectionId] = (playerId, requestId, success, reason, spawnedId);
+            _results[sender.connectionId] = (actorId, requestId, success, reason, spawnedId);
             SendSummonResult(sender, requestId, success, reason, spawnedId);
         }
 
@@ -152,7 +157,8 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         {
             monster = null;
             reason = "소환 권한 또는 탑승 상태가 바뀌었습니다.";
-            if (_permission == null || !_permission.CanRequest(sender))
+            if (_permission == null || !_permission.CanRequest(sender)
+                || !_permission.TryGetActorId(sender, out uint actorId))
             {
                 return false;
             }
@@ -191,10 +197,10 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
                 return false;
             }
             // 실제 네트워크 생성과 초기화가 성공한 뒤에만 사용 횟수를 기록한다.
-            _usedCounts.TryGetValue(sender.identity.netId, out int used);
-            _usedCounts[sender.identity.netId] = used + 1;
+            _usedCounts.TryGetValue(actorId, out int used);
+            _usedCounts[actorId] = used + 1;
             // 소환 출처와 요청자는 서버에서만 보관하며 공개 동기화 상태에 넣지 않는다.
-            _summoned.Add((sender.identity.netId, monster));
+            _summoned.Add((actorId, monster));
             monster.Died += HandleMonsterDied;
             reason = "소환 성공";
             return true;

@@ -113,7 +113,9 @@ namespace Lighthouse.Monsters.Spawning.Server
             PositionCheckCount++;
             Vector2 offset = Random.insideUnitCircle * SpawnRadius;
             Vector3 position = Position + new Vector3(offset.x, 0f, offset.y);
-            if (validator != null && !validator.TryResolvePosition(position, out position))
+
+            if (validator != null
+                && !validator.TryResolvePosition(Position, position, out position))
             {
                 return true;
             }

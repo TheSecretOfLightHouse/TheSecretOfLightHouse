@@ -29,9 +29,19 @@ namespace Lighthouse.Dev.Tower
             CollectResources();
         }
 
+        private void OnEnable()
+        {
+            DevPanelSwitch.Register();
+        }
+
+        private void OnDisable()
+        {
+            DevPanelSwitch.Unregister();
+        }
+
         private void OnGUI()
         {
-            if (!isActiveAndEnabled || !NetworkClient.active || netId == 0)
+            if (!DevPanelSwitch.IsOn || !isActiveAndEnabled || !NetworkClient.active || netId == 0)
             {
                 return;
             }
