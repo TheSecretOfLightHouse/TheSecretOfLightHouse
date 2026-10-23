@@ -3,6 +3,10 @@ using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Lighthouse.Network.Connections.Net;
+using Lighthouse.Network.Session.Net;
+using Lighthouse.Network.Session.Rules;
+using Lighthouse.World.MapGeneration.Net;
+using Lighthouse.World.Query.Rules;
 
 [RequireComponent(typeof(PlayerInputReader), typeof(PlayerMotor), typeof(PlayerAbilityRunner))]
 public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
@@ -33,6 +37,9 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     [SerializeField]
     private bool _allowOfflineControl = true;
 
+    [SerializeField]
+    private bool _requireLocalWorldReady = true;
+
     [SyncVar]
     private BoatController _ownedBoat;
     private BoatController _offlineOwnedBoat;
@@ -52,6 +59,9 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private bool _initialIsKinematic;
     private bool _savedIsKinematic;
     private bool _savedDetectCollisions;
+    private bool _unlockedIsKinematic;
+    private bool _canRunLocalWorld;
+    private bool _hasStoppedClient;
 
     private bool _isRescuePromptOpen;
     private int _rescuePromptClosedFrame = -1;
@@ -75,7 +85,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     public bool CanProcessBoatInput => CanProcessLocalInput;
     public PlayerHFSM StateMachine => _hfsm;
 
-    private bool CanProcessLocalInput
+    private bool HasLocalControlAuthority
     {
         get
         {
@@ -87,6 +97,12 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
             return _allowOfflineControl;
         }
     }
+
+    private bool CanProcessLocalInput =>
+        isActiveAndEnabled
+        && !_hasStoppedClient
+        && HasLocalControlAuthority
+        && _canRunLocalWorld;
 
     public event Action<PlayerController> InteractionRequested;
     public event Action<PlayerController> HarvestRequested;
@@ -103,6 +119,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         ResolveReferences();
         _rb = GetComponent<Rigidbody>();
         _initialIsKinematic = _rb.isKinematic;
+        _unlockedIsKinematic = _initialIsKinematic;
         _playerInput = GetComponent<PlayerInput>();
         CacheNetworkTransform();
         _hfsm = new PlayerHFSM(_runMultiplier);
@@ -196,6 +213,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void Update()
     {
+        RefreshWorldReadiness();
+
         if (!CanProcessLocalInput)
         {
             return;
@@ -245,6 +264,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void FixedUpdate()
     {
+        RefreshWorldReadiness();
+
         if (!CanProcessLocalInput)
         {
             return;
@@ -314,7 +335,10 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         {
             LeaveBoat(transform.position);
         }
+
+        RefreshLocalControl();
     }
+
     private void OnDestroy()
     {
         _animationSource?.Dispose();
@@ -330,6 +354,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     public override void OnStartClient()
     {
         base.OnStartClient();
+
+        _hasStoppedClient = false;
         ApplyDownedState(_isDowned);
         RefreshLocalControl();
     }
@@ -378,7 +404,14 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     public override void OnStopClient()
     {
-        _camera.Release();
+        _hasStoppedClient = true;
+        RefreshLocalControl();
+
+        if (_camera != null)
+        {
+            _camera.Release();
+        }
+
         base.OnStopClient();
     }
 
@@ -408,7 +441,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         _abilityRunner.Cancel();
         ClearActionRequests();
-        _savedIsKinematic = _rb.isKinematic;
+        _savedIsKinematic = _unlockedIsKinematic;
         _savedDetectCollisions = _rb.detectCollisions;
 
         if (!_rb.isKinematic)
@@ -566,8 +599,9 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _rb.rotation = Quaternion.Euler(0f, _heading, 0f);
         transform.SetPositionAndRotation(_rb.position, _rb.rotation);
 
-        _rb.isKinematic = CanProcessLocalInput ? _savedIsKinematic : true;
+        _unlockedIsKinematic = _savedIsKinematic;
         _rb.detectCollisions = _savedDetectCollisions;
+        ApplyLocalPhysics();
 
         if (!_rb.isKinematic)
         {
@@ -768,24 +802,107 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void RefreshLocalControl()
     {
+        _canRunLocalWorld = CanRunLocalWorld();
+
         bool canControl = CanProcessLocalInput;
 
-        if (_playerInput)
+        if (_playerInput != null)
         {
             _playerInput.enabled = canControl;
-            _lookAction = _playerInput.actions ? _playerInput.actions.FindAction("Look", false) : null;
+            _lookAction = _playerInput.actions != null
+                ? _playerInput.actions.FindAction("Look", false)
+                : null;
         }
 
-        _inputReader.enabled = canControl;
-
-        if (!IsOnBoat)
+        if (_inputReader != null)
         {
-            _rb.isKinematic = canControl ? _initialIsKinematic : true;
+            _inputReader.enabled = canControl;
         }
+
+        ApplyLocalPhysics();
 
         if (!canControl)
         {
             ClearActionRequests();
         }
+    }
+
+    private void RefreshWorldReadiness()
+    {
+        bool canRunLocalWorld = CanRunLocalWorld();
+
+        if (_canRunLocalWorld == canRunLocalWorld)
+        {
+            return;
+        }
+
+        RefreshLocalControl();
+    }
+
+    private bool CanRunLocalWorld()
+    {
+        if (_hasStoppedClient)
+        {
+            return false;
+        }
+
+        if (!NetworkClient.active && !NetworkServer.active)
+        {
+            return true;
+        }
+
+        LighthouseNetworkManager manager = LighthouseNetworkManager.Instance;
+
+        if (manager == null)
+        {
+            return false;
+        }
+
+        if (manager.IsSessionFlowEnabled)
+        {
+            MatchPhase phase = NetworkServer.active
+                ? manager.Phase
+                : manager.ClientState.Phase;
+
+            if (phase != MatchPhase.InProgress)
+            {
+                return false;
+            }
+        }
+
+        if (!_requireLocalWorldReady)
+        {
+            return true;
+        }
+
+        return WorldServices.TryGet<MapStateNet>(out MapStateNet map)
+            && map != null
+            && map.isActiveAndEnabled
+            && map.IsLayoutReady;
+    }
+
+    private void ApplyLocalPhysics()
+    {
+        if (_rb == null)
+        {
+            return;
+        }
+
+        bool isKinematic = !CanProcessLocalInput
+            || IsOnBoat
+            || _unlockedIsKinematic;
+
+        if (_rb.isKinematic == isKinematic)
+        {
+            return;
+        }
+
+        if (isKinematic)
+        {
+            _rb.linearVelocity = Vector3.zero;
+            _rb.angularVelocity = Vector3.zero;
+        }
+
+        _rb.isKinematic = isKinematic;
     }
 }

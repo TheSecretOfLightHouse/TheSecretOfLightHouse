@@ -76,8 +76,14 @@ namespace Lighthouse.World.MapGeneration.Net
             _builder = MapBuilder.CreateDefault(_config);
         }
 
+        private void OnEnable()
+        {
+            WorldServices.Register<MapStateNet>(this);
+        }
+
         private void OnDisable()
         {
+            WorldServices.Unregister<MapStateNet>(this);
             RaiseLayoutReleased();
         }
 
