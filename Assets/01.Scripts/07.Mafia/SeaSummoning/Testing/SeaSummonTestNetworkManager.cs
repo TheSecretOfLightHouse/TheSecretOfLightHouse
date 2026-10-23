@@ -55,7 +55,7 @@ namespace Lighthouse.Mafia.SeaSummoning.Testing
             // 시험 씬에서만 호스트 플레이어를 지정하고 원격 참가자에게는 권한을 주지 않는다.
             if (connection == NetworkServer.localConnection && _permission != null)
             {
-                _permission.SetAuthority(new TrialSeaSummonAuthority(player.GetComponent<NetworkIdentity>().netId));
+                _permission.SetAuthority(new TrialSeaSummonAuthority(_nextActorId));
             }
         }
 

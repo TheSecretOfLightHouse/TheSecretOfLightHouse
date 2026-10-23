@@ -44,6 +44,9 @@ namespace Lighthouse.Dev.Tower
         [Tooltip("Attack interval and wrap time of the tentacle stand-in.")]
         [SerializeField]
         private BossSettings _bossSettings;
+        [Tooltip("Optional animated boss. Replaces the stand-in damage routine in this scene only.")]
+        [SerializeField]
+        private BossTestEnvironment _tentacleBoss;
         [SerializeField, Min(10f)]
         private float _dayLengthSeconds = 180f;
         [SerializeField, Min(1)]
@@ -446,7 +449,14 @@ namespace Lighthouse.Dev.Tower
             if (_match.Phase == TowerPhase.FinalBattle)
             {
                 StopAttack();
-                _attackRoutine = StartCoroutine(Attack());
+                if (_tentacleBoss != null)
+                {
+                    _tentacleBoss.BeginBattle(attackPower);
+                }
+                else
+                {
+                    _attackRoutine = StartCoroutine(Attack());
+                }
             }
         }
 
