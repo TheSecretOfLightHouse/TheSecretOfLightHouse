@@ -23,8 +23,15 @@ namespace Lighthouse.Dev.Workbench
         private string _lastResult = "-";
         private ModuleRecipe _viewed;
 
+        private void OnEnable()
+        {
+            DevPanelSwitch.Register();
+        }
+
         private void OnDisable()
         {
+            DevPanelSwitch.Unregister();
+
             if (_relay)
             {
                 _relay.ResultReceived -= HandleResultReceived;
@@ -34,7 +41,7 @@ namespace Lighthouse.Dev.Workbench
         private void OnGUI()
         {
             // In a build, Mirror keeps scene objects inactive on a client until spawned, and netId is not readable before.
-            if (!_workbench || !_workbench.isActiveAndEnabled || !NetworkClient.active || !_workbench.Catalog)
+            if (!DevPanelSwitch.IsOn || !_workbench || !_workbench.isActiveAndEnabled || !NetworkClient.active || !_workbench.Catalog)
             {
                 return;
             }

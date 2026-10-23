@@ -32,8 +32,15 @@ namespace Lighthouse.Dev.Tower
         private string _lastResult = "-";
         private Vector2 _scroll;
 
+        private void OnEnable()
+        {
+            DevPanelSwitch.Register();
+        }
+
         private void OnDisable()
         {
+            DevPanelSwitch.Unregister();
+
             if (_relay)
             {
                 _relay.ResultReceived -= HandleResultReceived;
@@ -43,7 +50,7 @@ namespace Lighthouse.Dev.Tower
         private void OnGUI()
         {
             // In a build, Mirror keeps scene objects inactive on a client until spawned, and netId is not readable before.
-            if (!_tower || !_tower.isActiveAndEnabled || !NetworkClient.active || !_tower.Layout || !_tower.Workbench)
+            if (!DevPanelSwitch.IsOn || !_tower || !_tower.isActiveAndEnabled || !NetworkClient.active || !_tower.Layout || !_tower.Workbench)
             {
                 return;
             }
