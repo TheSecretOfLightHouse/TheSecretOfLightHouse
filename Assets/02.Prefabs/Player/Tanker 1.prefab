@@ -747,6 +747,10 @@ MonoBehaviour:
   _rb: {fileID: 3974764068024992274}
   _speed: 5
   _originAcceleration: 10
+  _groundAcceleration: 30
+  _stopDeceleration: 60
+  _turnAcceleration: 60
+  _turnAngle: 15
   _jumpSpeed: 5
   _groundCheckDistance: 0.08
   _minimumGroundNormalY: 0.65
@@ -906,7 +910,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _cameraAnchor: {fileID: 7743338022914373138}
-  _minPitch: -60
+  _minPitch: -10
   _maxPitch: 70
   _cameraPivot: {fileID: 5064427949976649859}
   _boatLookReturnDelay: 0.5
@@ -963,6 +967,7 @@ MonoBehaviour:
   syncInterval: 0
   _resourceCatalog: {fileID: 11400000, guid: 66c600a3b8a9d5140aa198f8483a1cb4, type: 2}
   _testResourceId: 0
+  _testWreckModuleRecipeId: 101
 --- !u!114 &8732883557693441853
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1091,8 +1096,6 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  _dropOffset: {x: 0, y: 1, z: 0}
-  _dropSpacing: 0.5
 --- !u!114 &4551537670135925495
 MonoBehaviour:
   m_ObjectHideFlags: 0

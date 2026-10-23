@@ -357,7 +357,12 @@ public sealed class PlayerInventory : NetworkBehaviour
             return true;
         }
 
-        int candidateCount = resources.Count + (hasModule ? 1 : 0);
+        int resourceSlotCount = 0;
+        for (int i = 0; i < resources.Count; i++)
+        {
+            resourceSlotCount += InventoryData.GetStackCount(resources[i].Value);
+        }
+        int candidateCount = resourceSlotCount + (hasModule ? 1 : 0);
 
         if (candidateCount == 0)
         {
@@ -366,13 +371,25 @@ public sealed class PlayerInventory : NetworkBehaviour
 
         int selectedIndex = UnityEngine.Random.Range(0, candidateCount);
 
-        if (hasModule && selectedIndex == resources.Count)
+        if (hasModule && selectedIndex == resourceSlotCount)
         {
             resources.Clear();
             return true;
         }
 
-        KeyValuePair<int, int> selected = resources[selectedIndex];
+        KeyValuePair<int, int> selected = default;
+        for (int i = 0; i < resources.Count; i++)
+        {
+            int stacks = InventoryData.GetStackCount(resources[i].Value);
+            if (selectedIndex < stacks)
+            {
+                int amount = System.Math.Min(InventoryData.StackCapacity,
+                    resources[i].Value - selectedIndex * InventoryData.StackCapacity);
+                selected = new KeyValuePair<int, int>(resources[i].Key, amount);
+                break;
+            }
+            selectedIndex -= stacks;
+        }
 
         resources.Clear();
         resources.Add(selected);

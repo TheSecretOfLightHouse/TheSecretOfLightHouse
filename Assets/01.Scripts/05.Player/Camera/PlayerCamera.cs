@@ -12,7 +12,7 @@ public sealed class PlayerCamera : MonoBehaviour
     private Quaternion _originalCameraRotation;
 
     [SerializeField]
-    private float _minPitch = -60f;
+    private float _minPitch = -10f;
     [SerializeField]
     private float _maxPitch = 70f;
 

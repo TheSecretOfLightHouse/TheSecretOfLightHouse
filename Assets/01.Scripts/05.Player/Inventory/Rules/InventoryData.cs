@@ -3,7 +3,28 @@ using System.Collections.Generic;
 
 public sealed class InventoryData
 {
+    public const int SlotCapacity = 8;
+    public const int StackCapacity = 10;
+
     private readonly Dictionary<int, int> _counts = new Dictionary<int, int>();
+
+    public int UsedSlots
+    {
+        get
+        {
+            int total = 0;
+            foreach (KeyValuePair<int, int> entry in _counts)
+            {
+                total += GetStackCount(entry.Value);
+            }
+            return total;
+        }
+    }
+
+    public static int GetStackCount(int count)
+    {
+        return count > 0 ? 1 + (count - 1) / StackCapacity : 0;
+    }
 
     public int GetCount(int id)
     {
@@ -16,7 +37,7 @@ public sealed class InventoryData
 
     public bool TryAdd(int id, int amount)
     {
-        if(amount<=0)
+        if(id <= 0 || amount<=0)
         {
             return false;
         }
@@ -27,7 +48,13 @@ public sealed class InventoryData
         {
             return false;
         }
-        _counts[id] = currentCount + amount;
+        int newCount = currentCount + amount;
+        int newSlots = GetStackCount(newCount) - GetStackCount(currentCount);
+        if (newSlots > SlotCapacity - UsedSlots)
+        {
+            return false;
+        }
+        _counts[id] = newCount;
         return true;
     }
 

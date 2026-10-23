@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
+using Lighthouse.Interaction.Relay.Net;
+using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Workbench.Rules;
 using Lighthouse.World.Harvest.Rules;
 using Mirror;
@@ -27,6 +29,9 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
     private readonly StringBuilder _builder = new StringBuilder();
     private PlayerInventory _inventory;
     private PlayerController _player;
+    private InteractionRelay _relay;
+    private bool _isInstalling;
+    private string _installResult = "";
     private BoatController _displayedBoat;
     private BoatModuleEquipment _boatEquipment;
     private bool _isSubscribed;
@@ -42,6 +47,7 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
     private int _serverTestResourceId;
     private int _serverTestRemaining;
     private bool _hasServerTest;
+    private Lighthouse.Player.Inventory.View.InventoryChestScreen _chestView;
 
     private const double TestIntervalSeconds = 0.25;
 
@@ -49,6 +55,7 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
     {
         _inventory = GetComponent<PlayerInventory>();
         _player = GetComponent<PlayerController>();
+        _relay = GetComponent<InteractionRelay>();
         _showPanel = false;
     }
 
@@ -62,7 +69,7 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
 
     private void OnGUI()
     {
-        if (!isLocalPlayer || !_showPanel)
+        if (!isLocalPlayer || !_showPanel || _chestView)
         {
             return;
         }
@@ -78,6 +85,7 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
         RefreshModuleContents();
         GUILayout.Label("운반 중인 모듈");
         GUILayout.Label(_moduleContents);
+        DrawInstallButton();
         DrawInstalledModules();
         GUILayout.Label("보유 자원");
         GUILayout.Label(_contents);
@@ -128,7 +136,18 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
             return;
         }
 
+        if (_chestView)
+        {
+            _chestView.Toggle();
+            return;
+        }
         _showPanel = !_showPanel;
+    }
+
+    public void BindChestView(Lighthouse.Player.Inventory.View.InventoryChestScreen view)
+    {
+        _chestView = view;
+        _showPanel = false;
     }
 
     public override void OnStartLocalPlayer()
@@ -153,6 +172,10 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
 
         _inventory.ResourceCountChanged += HandleResourceCountChanged;
         _inventory.InventoryReset += HandleInventoryReset;
+        if (_relay)
+        {
+            _relay.ResultReceived += HandleInstallResult;
+        }
         _isSubscribed = true;
         RebuildContents();
     }
@@ -166,7 +189,81 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
         }
 
         _isSubscribed = false;
+        if (_relay)
+        {
+            _relay.ResultReceived -= HandleInstallResult;
+        }
+        _isInstalling = false;
+        _installResult = "";
         _contents = "보유 자원 없음";
+    }
+
+    private void DrawInstallButton()
+    {
+        if (!_displayedModuleRecipe || !_displayedModuleRecipe.IsBoatModule)
+        {
+            if (!string.IsNullOrEmpty(_installResult))
+            {
+                GUILayout.Label(_installResult);
+            }
+            return;
+        }
+
+        bool canInstall = _player && !_player.IsDowned && _player.IsOnBoat
+            && _player.CurrentBoat && _player.CurrentBoat == _player.OwnedBoat
+            && _player.CurrentBoat.netId != 0 && _relay && NetworkClient.isConnected
+            && NetworkClient.ready && !_relay.IsAwaitingResult && !_isInstalling;
+        bool wasEnabled = GUI.enabled;
+        GUI.enabled = wasEnabled && canInstall;
+        if (GUILayout.Button("내 배에 장착"))
+        {
+            RequestInstallModule();
+        }
+        GUI.enabled = wasEnabled;
+
+        if (!_player || !_player.IsOnBoat)
+        {
+            GUILayout.Label("자기 배에 탑승한 뒤 장착할 수 있습니다.");
+        }
+        else if (!NetworkClient.ready)
+        {
+            GUILayout.Label("네트워크 접속 준비가 필요합니다.");
+        }
+        else if (_relay && _relay.IsAwaitingResult)
+        {
+            GUILayout.Label("요청 결과를 기다리는 중입니다.");
+        }
+
+        if (!string.IsNullOrEmpty(_installResult))
+        {
+            GUILayout.Label(_installResult);
+        }
+    }
+
+    private void RequestInstallModule()
+    {
+        // Subscribe before sending: a host may receive the response in the same frame.
+        _isInstalling = true;
+        _installResult = "장착 요청 중...";
+        if (!_relay.TrySendToNetworkTarget(_player.CurrentBoat.netId,
+            InteractionAction.InstallModule, _inventory.ModuleRecipeId))
+        {
+            _isInstalling = false;
+            _installResult = "장착 요청을 보내지 못했습니다.";
+        }
+    }
+
+    private void HandleInstallResult(InteractionResult result)
+    {
+        if (!_isInstalling)
+        {
+            return;
+        }
+
+        _isInstalling = false;
+        _installResult = result.IsSuccess
+            ? "배에 모듈을 장착했습니다."
+            : $"장착이 거절되었습니다: {result.Code}";
     }
 
     private void HandleResourceCountChanged(int id, int count)
