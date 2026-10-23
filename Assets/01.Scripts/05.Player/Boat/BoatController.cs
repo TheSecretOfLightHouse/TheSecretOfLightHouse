@@ -2,6 +2,7 @@ using System;
 using Mirror;
 using UnityEngine;
 
+[DefaultExecutionOrder(-200)]
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Rigidbody), typeof(NetworkIdentity), typeof(BoatContactBoarding))]
 [RequireComponent(typeof(BoatDurability))]
@@ -64,6 +65,9 @@ public sealed class BoatController : NetworkBehaviour
     private float _nextFireTime;
     private float _recoilEndTime;
     private bool _isWreckPresentationApplied;
+    private bool _offlineIsKinematic;
+    private bool _hasLocalAuthority;
+    private bool _hasStoppedClient;
 
     public float ReloadDuration => _reloadDuration;
     public PlayerController Owner => IsNetworkActive ? _owner : _offlineOwner;
@@ -73,6 +77,29 @@ public sealed class BoatController : NetworkBehaviour
     public Transform BoardingAnchor => _boardingAnchor ? _boardingAnchor : transform;
     public event Action<PlayerController> CannonFired;
 
+    public bool CanSimulateLocalPhysics
+    {
+        get
+        {
+            if (!isActiveAndEnabled || _hasStoppedClient)
+            {
+                return false;
+            }
+
+            if (!IsNetworkActive)
+            {
+                return !_offlineIsKinematic;
+            }
+
+            return netIdentity != null
+                && isClient
+                && isOwned
+                && _hasLocalAuthority
+                && Owner != null
+                && Owner.CanSimulateLocalWorld;
+        }
+    }
+
     private DashModule _dashModule;
     [SerializeField, Min(1f)]
     private float _dashAccelerationMultiplier = 4f;
@@ -80,7 +107,13 @@ public sealed class BoatController : NetworkBehaviour
     private void Awake()
     {
         ResolveReferences();
+        _offlineIsKinematic = _rb.isKinematic;
         _dashModule = GetComponent<DashModule>();
+    }
+
+    private void OnEnable()
+    {
+        RefreshLocalPhysics();
     }
 
     private void Reset()
@@ -90,6 +123,8 @@ public sealed class BoatController : NetworkBehaviour
 
     private void Update()
     {
+        RefreshLocalPhysics();
+
         if (IsWrecked && !_isWreckPresentationApplied)
         {
             ApplyWreckPresentation();
@@ -105,10 +140,21 @@ public sealed class BoatController : NetworkBehaviour
         }
     }
 
+    private void FixedUpdate()
+    {
+        RefreshLocalPhysics();
+    }
+
+    private void OnDisable()
+    {
+        RefreshLocalPhysics();
+    }
+
     public override void OnStartServer()
     {
         base.OnStartServer();
-        _rb.isKinematic = true;
+
+        RefreshLocalPhysics();
         _durability.Wrecked += HandleWrecked;
     }
 
@@ -164,21 +210,42 @@ public sealed class BoatController : NetworkBehaviour
     public override void OnStartClient()
     {
         base.OnStartClient();
-        _rb.isKinematic = !isOwned;
+
+        _hasStoppedClient = false;
+        _hasLocalAuthority = isOwned;
+
+        RefreshLocalPhysics();
         ApplyOccupiedState();
+    }
+
+    public override void OnStopClient()
+    {
+        _hasStoppedClient = true;
+        _hasLocalAuthority = false;
+
+        Stop();
+        RefreshLocalPhysics();
+
+        base.OnStopClient();
     }
 
     public override void OnStartAuthority()
     {
         base.OnStartAuthority();
-        _rb.isKinematic = false;
+
+        _hasLocalAuthority = true;
+
+        RefreshLocalPhysics();
         ApplyOccupiedState();
     }
 
     public override void OnStopAuthority()
     {
+        _hasLocalAuthority = false;
+
         Stop();
-        _rb.isKinematic = true;
+        RefreshLocalPhysics();
+
         base.OnStopAuthority();
     }
 
@@ -484,7 +551,8 @@ public sealed class BoatController : NetworkBehaviour
 
     private bool CanRequest(PlayerController player)
     {
-        return !IsWrecked && (!IsNetworkActive || (isClient && isOwned)) && isActiveAndEnabled && player
+        return CanSimulateLocalPhysics
+            && !IsWrecked && (!IsNetworkActive || (isClient && isOwned)) && isActiveAndEnabled && player
             && player == Owner && player.CanProcessBoatInput
             && player.isActiveAndEnabled && !player.IsDowned
             && Time.unscaledTime >= _nextLocalRequestTime;
@@ -506,7 +574,8 @@ public sealed class BoatController : NetworkBehaviour
 
     private bool CanControl(PlayerController player)
     {
-        return !IsWrecked && (!IsNetworkActive || (isClient && isOwned)) && isActiveAndEnabled && player
+        return CanSimulateLocalPhysics
+            && !IsWrecked && (!IsNetworkActive || (isClient && isOwned)) && isActiveAndEnabled && player
             && player == Owner && player.CanProcessBoatInput
             && player.isActiveAndEnabled && !player.IsDowned
             && _isOccupied && player.CurrentBoat == this;
@@ -540,5 +609,30 @@ public sealed class BoatController : NetworkBehaviour
        
         _offlineOwner = previousOwner;
         return false;
+    }
+
+    private void RefreshLocalPhysics()
+    {
+        if (_rb == null)
+        {
+            return;
+        }
+
+        bool isKinematic = !CanSimulateLocalPhysics;
+
+        if (_rb.isKinematic == isKinematic)
+        {
+            return;
+        }
+
+        if (isKinematic)
+        {
+            Stop();
+
+            _rb.linearVelocity = Vector3.zero;
+            _rb.angularVelocity = Vector3.zero;
+        }
+
+        _rb.isKinematic = isKinematic;
     }
 }

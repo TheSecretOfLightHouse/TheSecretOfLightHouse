@@ -82,7 +82,7 @@ namespace Lighthouse.World.Ocean
                 return;
             }
 
-            if (!_isSimulating)
+            if (!_isSimulating || _ship.Body.isKinematic)
             {
                 _slam.Reset();
                 return;
@@ -119,7 +119,7 @@ namespace Lighthouse.World.Ocean
 
         public void SubmitPoints()
         {
-            if (!_isSimulating)
+            if (!_isAllocated || !_isSimulating || _ship.Body.isKinematic)
             {
                 return;
             }

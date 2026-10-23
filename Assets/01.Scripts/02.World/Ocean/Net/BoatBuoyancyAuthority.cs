@@ -3,21 +3,50 @@ using UnityEngine;
 
 namespace Lighthouse.World.Ocean.Net
 {
+    [DefaultExecutionOrder(-150)]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(BuoyancyBody), typeof(NetworkIdentity))]
     public sealed class BoatBuoyancyAuthority : NetworkBehaviour
     {
         private BuoyancyBody _buoyancy;
+        private Rigidbody _body;
+        private bool _hasStoppedClient;
 
         private void Awake()
         {
-            if (!TryGetComponent(out _buoyancy))
+            bool hasBuoyancy = TryGetComponent(out _buoyancy);
+            bool hasBody = TryGetComponent(out _body);
+
+            if (!hasBuoyancy || !hasBody)
             {
-                Debug.LogError($"[{nameof(BoatBuoyancyAuthority)}] BuoyancyBody is required.", this);
+                if (_buoyancy != null)
+                {
+                    _buoyancy.IsSimulating = false;
+                }
+
+                Debug.LogError(
+                    $"[{nameof(BoatBuoyancyAuthority)}] BuoyancyBody and Rigidbody are required.",
+                    this);
+
                 enabled = false;
                 return;
             }
 
+            Refresh();
+        }
+
+        private void OnEnable()
+        {
+            Refresh();
+        }
+
+        private void FixedUpdate()
+        {
+            Refresh();
+        }
+
+        private void OnDisable()
+        {
             Refresh();
         }
 
@@ -30,7 +59,17 @@ namespace Lighthouse.World.Ocean.Net
         public override void OnStartClient()
         {
             base.OnStartClient();
+
+            _hasStoppedClient = false;
             Refresh();
+        }
+
+        public override void OnStopClient()
+        {
+            _hasStoppedClient = true;
+            Refresh();
+
+            base.OnStopClient();
         }
 
         public override void OnStartAuthority()
@@ -41,8 +80,12 @@ namespace Lighthouse.World.Ocean.Net
 
         public override void OnStopAuthority()
         {
+            if (_buoyancy != null)
+            {
+                _buoyancy.IsSimulating = false;
+            }
+
             base.OnStopAuthority();
-            Refresh();
         }
 
         private void Refresh()
@@ -53,7 +96,14 @@ namespace Lighthouse.World.Ocean.Net
             }
 
             bool isNetworkActive = NetworkServer.active || NetworkClient.active;
-            _buoyancy.IsSimulating = !isNetworkActive || isOwned;
+            bool hasAuthority = !isNetworkActive
+                || (netIdentity != null && isClient && isOwned);
+
+            _buoyancy.IsSimulating = isActiveAndEnabled
+                && !_hasStoppedClient
+                && _body != null
+                && !_body.isKinematic
+                && hasAuthority;
         }
     }
 }

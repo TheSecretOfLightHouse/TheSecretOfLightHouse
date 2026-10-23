@@ -83,6 +83,11 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     public BoatController OwnedBoat => NetworkClient.active || NetworkServer.active ? _ownedBoat : _offlineOwnedBoat;
     public BoatController CurrentBoat => _boatController;
     public bool CanProcessBoatInput => CanProcessLocalInput;
+    public bool CanSimulateLocalWorld =>
+        isActiveAndEnabled
+        && !_hasStoppedClient
+        && HasLocalControlAuthority
+        && CanRunLocalWorld();
     public PlayerHFSM StateMachine => _hfsm;
 
     private bool HasLocalControlAuthority
