@@ -1530,6 +1530,7 @@ GameObject:
   - component: {fileID: 4709529549145013619}
   - component: {fileID: 177727902336445053}
   - component: {fileID: 8671452399930101663}
+  - component: {fileID: 2386412800085660064}
   m_Layer: 0
   m_Name: Spinocroc
   m_TagString: Untagged
@@ -1757,6 +1758,23 @@ MonoBehaviour:
   syncInterval: 0
   _animator: {fileID: 653084452495661060}
   _patrolClip: {fileID: -6512563844554649692, guid: c26e1edef76033e4bb8e6c4f26996cb0, type: 3}
+  _diveClip: {fileID: -6512563844554649692, guid: 93cd67e0831f1784eb7398ed7fadae1d, type: 3}
+  _reappearClip: {fileID: -6512563844554649692, guid: e6aebc6c1ce350c43b63f9353c018c15, type: 3}
+  _windupClip: {fileID: -6512563844554649692, guid: ef1bec19e45720b4c8544befc310c2e6, type: 3}
+--- !u!114 &2386412800085660064
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7725306694323598128}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09429b2a23c95b04793cd43cac9e0878, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _settings: {fileID: 11400000, guid: f2ef4fa2bd0836c41a3a0883b6eec860, type: 2}
+  _mapState: {fileID: 0}
 --- !u!1 &8182945717647611537
 GameObject:
   m_ObjectHideFlags: 0
