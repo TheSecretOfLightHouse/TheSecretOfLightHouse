@@ -90,6 +90,11 @@ namespace Lighthouse.Network.Session.Net
         public ConnectionDirectory Connections => _connections;
         // Server-only. Assigned when the match starts, before MatchStarted; empty in single-scene mode.
         public MatchRoles Roles => _roles;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // Dev builds only. A scripted test whose citizens must vote for the mafia pins it to one actor before the
+        // match starts; 0 or an actor outside the roster keeps the random pick.
+        public static uint DevPinnedMafiaActorId { get; set; }
+#endif
 
         public bool IsSessionFlowEnabled => _lobbyPlayerPrefab && !string.IsNullOrEmpty(_gameScene);
         public int StartPlayerCount => _startPlayerCount;
@@ -581,7 +586,16 @@ namespace Lighthouse.Network.Session.Net
         [Server]
         private void AssignRoles()
         {
-            _roles.Assign(_roster, UnityEngine.Random.Range(0, _roster.Count));
+            int mafiaIndex = UnityEngine.Random.Range(0, _roster.Count);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            int pinnedIndex = DevPinnedMafiaActorId != 0 ? _roster.IndexOf(DevPinnedMafiaActorId) : -1;
+
+            if (pinnedIndex >= 0)
+            {
+                mafiaIndex = pinnedIndex;
+            }
+#endif
+            _roles.Assign(_roster, mafiaIndex);
 
             for (int i = 0; i < _roster.Count; i++)
             {

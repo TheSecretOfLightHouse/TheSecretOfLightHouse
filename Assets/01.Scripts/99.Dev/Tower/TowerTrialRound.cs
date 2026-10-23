@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using Lighthouse.Mafia.AbyssGauge.Rules;
 using Lighthouse.Mafia.IdentityCheck.Rules;
 using Lighthouse.Mafia.Voting.Net;
-using Lighthouse.Mafia.Voting.Rules;
-using Lighthouse.Modules.Server;
 using Lighthouse.Monsters.Boss;
 using Lighthouse.Network.Session.Net;
 using Lighthouse.Tower.Net;
@@ -16,13 +14,13 @@ using UnityEngine;
 
 namespace Lighthouse.Dev.Tower
 {
-    // JH04 trial glue that makes one match playable end to end in the test scene: picks the mafia, wires the
-    // existing voting and identity check (Mafia, read-only use) to the lighthouse, runs a short day clock with the
-    // deadline, and stands in for the tentacle attack. In the full game roles, days and the final result belong to
-    // their owners (MK06, World clock) and damage comes from the monster side (TW04); none of this is that code.
+    // JH04 trial extras on top of the match glue (TowerMatchFlow, which also runs in release builds): picks the mafia
+    // in single-scene mode, starts the voting when the scene's voting does not start itself, shows each player their
+    // role, skips a day, forces a summon and stands in for the tentacle attack. Days, the deadline, the ritual votes
+    // and the summon's effects are the flow's; damage belongs to the monster side (TW04).
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkIdentity))]
-    public sealed class TowerTrialRound : NetworkBehaviour, IRitualVoteJudge
+    public sealed class TowerTrialRound : NetworkBehaviour
     {
         public enum MafiaPick : byte
         {
@@ -36,9 +34,10 @@ namespace Lighthouse.Dev.Tower
         [SerializeField]
         private TowerMatchNet _match;
         [SerializeField]
-        private ModuleInteractionHandler _modules;
-        [SerializeField]
         private VotingNetworkController _voting;
+        [Tooltip("Starts the voting here. Turn off when the voting starts on its own (initialize on match start).")]
+        [SerializeField]
+        private bool _isVotingStartedHere = true;
         [SerializeField]
         private IdentityCheckSettings _identitySettings;
         [Tooltip("Attack interval and wrap time of the tentacle stand-in.")]
@@ -47,10 +46,6 @@ namespace Lighthouse.Dev.Tower
         [Tooltip("Optional animated boss. Replaces the stand-in damage routine in this scene only.")]
         [SerializeField]
         private BossTestEnvironment _tentacleBoss;
-        [SerializeField, Min(10f)]
-        private float _dayLengthSeconds = 180f;
-        [SerializeField, Min(1)]
-        private int _deadlineDays = 5;
         [Tooltip("Attack power for a forced summon when voting is off (fewer than two players).")]
         [SerializeField, Min(0f)]
         private float _devSummonAttackPower = 10f;
@@ -59,21 +54,13 @@ namespace Lighthouse.Dev.Tower
         private bool _isStarted;
         [SyncVar]
         private bool _hasVoting;
-        [SyncVar]
-        private int _day;
-        [SyncVar]
-        private double _dayEndsAt;
-        [SyncVar]
-        private bool _isClockStopped;
-        // Public once the summon reveals the mafia or the match ends.
-        [SyncVar]
-        private uint _revealedMafiaId;
 
         // Server-only.
         private readonly List<uint> _roster = new List<uint>();
-        private readonly List<uint> _citizens = new List<uint>();
+        private TowerMatchFlow _flow;
         private LighthouseNetworkManager _manager;
         private uint _mafiaId;
+        private bool _isVotingOwner;
         private double _attackPower;
         private Coroutine _attackRoutine;
         private bool _wasMafiaDowned;
@@ -81,14 +68,24 @@ namespace Lighthouse.Dev.Tower
 
         public bool IsStarted => _isStarted;
         public bool HasVoting => _hasVoting;
-        public int Day => _day;
-        public double DayEndsAt => _dayEndsAt;
-        public bool IsClockStopped => _isClockStopped;
-        public int DeadlineDays => _deadlineDays;
-        public uint RevealedMafiaId => _revealedMafiaId;
+        public TowerMatchFlow Flow => _flow;
+        public int Day => _flow ? _flow.Day : 0;
+        public int DeadlineDays => _flow ? _flow.DeadlineDays : 0;
+        public bool IsClockStopped => _flow && _flow.IsDeadlineStopped;
+        public uint RevealedMafiaId => _flow ? _flow.RevealedMafiaId : 0;
         // Client-side: this player's own role, sent to this player only.
         public bool HasOwnRole { get; private set; }
         public bool IsOwnMafia { get; private set; }
+
+        private void Awake()
+        {
+            _flow = _match ? _match.GetComponent<TowerMatchFlow>() : null;
+
+            if (!_flow)
+            {
+                Debug.LogError($"[{nameof(TowerTrialRound)}] {name}: the lighthouse has no {nameof(TowerMatchFlow)}.");
+            }
+        }
 
         private void Update()
         {
@@ -98,18 +95,13 @@ namespace Lighthouse.Dev.Tower
             }
 
             PollMafiaDowned();
-
-            if (!_isClockStopped && NetworkTime.time >= _dayEndsAt)
-            {
-                AdvanceDay();
-            }
         }
 
         public override void OnStartServer()
         {
             base.OnStartServer();
             _manager = LighthouseNetworkManager.Instance;
-            _match.RitualStarted += HandleRitualStarted;
+            _match.FinalBattleStarted += HandleFinalBattleStarted;
             _match.Ended += HandleMatchEnded;
 
             if (_voting)
@@ -139,7 +131,7 @@ namespace Lighthouse.Dev.Tower
                 _manager.MatchStarted -= HandleSessionMatchStarted;
             }
 
-            _match.RitualStarted -= HandleRitualStarted;
+            _match.FinalBattleStarted -= HandleFinalBattleStarted;
             _match.Ended -= HandleMatchEnded;
 
             if (_voting)
@@ -176,20 +168,10 @@ namespace Lighthouse.Dev.Tower
             CmdForceSummon();
         }
 
-        // Server-only. The ritual's vote count, from the voting side's records.
+        // Server-only. The ritual's vote count, read by the scripted match.
         public int CountCitizenVotesOnMafia()
         {
-            int count = 0;
-
-            for (int i = 0; i < _citizens.Count; i++)
-            {
-                if (_voting.TryGetVote(_citizens[i], out VoteRecord record) && record.TargetId == _mafiaId)
-                {
-                    count++;
-                }
-            }
-
-            return count;
+            return _flow ? _flow.CountCitizenVotesOnMafia() : 0;
         }
 
         // Single-scene mode only: there is no lobby start, so the host starts from the panel and picks the mafia.
@@ -219,23 +201,25 @@ namespace Lighthouse.Dev.Tower
         private void StartRound(uint mafiaId)
         {
             _mafiaId = mafiaId;
-            _citizens.Clear();
+            int citizens = mafiaId != 0 && _roster.Contains(mafiaId) ? _roster.Count - 1 : _roster.Count;
+            bool canVote = mafiaId != 0 && citizens > 0 && _voting;
 
-            for (int i = 0; i < _roster.Count; i++)
+            if (_isVotingStartedHere)
             {
-                if (_roster[i] != _mafiaId)
-                {
-                    _citizens.Add(_roster[i]);
-                }
+                _isVotingOwner = canVote && _identitySettings && TryStartVoting(citizens);
+                _hasVoting = _isVotingOwner;
+            }
+            else
+            {
+                _hasVoting = canVote;
             }
 
-            _hasVoting = _mafiaId != 0 && _citizens.Count > 0 && _voting && _identitySettings && TryStartVoting();
-            _match.Configure(_hasVoting ? this : null);
-            _modules.MafiaCheck = IsMafia;
-            _modules.CarryCheck = CanCarry;
-            _day = 1;
-            _dayEndsAt = NetworkTime.time + _dayLengthSeconds;
-            _isClockStopped = false;
+            // With the session flow the flow may have begun already with the same roster and mafia.
+            if (_flow)
+            {
+                _flow.Begin(_roster, mafiaId);
+            }
+
             _isStarted = true;
 
             for (int i = 0; i < _roster.Count; i++)
@@ -252,9 +236,9 @@ namespace Lighthouse.Dev.Tower
         [Command(requiresAuthority = false)]
         private void CmdSkipDay()
         {
-            if (_isStarted && !_isClockStopped && _match.Phase == TowerPhase.Repairing)
+            if (_isStarted && _flow && !_flow.IsDeadlineStopped && _match.Phase == TowerPhase.Repairing)
             {
-                AdvanceDay();
+                _flow.ApplyDayStarted(_flow.Day + 1);
             }
         }
 
@@ -275,7 +259,8 @@ namespace Lighthouse.Dev.Tower
                 _voting.LockVoting();
             }
 
-            BeginFinalBattle(attack);
+            _attackPower = attack;
+            _match.TryBeginFinalBattle();
         }
 
         [TargetRpc]
@@ -286,7 +271,7 @@ namespace Lighthouse.Dev.Tower
         }
 
         [Server]
-        private bool TryStartVoting()
+        private bool TryStartVoting(int citizens)
         {
             try
             {
@@ -294,7 +279,7 @@ namespace Lighthouse.Dev.Tower
                 // The identity check needs one citizen per allowed failure, so small test matches shrink it.
                 IdentityCheckConfig config = _identitySettings.CreateSnapshot();
                 _voting.InitializeIdentityCheck(new IdentityCheckConfig(
-                    Math.Min(config.MaxCheckCount, _citizens.Count), Math.Min(config.RequiredVoteCount, _citizens.Count)));
+                    Math.Min(config.MaxCheckCount, citizens), Math.Min(config.RequiredVoteCount, citizens)));
                 _voting.SetMafiaDowned(false);
                 return true;
             }
@@ -351,42 +336,11 @@ namespace Lighthouse.Dev.Tower
             return _roster[UnityEngine.Random.Range(0, _roster.Count)];
         }
 
-        private bool IsMafia(uint actorId)
-        {
-            return _isStarted && actorId == _mafiaId;
-        }
-
-        // The summon reveals the mafia and shuts their inventory for the rest of the match.
-        private bool CanCarry(uint actorId)
-        {
-            return _revealedMafiaId == 0 || actorId != _revealedMafiaId;
-        }
-
-        [Server]
-        private void AdvanceDay()
-        {
-            int completedDay = _day;
-
-            if (_hasVoting)
-            {
-                _voting.SettleMorning(completedDay, NetworkTime.time);
-            }
-
-            // The deadline is the end of the last day (v4 1.2).
-            if (completedDay >= _deadlineDays)
-            {
-                _match.TryEnd(TowerOutcome.MafiaWin, TowerEndReason.Deadline);
-                return;
-            }
-
-            _day = completedDay + 1;
-            _dayEndsAt = NetworkTime.time + _dayLengthSeconds;
-        }
-
+        // Only for voting started here; voting that starts itself follows the mafia's downed state on its own.
         [Server]
         private void PollMafiaDowned()
         {
-            if (!_hasVoting || NetworkTime.time < _nextDownedPollAt)
+            if (!_isVotingOwner || NetworkTime.time < _nextDownedPollAt)
             {
                 return;
             }
@@ -402,67 +356,33 @@ namespace Lighthouse.Dev.Tower
             }
         }
 
-        [Server]
-        private void HandleRitualStarted(double endsAt)
-        {
-            // The ritual stops the deadline; it ends the match or turns into the final battle, so the clock never resumes.
-            _isClockStopped = true;
-
-            if (!_hasVoting)
-            {
-                return;
-            }
-
-            try
-            {
-                // Locks the votes and lets the mafia still check and summon until the ritual ends.
-                _voting.BeginIdentityRitual(endsAt);
-            }
-            catch (Exception exception)
-            {
-                Debug.LogError($"[{nameof(TowerTrialRound)}] Ritual not passed to voting: {exception.Message}");
-            }
-        }
-
+        // The flow starts the final battle from the same event; the power is kept for the stand-in attack.
         [Server]
         private void HandleSummonApproved(AbyssGaugeSnapshot snapshot)
         {
-            BeginFinalBattle(snapshot.AttackPower);
+            _attackPower = snapshot.AttackPower;
         }
 
         [Server]
-        private void BeginFinalBattle(double attackPower)
+        private void HandleFinalBattleStarted()
         {
-            // A summon at 100% repair ends the match here for the citizens; the rest is harmless after the end.
-            if (!_match.TryBeginFinalBattle())
-            {
-                return;
-            }
-
-            // The summon shuts the mafia's inventory, so a module in their hands is gone (2026-10-20).
-            _modules.DiscardCarried(_mafiaId);
-            // The final battle has no deadline.
-            _isClockStopped = true;
-            _revealedMafiaId = _mafiaId;
-            _attackPower = attackPower;
-
-            if (_match.Phase == TowerPhase.FinalBattle)
-            {
-                StopAttack();
-                if (_tentacleBoss != null)
-                {
-                    _tentacleBoss.BeginBattle(attackPower);
-                }
-                else
-                {
-                    _attackRoutine = StartCoroutine(Attack());
-                }
-            }
+            StopAttack();
+            _attackRoutine = StartCoroutine(Attack());
         }
 
         // Stand-in for the tentacle: wrap first, then one hit of the fixed attack power per interval.
         private IEnumerator Attack()
         {
+            // The summon's power is stored by another handler of the same event, so read it a frame later.
+            yield return null;
+
+            if (_tentacleBoss != null)
+            {
+                _tentacleBoss.BeginBattle(_attackPower);
+                _attackRoutine = null;
+                yield break;
+            }
+
             float wrap = _bossSettings ? _bossSettings.WrapDuration : 0f;
             float interval = _bossSettings ? _bossSettings.AttackInterval : 3f;
             yield return new WaitForSeconds(wrap);
@@ -490,14 +410,6 @@ namespace Lighthouse.Dev.Tower
         private void HandleMatchEnded(TowerOutcome outcome, TowerEndReason reason)
         {
             StopAttack();
-            _isClockStopped = true;
-            _revealedMafiaId = _mafiaId;
-
-            if (_hasVoting)
-            {
-                _voting.EndGame();
-            }
-
             Debug.Log($"[{nameof(TowerTrialRound)}] Ended outcome={outcome} reason={reason}");
         }
     }
