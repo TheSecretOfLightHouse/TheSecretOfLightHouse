@@ -57,3 +57,44 @@
 4. 박태욱에게 알릴 것: 아침 정산을 김지훈 `TowerMatchFlow`가 호출함, 본편 씬은 `_initializeOnMatchStart` 켬.
 5. 강민서: 섬 프리팹 6개, 남은 커밋 병합.
 6. 미정: 같은 순간의 마감·의식·소환 경합(K02 나머지), 의식 중 일일 효과(K03).
+
+## develop 병합과 WorldSessionGame 확인 (같은 날 이어서)
+
+- JH04 씬 연결 커밋 `3c400c8`. `origin/develop`(`1367783`, 강민서 PR #88: 암초·몬스터 스포너·네트워크 프리팹 등록)을 받아 로컬 `develop`을 최신으로 맞췄다. `feature/jihun`에 병합해 `8a1d7b3`을 만들었다. 겹친 파일이 없어 충돌 0. push 안 함.
+- SVN r346(10-23 14:39)으로 V12 섬 프리팹이 들어와 섬 아키타입 6개 참조가 모두 연결됐다.
+- 에디터 컴파일 오류 0(기존 `BoatController` 경고 1).
+- M0(에디터, 호스트 1명) `WorldSessionOffline` → `WorldSessionLobby` → `WorldSessionGame`:
+  - 플레이 중에만 시작 인원을 1로, 포트를 7778로 바꿨다(3인 빌드 창이 7777 사용 중). 씬은 저장하지 않았다.
+  - 결과: 섬 17개, 채집 지점 151개 생성 → 시작 게이트 통과 → `Match 1 started`, 역할 배정, `GameClock` 1일차 낮, 플레이어 `Tech 1` 스폰. 게임 오류 0.
+- 등대 섬: 0번 `Island_0_Island_Lighthouse_v0`, 원점 (0,0,0). v4 "등대 섬은 항상 중앙 고정"과 맞는다. 섬 프리팹에 등대 기준점은 없다.
+- 본편 해안 서비스는 `DebrisWorldHost`가 `IShoreDropLocator`로 등록한다. `MainGame`에는 `ShoreDropStub`이 필요 없다.
+- `WorldSessionOffline`의 스폰 목록에는 V12 픽업 등이 들어 있다. `MainOffline`은 `JH04Offline`이 아니라 `WorldSessionOffline`을 복사해 `GroundModule`을 추가하는 편이 맞다.
+
+## 최종 씬 1차 병합 (`00.Scenes/Main/`)
+
+- 사용자 결정: 개발 도구를 최종 씬에 넣는다. 시작 인원은 1~4명이 모두 안 되면 4명으로 한다.
+- CODEOWNERS에 `/Assets/00.Scenes/Main/ @zhun0922`를 추가했다.
+- 에디터 `AssetDatabase.CopyAsset`으로 씬을 복사했다(새 GUID): `WorldSessionOffline` → `MainOffline`, `WorldSessionLobby` → `MainLobby`, `WorldSessionGame` → `MainGame`.
+- `MainOffline` 매니저:
+  - offline·online·game 씬 경로를 `Main/`으로 바꿨다.
+  - 스폰 목록에 `GroundModule`을 추가했다(총 22개).
+  - 시작 게이트 켬, **시작 인원 4**.
+- `MainGame`:
+  - JH04에서 12개 오브젝트를 Pasteboard 복제로 옮겼다(바깥 참조 0, 씬 ID 중복 없음): `Lighthouse`(`TowerMatchFlow` 포함), `Workbench`, `ModuleInteractionHandler`, `Voting`, `DevTowerTools`, `DevWorkbenchTools`, UI 화면 5종, `FinalBattleHud`.
+  - `ShoreDropStub`·`WorldClock`·바닥·카메라·시작 지점은 가져오지 않았다. 강민서 씬에 있는 것을 쓴다.
+  - 투표 `_initializeOnMatchStart` 켬, `_sessionIdentitySettings` = `IdentitySettings`. `TowerTrialRound._isVotingStartedHere` 끔.
+  - 위치: 등대 (0, 1.7, 3), 작업대 (2.5, 2.20, 2.5).
+- 빌드 목록 끝에 `Main` 씬 3개를 추가했다(기존 순서 유지, 총 14개).
+- 시작 인원을 4로 정한 근거: 박태욱 `IdentitySettings`(확인 2회·필요 표 2개)는 시민 2명 이상이 필요하다. 1명으로 실행하면 `MatchStarted` 처리 중 `ArgumentOutOfRangeException("Every failed check must reveal a new citizen")`가 나고, Mirror가 호스트 연결을 끊었다(M0에서 실제 확인). **2명 이하 판은 박태욱 쪽 변경 없이는 불가.** 3명은 가능할 것으로 보지만 실행으로 확인하지 않았다.
+- 위치 근거(M0 광선 검사): 등대 섬은 판마다 Y축으로 무작위 회전한다(이번 판 241°). 중앙 반경 약 4m는 지면 1.7m로 평평하고, 5~6m에는 오두막 같은 섬 건물이 회전에 따라 바뀌어 들어온다. 그래서 반경 4m 안에 배치했다. 시작 지점은 (±2, 4, 0), (±6, 4, 0)이다.
+- M0(에디터, 호스트 1명; 플레이 중에만 시작 인원 1·포트 7778·투표 자동 초기화 끔): 판 시작, 연결 유지, `TowerMatchFlow` 시작, 등대 바닥 1.70 = 지면 1.7, 게임 오류 0. 작업대는 0.11m 떠 있어 2.20으로 내렸다.
+- 미실행: 4인 M2, 상호작용(작업대·등대 설치)·의식·소환을 Main에서 직접 확인, 정식 빌드, 시작 지점 (±6, 4, 0)과 섬 건물 충돌 여부(강민서 영역).
+
+## 4인 빌드 시험 로그 (사용자 직접 시험, `Builds/Main4`, 이전 로그는 `logs-prev/`)
+
+- 호스트 로그 기준:
+  - 1판: `voting=True` → `MafiaWin`·`Deadline`
+  - 2판: 소환 → `MafiaWin`·`LighthouseDestroyed`(촉수 대역 공격)
+- 예외 0. 로그가 긴 것은 개발 빌드가 로그마다 호출 경로를 남기기 때문이다.
+- 빠진 연결: 등대 판이 끝나도 세션이 끝나지 않는다. 1판은 참가자가 나갈 때 `ParticipantLeft`로 끝났다. `SessionEndReason`에는 승패로 끝난 경우가 없다. 최종 승패 확정은 최명기 MK06, 종료 통지와 결과 화면은 김지훈 JH07 범위다.
+- 정식 빌드에서는 `TowerTrialRound`(촉수 대역)가 빠지므로, 박태욱 몬스터 공격(TW04)이 연결되기 전까지 최후 전투에 피해가 들어오지 않는다.
