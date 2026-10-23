@@ -58,7 +58,7 @@ namespace Lighthouse.World.Harvest.Rules
                     continue;
                 }
 
-                candidates.Add(new Candidate(entry.Resource.SpotCategory, entry.Resource.Id, entry.Weight, entry.Deposit));
+                candidates.Add(new Candidate(entry.Resource.SpotCategory, entry.Resource.Id, entry.Weight, entry.Deposit, entry.Resource.PickupPrefab));
             }
 
             List<ResourceDefinition> sorted = new List<ResourceDefinition>();
@@ -73,7 +73,7 @@ namespace Lighthouse.World.Harvest.Rules
                     continue;
                 }
 
-                candidates.Add(new Candidate(resource.SpotCategory, resource.Id, 1f, resource.DefaultDeposit));
+                candidates.Add(new Candidate(resource.SpotCategory, resource.Id, 1f, resource.DefaultDeposit, resource.PickupPrefab));
             }
 
             return candidates;
@@ -84,7 +84,12 @@ namespace Lighthouse.World.Harvest.Rules
             float factor = 1f + (roll * 2f - 1f) * seedVariance;
             int initial = Mathf.Clamp(Mathf.RoundToInt(candidate.Spec.InitialAmount * factor), 0, candidate.Spec.MaxAmount);
 
-            return new SpotAssignment(candidate.ResourceId, initial, candidate.Spec.MaxAmount, candidate.Spec.DailyRegenRate);
+            return new SpotAssignment(
+                candidate.ResourceId,
+                initial,
+                candidate.Spec.MaxAmount,
+                candidate.Spec.DailyRegenRate,
+                candidate.PickupPrefab);
         }
 
         private static bool ContainsId(List<Candidate> candidates, int resourceId)
@@ -106,13 +111,20 @@ namespace Lighthouse.World.Harvest.Rules
             public readonly int ResourceId;
             public readonly float Weight;
             public readonly DepositSpec Spec;
+            public readonly GameObject PickupPrefab;
 
-            public Candidate(HarvestSpotCategory category, int resourceId, float weight, DepositSpec spec)
+            public Candidate(
+                HarvestSpotCategory category,
+                int resourceId,
+                float weight,
+                DepositSpec spec,
+                GameObject pickupPrefab)
             {
                 Category = category;
                 ResourceId = resourceId;
                 Weight = weight;
                 Spec = spec;
+                PickupPrefab = pickupPrefab;
             }
         }
     }

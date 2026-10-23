@@ -7,6 +7,7 @@ namespace Lighthouse.World.Harvest.Rules
     public sealed class ResourceDeposit
     {
         private readonly int[] _resourceIds;
+        private readonly GameObject[] _pickupPrefabs;
         private readonly int[] _maxAmounts;
         private readonly float[] _regenRates;
         private readonly int[] _remaining;
@@ -24,6 +25,7 @@ namespace Lighthouse.World.Harvest.Rules
         {
             int count = assignments != null ? assignments.Count : 0;
             _resourceIds = new int[count];
+            _pickupPrefabs = new GameObject[count];
             _maxAmounts = new int[count];
             _regenRates = new float[count];
             _remaining = new int[count];
@@ -35,6 +37,7 @@ namespace Lighthouse.World.Harvest.Rules
             {
                 SpotAssignment assignment = assignments[i];
                 _resourceIds[i] = assignment.ResourceId;
+                _pickupPrefabs[i] = assignment.PickupPrefab;
                 _maxAmounts[i] = Mathf.Max(0, assignment.MaxAmount);
                 _regenRates[i] = assignment.DailyRegenRate;
                 _remaining[i] = Mathf.Clamp(
@@ -87,7 +90,8 @@ namespace Lighthouse.World.Harvest.Rules
             }
 
             HarvestReservation created = new HarvestReservation(
-                spotId, position, _resourceIds[localIndex], granted);
+                spotId, position, _resourceIds[localIndex], granted,
+                _pickupPrefabs[localIndex]);
 
             _pending.Add(created, localIndex);
             _reserved[localIndex] += granted;

@@ -67,14 +67,19 @@ public sealed class ResourceDropSpawner : NetworkBehaviour
     }
 
     [Server]
-    public void UnlockDrop(ResourceDropHandle handle)
+    public bool TryUnlockDrop(ResourceDropHandle handle)
     {
-        if (!TryGetActivePickup(handle, out ResourcePickup pickup))
+        if (!isServer || !NetworkServer.active
+            || !TryGetActivePickup(handle, out ResourcePickup pickup)
+            || !pickup.gameObject.activeInHierarchy || pickup.netId == 0
+            || !NetworkServer.spawned.TryGetValue(pickup.netId, out NetworkIdentity identity)
+            || identity != pickup.netIdentity)
         {
-            return;
+            return false;
         }
 
         pickup.UnlockCollection();
+        return true;
     }
 
     [Server]
@@ -85,21 +90,40 @@ public sealed class ResourceDropSpawner : NetworkBehaviour
 
     [Server]
     public bool TrySpawnDrop(
-    Vector3 position,
-    int resourceId,
-    int amount,
-    bool isCollectionLocked,
-    out ResourceDropHandle handle)
+        Vector3 position,
+        int resourceId,
+        int amount,
+        bool isCollectionLocked,
+        out ResourceDropHandle handle)
     {
         handle = default;
 
-        if (!isServer || amount <= 0 || !IsFinite(position)
-            || _nextGeneration == ulong.MaxValue)
+        if (!isServer || !TryGetPrefab(resourceId, out GameObject prefab))
         {
             return false;
         }
 
-        if (!TryGetPrefab(resourceId, out GameObject prefab))
+        return TrySpawnDrop(
+            position, resourceId, amount,
+            isCollectionLocked, prefab, out handle);
+    }
+
+    [Server]
+    public bool TrySpawnDrop(
+        Vector3 position,
+        int resourceId,
+        int amount,
+        bool isCollectionLocked,
+        GameObject prefab,
+        out ResourceDropHandle handle)
+    {
+        handle = default;
+
+        if (!isServer || resourceId <= 0 || amount <= 0 || !IsFinite(position)
+            || _nextGeneration == ulong.MaxValue
+            || !prefab
+            || !prefab.TryGetComponent<NetworkIdentity>(out _)
+            || !prefab.TryGetComponent<ResourcePickup>(out _))
         {
             return false;
         }
