@@ -40,7 +40,13 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
 
     private bool _hasDroppedResources;
 
+    private bool _hasDiscardedModule;
+
     private WreckDropItem[] _resourceDrops = System.Array.Empty<WreckDropItem>();
+
+    private ulong _nextDropBatchId;
+
+    private readonly Queue<KeyValuePair<ulong, WreckDropItem[]>> _pendingDrops = new Queue<KeyValuePair<ulong, WreckDropItem[]>>();
 
     public static IReadOnlyList<PlayerWreckRecovery> Active => ActiveRecoveries;
 
@@ -129,6 +135,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
         _plannedModuleRecipeId = 0;
         _plannedModuleId = 0;
         _hasDroppedResources = false;
+        _hasDiscardedModule = false;
         _resourceDrops = System.Array.Empty<WreckDropItem>();
         _player.SetDowned(true);
 
@@ -171,6 +178,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
 
         return true;
     }
+
     [Server]
     private bool TrySettleRecoveryInventory()
     {
@@ -184,6 +192,11 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
             return true;
         }
 
+        if (_nextDropBatchId == ulong.MaxValue)
+        {
+            return false;
+        }
+
         if (!TryPrepareDropPlan())
         {
             return false;
@@ -194,9 +207,25 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
             return false;
         }
 
+        if (!TryDiscardPlannedModule())
+        {
+            return false;
+        }
+
+        if (_resourceDrops.Length > 0)
+        {
+            ulong batchId = ++_nextDropBatchId;
+
+            _pendingDrops.Enqueue(
+                new KeyValuePair<ulong, WreckDropItem[]>(
+                    batchId,
+                    _resourceDrops));
+        }
+
         _hasSettledInventory = true;
         return true;
     }
+
     [Server]
     private bool TryFinishRecovery()
     {
@@ -295,8 +324,56 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
     }
 
     [Server]
-    public bool TryCopyResourceDropsTo(List<WreckDropItem> results)
+    private bool TryDiscardPlannedModule()
     {
+        if (!_isCompletingRecovery || !_hasDropPlan || !_inventory)
+        {
+            return false;
+        }
+
+        if (_hasDiscardedModule)
+        {
+            return true;
+        }
+
+        if (_plannedModuleRecipeId == 0 && _plannedModuleId == 0)
+        {
+            _hasDiscardedModule = true;
+            return true;
+        }
+
+        if (_plannedModuleRecipeId <= 0 || _plannedModuleId == 0)
+        {
+            return false;
+        }
+
+        int resourceCount = _resourceDrops.Length;
+        var results = new WreckDropItem[resourceCount + 1];
+
+        System.Array.Copy(_resourceDrops, results, resourceCount);
+
+        results[resourceCount] = new WreckDropItem(
+            true,
+            _plannedModuleRecipeId,
+            1,
+            _wreckPosition);
+
+        if (!_inventory.TryDiscardWreckModule(_plannedModuleId))
+        {
+            return false;
+        }
+
+        _resourceDrops = results;
+        _hasDiscardedModule = true;
+
+        return true;
+    }
+
+    [Server]
+    public bool TryCopyResourceDropsTo(List<WreckDropItem> results, out ulong batchId)
+    {
+        batchId = 0;
+
         if (results == null)
         {
             return false;
@@ -304,16 +381,38 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
 
         results.Clear();
 
-        if (!isServer || !_hasDroppedResources)
+        if (!isServer || _pendingDrops.Count == 0)
         {
             return false;
         }
 
-        for (int i = 0; i < _resourceDrops.Length; i++)
+        KeyValuePair<ulong, WreckDropItem[]> batch =
+            _pendingDrops.Peek();
+
+        batchId = batch.Key;
+
+        for (int i = 0; i < batch.Value.Length; i++)
         {
-            results.Add(_resourceDrops[i]);
+            results.Add(batch.Value[i]);
         }
 
+        return true;
+    }
+
+    [Server]
+    public bool TryAcknowledgeDrops(ulong batchId)
+    {
+        if (!isServer || _pendingDrops.Count == 0)
+        {
+            return false;
+        }
+
+        if (_pendingDrops.Peek().Key != batchId)
+        {
+            return false;
+        }
+
+        _pendingDrops.Dequeue();
         return true;
     }
 
@@ -331,4 +430,69 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
             $"[{nameof(PlayerWreckRecovery)}] Rescue completed: {succeeded}",
             this);
     }
+
+#if UNITY_EDITOR
+    private ulong _testReadBatchId;
+
+    [ContextMenu("Test/Read Pending Drops")]
+    private void TestReadPendingDrops()
+    {
+        if (!isServer)
+        {
+            return;
+        }
+
+        var results = new List<WreckDropItem>();
+
+        if (!TryCopyResourceDropsTo(results, out ulong batchId))
+        {
+            _testReadBatchId = 0;
+
+            Debug.Log(
+                $"[{nameof(PlayerWreckRecovery)}] No pending drops.",
+                this);
+
+            return;
+        }
+
+        _testReadBatchId = batchId;
+
+        Debug.Log(
+            $"[{nameof(PlayerWreckRecovery)}] "
+            + $"Batch={batchId}, Count={results.Count}",
+            this);
+
+        foreach (WreckDropItem item in results)
+        {
+            Debug.Log(
+                $"[{nameof(PlayerWreckRecovery)}] "
+                + $"IsModule={item.IsModule}, "
+                + $"ItemId={item.ItemId}, "
+                + $"Amount={item.Amount}, "
+                + $"Position={item.Position}",
+                this);
+        }
+    }
+
+    [ContextMenu("Test/Acknowledge Read Drops")]
+    private void TestAcknowledgeReadDrops()
+    {
+        if (!isServer || _testReadBatchId == 0)
+        {
+            return;
+        }
+
+        bool succeeded = TryAcknowledgeDrops(_testReadBatchId);
+
+        Debug.Log(
+            $"[{nameof(PlayerWreckRecovery)}] "
+            + $"Acknowledge Batch={_testReadBatchId}: {succeeded}",
+            this);
+
+        if (succeeded)
+        {
+            _testReadBatchId = 0;
+        }
+    }
+#endif
 }
