@@ -22,7 +22,9 @@ namespace Lighthouse.Dev.Tower
 {
     // JH04 scripted match in the trial scene. Runs with "-jh04Auto" on a build, or when an editor session sets
     // IsEnabledInThisProcess (via MCP). The host plays the mafia and starts the round; every client is a citizen
-    // and points at the host, assumed to hold the lowest actor id (the host registers first).
+    // and points at the host, assumed to hold the lowest actor id (the host registers first). With the lobby flow the
+    // host pins itself as the mafia before the random pick (dev builds only), and the solo citizen scenarios need
+    // single-scene mode because one player alone is always the mafia there.
     //   ritual: host fills the tower, checks identity without summoning, starts the ritual -> citizens win.
     //   final:  host installs one floor (25%), checks and summons -> repair kept, health at the fixed maximum;
     //           the revealed mafia cannot take modules; the first citizen builds the other three floors -> citizens win.
@@ -73,6 +75,7 @@ namespace Lighthouse.Dev.Tower
         private int _passCount;
         private int _failCount;
         private bool _hasCheckedReturn;
+        private bool _hasPinnedMafia;
 
         public static bool IsEnabledInThisProcess { get; set; }
         public static string ScenarioInThisProcess { get; set; }
@@ -82,12 +85,18 @@ namespace Lighthouse.Dev.Tower
         {
             if (IsEnabledInThisProcess || Array.IndexOf(Environment.GetCommandLineArgs(), AutoFlag) >= 0)
             {
+                PinHostAsMafia();
                 StartCoroutine(Run());
             }
         }
 
         private void OnDestroy()
         {
+            if (_hasPinnedMafia)
+            {
+                LighthouseNetworkManager.DevPinnedMafiaActorId = 0;
+            }
+
             if (_relay)
             {
                 _relay.ResultReceived -= HandleResultReceived;
@@ -97,6 +106,30 @@ namespace Lighthouse.Dev.Tower
             {
                 _voting.IdentityResponded -= HandleIdentityResponded;
                 _voting.VoteResponded -= HandleVoteResponded;
+            }
+        }
+
+        // The lobby flow picks the mafia at random when everyone has loaded; this scene loads on the host first, so
+        // the pin lands before that. Citizens cannot know the mafia, so the scripted votes need the host to be it.
+        private void PinHostAsMafia()
+        {
+            LighthouseNetworkManager manager = LighthouseNetworkManager.Instance;
+
+            if (!NetworkServer.active || !manager || !manager.IsSessionFlowEnabled)
+            {
+                return;
+            }
+
+            if (manager.Roles.IsAssigned)
+            {
+                Log("PIN_LATE roles were already assigned; the host may not be the mafia");
+                return;
+            }
+
+            if (manager.Connections.TryGetActorId(NetworkServer.localConnection, out uint hostActorId))
+            {
+                LighthouseNetworkManager.DevPinnedMafiaActorId = hostActorId;
+                _hasPinnedMafia = true;
             }
         }
 
