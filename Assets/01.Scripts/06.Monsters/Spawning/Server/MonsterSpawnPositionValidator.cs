@@ -10,5 +10,10 @@ namespace Lighthouse.Monsters.Spawning.Server
             position = candidate;
             return true;
         }
+
+        public virtual bool TryResolvePosition(Vector3 origin, Vector3 candidate, out Vector3 position)
+        {
+            return TryResolvePosition(candidate, out position);
+        }
     }
 }
