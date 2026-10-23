@@ -18,6 +18,14 @@ MonoBehaviour:
   _safeRadius: 50
   _allocations:
   - _zone: 1
-    _profile: {fileID: 11400000, guid: 04bd796757157fc44bfe685b433184be, type: 2}
+    _profile: {fileID: 11400000, guid: 3abb74b7b5b59e2479e6c4332576ebe6, type: 2}
+    _minCount: 1
+    _maxCount: 3
+  - _zone: 2
+    _profile: {fileID: 11400000, guid: 1b8f4547dee8547418c4c41c996fe1d5, type: 2}
+    _minCount: 1
+    _maxCount: 3
+  - _zone: 4
+    _profile: {fileID: 11400000, guid: 957103557a1d2cd418ac00e2c7636955, type: 2}
     _minCount: 1
     _maxCount: 3
