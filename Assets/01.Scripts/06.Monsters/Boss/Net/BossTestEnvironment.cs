@@ -1,5 +1,4 @@
 using System.Collections;
-using Lighthouse.Mafia.AbyssGauge.Rules;
 using Lighthouse.Mafia.Voting.Net;
 using Lighthouse.Tower.Net;
 using Lighthouse.Tower.Rules;
@@ -13,17 +12,13 @@ namespace Lighthouse.Monsters.Boss
     public sealed class BossTestEnvironment : NetworkBehaviour
     {
         [SerializeField] private BossSettings _settings;
-        [Tooltip("Required only without a Tower Match. Not used by a connected tower.")]
-        [SerializeField] private BossTestHealthSettings _standaloneHealthSettings;
         [SerializeField] private Transform _lighthouseModel;
         [SerializeField] private Transform _tentacleModel;
         [SerializeField] private VotingNetworkController _voting;
-        [Tooltip("Optional trial tower. Its round starts the boss and owns health and the result.")]
+        [Tooltip("Required tower. Its round starts the boss and owns health and the result.")]
         [SerializeField] private TowerMatchNet _towerMatch;
         [SerializeField] private bool _enableSpecialEnding = true;
 
-        [SyncVar] private float _currentHealth;
-        [SyncVar] private float _maxHealth;
         [SyncVar] private float _wrapDuration;
         [SyncVar] private float _squeezeDuration;
         [SyncVar] private double _wrapStartedAt;
@@ -37,15 +32,11 @@ namespace Lighthouse.Monsters.Boss
         private double _attackPower;
         private Coroutine _damageRoutine;
 
-        private Font _font;
-        private GUIStyle _panelStyle;
-        private GUIStyle _labelStyle;
-
         public BossSettings Settings => _settings;
         public Transform LighthouseModel => _lighthouseModel;
         public Transform TentacleModel => _tentacleModel;
-        public float CurrentHealth => _towerMatch != null ? _towerMatch.Health : _currentHealth;
-        public float MaxHealth => _towerMatch != null ? _towerMatch.MaxHealth : _maxHealth;
+        public float CurrentHealth => _towerMatch != null ? _towerMatch.Health : 0f;
+        public float MaxHealth => _towerMatch != null ? _towerMatch.MaxHealth : 0f;
         public BossPhase Phase => _phase;
         public float WrapDuration => _wrapDuration;
         public float SqueezeDuration => _squeezeDuration;
@@ -60,21 +51,15 @@ namespace Lighthouse.Monsters.Boss
         public bool HasSummoned => _phase != BossPhase.WaitingForSummon;
         public bool HasValidSetup => _settings != null && _lighthouseModel != null
             && _tentacleModel != null && _voting != null
-            && (_towerMatch != null || (_standaloneHealthSettings != null
-                && IsPositiveFinite(_standaloneHealthSettings.MaxHealth)))
+            && _towerMatch != null
             && IsPositiveFinite(_settings.AttackInterval) && IsPositiveFinite(_settings.SpecialEndingAttackThreshold)
             && IsPositiveFinite(_settings.WrapDuration) && IsPositiveFinite(_settings.SqueezeDuration)
             && IsPositiveFinite(_settings.DamageNormalizedTime) && _settings.DamageNormalizedTime <= 1
             && _settings.AttackInterval >= _settings.SqueezeDuration;
 
         private bool CanContinueBattle => isServer && isActiveAndEnabled && CurrentHealth > 0
-            && (_towerMatch == null || _towerMatch.Phase == TowerPhase.FinalBattle)
+            && _towerMatch != null && _towerMatch.Phase == TowerPhase.FinalBattle
             && (_phase == BossPhase.Wrapping || _phase == BossPhase.NormalBattleActive);
-
-        private void Awake()
-        {
-            _font = Font.CreateDynamicFontFromOSFont("Malgun Gothic", 16);
-        }
 
         private void OnDisable()
         {
@@ -89,12 +74,10 @@ namespace Lighthouse.Monsters.Boss
         {
             if (!HasValidSetup)
             {
-                Debug.LogError($"[{nameof(BossTestEnvironment)}] Assign valid boss settings, models and either a tower or standalone health settings.", this);
+                Debug.LogError($"[{nameof(BossTestEnvironment)}] Assign valid boss settings, models, voting and Tower Match.", this);
                 return;
             }
 
-            _maxHealth = _towerMatch == null ? _standaloneHealthSettings.MaxHealth : 0f;
-            _currentHealth = _maxHealth;
             _wrapDuration = _settings.WrapDuration;
             _squeezeDuration = _settings.SqueezeDuration;
             _wrapStartedAt = 0;
@@ -105,14 +88,7 @@ namespace Lighthouse.Monsters.Boss
             _specialEndingStartedAt = 0;
             _attackPower = 0;
             _phase = BossPhase.WaitingForSummon;
-            if (_towerMatch == null)
-            {
-                _voting.SummonApproved += HandleSummonApproved;
-            }
-            else
-            {
-                _towerMatch.Ended += HandleTowerEnded;
-            }
+            _towerMatch.Ended += HandleTowerEnded;
             _voting.VotingEnded += HandleVotingEnded;
         }
 
@@ -125,13 +101,10 @@ namespace Lighthouse.Monsters.Boss
             }
             if (_voting != null)
             {
-                _voting.SummonApproved -= HandleSummonApproved;
                 _voting.VotingEnded -= HandleVotingEnded;
             }
             _attackPower = 0;
             _phase = BossPhase.WaitingForSummon;
-            _currentHealth = 0;
-            _maxHealth = 0;
             _wrapDuration = 0;
             _squeezeDuration = 0;
             _wrapStartedAt = 0;
@@ -177,17 +150,11 @@ namespace Lighthouse.Monsters.Boss
         }
 
         [Server]
-        private void HandleSummonApproved(AbyssGaugeSnapshot snapshot)
-        {
-            BeginBattle(snapshot.AttackPower);
-        }
-
-        [Server]
         public void BeginBattle(double attackPower)
         {
             if (HasSummoned || !isActiveAndEnabled || !HasValidSetup || double.IsNaN(attackPower)
                 || double.IsInfinity(attackPower) || attackPower < 0
-                || (_towerMatch != null && _towerMatch.Phase != TowerPhase.FinalBattle))
+                || _towerMatch.Phase != TowerPhase.FinalBattle)
             {
                 return;
             }
@@ -234,15 +201,7 @@ namespace Lighthouse.Monsters.Boss
                     break;
                 }
 
-                // 고정 공격력의 정밀도를 유지하도록 double로 차감한 뒤 동기화할 HP 값으로 변환한다.
-                if (_towerMatch != null)
-                {
-                    _towerMatch.ApplyDamage((float)System.Math.Min(float.MaxValue, _attackPower));
-                }
-                else
-                {
-                    _currentHealth = (float)System.Math.Max(0d, _currentHealth - _attackPower);
-                }
+                _towerMatch.ApplyDamage((float)System.Math.Min(float.MaxValue, _attackPower));
                 if (CurrentHealth <= 0)
                 {
                     _visualStoppedAt = NetworkTime.time;
@@ -292,65 +251,6 @@ namespace Lighthouse.Monsters.Boss
         private static bool IsPositiveFinite(float value)
         {
             return !float.IsNaN(value) && !float.IsInfinity(value) && value > 0;
-        }
-
-        private void OnGUI()
-        {
-            if (_towerMatch != null)
-            {
-                return;
-            }
-            if (_panelStyle == null)
-            {
-                _panelStyle = new GUIStyle(GUI.skin.box)
-                {
-                    padding = new RectOffset(12, 12, 8, 8)
-                };
-                _labelStyle = new GUIStyle(GUI.skin.label)
-                {
-                    font = _font,
-                    fontSize = 14,
-                    wordWrap = true
-                };
-            }
-
-            float leftWidth = Mathf.Min(540, Screen.width - 32);
-            if (NetworkServer.active)
-            {
-                leftWidth = Mathf.Min(leftWidth, (Screen.width - 48) * 0.62f);
-            }
-            float width = Mathf.Max(140, Mathf.Min(300, Screen.width - leftWidth - 48));
-            GUILayout.BeginArea(new Rect(Screen.width - width - 16,
-                Mathf.Max(16, Screen.height - 224), width, 208), _panelStyle);
-            GUILayout.Label("보스 시험 환경 · 5단계 연결", _labelStyle);
-            if (!HasValidSetup)
-            {
-                GUILayout.Label("보스 설정과 모델 참조를 확인하세요.", _labelStyle);
-            }
-            else
-            {
-                bool hasServerState = (isServer || isClient) && _maxHealth > 0;
-                float maxHealth = hasServerState ? _maxHealth : _standaloneHealthSettings.MaxHealth;
-                float health = hasServerState ? _currentHealth : maxHealth;
-                GUILayout.Label($"등대 HP: {health:0.##} / {maxHealth:0.##}", _labelStyle);
-                GUILayout.Label(hasServerState ? "서버 HP 상태" : "접속 전 설정 미리보기", _labelStyle);
-                GUILayout.Label($"공격 간격 {_settings.AttackInterval:0.##}초 · 특수 기준 {_settings.SpecialEndingAttackThreshold:0.##}", _labelStyle);
-                string phaseLabel = _phase == BossPhase.NormalBattleReady ? "일반 전투 준비"
-                    : _phase == BossPhase.Wrapping ? "촉수 감기"
-                    : _phase == BossPhase.NormalBattleActive ? "일반 전투 진행"
-                    : _phase == BossPhase.SpecialEndingReady ? "특수 종료 연출 준비"
-                    : _phase == BossPhase.SpecialEndingPlaying ? "크툴루 등장 연출 대기(표현 미구현)"
-                    : _phase == BossPhase.SpecialEndingCompleted ? "특수 연출 완료·승패 연결 대기"
-                    : _phase == BossPhase.LighthouseDestroyed ? "등대 HP 소진"
-                    : _phase == BossPhase.BattleStopped ? "시험 전투 중지" : "소환 대기";
-                GUILayout.Label($"소환: {(HasSummoned ? "승인됨" : "미승인")} · {phaseLabel}", _labelStyle);
-                if (isServer && HasSummoned)
-                {
-                    GUILayout.Label($"고정 공격력: {_attackPower:0.##} (서버 전용)", _labelStyle);
-                }
-                GUILayout.Label("촉수 연출·시험 피해 연결 · 본편 승패 미연결", _labelStyle);
-            }
-            GUILayout.EndArea();
         }
 
     }

@@ -56,16 +56,16 @@ if (_match.Phase == TowerPhase.FinalBattle)
 
 | 대상 | 연결 내용 |
 |---|---|
-| `BossTestEnvironment._towerMatch` | 실제 `TowerMatchNet` 지정. HP·최대 HP는 해당 등대에서 읽고, 타격 때 기존 `ApplyDamage`를 호출합니다. 등대 스크립트 자체는 수정하지 않았습니다. |
-| `BossTestEnvironment._standaloneHealthSettings` | 실제 등대 미연결 독립 시험에서만 `BossTestHealthSettings`를 지정합니다. 실제 등대가 연결된 씬에서는 비워도 됩니다. `BossSettings`의 시험 HP 필드/프로퍼티는 제거했습니다. |
-| 소환 시작 책임 | 등대 참조가 있으면 보스는 `SummonApproved`를 직접 구독하지 않습니다. 라운드가 등대 전투 전환 후 시작시켜 이벤트 순서에 의존한 선행 소환을 피합니다. |
+| `BossTestEnvironment._towerMatch` | 필수 참조입니다. HP·최대 HP는 해당 등대에서만 읽고, 타격 때 기존 `ApplyDamage`를 호출합니다. 등대 스크립트 자체는 수정하지 않았습니다. |
+| 시험용 HP 의존성 제거 | 독립 시험 중단·사용자의 `BossTestHealthSettings` 삭제에 맞춰 타입 참조, 자체 HP 상태·피해 분기 및 독립 시험 UI를 제거했습니다. 새 HP 시험 에셋은 필요하지 않습니다. |
+| 소환 시작 책임 | 보스는 `SummonApproved`를 직접 구독하지 않습니다. 라운드가 등대 전투 전환 후 시작시켜 이벤트 순서에 의존한 선행 소환을 피합니다. |
 | 종료 책임 | 보스가 등대 `Ended`와 투표 `VotingEnded`를 구독해 공격·애니메이션을 중지합니다. 등대 `Ended` 구독은 투표가 없는 1인 시험도 처리하기 위해 추가했습니다. |
-| `_enableSpecialEnding` | 기존 독립 시험 기본값은 true. TWJH04 복사본은 false로 설정한 일반 촉수 공격 전용 시험입니다. 특수 연출·승패 계약을 통합한 변경은 아닙니다. |
+| `_enableSpecialEnding` | 컴포넌트 기본값은 true. TWJH04 복사본은 false로 설정한 일반 촉수 공격 전용 시험입니다. 특수 연출·승패 계약을 통합한 변경은 아닙니다. |
 | `TentacleAnimationView` | 기존 표현 코드를 그대로 사용합니다. 소환/타격 서버 시각에 맞춰 감기·조이기를 표시합니다. |
 
 수정한 복사본은 `Assets/00.Scenes/TaeWook/TWJH04TestScene.unity`입니다. `TentacleTrialController`의 보스와 등대·투표·촉수 모델을 연결하고, `DevTowerTools`의 `TowerTrialRound._tentacleBoss`에 그 보스를 지정했습니다. 복사본 Offline의 게임/복귀 경로도 복사본으로 변경했습니다.
 
-주의: 씬은 복사했지만 스크립트는 공유 파일입니다. 코드 변경은 원본 씬에서도 로드되며, 새 참조가 비어 있으면 기존 분기를 사용하도록 구현했습니다. `BossTestSettings`와 `TowerBattleSettings_JH04Trial`은 원본과 공유하므로 후속 밸런스 조정 시 에셋 복제 여부를 먼저 확인해야 합니다. 사용자 요청으로 HP를 분리하면서 독립 시험용 `Assets/02.Prefabs/Monsters/Data/BossTestHealthSettings.asset`(기존 HP1000 보존)을 새로 만들고 `VotingTestScene`에 연결했습니다. JH04는 기존 `TowerBattleSettings`만 사용하며 시험용 HP 에셋을 연결할 필요가 없습니다.
+주의: 씬은 복사했지만 스크립트는 공유 파일입니다. `TowerTrialRound`의 새 촉수 참조가 비어 있는 원본 씬은 기존 대체 공격 분기를 사용합니다. 촉수를 연결하는 경우 `BossTestEnvironment`의 `Tower Match`는 반드시 지정해야 합니다. `BossTestSettings`와 `TowerBattleSettings_JH04Trial`은 원본과 공유하므로 후속 밸런스 조정 시 에셋 복제 여부를 먼저 확인해야 합니다. HP 분리 과정에서 추가했던 `BossTestHealthSettings`는 사용자가 독립 시험을 중단하며 삭제했으므로 의존성도 제거했습니다. 현재 HP 설정은 `TowerBattleSettings`만 사용합니다.
 
 ## 검증한 범위
 
