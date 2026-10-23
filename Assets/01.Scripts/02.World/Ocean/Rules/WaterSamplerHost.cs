@@ -32,6 +32,13 @@ namespace Lighthouse.World.Ocean.Rules
 
         public double CurrentTime { get; private set; }
 
+        public ulong CompletedSampleVersion { get; private set; }
+
+        public double CompletedSampleFixedTime { get; private set; }
+            = double.NegativeInfinity;
+
+        public bool IsSampling { get; private set; }
+
         private void Awake()
         {
             if (!_inputs.TrySetWaves(_initialWaves))
@@ -54,6 +61,12 @@ namespace Lighthouse.World.Ocean.Rules
             }
         }
 
+        private void OnDisable()
+        {
+            IsSampling = false;
+            CompletedSampleFixedTime = double.NegativeInfinity;
+        }
+
         private void OnDestroy()
         {
             WorldServices.Unregister(this);
@@ -66,20 +79,37 @@ namespace Lighthouse.World.Ocean.Rules
 
         private void FixedUpdate()
         {
-            if (_clock == null)
+            if (_clock == null || _sampler == null)
             {
                 return;
             }
 
-            CurrentTime = _clock.Now;
-            RefreshModifiers();
+            IsSampling = true;
 
-            for (int i = 0; i < _sources.Count; i++)
+            try
             {
-                _sources[i].SubmitPoints();
-            }
+                CurrentTime = _clock.Now;
+                RefreshModifiers();
 
-            _sampler.Run(_inputs.Waves, _inputs.Modifiers, (float)CurrentTime);
+                for (int i = 0; i < _sources.Count; i++)
+                {
+                    _sources[i].SubmitPoints();
+                }
+
+                _sampler.Run(
+                    _inputs.Waves,
+                    _inputs.Modifiers,
+                    (float)CurrentTime);
+
+                CompletedSampleVersion =
+                    unchecked(CompletedSampleVersion + 1UL);
+
+                CompletedSampleFixedTime = Time.fixedTimeAsDouble;
+            }
+            finally
+            {
+                IsSampling = false;
+            }
         }
 
         public void RegisterSource(IWaterSampleSource source)

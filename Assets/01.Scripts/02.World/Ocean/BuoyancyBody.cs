@@ -19,22 +19,34 @@ namespace Lighthouse.World.Ocean
         private ShipStabilizer _stabilizer;
         private WaterSamplerHost _host;
         private IShipBody _ship;
-        private SamplerTicket _ticket;
-        private Vector3[] _localPoints;
-        private Vector3[] _worldPoints;
-        private float[] _waterHeights;
-        private bool _isAllocated;
+        private BuoyancySampleSession _samples;
 
         public bool IsSimulating
         {
             get { return _isSimulating; }
-            set { _isSimulating = value; }
+            set
+            {
+                if (_isSimulating == value)
+                {
+                    return;
+                }
+
+                _isSimulating = value;
+
+                if (_samples != null)
+                {
+                    _samples.Invalidate();
+                }
+
+                _slam.Reset();
+            }
         }
 
         private void Awake()
         {
             if (!TryGetComponent(out _ship)
                 || _ship.Body == null
+                || _ship.BuoyancyPoints == null
                 || _ship.BuoyancyPoints.Count == 0)
             {
                 Debug.LogError(
@@ -44,69 +56,59 @@ namespace Lighthouse.World.Ocean
                 return;
             }
 
-            int count = _ship.BuoyancyPoints.Count;
-
-            _localPoints = new Vector3[count];
-            _worldPoints = new Vector3[count];
-            _waterHeights = new float[count];
-
-            for (int i = 0; i < count; i++)
-            {
-                _localPoints[i] = _ship.BuoyancyPoints[i];
-            }
+            _samples = new BuoyancySampleSession(
+                _ship.Body,
+                _ship.BuoyancyPoints);
 
             _stabilizer = new ShipStabilizer(_tuning);
         }
 
         private void OnEnable()
         {
-            if (!WorldServices.TryGet(out _host)
-                || !_host.TryAllocate(
-                    _pool,
-                    _localPoints.Length,
-                    out _ticket))
+            if (_samples == null
+                || !WorldServices.TryGet(out _host)
+                || !_samples.TryOpen(_host, _pool, this))
             {
                 Debug.LogError(
-                    $"[{nameof(BuoyancyBody)}] WaterSamplerHost is missing or has no free sample slots.");
+                    $"[{nameof(BuoyancyBody)}] Active WaterSamplerHost and free sample slots are required.");
 
                 enabled = false;
-                return;
             }
-
-            _isAllocated = true;
-            _host.RegisterSource(this);
         }
 
         private void OnDisable()
         {
-            if (!_isAllocated)
+            if (_samples != null)
             {
-                return;
+                _samples.Close();
             }
 
-            _host.UnregisterSource(this);
-            _host.Release(in _ticket);
-
-            _isAllocated = false;
+            _host = null;
             _slam.Reset();
         }
 
         private void FixedUpdate()
         {
-            if (!_isAllocated)
+            if (_samples == null)
             {
                 return;
             }
 
-            if (!_isSimulating || _ship.Body.isKinematic)
+            if (!_isSimulating
+                || _ship.Body == null
+                || _ship.Body.isKinematic)
             {
+                _samples.Invalidate();
                 _slam.Reset();
                 return;
             }
 
-            for (int i = 0; i < _waterHeights.Length; i++)
+            if (!_samples.TryGetSamples(
+                    out var worldPoints,
+                    out var waterHeights))
             {
-                _waterHeights[i] = _host.GetHeight(in _ticket, i);
+                _slam.Reset();
+                return;
             }
 
             float gravity = Physics.gravity.magnitude;
@@ -116,8 +118,8 @@ namespace Lighthouse.World.Ocean
                     _ship.Mass,
                     gravity,
                     _tuning,
-                    _worldPoints,
-                    _waterHeights,
+                    worldPoints,
+                    waterHeights,
                     out float meanDepth,
                     out float submergedFraction))
             {
@@ -136,24 +138,10 @@ namespace Lighthouse.World.Ocean
 
         public void SubmitPoints()
         {
-            if (!_isAllocated
-                || !_isSimulating
-                || _ship.Body.isKinematic)
+            if (_samples != null)
             {
-                return;
-            }
-
-            Transform bodyTransform = _ship.Body.transform;
-
-            for (int i = 0; i < _localPoints.Length; i++)
-            {
-                _worldPoints[i] =
-                    bodyTransform.TransformPoint(_localPoints[i]);
-
-                _host.SetPoint(
-                    in _ticket,
-                    i,
-                    _worldPoints[i]);
+                _samples.SubmitPoints(
+                    isActiveAndEnabled && _isSimulating);
             }
         }
 
