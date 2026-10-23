@@ -8,6 +8,8 @@ namespace Lighthouse.Monsters.Spinocroc.Rules
         Windup,
         DirectionLocked,
         ReadyForCharge,
-        Dead
+        Dead,
+        Charging,
+        ChargeCompleted
     }
 }

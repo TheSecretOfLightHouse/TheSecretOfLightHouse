@@ -40,6 +40,8 @@ namespace Lighthouse.Monsters.Spinocroc.Server
         public MonsterBoatTarget Target => _target;
         public bool IsPreparing => _phase >= SpinocrocPhase.Diving && _phase <= SpinocrocPhase.ReadyForCharge;
         public bool IsReadyForCharge => _phase == SpinocrocPhase.ReadyForCharge;
+        public bool HasCompletedCharge => _phase == SpinocrocPhase.ChargeCompleted;
+        public bool HasProtectedTarget => IsTargetProtected(_target);
         public bool CanAct => isActiveAndEnabled && _monster != null && _monster.isServer
             && _monster.IsInitialized && !_monster.IsDead && _motion.CanMove
             && _settings != null && _settings.HasValidValues;
@@ -57,6 +59,7 @@ namespace Lighthouse.Monsters.Spinocroc.Server
                     case SpinocrocPhase.Reappearing: return _settings.ReappearDuration;
                     case SpinocrocPhase.Windup: return _settings.WindupDuration;
                     case SpinocrocPhase.DirectionLocked: return _settings.LockedPreparationDuration;
+                    case SpinocrocPhase.Charging: return _settings.ChargeDuration;
                     default: return 0f;
                 }
             }
@@ -165,7 +168,7 @@ namespace Lighthouse.Monsters.Spinocroc.Server
 
         public bool TryBegin()
         {
-            if (!CanAct || IsPreparing || NetworkTime.time < _nextPreparationAt
+            if (!CanAct || _ownsMotion || NetworkTime.time < _nextPreparationAt
                 || !TrySelectTarget(out MonsterBoatTarget selected))
             {
                 return false;
@@ -184,6 +187,33 @@ namespace Lighthouse.Monsters.Spinocroc.Server
             _monster.TrySetBehaviorState(MonsterState.Attack);
             SetPhase(SpinocrocPhase.Diving);
             return true;
+        }
+
+        public bool IsTargetProtected(MonsterBoatTarget target)
+        {
+            return target != null && MonsterMotion.IsFinite(target.transform.position)
+                && IsProtected(target.transform.position);
+        }
+
+        public bool TryStartCharge()
+        {
+            if (!CanAct || !_ownsMotion || !IsReadyForCharge || HasProtectedTarget)
+            {
+                return false;
+            }
+            // 높이 제어를 마치고 공통 이동만 같은 Rigidbody를 조작하도록 제어권을 넘긴다.
+            _body.constraints = _savedConstraints;
+            _motion.SetMovementLocked(false);
+            SetPhase(SpinocrocPhase.Charging);
+            return _phase == SpinocrocPhase.Charging && CanAct;
+        }
+
+        public void CompleteCharge()
+        {
+            if (_monster.isServer && _phase == SpinocrocPhase.Charging)
+            {
+                SetPhase(SpinocrocPhase.ChargeCompleted);
+            }
         }
 
         public void Cancel()

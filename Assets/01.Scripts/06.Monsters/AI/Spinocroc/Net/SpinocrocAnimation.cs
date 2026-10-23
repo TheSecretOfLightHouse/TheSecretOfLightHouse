@@ -15,12 +15,14 @@ namespace Lighthouse.Monsters.Spinocroc.Net
         private static readonly int DiveHash = Animator.StringToHash("Base Layer.Dive");
         private static readonly int ReappearHash = Animator.StringToHash("Base Layer.Reappear");
         private static readonly int WindupHash = Animator.StringToHash("Base Layer.ChargeWindup");
+        private static readonly int ChargeHash = Animator.StringToHash("Base Layer.Charge");
 
         [SerializeField] private Animator _animator;
         [SerializeField] private AnimationClip _patrolClip;
         [SerializeField] private AnimationClip _diveClip;
         [SerializeField] private AnimationClip _reappearClip;
         [SerializeField] private AnimationClip _windupClip;
+        [SerializeField] private AnimationClip _chargeClip;
 
         // 단계 훅이 같은 패킷의 시작 시각과 길이를 읽을 수 있도록 먼저 직렬화한다.
         [SyncVar] private double _stateStartedAt;
@@ -80,7 +82,7 @@ namespace Lighthouse.Monsters.Spinocroc.Net
             {
                 return;
             }
-            if (_phase == SpinocrocPhase.Dead)
+            if (_phase == SpinocrocPhase.Dead || _phase == SpinocrocPhase.ChargeCompleted)
             {
                 _animator.speed = 0f;
                 return;
@@ -90,6 +92,10 @@ namespace Lighthouse.Monsters.Spinocroc.Net
             int hash = PatrolHash;
             switch (_phase)
             {
+                case SpinocrocPhase.Charging:
+                    clip = _chargeClip;
+                    hash = ChargeHash;
+                    break;
                 case SpinocrocPhase.Diving:
                     clip = _diveClip;
                     hash = DiveHash;
@@ -112,10 +118,11 @@ namespace Lighthouse.Monsters.Spinocroc.Net
 
             float elapsed = (float)Math.Max(0d, NetworkTime.time - _stateStartedAt);
             bool holdPose = _phase == SpinocrocPhase.DirectionLocked || _phase == SpinocrocPhase.ReadyForCharge;
-            float normalized = _phase == SpinocrocPhase.Patrol
+            bool loop = _phase == SpinocrocPhase.Patrol || _phase == SpinocrocPhase.Charging;
+            float normalized = loop
                 ? elapsed / clip.length % 1f
                 : Mathf.Clamp01(elapsed / Mathf.Max(0.01f, _stateDuration));
-            _animator.speed = holdPose ? 0f : (_stateDuration > 0f ? clip.length / _stateDuration : 1f);
+            _animator.speed = holdPose ? 0f : (loop || _stateDuration <= 0f ? 1f : clip.length / _stateDuration);
             _animator.Play(hash, 0, holdPose ? 1f : normalized);
         }
     }
