@@ -23,6 +23,18 @@ Shader "Lighthouse/World/NightSky"
         _SunSize ("Sun Size", Range(0.0005, 0.02)) = 0.004
         _SunGlow ("Sun Glow", Range(0, 2)) = 0.6
 
+        [Header(Constellations)]
+        _ConstellationScale ("Constellation Scale", Range(0.05, 1)) = 0.33
+        _ConstellationLineSoftness ("Line Softness", Range(0.0005, 0.01)) = 0.001
+        _ConstellationLineStrength ("Line Brightness", Range(0, 1)) = 0.045
+
+        [Header(Aurora Regions)]
+        _AuroraMapCenter ("Map Center (World XZ)", Vector) = (0, 0, 0, 0)
+        _AuroraBoundaryRadii ("Boundary Radii (X Middle Outer, Y Outer Edge)", Vector) = (360, 490, 0, 0)
+        _AuroraBoundaryWeights ("Boundary Enables (X Middle Outer, Y Outer Edge)", Vector) = (1, 1, 0, 0)
+        _AuroraBandHalfWidth ("Boundary Band Half Width (Meters)", Range(0, 100)) = 15
+        _AuroraFadeWidth ("Boundary Fade Width (Meters)", Range(1, 100)) = 25
+
         [Header(Debug)]
         _DebugNightBlend ("Night Blend Override (-1 = use global)", Range(-1, 1)) = -1
     }
@@ -41,6 +53,11 @@ Shader "Lighthouse/World/NightSky"
             #pragma vertex Vert
             #pragma fragment Frag
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Include/SkyCelestialFrame.hlsl"
+            #include "Include/SkyStars.hlsl"
+            #include "Include/SkyConstellations.hlsl"
+            #include "Include/SkyAurora.hlsl"
+            #include "Include/SkyMoon.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _DayZenithColor;
@@ -54,6 +71,14 @@ Shader "Lighthouse/World/NightSky"
                 float4 _SunColor;
                 float _SunSize;
                 float _SunGlow;
+                float _ConstellationScale;
+                float _ConstellationLineSoftness;
+                float _ConstellationLineStrength;
+                float4 _AuroraMapCenter;
+                float4 _AuroraBoundaryRadii;
+                float4 _AuroraBoundaryWeights;
+                float _AuroraBandHalfWidth;
+                float _AuroraFadeWidth;
                 float _DebugNightBlend;
             CBUFFER_END
 
@@ -106,6 +131,73 @@ Shader "Lighthouse/World/NightSky"
                 float disc = smoothstep(cosRadius - 0.0006, cosRadius, sunDot);
                 float glow = pow(sunDot, 64.0) * _SunGlow;
                 sky += _SunColor.rgb * (disc + glow) * (1.0 - night) * (1.0 - below);
+
+                float skyTime = _Time.y;
+
+                // Stars and constellations must share the same celestial frame.
+                float3 celestialDirection = SkyWorldToCelestial(
+                    direction,
+                    37.0,
+                    0.0);
+
+                float3 stars = SkyStars(
+                    celestialDirection,
+                    direction.y,
+                    90.0,
+                    1.2,
+                    0.3,
+                    skyTime);
+
+                float constellationMask = SkyConstellations(
+                    celestialDirection,
+                    _ConstellationScale,
+                    _ConstellationLineSoftness * _ConstellationScale,
+                    0.003 * _ConstellationScale,
+                    _ConstellationLineStrength,
+                    1.0,
+                    float3(1.0, 1.0, 0.0));
+
+                float horizonFade = smoothstep(0.0, 0.1, direction.y);
+                float3 constellations =
+                    float3(0.55, 0.72, 1.0) * constellationMask * horizonFade;
+
+                // Use each rendering camera so remote players see their own region.
+                float mapDistance = distance(_WorldSpaceCameraPos.xz, _AuroraMapCenter.xy);
+                float2 boundaryDistance = abs(mapDistance - _AuroraBoundaryRadii.xy);
+                float2 boundaryBands = 1.0 - smoothstep(
+                    _AuroraBandHalfWidth,
+                    _AuroraBandHalfWidth + max(_AuroraFadeWidth, 0.001),
+                    boundaryDistance);
+                boundaryBands *= saturate(_AuroraBoundaryWeights.xy);
+                float auroraVisibility = max(boundaryBands.x, boundaryBands.y);
+                float3 aurora = float3(0.0, 0.0, 0.0);
+                if (auroraVisibility > 0.001 && night > 0.001)
+                {
+                    aurora = SkyAurora(
+                    direction,
+                    skyTime,
+                    0.0,
+                    0.18,
+                    0.15,
+                    float3(0.08, 0.65, 0.3),
+                    float3(0.4, 0.12, 0.65)) * auroraVisibility;
+                }
+
+                float3 moonDirection = normalize(float3(0.4, 0.55, 0.7));
+                float4 moon = SkyMoon(
+                    direction,
+                    moonDirection,
+                    0.5,
+                    0.035,
+                    float3(0.85, 0.9, 1.0),
+                    0.15);
+
+                // The moon disc hides stars and aurora behind it.
+                float3 nightDetails =
+                    (stars + constellations + aurora) * (1.0 - moon.a)
+                    + moon.rgb;
+
+                sky += nightDetails * night * horizonFade;
 
                 return float4(sky, 1.0);
             }
