@@ -14,6 +14,8 @@ namespace Lighthouse.Monsters.Spinocroc.Server
     [RequireComponent(typeof(SeaMonster), typeof(MonsterMotion), typeof(SeaMonsterSensor))]
     public sealed class SpinocrocPreparation : MonoBehaviour
     {
+        private const int ReappearPositionAttempts = 16;
+
         [SerializeField] private SpinocrocSettings _settings;
         [SerializeField] private MapStateNet _mapState;
 
@@ -21,9 +23,12 @@ namespace Lighthouse.Monsters.Spinocroc.Server
         private MonsterMotion _motion;
         private SeaMonsterSensor _sensor;
         private Rigidbody _body;
+        private NetworkTransformBase _networkTransform;
         private MonsterBoatTarget _target;
         private MonsterBoatTarget _previousTarget;
         private Vector3 _lastTargetPosition;
+        private Vector3 _reappearCenter;
+        private Vector3 _reappearPosition;
         private Vector3 _lockedDirection;
         private RigidbodyConstraints _savedConstraints;
         private float _surfaceHeight;
@@ -36,6 +41,8 @@ namespace Lighthouse.Monsters.Spinocroc.Server
         public SpinocrocPhase Phase => _phase;
         public double PhaseStartedAt => _phaseStartedAt;
         public Vector3 LastTargetPosition => _lastTargetPosition;
+        public Vector3 ReappearCenter => _reappearCenter;
+        public Vector3 ReappearPosition => _reappearPosition;
         public Vector3 LockedDirection => _lockedDirection;
         public MonsterBoatTarget Target => _target;
         public bool IsPreparing => _phase >= SpinocrocPhase.Diving && _phase <= SpinocrocPhase.ReadyForCharge;
@@ -73,6 +80,7 @@ namespace Lighthouse.Monsters.Spinocroc.Server
             _motion = GetComponent<MonsterMotion>();
             _sensor = GetComponent<SeaMonsterSensor>();
             _body = GetComponent<Rigidbody>();
+            _networkTransform = GetComponent<NetworkTransformBase>();
         }
 
         private void OnEnable()
@@ -119,7 +127,11 @@ namespace Lighthouse.Monsters.Spinocroc.Server
             float blend = Mathf.SmoothStep(0f, 1f, progress);
             if (_phase == SpinocrocPhase.Diving)
             {
-                SetHeight(_surfaceHeight - _settings.DiveDepth * blend);
+                // 이동 직전의 MovePosition 예약이 새 재등장 위치를 덮어쓰지 않게 한다.
+                if (progress < 1f)
+                {
+                    SetHeight(_surfaceHeight - _settings.DiveDepth * blend);
+                }
             }
             else if (_phase == SpinocrocPhase.Reappearing)
             {
@@ -138,6 +150,19 @@ namespace Lighthouse.Monsters.Spinocroc.Server
             switch (_phase)
             {
                 case SpinocrocPhase.Diving:
+                    if (IsProtected(_reappearPosition))
+                    {
+                        Cancel();
+                        return;
+                    }
+                    // 완전히 잠긴 뒤에만 이동하고 원격 보간도 초기화해 수평 이동이 노출되지 않게 한다.
+                    Vector3 submergedPosition = _reappearPosition;
+                    submergedPosition.y = _surfaceHeight - _settings.DiveDepth;
+                    _body.position = submergedPosition;
+                    if (_networkTransform != null)
+                    {
+                        _networkTransform.ServerTeleport(submergedPosition, _body.rotation);
+                    }
                     SetPhase(SpinocrocPhase.Reappearing);
                     break;
                 case SpinocrocPhase.Reappearing:
@@ -173,11 +198,20 @@ namespace Lighthouse.Monsters.Spinocroc.Server
             {
                 return false;
             }
+            // 이후 보트 위치 추적과 분리해 재등장 중심과 목적지는 잠수 시작 때 한 번만 정한다.
+            Vector3 reappearCenter = selected.transform.position;
+            float surfaceHeight = _motion.HomePosition.y;
+            if (!TrySelectReappearPosition(reappearCenter, surfaceHeight, out Vector3 reappearPosition))
+            {
+                return false;
+            }
             _target = selected;
             _previousTarget = selected;
             _lastTargetPosition = selected.transform.position;
+            _reappearCenter = reappearCenter;
+            _reappearPosition = reappearPosition;
             _lockedDirection = Vector3.zero;
-            _surfaceHeight = _motion.HomePosition.y;
+            _surfaceHeight = surfaceHeight;
             _savedConstraints = _body.constraints;
             _motion.SetMovementLocked(true);
             _body.constraints &= ~RigidbodyConstraints.FreezePositionY;
@@ -281,6 +315,29 @@ namespace Lighthouse.Monsters.Spinocroc.Server
                 selected = onlyTarget;
             }
             return selected != null;
+        }
+
+        private bool TrySelectReappearPosition(Vector3 center, float surfaceHeight, out Vector3 position)
+        {
+            position = Vector3.zero;
+            if (!MonsterMotion.IsFinite(center) || float.IsNaN(surfaceHeight) || float.IsInfinity(surfaceHeight))
+            {
+                return false;
+            }
+            for (int i = 0; i < ReappearPositionAttempts; i++)
+            {
+                float angle = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
+                float distance = UnityEngine.Random.Range(_settings.MinimumReappearDistance,
+                    _settings.MaximumReappearDistance);
+                Vector3 candidate = new Vector3(center.x + Mathf.Cos(angle) * distance, surfaceHeight,
+                    center.z + Mathf.Sin(angle) * distance);
+                if (MonsterMotion.IsFinite(candidate) && !IsProtected(candidate))
+                {
+                    position = candidate;
+                    return true;
+                }
+            }
+            return false;
         }
 
         private bool IsProtected(Vector3 position)

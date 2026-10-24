@@ -13,6 +13,10 @@ namespace Lighthouse.Monsters.Spinocroc.Rules
         [SerializeField, Min(0.01f)] private float _minimumPatrolDuration = 3f;
         [SerializeField, Min(0.01f)] private float _turnSpeed = 90f;
 
+        [Header("재등장 거리 (잠수 시작 시 보트 위치 기준, m)")]
+        [SerializeField, Min(0.01f)] private float _minimumReappearDistance = 12f;
+        [SerializeField, Min(0.01f)] private float _maximumReappearDistance = 20f;
+
         [Header("돌진과 공격 범위")]
         [SerializeField, Min(0.01f)] private float _chargeSpeed = 12f;
         [SerializeField, Min(0.01f)] private float _chargeDuration = 2f;
@@ -27,6 +31,8 @@ namespace Lighthouse.Monsters.Spinocroc.Rules
         public float LockedPreparationDuration => _lockedPreparationDuration;
         public float MinimumPatrolDuration => _minimumPatrolDuration;
         public float TurnSpeed => _turnSpeed;
+        public float MinimumReappearDistance => _minimumReappearDistance;
+        public float MaximumReappearDistance => _maximumReappearDistance;
         public float ChargeSpeed => _chargeSpeed;
         public float ChargeDuration => _chargeDuration;
         public Vector3 AttackLocalCenter => _attackLocalCenter;
@@ -36,6 +42,8 @@ namespace Lighthouse.Monsters.Spinocroc.Rules
             && IsPositive(_reappearDuration) && IsPositive(_windupDuration)
             && IsPositive(_lockedPreparationDuration) && IsPositive(_minimumPatrolDuration)
             && IsPositive(_turnSpeed) && IsPositive(_chargeSpeed) && IsPositive(_chargeDuration)
+            && IsPositive(_minimumReappearDistance) && IsPositive(_maximumReappearDistance)
+            && _maximumReappearDistance >= _minimumReappearDistance
             && IsPositive(_chargeSpeed * _chargeDuration)
             && IsPositive(_attackRadius) && IsFinite(_attackHalfLength) && _attackHalfLength >= 0f
             && IsFinite(_attackLocalCenter.x) && IsFinite(_attackLocalCenter.y) && IsFinite(_attackLocalCenter.z);
