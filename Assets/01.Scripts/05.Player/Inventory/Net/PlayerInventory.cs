@@ -1,3 +1,7 @@
+using Lighthouse.Interaction.Requests.Net;
+using Lighthouse.Interaction.Requests.Rules;
+using Lighthouse.Interaction.Router.Server;
+using Lighthouse.Interaction.Targets.Server;
 using Lighthouse.Modules.Server;
 using Lighthouse.Workbench.Net;
 using Lighthouse.Workbench.Rules;
@@ -32,7 +36,7 @@ public sealed class PlayerInventory : NetworkBehaviour
     private WorkbenchNet _serverModuleSource;
     private uint _serverActorId;
 
-    private readonly List<KeyValuePair<int, int>> _wreckLossCandidates = new List<KeyValuePair<int, int>>();
+   // private readonly List<KeyValuePair<int, int>> _wreckLossCandidates = new List<KeyValuePair<int, int>>();
 
     private ModuleInteractionHandler _serverModuleHandler;
     private void Awake()
@@ -193,126 +197,120 @@ public sealed class PlayerInventory : NetworkBehaviour
     }
 
     [Server]
-    public void BindServerModuleSource(
-    WorkbenchNet workbench,
-    ModuleInteractionHandler moduleHandler,
-    uint actorId)
+    public void BindServerModuleSource(WorkbenchNet workbench, ModuleInteractionHandler moduleHandler,uint actorId)
     {
         _serverModuleSource = workbench;
         _serverModuleHandler = moduleHandler;
         _serverActorId = actorId;
     }
+
     [Server]
-    public bool TryGetServerCarriedModule(
-        out int recipeId,
-        out uint moduleId)
+    public bool TryGetServerCarriedModule(out int recipeId, out uint moduleId)
     {
         recipeId = 0;
         moduleId = 0;
 
         if (!_serverModuleSource)
         {
-            Debug.LogError(
-                $"[{nameof(PlayerInventory)}] Server module source is not bound.",
-                this);
-
             return false;
         }
 
-        return _serverModuleSource.TryGetCarried(
-            _serverActorId,
-            out recipeId,
-            out moduleId);
+        return _serverModuleSource.TryGetCarried(_serverActorId, out recipeId, out moduleId);
     }
 
     [Server]
-    public bool TrySelectWreckLoss(out bool isModule, out int itemId)
+    public bool TryDiscardWreckModule(uint expectedModuleId)
     {
-        isModule = false;
-        itemId = 0;
-
-        if (!_serverModuleSource)
-        {
-            Debug.LogError(
-                $"[{nameof(PlayerInventory)}] Server module source is not bound.",
-                this);
-
-            return false;
-        }
-
-        _wreckLossCandidates.Clear();
-        CopyContentsTo(_wreckLossCandidates);
-
-        for (int i = _wreckLossCandidates.Count - 1; i >= 0; i--)
-        {
-            if (_wreckLossCandidates[i].Value <= 0)
-            {
-                _wreckLossCandidates.RemoveAt(i);
-            }
-        }
-
-        bool hasModule = TryGetServerCarriedModule(
-            out int recipeId,
-            out _);
-
-        int candidateCount = _wreckLossCandidates.Count
-            + (hasModule ? 1 : 0);
-
-        if (candidateCount == 0)
+        if (!_serverModuleHandler || expectedModuleId == 0)
         {
             return false;
         }
 
-        int selectedIndex = UnityEngine.Random.Range(0, candidateCount);
-
-        if (selectedIndex == _wreckLossCandidates.Count)
+        if (!TryGetServerCarriedModule(out _, out uint moduleId)
+            || moduleId != expectedModuleId)
         {
-            isModule = true;
-            itemId = recipeId;
-        }
-        else
-        {
-            itemId = _wreckLossCandidates[selectedIndex].Key;
+            return false;
         }
 
-        return true;
+        return _serverModuleHandler.DiscardCarried(_serverActorId);
     }
 
+    //[Server]
+    //public bool TrySelectWreckLoss(out bool isModule, out int itemId)
+    //{
+    //    isModule = false;
+    //    itemId = 0;
+
+    //    if (!_serverModuleSource)
+    //    {
+    //        return false;
+    //    }
+
+    //    _wreckLossCandidates.Clear();
+    //    CopyContentsTo(_wreckLossCandidates);
+
+    //    for (int i = _wreckLossCandidates.Count - 1; i >= 0; i--)
+    //    {
+    //        if (_wreckLossCandidates[i].Value <= 0)
+    //        {
+    //            _wreckLossCandidates.RemoveAt(i);
+    //        }
+    //    }
+
+    //    bool hasModule = TryGetServerCarriedModule(out int recipeId, out _);
+
+    //    int candidateCount = _wreckLossCandidates.Count + (hasModule ? 1 : 0);
+
+    //    if (candidateCount == 0)
+    //    {
+    //        return false;
+    //    }
+
+    //    int selectedIndex = UnityEngine.Random.Range(0, candidateCount);
+
+    //    if (selectedIndex == _wreckLossCandidates.Count)
+    //    {
+    //        isModule = true;
+    //        itemId = recipeId;
+    //    }
+    //    else
+    //    {
+    //        itemId = _wreckLossCandidates[selectedIndex].Key;
+    //    }
+
+    //    return true;
+    //}
+
+    //[Server]
+    //public bool TryApplyRescuedWreckLoss()
+    //{
+    //    if (!_serverModuleSource || !_serverModuleHandler || _serverModuleHandler.Ledger == null)
+    //    {
+    //        return false;
+    //    }
+
+    //    if (!TrySelectWreckLoss(out bool isModule, out int itemId))
+    //    {
+    //        return true;
+    //    }
+
+    //    if (isModule)
+    //    {
+    //        return _serverModuleHandler.DiscardCarried(_serverActorId);
+    //    }
+
+    //    int count = GetCount(itemId);
+
+    //    if (count <= 0)
+    //    {
+    //        return false;
+    //    }
+
+    //    return TryRemoveTo(itemId, count) == count;
+    //}
+
     [Server]
-    public bool TryApplyRescuedWreckLoss()
-    {
-        if (!_serverModuleSource || !_serverModuleHandler
-            || _serverModuleHandler.Ledger == null)
-        {
-            return false;
-        }
-
-        if (!TrySelectWreckLoss(out bool isModule, out int itemId))
-        {
-            return true;
-        }
-
-        if (isModule)
-        {
-            return _serverModuleHandler.DiscardCarried(_serverActorId);
-        }
-
-        int count = GetCount(itemId);
-
-        if (count <= 0)
-        {
-            return false;
-        }
-
-        return TryRemoveTo(itemId, count) == count;
-    }
-
-    [Server]
-    public bool TryBuildWreckDropPlan(
-    WreckRecoveryResult result,
-    List<KeyValuePair<int, int>> resources,
-    out int moduleRecipeId,
-    out uint moduleId)
+    public bool TryBuildWreckDropPlan(WreckRecoveryResult result, List<KeyValuePair<int, int>> resources, out int moduleRecipeId, out uint moduleId)
     {
         moduleRecipeId = 0;
         moduleId = 0;
@@ -324,8 +322,12 @@ public sealed class PlayerInventory : NetworkBehaviour
 
         resources.Clear();
 
-        if (result != WreckRecoveryResult.Rescued
-            && result != WreckRecoveryResult.TimedOut)
+        if (result != WreckRecoveryResult.Rescued && result != WreckRecoveryResult.TimedOut)
+        {
+            return false;
+        }
+
+        if (!_serverModuleSource || !_serverModuleHandler || _serverModuleHandler.Ledger == null)
         {
             return false;
         }
@@ -340,25 +342,49 @@ public sealed class PlayerInventory : NetworkBehaviour
             }
         }
 
-        if (result == WreckRecoveryResult.TimedOut
-            || resources.Count == 0)
+        bool hasModule =_serverModuleHandler.HasCarried(_serverActorId);
+
+        if (hasModule)
+        {
+            if (!TryGetServerCarriedModule(out moduleRecipeId,out moduleId))
+            {
+                return false;
+            }
+        }
+
+        if (result == WreckRecoveryResult.TimedOut)
         {
             return true;
         }
 
-        int selectedIndex =
-            UnityEngine.Random.Range(0, resources.Count);
+        int candidateCount = resources.Count + (hasModule ? 1 : 0);
+
+        if (candidateCount == 0)
+        {
+            return true;
+        }
+
+        int selectedIndex = UnityEngine.Random.Range(0, candidateCount);
+
+        if (hasModule && selectedIndex == resources.Count)
+        {
+            resources.Clear();
+            return true;
+        }
 
         KeyValuePair<int, int> selected = resources[selectedIndex];
 
         resources.Clear();
         resources.Add(selected);
 
+        moduleRecipeId = 0;
+        moduleId = 0;
+
         return true;
     }
 
-    [ContextMenu("Test/Select Wreck Loss")]
-    private void TestSelectWreckLoss()
+    [ContextMenu("Test/Read Carried Module")]
+    private void TestReadCarriedModule()
     {
         if (!isServer)
         {
@@ -379,18 +405,163 @@ public sealed class PlayerInventory : NetworkBehaviour
             return;
         }
 
-        if (!TrySelectWreckLoss(out bool isModule, out int itemId))
+        bool hasModule =
+            _serverModuleHandler.HasCarried(_serverActorId);
+
+        bool found = TryGetServerCarriedModule(
+            out int recipeId,
+            out uint moduleId);
+
+        Debug.Log(
+            $"[{nameof(PlayerInventory)}] " +
+            $"ActorId={_serverActorId}, HasModule={hasModule}, " +
+            $"Found={found}, RecipeId={recipeId}, ModuleId={moduleId}",
+            this);
+    }
+
+#if UNITY_EDITOR
+    [SerializeField, Min(1)]
+    private int _testWreckModuleRecipeId = 101;
+
+    [ContextMenu("Test/Give Wreck Module")]
+    private void TestGiveWreckModule()
+    {
+        if (!isServer || connectionToClient == null
+            || connectionToClient.identity != netIdentity
+            || !_serverModuleSource || !_serverModuleHandler
+            || _serverModuleHandler.Ledger == null
+            || !_serverModuleSource.Catalog)
         {
-            Debug.Log(
-                $"[{nameof(PlayerInventory)}] No loss candidates.",
+            Debug.LogWarning(
+                $"[{nameof(PlayerInventory)}] "
+                + "Run this on a connected server player after module binding.",
                 this);
 
             return;
         }
 
+        PlayerController player = GetComponent<PlayerController>();
+
+        if (!player || player.IsDowned || player.IsOnBoat)
+        {
+            Debug.LogWarning(
+                $"[{nameof(PlayerInventory)}] "
+                + "The player must be standing on land.",
+                this);
+
+            return;
+        }
+
+        if (_serverModuleHandler.HasCarried(_serverActorId))
+        {
+            Debug.LogWarning(
+                $"[{nameof(PlayerInventory)}] "
+                + "The player already carries a module.",
+                this);
+
+            return;
+        }
+
+        if (!_serverModuleSource.Catalog.TryGetById(
+            _testWreckModuleRecipeId,
+            out ModuleRecipe recipe) || !recipe)
+        {
+            Debug.LogWarning(
+                $"[{nameof(PlayerInventory)}] "
+                + $"Recipe {_testWreckModuleRecipeId} was not found.",
+                this);
+
+            return;
+        }
+
+        ModuleLedger ledger = _serverModuleHandler.Ledger;
+
+        if (_serverModuleSource.GetStoredCount(recipe.Id) == 0)
+        {
+            for (int i = 0; i < recipe.IngredientCount; i++)
+            {
+                RecipeIngredient ingredient = recipe.GetIngredient(i);
+
+                int missing = ingredient.Amount
+                    - _serverModuleSource.GetDeposited(
+                        recipe.Id,
+                        ingredient.ResourceId);
+
+                if (missing <= 0)
+                {
+                    continue;
+                }
+
+                if (!TryAdd(ingredient.ResourceId, missing))
+                {
+                    Debug.LogWarning(
+                        $"[{nameof(PlayerInventory)}] "
+                        + "Failed to add test ingredients.",
+                        this);
+
+                    return;
+                }
+
+                int deposited = _serverModuleSource.Deposit(
+                    _serverActorId,
+                    this,
+                    recipe.Id,
+                    ingredient.ResourceId,
+                    missing,
+                    ledger);
+
+                if (deposited != missing)
+                {
+                    TryRemoveTo(
+                        ingredient.ResourceId,
+                        missing - deposited);
+
+                    Debug.LogWarning(
+                        $"[{nameof(PlayerInventory)}] "
+                        + "Test deposit failed. Check the module existence cap.",
+                        this);
+
+                    return;
+                }
+            }
+
+            if (!_serverModuleSource.TryCraft(
+                _serverActorId,
+                recipe.Id,
+                ledger))
+            {
+                Debug.LogWarning(
+                    $"[{nameof(PlayerInventory)}] "
+                    + "Test crafting failed.",
+                    this);
+
+                return;
+            }
+        }
+
+        var target = new ResolvedTarget(
+            InteractionTargetKind.NetworkObject,
+            _serverModuleSource.netIdentity,
+            0,
+            _serverModuleSource.transform.position,
+            0f);
+
+        var context = new InteractionContext(
+            _serverActorId,
+            connectionToClient,
+            InteractionAction.TakeModule,
+            target,
+            recipe.Id,
+            0,
+            0);
+
+        var result = _serverModuleHandler.Handle(context);
+
         Debug.Log(
-            $"[{nameof(PlayerInventory)}] Selected: " +
-            $"IsModule={isModule}, ItemId={itemId}",
+            $"[{nameof(PlayerInventory)}] "
+            + $"Test module result: {result}, "
+            + $"HasCarried={_serverModuleHandler.HasCarried(_serverActorId)}",
             this);
     }
+#endif
 }

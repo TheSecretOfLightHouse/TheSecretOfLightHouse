@@ -32,8 +32,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
 
     private static readonly List<PlayerWreckRecovery> ActiveRecoveries = new List<PlayerWreckRecovery>();
 
-    private readonly List<KeyValuePair<int, int>> _plannedResources =
-    new List<KeyValuePair<int, int>>();
+    private readonly List<KeyValuePair<int, int>> _plannedResources = new List<KeyValuePair<int, int>>();
 
     private bool _hasDropPlan;
     private int _plannedModuleRecipeId;
@@ -41,7 +40,13 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
 
     private bool _hasDroppedResources;
 
+    private bool _hasDiscardedModule;
+
     private WreckDropItem[] _resourceDrops = System.Array.Empty<WreckDropItem>();
+
+    private ulong _nextDropBatchId;
+
+    private readonly Queue<KeyValuePair<ulong, WreckDropItem[]>> _pendingDrops = new Queue<KeyValuePair<ulong, WreckDropItem[]>>();
 
     public static IReadOnlyList<PlayerWreckRecovery> Active => ActiveRecoveries;
 
@@ -106,10 +111,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
     }
 
     [Server]
-    public void ConfigureRecovery(
-    PlayerBoatSpawner boatSpawner,
-    Transform boatSpawnPoint,
-    uint actorId)
+    public void ConfigureRecovery(PlayerBoatSpawner boatSpawner, Transform boatSpawnPoint, uint actorId)
     {
         _boatSpawner = boatSpawner;
         _boatSpawnPoint = boatSpawnPoint;
@@ -133,6 +135,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
         _plannedModuleRecipeId = 0;
         _plannedModuleId = 0;
         _hasDroppedResources = false;
+        _hasDiscardedModule = false;
         _resourceDrops = System.Array.Empty<WreckDropItem>();
         _player.SetDowned(true);
 
@@ -152,20 +155,15 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
             return false;
         }
 
-        if (!_inventory || !_dropper
-    || !_boatSpawner || !_boatSpawnPoint
-    || !_boatSpawner.PlayerRecoveryPoint)
+        if (!_inventory || !_dropper || !_boatSpawner || !_boatSpawnPoint || !_boatSpawner.PlayerRecoveryPoint)
         {
             return false;
         }
 
             BoatController wreckedBoat = _player.OwnedBoat;
 
-        if (!wreckedBoat || !wreckedBoat.IsWrecked
-            || wreckedBoat.Owner != _player
-            || !_player.IsDowned
-            || !wreckedBoat.IsOccupied
-            || _player.CurrentBoat != wreckedBoat)
+        if (!wreckedBoat || !wreckedBoat.IsWrecked || wreckedBoat.Owner != _player || !_player.IsDowned
+            || !wreckedBoat.IsOccupied || _player.CurrentBoat != wreckedBoat)
         {
             return false;
         }
@@ -175,15 +173,12 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
 
         if (!TryFinishRecovery())
         {
-            Debug.LogError(
-                $"[{nameof(PlayerWreckRecovery)}] Recovery failed. Check inventory settlement and boat replacement.",
-                this);
-
             return false;
         }
 
         return true;
     }
+
     [Server]
     private bool TrySettleRecoveryInventory()
     {
@@ -197,6 +192,11 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
             return true;
         }
 
+        if (_nextDropBatchId == ulong.MaxValue)
+        {
+            return false;
+        }
+
         if (!TryPrepareDropPlan())
         {
             return false;
@@ -207,34 +207,42 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
             return false;
         }
 
+        if (!TryDiscardPlannedModule())
+        {
+            return false;
+        }
+
+        if (_resourceDrops.Length > 0)
+        {
+            ulong batchId = ++_nextDropBatchId;
+
+            _pendingDrops.Enqueue(
+                new KeyValuePair<ulong, WreckDropItem[]>(
+                    batchId,
+                    _resourceDrops));
+        }
+
         _hasSettledInventory = true;
         return true;
     }
+
     [Server]
     private bool TryFinishRecovery()
     {
-        if (!_isCompletingRecovery || !_player
-            || !_boatSpawner || !_boatSpawnPoint
-            || !_boatSpawner.PlayerRecoveryPoint)
+        if (!_isCompletingRecovery || !_player || !_boatSpawner || !_boatSpawnPoint || !_boatSpawner.PlayerRecoveryPoint)
         {
             return false;
         }
 
         BoatController wreckedBoat = _player.OwnedBoat;
 
-        if (!wreckedBoat || !wreckedBoat.IsWrecked
-            || wreckedBoat.Owner != _player
-            || !_player.IsDowned
-            || !wreckedBoat.IsOccupied
-            || _player.CurrentBoat != wreckedBoat)
+        if (!wreckedBoat || !wreckedBoat.IsWrecked || wreckedBoat.Owner != _player || !_player.IsDowned
+            || !wreckedBoat.IsOccupied || _player.CurrentBoat != wreckedBoat)
         {
             return false;
         }
 
-        if (!_boatSpawner.TryCreateRecoveryBoat(
-            _player,
-            _boatSpawnPoint,
-            out BoatController replacementBoat))
+        if (!_boatSpawner.TryCreateRecoveryBoat(_player, _boatSpawnPoint, out BoatController replacementBoat))
         {
             return false;
         }
@@ -245,27 +253,17 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
             return false;
         }
 
-        Vector3 recoveryPosition =
-            _boatSpawner.PlayerRecoveryPoint.position;
+        Vector3 recoveryPosition = _boatSpawner.PlayerRecoveryPoint.position;
 
-        if (!wreckedBoat.TryDisembarkForRecovery(
-            _player,
-            recoveryPosition))
+        if (!wreckedBoat.TryDisembarkForRecovery(_player, recoveryPosition))
         {
             NetworkServer.Destroy(replacementBoat.gameObject);
             return false;
         }
 
-        if (!_player.TryReplaceWreckedBoat(
-            wreckedBoat,
-            replacementBoat))
+        if (!_player.TryReplaceWreckedBoat(wreckedBoat, replacementBoat))
         {
             NetworkServer.Destroy(replacementBoat.gameObject);
-
-            Debug.LogError(
-                $"[{nameof(PlayerWreckRecovery)}] Boat replacement failed after disembarking.",
-                this);
-
             return false;
         }
 
@@ -292,11 +290,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
             return true;
         }
 
-        if (!_inventory.TryBuildWreckDropPlan(
-            _recoveryResult,
-            _plannedResources,
-            out _plannedModuleRecipeId,
-            out _plannedModuleId))
+        if (!_inventory.TryBuildWreckDropPlan(_recoveryResult, _plannedResources, out _plannedModuleRecipeId,out _plannedModuleId))
         {
             return false;
         }
@@ -318,10 +312,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
             return true;
         }
 
-        if (!_dropper.TryDropResources(
-            _plannedResources,
-            _wreckPosition,
-            out WreckDropItem[] droppedItems))
+        if (!_dropper.TryDropResources(_plannedResources, _wreckPosition, out WreckDropItem[] droppedItems))
         {
             return false;
         }
@@ -332,23 +323,176 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
         return true;
     }
 
+    [Server]
+    private bool TryDiscardPlannedModule()
+    {
+        if (!_isCompletingRecovery || !_hasDropPlan || !_inventory)
+        {
+            return false;
+        }
+
+        if (_hasDiscardedModule)
+        {
+            return true;
+        }
+
+        if (_plannedModuleRecipeId == 0 && _plannedModuleId == 0)
+        {
+            _hasDiscardedModule = true;
+            return true;
+        }
+
+        if (_plannedModuleRecipeId <= 0 || _plannedModuleId == 0)
+        {
+            return false;
+        }
+
+        int resourceCount = _resourceDrops.Length;
+        var results = new WreckDropItem[resourceCount + 1];
+
+        System.Array.Copy(_resourceDrops, results, resourceCount);
+
+        results[resourceCount] = new WreckDropItem(
+            true,
+            _plannedModuleRecipeId,
+            1,
+            _wreckPosition);
+
+        if (!_inventory.TryDiscardWreckModule(_plannedModuleId))
+        {
+            return false;
+        }
+
+        _resourceDrops = results;
+        _hasDiscardedModule = true;
+
+        return true;
+    }
+
+    [Server]
+    public bool TryCopyResourceDropsTo(List<WreckDropItem> results, out ulong batchId)
+    {
+        batchId = 0;
+
+        if (results == null)
+        {
+            return false;
+        }
+
+        results.Clear();
+
+        if (!isServer || _pendingDrops.Count == 0)
+        {
+            return false;
+        }
+
+        KeyValuePair<ulong, WreckDropItem[]> batch =
+            _pendingDrops.Peek();
+
+        batchId = batch.Key;
+
+        for (int i = 0; i < batch.Value.Length; i++)
+        {
+            results.Add(batch.Value[i]);
+        }
+
+        return true;
+    }
+
+    [Server]
+    public bool TryAcknowledgeDrops(ulong batchId)
+    {
+        if (!isServer || _pendingDrops.Count == 0)
+        {
+            return false;
+        }
+
+        if (_pendingDrops.Peek().Key != batchId)
+        {
+            return false;
+        }
+
+        _pendingDrops.Dequeue();
+        return true;
+    }
+
     [ContextMenu("Test/Complete Rescue")]
     private void TestCompleteRescue()
     {
         if (!isServer)
         {
-            Debug.LogWarning(
-                $"[{nameof(PlayerWreckRecovery)}] Run this on the server player.",
-                this);
-
             return;
         }
 
-        bool succeeded =
-            TryBeginCompletion(WreckRecoveryResult.Rescued);
+        bool succeeded =TryBeginCompletion(WreckRecoveryResult.Rescued);
 
         Debug.Log(
             $"[{nameof(PlayerWreckRecovery)}] Rescue completed: {succeeded}",
             this);
     }
+
+#if UNITY_EDITOR
+    private ulong _testReadBatchId;
+
+    [ContextMenu("Test/Read Pending Drops")]
+    private void TestReadPendingDrops()
+    {
+        if (!isServer)
+        {
+            return;
+        }
+
+        var results = new List<WreckDropItem>();
+
+        if (!TryCopyResourceDropsTo(results, out ulong batchId))
+        {
+            _testReadBatchId = 0;
+
+            Debug.Log(
+                $"[{nameof(PlayerWreckRecovery)}] No pending drops.",
+                this);
+
+            return;
+        }
+
+        _testReadBatchId = batchId;
+
+        Debug.Log(
+            $"[{nameof(PlayerWreckRecovery)}] "
+            + $"Batch={batchId}, Count={results.Count}",
+            this);
+
+        foreach (WreckDropItem item in results)
+        {
+            Debug.Log(
+                $"[{nameof(PlayerWreckRecovery)}] "
+                + $"IsModule={item.IsModule}, "
+                + $"ItemId={item.ItemId}, "
+                + $"Amount={item.Amount}, "
+                + $"Position={item.Position}",
+                this);
+        }
+    }
+
+    [ContextMenu("Test/Acknowledge Read Drops")]
+    private void TestAcknowledgeReadDrops()
+    {
+        if (!isServer || _testReadBatchId == 0)
+        {
+            return;
+        }
+
+        bool succeeded = TryAcknowledgeDrops(_testReadBatchId);
+
+        Debug.Log(
+            $"[{nameof(PlayerWreckRecovery)}] "
+            + $"Acknowledge Batch={_testReadBatchId}: {succeeded}",
+            this);
+
+        if (succeeded)
+        {
+            _testReadBatchId = 0;
+        }
+    }
+#endif
 }

@@ -6,8 +6,7 @@ using UnityEngine;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(NetworkIdentity))]
-public sealed class PlayerRescueInteractionHandler
-        : NetworkBehaviour, IInteractionHandler
+public sealed class PlayerRescueInteractionHandler : NetworkBehaviour, IInteractionHandler
 {
     private bool _isRegistered;
 
@@ -15,15 +14,11 @@ public sealed class PlayerRescueInteractionHandler
     {
         base.OnStartServer();
 
-        _isRegistered = InteractionRouter.RegisterHandler(
-            InteractionAction.Rescue,
-            this);
+        _isRegistered = InteractionRouter.RegisterHandler(InteractionAction.Rescue, this);
 
         if (!_isRegistered)
         {
-            Debug.LogError(
-                $"[{nameof(PlayerRescueInteractionHandler)}] Rescue handler registration failed.",
-                this);
+            return;
         }
     }
 
@@ -31,9 +26,7 @@ public sealed class PlayerRescueInteractionHandler
     {
         if (_isRegistered)
         {
-            InteractionRouter.UnregisterHandler(
-                InteractionAction.Rescue,
-                this);
+            InteractionRouter.UnregisterHandler(InteractionAction.Rescue, this);
 
             _isRegistered = false;
         }
@@ -41,36 +34,24 @@ public sealed class PlayerRescueInteractionHandler
         base.OnStopServer();
     }
 
-    public InteractionResultCode Handle(
-        in InteractionContext context)
+    public InteractionResultCode Handle(in InteractionContext context)
     {
-        if (!isServer || context.Action != InteractionAction.Rescue
-            || context.Sender == null || !context.Sender.identity)
+        if (!isServer || context.Action != InteractionAction.Rescue || context.Sender == null || !context.Sender.identity)
         {
             return InteractionResultCode.Rejected;
         }
 
-        if (!context.Sender.identity.TryGetComponent(
-            out PlayerController rescuer)
-            || rescuer.IsDowned)
+        if (!context.Sender.identity.TryGetComponent(out PlayerController rescuer) || rescuer.IsDowned)
         {
             return InteractionResultCode.Rejected;
         }
 
-        if (!context.Target.Identity
-            || context.Target.Identity == context.Sender.identity
-            || !context.Target.Identity.TryGetComponent(
-                out PlayerController target)
-            || !target.IsDowned
-            || !target.TryGetComponent(
-                out PlayerWreckRecovery recovery))
+        if (!context.Target.Identity|| context.Target.Identity == context.Sender.identity || !context.Target.Identity.TryGetComponent(out PlayerController target)
+            || !target.IsDowned || !target.TryGetComponent(out PlayerWreckRecovery recovery))
         {
             return InteractionResultCode.InvalidTarget;
         }
 
-        return recovery.TryBeginCompletion(
-            WreckRecoveryResult.Rescued)
-            ? InteractionResultCode.Success
-            : InteractionResultCode.Rejected;
+        return recovery.TryBeginCompletion(WreckRecoveryResult.Rescued)? InteractionResultCode.Success: InteractionResultCode.Rejected;
     }
 }

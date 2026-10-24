@@ -3,7 +3,6 @@ using Lighthouse.Interaction.Requests.Net;
 using Mirror;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -55,30 +54,23 @@ public sealed class PlayerRescuePrompt : NetworkBehaviour
 
         for (int i = 0; i < PlayerWreckRecovery.Active.Count; i++)
         {
-            PlayerWreckRecovery candidate =
-                PlayerWreckRecovery.Active[i];
+            PlayerWreckRecovery candidate = PlayerWreckRecovery.Active[i];
 
-            if (!candidate || candidate.netId == 0
-    || candidate.netIdentity == netIdentity
-    || _dismissedTargets.Contains(candidate))
+            if (!candidate || candidate.netId == 0 || candidate.netIdentity == netIdentity || _dismissedTargets.Contains(candidate))
             {
                 continue;
             }
             PlayerController targetPlayer = candidate.Player;
             var target = candidate.RescueTarget;
 
-            if (!targetPlayer || !targetPlayer.isActiveAndEnabled
-                || !targetPlayer.IsDowned
-                || !target || !target.isActiveAndEnabled)
+            if (!targetPlayer || !targetPlayer.isActiveAndEnabled || !targetPlayer.IsDowned || !target || !target.isActiveAndEnabled)
             {
                 continue;
             }
 
-            float distanceSquared =
-                (target.Position - transform.position).sqrMagnitude;
+            float distanceSquared = (target.Position - transform.position).sqrMagnitude;
 
-            if (distanceSquared > target.Range * target.Range
-                || distanceSquared >= nearestDistanceSquared)
+            if (distanceSquared > target.Range * target.Range || distanceSquared >= nearestDistanceSquared)
             {
                 continue;
             }
@@ -104,25 +96,20 @@ public sealed class PlayerRescuePrompt : NetworkBehaviour
 
     public bool TryRescueTarget()
     {
-        if (!isClient || !isOwned || _player.IsDowned
-            || !_relay || _relay.IsAwaitingResult)
+        if (!isClient || !isOwned || _player.IsDowned || !_relay || _relay.IsAwaitingResult)
         {
             return false;
         }
 
         PlayerWreckRecovery target = CurrentTarget;
 
-        if (!target || !target.Player || !target.Player.IsDowned
-            || !target.RescueTarget
-            || !target.RescueTarget.isActiveAndEnabled)
+        if (!target || !target.Player || !target.Player.IsDowned || !target.RescueTarget || !target.RescueTarget.isActiveAndEnabled)
         {
             return false;
         }
 
         float range = target.RescueTarget.Range;
-        float distanceSquared =
-            (target.RescueTarget.Position - transform.position)
-            .sqrMagnitude;
+        float distanceSquared = (target.RescueTarget.Position - transform.position).sqrMagnitude;
 
         if (distanceSquared > range * range)
         {
@@ -130,9 +117,7 @@ public sealed class PlayerRescuePrompt : NetworkBehaviour
             return false;
         }
 
-        return _relay.TrySendToNetworkTarget(
-            target.netId,
-            InteractionAction.Rescue);
+        return _relay.TrySendToNetworkTarget(target.netId, InteractionAction.Rescue);
     }
     public void DismissTarget()
     {
@@ -155,18 +140,14 @@ public sealed class PlayerRescuePrompt : NetworkBehaviour
         {
             PlayerWreckRecovery target = _dismissedTargets[i];
 
-            if (!target || !target.Player || !target.Player.IsDowned
-                || !target.RescueTarget
-                || !target.RescueTarget.isActiveAndEnabled)
+            if (!target || !target.Player || !target.Player.IsDowned || !target.RescueTarget || !target.RescueTarget.isActiveAndEnabled)
             {
                 _dismissedTargets.RemoveAt(i);
                 continue;
             }
 
             float range = target.RescueTarget.Range;
-            float distanceSquared =
-                (target.RescueTarget.Position - transform.position)
-                .sqrMagnitude;
+            float distanceSquared = (target.RescueTarget.Position - transform.position).sqrMagnitude;
 
             if (distanceSquared > range * range)
             {
