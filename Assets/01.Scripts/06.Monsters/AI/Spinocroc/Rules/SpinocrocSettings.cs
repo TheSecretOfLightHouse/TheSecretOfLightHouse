@@ -24,6 +24,10 @@ namespace Lighthouse.Monsters.Spinocroc.Rules
         [SerializeField, Min(0.01f)] private float _attackRadius = 2f;
         [SerializeField, Min(0f)] private float _attackHalfLength = 3f;
 
+        [Header("돌진 후 감속과 회복 (회복 시간에 감속 포함)")]
+        [SerializeField, Min(0.01f)] private float _decelerationDuration = 0.6f;
+        [SerializeField, Min(0.01f)] private float _recoveryDuration = 2f;
+
         public float DiveDepth => _diveDepth;
         public float DiveDuration => _diveDuration;
         public float ReappearDuration => _reappearDuration;
@@ -38,12 +42,16 @@ namespace Lighthouse.Monsters.Spinocroc.Rules
         public Vector3 AttackLocalCenter => _attackLocalCenter;
         public float AttackRadius => _attackRadius;
         public float AttackHalfLength => _attackHalfLength;
+        public float DecelerationDuration => _decelerationDuration;
+        public float RecoveryDuration => _recoveryDuration;
         public bool HasValidValues => IsPositive(_diveDepth) && IsPositive(_diveDuration)
             && IsPositive(_reappearDuration) && IsPositive(_windupDuration)
             && IsPositive(_lockedPreparationDuration) && IsPositive(_minimumPatrolDuration)
             && IsPositive(_turnSpeed) && IsPositive(_chargeSpeed) && IsPositive(_chargeDuration)
             && IsPositive(_minimumReappearDistance) && IsPositive(_maximumReappearDistance)
             && _maximumReappearDistance >= _minimumReappearDistance
+            && IsPositive(_decelerationDuration) && IsPositive(_recoveryDuration)
+            && _recoveryDuration > _decelerationDuration
             && IsPositive(_chargeSpeed * _chargeDuration)
             && IsPositive(_attackRadius) && IsFinite(_attackHalfLength) && _attackHalfLength >= 0f
             && IsFinite(_attackLocalCenter.x) && IsFinite(_attackLocalCenter.y) && IsFinite(_attackLocalCenter.z);

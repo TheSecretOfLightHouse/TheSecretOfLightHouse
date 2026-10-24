@@ -82,7 +82,8 @@ namespace Lighthouse.Monsters.Spinocroc.Net
             {
                 return;
             }
-            if (_phase == SpinocrocPhase.Dead || _phase == SpinocrocPhase.ChargeCompleted)
+            if (_phase == SpinocrocPhase.Dead || _phase == SpinocrocPhase.ChargeCompleted
+                || _phase == SpinocrocPhase.RecoveryCompleted)
             {
                 _animator.speed = 0f;
                 return;
@@ -95,6 +96,12 @@ namespace Lighthouse.Monsters.Spinocroc.Net
                 case SpinocrocPhase.Charging:
                     clip = _chargeClip;
                     hash = ChargeHash;
+                    break;
+                case SpinocrocPhase.Decelerating:
+                case SpinocrocPhase.Recovering:
+                    // 회복 전용 클립 제작 전에는 배회 자세를 정지해 반격 시간을 구별한다.
+                    clip = _patrolClip;
+                    hash = PatrolHash;
                     break;
                 case SpinocrocPhase.Diving:
                     clip = _diveClip;
@@ -117,13 +124,14 @@ namespace Lighthouse.Monsters.Spinocroc.Net
             }
 
             float elapsed = (float)Math.Max(0d, NetworkTime.time - _stateStartedAt);
-            bool holdPose = _phase == SpinocrocPhase.DirectionLocked || _phase == SpinocrocPhase.ReadyForCharge;
+            bool isRecovery = _phase == SpinocrocPhase.Decelerating || _phase == SpinocrocPhase.Recovering;
+            bool holdPose = _phase == SpinocrocPhase.DirectionLocked || _phase == SpinocrocPhase.ReadyForCharge || isRecovery;
             bool loop = _phase == SpinocrocPhase.Patrol || _phase == SpinocrocPhase.Charging;
             float normalized = loop
                 ? elapsed / clip.length % 1f
                 : Mathf.Clamp01(elapsed / Mathf.Max(0.01f, _stateDuration));
             _animator.speed = holdPose ? 0f : (loop || _stateDuration <= 0f ? 1f : clip.length / _stateDuration);
-            _animator.Play(hash, 0, holdPose ? 1f : normalized);
+            _animator.Play(hash, 0, isRecovery ? 0f : (holdPose ? 1f : normalized));
         }
     }
 }

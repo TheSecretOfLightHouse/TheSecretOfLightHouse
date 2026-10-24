@@ -19,8 +19,12 @@ MonoBehaviour:
   _lockedPreparationDuration: 0.75
   _minimumPatrolDuration: 3
   _turnSpeed: 90
+  _minimumReappearDistance: 12
+  _maximumReappearDistance: 20
   _chargeSpeed: 12
   _chargeDuration: 2
   _attackLocalCenter: {x: 0, y: 0.25, z: 0.3}
   _attackRadius: 2
   _attackHalfLength: 3
+  _decelerationDuration: 0.6
+  _recoveryDuration: 2

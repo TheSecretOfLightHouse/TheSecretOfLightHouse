@@ -10,6 +10,9 @@ namespace Lighthouse.Monsters.Spinocroc.Rules
         ReadyForCharge,
         Dead,
         Charging,
-        ChargeCompleted
+        ChargeCompleted,
+        Decelerating,
+        Recovering,
+        RecoveryCompleted
     }
 }

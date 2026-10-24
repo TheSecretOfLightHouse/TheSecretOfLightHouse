@@ -23,6 +23,7 @@ namespace Lighthouse.Monsters.Spinocroc.Server
         private MonsterMotion _motion;
         private SeaMonsterSensor _sensor;
         private SpinocrocPreparation _preparation;
+        private SpinocrocRecovery _recovery;
         private Rigidbody _body;
         private Vector3 _direction;
         private Vector3 _startPosition;
@@ -39,7 +40,8 @@ namespace Lighthouse.Monsters.Spinocroc.Server
         private SpinocrocChargeStopReason _stopReason;
 
         public bool IsCharging => _isCharging;
-        public bool HasCompleted => _stopReason == SpinocrocChargeStopReason.Completed;
+        public bool HasCompleted => _stopReason == SpinocrocChargeStopReason.Completed
+            || _stopReason == SpinocrocChargeStopReason.Obstacle;
         public ulong AttackId => _attackId;
         public int HitTargetCount => _hitTargets.Count;
         public Vector3 Direction => _direction;
@@ -56,6 +58,7 @@ namespace Lighthouse.Monsters.Spinocroc.Server
             _motion = GetComponent<MonsterMotion>();
             _sensor = GetComponent<SeaMonsterSensor>();
             _preparation = GetComponent<SpinocrocPreparation>();
+            _recovery = GetComponent<SpinocrocRecovery>();
             _body = GetComponent<Rigidbody>();
         }
 
@@ -299,15 +302,17 @@ namespace Lighthouse.Monsters.Spinocroc.Server
         {
             _isCharging = false;
             _stopReason = reason;
-            _motion.Stop();
-            if (reason == SpinocrocChargeStopReason.Completed)
+            if (reason == SpinocrocChargeStopReason.Completed || reason == SpinocrocChargeStopReason.Obstacle)
             {
+                Vector3 velocity = reason == SpinocrocChargeStopReason.Completed ? _body.linearVelocity : Vector3.zero;
                 _preparation.CompleteCharge();
+                if (_recovery != null && _recovery.TryBegin(velocity))
+                {
+                    return;
+                }
             }
-            else
-            {
-                _preparation.Cancel();
-            }
+            _motion.Stop();
+            _preparation.Cancel();
         }
 
         private void HandlePhaseChanged(SpinocrocPhase phase)

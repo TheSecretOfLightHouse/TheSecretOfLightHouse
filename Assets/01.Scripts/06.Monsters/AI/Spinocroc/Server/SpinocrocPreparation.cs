@@ -67,6 +67,8 @@ namespace Lighthouse.Monsters.Spinocroc.Server
                     case SpinocrocPhase.Windup: return _settings.WindupDuration;
                     case SpinocrocPhase.DirectionLocked: return _settings.LockedPreparationDuration;
                     case SpinocrocPhase.Charging: return _settings.ChargeDuration;
+                    case SpinocrocPhase.Decelerating: return _settings.DecelerationDuration;
+                    case SpinocrocPhase.Recovering: return _settings.RecoveryDuration - _settings.DecelerationDuration;
                     default: return 0f;
                 }
             }
@@ -247,6 +249,32 @@ namespace Lighthouse.Monsters.Spinocroc.Server
             if (_monster.isServer && _phase == SpinocrocPhase.Charging)
             {
                 SetPhase(SpinocrocPhase.ChargeCompleted);
+            }
+        }
+
+        public bool TryStartRecovery()
+        {
+            if (!CanAct || !_ownsMotion || !HasCompletedCharge)
+            {
+                return false;
+            }
+            SetPhase(SpinocrocPhase.Decelerating);
+            return _phase == SpinocrocPhase.Decelerating && CanAct;
+        }
+
+        public void MarkRecoveryStopped()
+        {
+            if (_monster.isServer && _phase == SpinocrocPhase.Decelerating)
+            {
+                SetPhase(SpinocrocPhase.Recovering);
+            }
+        }
+
+        public void CompleteRecovery()
+        {
+            if (_monster.isServer && (_phase == SpinocrocPhase.Decelerating || _phase == SpinocrocPhase.Recovering))
+            {
+                SetPhase(SpinocrocPhase.RecoveryCompleted);
             }
         }
 

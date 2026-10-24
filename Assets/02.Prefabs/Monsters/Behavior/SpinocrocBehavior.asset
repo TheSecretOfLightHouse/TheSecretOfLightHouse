@@ -69,92 +69,6 @@ MonoBehaviour:
           m_Value1: 1459792126966936505
         Name: "\uC644\uB8CC \uACF5\uACA9 \uC7AC\uC0AC\uC6A9 \uC2DC\uAC04"
         m_Value: 0
-    - rid: 149323010259026064
-      type: {class: Start, ns: Unity.Behavior, asm: Unity.Behavior}
-      data:
-        ID:
-          m_Value0: 4119182934977911623
-          m_Value1: 4066214369334370689
-        Graph:
-          rid: 6255968569297207368
-        m_Parent:
-          rid: -2
-        m_Child:
-          rid: 149323010259026065
-        Repeat: 1
-        AllowMultipleRepeatsPerTick: 0
-    - rid: 149323010259026065
-      type: {class: SequenceComposite, ns: Unity.Behavior, asm: Unity.Behavior}
-      data:
-        ID:
-          m_Value0: 9904952475285614736
-          m_Value1: 14866993630325504677
-        Graph:
-          rid: 6255968569297207368
-        m_Parent:
-          rid: 149323010259026064
-        m_Children:
-        - rid: 149323010259026066
-        - rid: 149323010259026067
-        - rid: 149323010259026068
-        - rid: 149323010259026069
-        m_RegisteredObservers: []
-    - rid: 149323010259026066
-      type: {class: SpinocrocPatrolAction, ns: Lighthouse.Monsters.Spinocroc.Server, asm: Lighthouse.Runtime}
-      data:
-        ID:
-          m_Value0: 8886201295342289642
-          m_Value1: 7842303147006374961
-        Graph:
-          rid: 6255968569297207368
-        m_Parent:
-          rid: 149323010259026065
-        _self:
-          rid: 149323010259026010
-        _targetBoat:
-          rid: 149323010259026011
-    - rid: 149323010259026067
-      type: {class: SpinocrocPrepareAction, ns: Lighthouse.Monsters.Spinocroc.Server, asm: Lighthouse.Runtime}
-      data:
-        ID:
-          m_Value0: 16849322482552295067
-          m_Value1: 12892244208614183490
-        Graph:
-          rid: 6255968569297207368
-        m_Parent:
-          rid: 149323010259026065
-        _self:
-          rid: 149323010259026010
-        _targetBoat:
-          rid: 149323010259026011
-    - rid: 149323010259026068
-      type: {class: SpinocrocChargeAction, ns: Lighthouse.Monsters.Spinocroc.Server, asm: Lighthouse.Runtime}
-      data:
-        ID:
-          m_Value0: 9672675923266845489
-          m_Value1: 1790430197272512227
-        Graph:
-          rid: 6255968569297207368
-        m_Parent:
-          rid: 149323010259026065
-        _self:
-          rid: 149323010259026010
-        _targetBoat:
-          rid: 149323010259026011
-    - rid: 149323010259026069
-      type: {class: SpinocrocEndPreviewAction, ns: Lighthouse.Monsters.Spinocroc.Server, asm: Lighthouse.Runtime}
-      data:
-        ID:
-          m_Value0: 7018546686410968432
-          m_Value1: 10169829238694741923
-        Graph:
-          rid: 6255968569297207368
-        m_Parent:
-          rid: 149323010259026065
-        _self:
-          rid: 149323010259026010
-        _targetBoat:
-          rid: 149323010259026011
     - rid: 6255968569297207368
       type: {class: BehaviorGraphModule, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
@@ -166,8 +80,8 @@ MonoBehaviour:
           rid: 6255968569297207369
         BlackboardGroupReferences: []
         Root:
-          rid: 149323010259026064
-        m_VersionTimestamp: 639284061349915396
+          rid: 6255968818399019088
+        m_VersionTimestamp: 639284427105650417
     - rid: 6255968569297207369
       type: {class: BlackboardReference, ns: Unity.Behavior, asm: Unity.Behavior}
       data:
@@ -184,6 +98,92 @@ MonoBehaviour:
         - rid: 149323010259026013
         - rid: 149323010259026014
         - rid: 149323010259026015
+    - rid: 6255968818399019088
+      type: {class: Start, ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        ID:
+          m_Value0: 4119182934977911623
+          m_Value1: 4066214369334370689
+        Graph:
+          rid: 6255968569297207368
+        m_Parent:
+          rid: -2
+        m_Child:
+          rid: 6255968818399019089
+        Repeat: 1
+        AllowMultipleRepeatsPerTick: 0
+    - rid: 6255968818399019089
+      type: {class: SequenceComposite, ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        ID:
+          m_Value0: 9904952475285614736
+          m_Value1: 14866993630325504677
+        Graph:
+          rid: 6255968569297207368
+        m_Parent:
+          rid: 6255968818399019088
+        m_Children:
+        - rid: 6255968818399019090
+        - rid: 6255968818399019091
+        - rid: 6255968818399019092
+        - rid: 6255968818399019093
+        m_RegisteredObservers: []
+    - rid: 6255968818399019090
+      type: {class: SpinocrocPatrolAction, ns: Lighthouse.Monsters.Spinocroc.Server, asm: Lighthouse.Runtime}
+      data:
+        ID:
+          m_Value0: 8886201295342289642
+          m_Value1: 7842303147006374961
+        Graph:
+          rid: 6255968569297207368
+        m_Parent:
+          rid: 6255968818399019089
+        _self:
+          rid: 149323010259026010
+        _targetBoat:
+          rid: 149323010259026011
+    - rid: 6255968818399019091
+      type: {class: SpinocrocPrepareAction, ns: Lighthouse.Monsters.Spinocroc.Server, asm: Lighthouse.Runtime}
+      data:
+        ID:
+          m_Value0: 16849322482552295067
+          m_Value1: 12892244208614183490
+        Graph:
+          rid: 6255968569297207368
+        m_Parent:
+          rid: 6255968818399019089
+        _self:
+          rid: 149323010259026010
+        _targetBoat:
+          rid: 149323010259026011
+    - rid: 6255968818399019092
+      type: {class: SpinocrocChargeAction, ns: Lighthouse.Monsters.Spinocroc.Server, asm: Lighthouse.Runtime}
+      data:
+        ID:
+          m_Value0: 9672675923266845489
+          m_Value1: 1790430197272512227
+        Graph:
+          rid: 6255968569297207368
+        m_Parent:
+          rid: 6255968818399019089
+        _self:
+          rid: 149323010259026010
+        _targetBoat:
+          rid: 149323010259026011
+    - rid: 6255968818399019093
+      type: {class: SpinocrocRecoveryAction, ns: Lighthouse.Monsters.Spinocroc.Server, asm: Lighthouse.Runtime}
+      data:
+        ID:
+          m_Value0: 7018546686410968432
+          m_Value1: 10169829238694741923
+        Graph:
+          rid: 6255968569297207368
+        m_Parent:
+          rid: 6255968818399019089
+        _self:
+          rid: 149323010259026010
+        _targetBoat:
+          rid: 149323010259026011
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -205,7 +205,7 @@ MonoBehaviour:
   - rid: 149323010259026026
   - rid: 149323010259026057
   - rid: 149323010259026027
-  m_VersionTimestamp: 639284061349915396
+  m_VersionTimestamp: 639284427105650417
   m_SerializedVersion: 3
   m_DebugInfo: {fileID: 48162156267709947}
   m_RuntimeGraph: {fileID: -1276845571039540674}
@@ -300,14 +300,14 @@ MonoBehaviour:
       Tooltip: 
     NamedChildren: []
     IsPlaceholder: 0
-  - Name: "\uC2A4\uD53C\uB178\uD06C\uB85D \uB3CC\uC9C4 \uC2DC\uD5D8 \uC885\uB8CC"
-    Story: "[Self]\uAC00 \uB3CC\uC9C4 \uC2DC\uD5D8\uC744 \uB9C8\uCE58\uACE0 \uBC30\uD68C\uB85C
-      \uB3CC\uC544\uAC04\uB2E4"
-    RuntimeTypeString: Lighthouse.Monsters.Spinocroc.Server.SpinocrocEndPreviewAction,
+  - Name: "\uC2A4\uD53C\uB178\uD06C\uB85D \uAC10\uC18D\uACFC \uD68C\uBCF5"
+    Story: "[Self]\uAC00 \uAC10\uC18D\uD558\uACE0 \uBC18\uACA9\uC5D0 \uB178\uCD9C\uB41C
+      \uB4A4 \uBC30\uD68C\uB85C \uB3CC\uC544\uAC04\uB2E4"
+    RuntimeTypeString: Lighthouse.Monsters.Spinocroc.Server.SpinocrocRecoveryAction,
       Lighthouse.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
     RuntimeTypeID:
-      m_Value0: 13998754881637782432
-      m_Value1: 14712212505698400923
+      m_Value0: 1606080241059140860
+      m_Value1: 10322928740041562006
     Variables:
     - Name: Self
       Type:
@@ -386,11 +386,11 @@ MonoBehaviour:
         - rid: 149323010259026036
         - rid: 149323010259026037
         NodeType:
-          m_SerializableType: Lighthouse.Monsters.Spinocroc.Server.SpinocrocEndPreviewAction,
+          m_SerializableType: Lighthouse.Monsters.Spinocroc.Server.SpinocrocRecoveryAction,
             Lighthouse.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
         NodeTypeID:
-          m_Value0: 13998754881637782432
-          m_Value1: 14712212505698400923
+          m_Value0: 1606080241059140860
+          m_Value1: 10322928740041562006
         m_FieldValues:
         - rid: 149323010259026038
         - rid: 149323010259026039
