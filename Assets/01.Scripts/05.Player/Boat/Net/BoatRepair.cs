@@ -142,8 +142,17 @@ public sealed class BoatRepair : NetworkBehaviour
 
         if (HasAllMaterials())
         {
-            Debug.Log($"{_durability}");
-            _durability.RestoreDurability(_repairAmount);
+            float repairMultiplier = 1f;
+
+            if (player.TryGetComponent(out PlayerPassiveController passiveController))
+            {
+                repairMultiplier = passiveController.GetRepairAmountMultiplier(_boat);
+            }
+
+            float repairAmount = _repairAmount * repairMultiplier;
+
+            Debug.Log($"{repairAmount}");
+            _durability.RestoreDurability(repairAmount);
             _deposited.Clear();
         }
 

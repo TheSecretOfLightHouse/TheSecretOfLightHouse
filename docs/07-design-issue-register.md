@@ -97,7 +97,7 @@
 | [R14](design/references/v4-design-review.md#r14) | 기다리기와 투표 보류의 우세는 아직 가설이다 | P1 · 검증 가설 | 가설 검증 필요 |
 | [R15](design/references/v4-design-review.md#r15) | 무작위 투표 확률의 가정과 해석을 명시해야 한다 | P2 · 검증 가설 | 수식 가정과 실제 승률 구분. 투표2회와 확인횟수 혼동 금지 |
 | [R16](design/references/v4-design-review.md#r16) | 확인 실패 단서와 기회 소진의 공개 규칙이 없다 | P1 · 누락 계약 | 결정 2·7절: 중복 없는 무고 시민1명 무작위 공개, 성공/소진은 마피아만, 마지막권 성공의10초는 유지. v4 실패 전체공지 유지. 확인횟수/기준 설정과 공개·재전송 구현·검증 남음 |
-| [R17](design/references/v4-design-review.md#r17) | 네 명의 직군 배정과 필수 카운터가 미정이다 | P1 · 미정 명시 | 계약 확인 필요 |
+| [R17](design/references/v4-design-review.md#r17) | 네 명의 직군 배정과 필수 카운터가 미정이다 | P1 · 미정 명시 | 2026-10-24 [직군 결정](design/job-ability-decisions.md): 항해사 유지, 정비공=수리 게이지 증가/부식 확인, 경비병=재장전 증가/1회 모든 피해 쉴드, 채집가=스택 증가/시간제 채집량2배. 부식 확인 담당 해결. 배정 중복·필수 포함·수리 게이지 의미·수치·대상/사용 제한 등 잔여 계약과 구현·통합 검증 남음 |
 | [R18](design/references/v4-design-review.md#r18) | 개인 지도 비교도 환영 섬 판별 수단이 된다 | P2 · 검증 가설 | 가설 검증 필요 |
 | [R19](design/references/v4-design-review.md#r19) | 단서의 진실성과 증거 열람 경로가 없다 | P1 · 누락 계약 | 계약 확인 필요 |
 | [R20](design/references/v4-design-review.md#r20) | 방해하지 않는 마피아를 식별할 정보량을 확인해야 한다 | P1 · 검증 가설 | 가설 검증 필요 |

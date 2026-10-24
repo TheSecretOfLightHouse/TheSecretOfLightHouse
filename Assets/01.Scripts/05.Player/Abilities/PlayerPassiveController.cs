@@ -70,6 +70,24 @@ public sealed class PlayerPassiveController : NetworkBehaviour
         return 1f;
     }
 
+    [Server]
+    public float GetRepairAmountMultiplier(BoatController boat)
+    {
+        if (!isActiveAndEnabled || !_isBound
+            || !_isJobAbilityEnabled || !_passiveComponent
+            || !_passiveComponent.isActiveAndEnabled)
+        {
+            return 1f;
+        }
+
+        if (_passive is IBoatRepairModifier modifier)
+        {
+            return modifier.GetRepairAmountMultiplier(boat);
+        }
+
+        return 1f;
+    }
+
     private void Bind()
     {
         if (_isBound || !_player || !_passiveComponent)
