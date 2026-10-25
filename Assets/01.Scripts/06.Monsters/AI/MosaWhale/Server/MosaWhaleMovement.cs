@@ -33,12 +33,19 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         private float _surfaceHeight;
         private float _patrolStartDepth;
         private bool _controlsBody;
+        private bool _hasCrossedSurface;
+        private double _surfaceCrossedAt;
+        private Vector3 _headPosition;
 
         public Vector3 AttackCenter => _attackCenter;
         public float AttackRadius => _attackRadius;
         public bool HasAttackCenter => _hasAttackCenter;
         public bool IsTelegraphVisible => _isTelegraphVisible;
         public bool HasValidSetup => _poseProfile != null && _poseProfile.HasValidCurves;
+        public bool HasValidDamagePose => HasValidSetup && _poseProfile.HasValidHeadCurve;
+        public bool HasCrossedSurface => _hasCrossedSurface;
+        public double SurfaceCrossedAt => _surfaceCrossedAt;
+        public Vector3 HeadPosition => _headPosition;
 
         private void Awake()
         {
@@ -103,10 +110,6 @@ namespace Lighthouse.Monsters.MosaWhale.Server
                 position.y += Mathf.Lerp(-settings.DiveDepth, settings.BreachHeight,
                     _poseProfile.EvaluateLift(breach));
                 rotation = _heading * _poseProfile.EvaluateRotation(_cycle.Phase, breach);
-                if (position.y >= _attackCenter.y)
-                {
-                    _isTelegraphVisible = false;
-                }
             }
             if (_cycle.IsAttackCancelled)
             {
@@ -125,6 +128,20 @@ namespace Lighthouse.Monsters.MosaWhale.Server
                 Vector3 velocity = _body.linearVelocity;
                 velocity.y = 0f;
                 _body.linearVelocity = velocity;
+            }
+            if (_cycle.Phase == MosaWhalePhase.Rising && HasValidDamagePose)
+            {
+                float breach = Mathf.Clamp01((float)(NetworkTime.time - _cycle.BreachStartedAt)
+                    / Mathf.Max(0.01f, _cycle.BreachDuration));
+                Vector3 localHead = _poseProfile.EvaluateHeadLocalPosition(breach);
+                _headPosition = position + rotation * Vector3.Scale(localHead, transform.lossyScale);
+                if (!_hasCrossedSurface && MonsterMotion.IsFinite(_headPosition)
+                    && _headPosition.y >= _attackCenter.y)
+                {
+                    _hasCrossedSurface = true;
+                    _surfaceCrossedAt = NetworkTime.time;
+                    _isTelegraphVisible = false;
+                }
             }
         }
 
@@ -154,6 +171,8 @@ namespace Lighthouse.Monsters.MosaWhale.Server
                 _controlsBody = true;
             }
             _body.constraints = _savedConstraints & ~RigidbodyConstraints.FreezePositionY;
+            _hasCrossedSurface = false;
+            _surfaceCrossedAt = 0d;
             if (phase == MosaWhalePhase.Patrol)
             {
                 _isTelegraphVisible = false;
@@ -202,6 +221,8 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         {
             _isTelegraphVisible = false;
             _hasAttackCenter = false;
+            _hasCrossedSurface = false;
+            _surfaceCrossedAt = 0d;
             if (!_controlsBody)
             {
                 return;

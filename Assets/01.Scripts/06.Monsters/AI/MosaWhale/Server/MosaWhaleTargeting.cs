@@ -161,6 +161,13 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         }
 
         [Server]
+        public bool CanDamageTarget(MonsterBoatTarget target)
+        {
+            return HasProtectionData && target != null && target.IsEligible
+                && MonsterMotion.IsFinite(target.transform.position) && !IsProtected(target.transform.position);
+        }
+
+        [Server]
         private bool IsProtected(Vector3 position)
         {
             if (!MonsterMotion.IsFinite(position))

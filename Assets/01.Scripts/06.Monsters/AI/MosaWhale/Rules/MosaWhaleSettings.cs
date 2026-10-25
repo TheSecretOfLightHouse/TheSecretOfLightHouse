@@ -25,6 +25,9 @@ namespace Lighthouse.Monsters.MosaWhale.Rules
         [SerializeField, Min(0.01f)] private float _patrolSettleDuration = 1.5f;
         [SerializeField] private float _prototypeSurfaceHeight;
 
+        [Header("머리 수면 돌파 후 피해 유지 시간 (상승 구간에서만 적용)")]
+        [SerializeField, Min(0.01f)] private float _damageWindowDuration = 0.35f;
+
         public float MinimumPatrolDuration => _minimumPatrolDuration;
         public float ReattackDelay => _reattackDelay;
         public float DiveDuration => _diveDuration;
@@ -42,6 +45,7 @@ namespace Lighthouse.Monsters.MosaWhale.Rules
         public float RecoveryExposureDuration => _recoveryExposureDuration;
         public float PatrolSettleDuration => _patrolSettleDuration;
         public float PrototypeSurfaceHeight => _prototypeSurfaceHeight;
+        public float DamageWindowDuration => _damageWindowDuration;
         public bool HasValidValues => IsPositive(_minimumPatrolDuration) && IsPositive(_reattackDelay)
             && IsPositive(_diveDuration) && IsPositive(_telegraphDuration)
             && IsPositive(_riseDuration) && IsPositive(_apexDuration) && IsPositive(_reentryDuration)
@@ -50,6 +54,7 @@ namespace Lighthouse.Monsters.MosaWhale.Rules
             && IsPositive(_breachHeight) && IsPositive(_attackRadius)
             && IsPositive(_recoveryDepth) && _recoveryDepth < _patrolDepth
             && IsPositive(_recoveryExposureDuration) && IsPositive(_patrolSettleDuration)
+            && IsPositive(_damageWindowDuration)
             && !float.IsNaN(_prototypeSurfaceHeight) && !float.IsInfinity(_prototypeSurfaceHeight);
 
         private static bool IsPositive(float value)

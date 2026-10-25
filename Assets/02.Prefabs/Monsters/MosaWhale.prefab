@@ -1009,6 +1009,7 @@ GameObject:
   - component: {fileID: 8518323554242146452}
   - component: {fileID: 4873556891176067880}
   - component: {fileID: 2613979745239694078}
+  - component: {fileID: 4812960600492263954}
   m_Layer: 0
   m_Name: MosaWhale
   m_TagString: Untagged
@@ -1304,6 +1305,18 @@ MonoBehaviour:
   _color: {r: 1, g: 0.35, b: 0.05, a: 0.9}
   _lineWidth: 0.2
   _surfaceOffset: 0.1
+--- !u!114 &4812960600492263954
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6674311751177937813}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09ec0bdb025a3004fbf05f09fd3f96ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &6853744608551770706
 GameObject:
   m_ObjectHideFlags: 0

@@ -24,6 +24,7 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         private SeaMonsterSensor _sensor;
         private MosaWhaleTargeting _targeting;
         private MosaWhaleMovement _movement;
+        private MosaWhaleAttack _attack;
         private double _patrolStartedAt;
         private double _nextAttackAt;
         private float _patrolWaitUntil;
@@ -55,6 +56,7 @@ namespace Lighthouse.Monsters.MosaWhale.Server
             _sensor = GetComponent<SeaMonsterSensor>();
             _targeting = GetComponent<MosaWhaleTargeting>();
             _movement = GetComponent<MosaWhaleMovement>();
+            _attack = GetComponent<MosaWhaleAttack>();
         }
 
         private void OnEnable()
@@ -122,11 +124,8 @@ namespace Lighthouse.Monsters.MosaWhale.Server
             }
             if (!_isAttackCancelled && _phase != MosaWhalePhase.Recovering)
             {
-                bool hasProtection = _targeting.RefreshTarget(out bool isProtected);
-                if (!hasProtection || isProtected)
+                if (!ValidateProtection())
                 {
-                    CancelAttack(hasProtection ? MosaWhaleStopReason.ProtectedTarget
-                        : MosaWhaleStopReason.ProtectionUnavailable);
                     return true;
                 }
             }
@@ -166,6 +165,10 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         public void EndCycle()
         {
             _isRunning = false;
+            if (_attack != null)
+            {
+                _attack.StopAttack();
+            }
             if (_movement != null)
             {
                 _movement.Release();
@@ -196,6 +199,23 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         }
 
         [Server]
+        public bool ValidateProtection()
+        {
+            if (!_isRunning || _isAttackCancelled)
+            {
+                return false;
+            }
+            bool hasProtection = _targeting.RefreshTarget(out bool isProtected);
+            if (!hasProtection || isProtected)
+            {
+                CancelAttack(hasProtection ? MosaWhaleStopReason.ProtectedTarget
+                    : MosaWhaleStopReason.ProtectionUnavailable);
+                return false;
+            }
+            return true;
+        }
+
+        [Server]
         private void EnterPatrol()
         {
             _targeting.ClearCurrentTarget();
@@ -211,6 +231,10 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         {
             _isAttackCancelled = true;
             _lastStopReason = reason;
+            if (_attack != null)
+            {
+                _attack.StopAttack();
+            }
             if (_movement != null)
             {
                 _movement.HideTelegraph();
@@ -260,6 +284,10 @@ namespace Lighthouse.Monsters.MosaWhale.Server
             if (_isRunning && _movement != null)
             {
                 _movement.HandlePhase(phase);
+            }
+            if (_isRunning && _attack != null)
+            {
+                _attack.HandlePhase(phase);
             }
         }
 

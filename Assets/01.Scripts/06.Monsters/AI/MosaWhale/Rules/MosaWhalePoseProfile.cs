@@ -9,9 +9,21 @@ namespace Lighthouse.Monsters.MosaWhale.Rules
         [SerializeField] private AnimationCurve[] _breachRotation;
         [SerializeField] private AnimationCurve[] _recoveryRotation;
         [SerializeField] private AnimationCurve _breachLift;
+        [SerializeField] private AnimationCurve[] _breachHeadPosition;
 
         public bool HasValidCurves => HasRotation(_diveRotation) && HasRotation(_breachRotation)
             && HasRotation(_recoveryRotation) && _breachLift != null && _breachLift.length >= 2;
+        public bool HasValidHeadCurve => _breachHeadPosition != null && _breachHeadPosition.Length == 3
+            && _breachHeadPosition[0] != null && _breachHeadPosition[0].length >= 2
+            && _breachHeadPosition[1] != null && _breachHeadPosition[1].length >= 2
+            && _breachHeadPosition[2] != null && _breachHeadPosition[2].length >= 2;
+
+        public Vector3 EvaluateHeadLocalPosition(float progress)
+        {
+            progress = Mathf.Clamp01(progress);
+            return new Vector3(_breachHeadPosition[0].Evaluate(progress),
+                _breachHeadPosition[1].Evaluate(progress), _breachHeadPosition[2].Evaluate(progress));
+        }
 
         public Quaternion EvaluateRotation(MosaWhalePhase phase, float progress)
         {
