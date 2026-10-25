@@ -16,6 +16,7 @@ namespace Lighthouse.World.Ocean.Sandbox
             isAllPassed &= CheckDynamicSum();
             isAllPassed &= CheckRegistration();
             isAllPassed &= CheckLegacyOverload();
+            isAllPassed &= CheckRouteFilter();
 
             return isAllPassed;
         }
@@ -89,6 +90,23 @@ namespace Lighthouse.World.Ocean.Sandbox
             return isPassed;
         }
 
+        private static bool CheckRouteFilter()
+        {
+            var registry = new ForceFieldRegistry();
+            registry.Register(new TestField(default, false, Vector3.right, true, ForceFieldRoute.Impulse), true);
+            registry.Register(new TestField(new Rect(0f, 0f, 10f, 10f), true, Vector3.forward, true, ForceFieldRoute.Drift), false);
+
+            Vector3 impulse = registry.AccumulateForce(ForceFieldRoute.Impulse, Inside, Vector3.zero, 1f, 0d);
+            Vector3 drift = registry.AccumulateForce(ForceFieldRoute.Drift, Inside, Vector3.zero, 1f, 0d);
+            Vector3 driftOutside = registry.AccumulateForce(ForceFieldRoute.Drift, Outside, Vector3.zero, 1f, 0d);
+            Vector3 all = registry.AccumulateForce(Inside, Vector3.zero, 1f, 0d);
+
+            bool isPassed = impulse == Vector3.right && drift == Vector3.forward
+                && driftOutside == Vector3.zero && all == Vector3.right + Vector3.forward;
+            WaveCheckLog.Report("RouteFilter", isPassed, $"impulse={impulse}, drift={drift}, driftOutside={driftOutside}, all={all}");
+            return isPassed;
+        }
+
         private sealed class TestField : IForceField
         {
             private readonly Rect _bounds;
@@ -96,13 +114,16 @@ namespace Lighthouse.World.Ocean.Sandbox
             private readonly Vector3 _force;
             private readonly bool _isInfluencing;
 
-            public TestField(Rect bounds, bool hasBounds, Vector3 force, bool isInfluencing = true)
+            public TestField(Rect bounds, bool hasBounds, Vector3 force, bool isInfluencing = true, ForceFieldRoute route = ForceFieldRoute.Impulse)
             {
+                Route = route;
                 _bounds = bounds;
                 _hasBounds = hasBounds;
                 _force = force;
                 _isInfluencing = isInfluencing;
             }
+
+            public ForceFieldRoute Route { get; }
 
             public bool TryGetBounds(out Rect bounds)
             {

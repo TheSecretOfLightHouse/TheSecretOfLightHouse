@@ -13,5 +13,10 @@ namespace Lighthouse.World.Ocean.Rules.Mocks
         {
             return Vector3.zero;
         }
+
+        public Vector3 AccumulateForce(ForceFieldRoute route, Vector3 worldPos, Vector3 velocity, float sailArea, double time)
+        {
+            return Vector3.zero;
+        }
     }
 }

@@ -70,6 +70,11 @@ namespace Lighthouse.World.Ocean
             body.mass = _mass;
             body.centerOfMass = _centerOfMassOffset;
             body.useGravity = true;
+
+            if (!TryGetComponent(out WaveDriftBody _))
+            {
+                gameObject.AddComponent<WaveDriftBody>();
+            }
         }
     }
 }

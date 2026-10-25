@@ -45,6 +45,8 @@ namespace Lighthouse.World.Ocean.Rules
             _outwardDamping = config.OutwardDamping;
         }
 
+        public ForceFieldRoute Route => ForceFieldRoute.Impulse;
+
         public bool TryGetBounds(out Rect bounds)
         {
             float outer = Radius + _halfWidth;

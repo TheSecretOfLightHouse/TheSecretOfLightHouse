@@ -37,11 +37,26 @@ namespace Lighthouse.World.Ocean.Rules
 
         public Vector3 AccumulateForce(Vector3 worldPos, Vector3 velocity, float sailArea, double time)
         {
+            return Accumulate(false, default, worldPos, velocity, sailArea, time);
+        }
+
+        public Vector3 AccumulateForce(ForceFieldRoute route, Vector3 worldPos, Vector3 velocity, float sailArea, double time)
+        {
+            return Accumulate(true, route, worldPos, velocity, sailArea, time);
+        }
+
+        private Vector3 Accumulate(bool isFiltered, ForceFieldRoute route, Vector3 worldPos, Vector3 velocity, float sailArea, double time)
+        {
             Vector3 total = Vector3.zero;
 
             for (int i = 0; i < _staticFields.Count; i++)
             {
                 IForceField field = _staticFields[i];
+                if (isFiltered && field.Route != route)
+                {
+                    continue;
+                }
+
                 if (field.TryGetBounds(out Rect bounds) && !bounds.Contains(new Vector2(worldPos.x, worldPos.z)))
                 {
                     continue;
@@ -52,7 +67,13 @@ namespace Lighthouse.World.Ocean.Rules
 
             for (int i = 0; i < _dynamicFields.Count; i++)
             {
-                total += GetForce(_dynamicFields[i], worldPos, velocity, sailArea, time);
+                IForceField field = _dynamicFields[i];
+                if (isFiltered && field.Route != route)
+                {
+                    continue;
+                }
+
+                total += GetForce(field, worldPos, velocity, sailArea, time);
             }
 
             return total;

@@ -14,7 +14,7 @@ namespace Lighthouse.World.Ocean
             }
 
             Rigidbody body = ship.Body;
-            Vector3 force = provider.AccumulateForce(body.worldCenterOfMass, body.linearVelocity, ship.SailArea, time);
+            Vector3 force = provider.AccumulateForce(ForceFieldRoute.Impulse, body.worldCenterOfMass, body.linearVelocity, ship.SailArea, time);
 
             body.AddForce(force);
         }

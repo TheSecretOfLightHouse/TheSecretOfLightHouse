@@ -84,6 +84,7 @@ namespace Lighthouse.World.Ocean
                 time);
 
             Vector3 force = provider.AccumulateForce(
+                ForceFieldRoute.Drift,
                 _body.worldCenterOfMass,
                 _driftVelocity,
                 _profile.HullExposure,

@@ -13,6 +13,8 @@ namespace Lighthouse.World.Ocean.Rules
             _forceCoefficient = forceCoefficient;
         }
 
+        public ForceFieldRoute Route => ForceFieldRoute.Drift;
+
         public bool TryGetBounds(out Rect bounds)
         {
             bounds = default;
