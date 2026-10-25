@@ -20,6 +20,8 @@ namespace Lighthouse.Monsters.MosaWhale.View
         [SerializeField] private AnimationClip _diveClip;
         [SerializeField] private AnimationClip _breachClip;
         [SerializeField] private AnimationClip _recoveryClip;
+        [Header("공중 강제 재입수 전환 시간")]
+        [SerializeField, Min(0.01f)] private float _interruptedReentryBlendDuration = 0.15f;
 
         private MosaWhaleCycle _cycle;
         private double _lastStartedAt = -1d;
@@ -64,6 +66,8 @@ namespace Lighthouse.Monsters.MosaWhale.View
 
         private void ApplyAnimation()
         {
+            bool interruptedReentry = _hasApplied && _cycle.Phase == MosaWhalePhase.Reentering
+                && _lastPhase != MosaWhalePhase.Apex;
             _lastPhase = _cycle.Phase;
             _lastStartedAt = _cycle.PhaseStartedAt;
             _hasApplied = true;
@@ -105,7 +109,14 @@ namespace Lighthouse.Monsters.MosaWhale.View
             float normalized = loop ? elapsed / clip.length % 1f
                 : Mathf.Clamp01(elapsed / Mathf.Max(0.01f, duration));
             _animator.speed = hold ? 0f : (loop ? 1f : clip.length / Mathf.Max(0.01f, duration));
-            _animator.Play(hash, 0, hold ? 1f : normalized);
+            if (interruptedReentry)
+            {
+                _animator.CrossFadeInFixedTime(hash, _interruptedReentryBlendDuration, 0, normalized * clip.length);
+            }
+            else
+            {
+                _animator.Play(hash, 0, hold ? 1f : normalized);
+            }
         }
 
         private static bool IsBreach(MosaWhalePhase phase)

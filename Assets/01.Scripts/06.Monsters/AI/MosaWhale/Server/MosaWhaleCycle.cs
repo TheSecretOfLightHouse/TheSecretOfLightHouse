@@ -25,6 +25,7 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         private MosaWhaleTargeting _targeting;
         private MosaWhaleMovement _movement;
         private MosaWhaleAttack _attack;
+        private MosaWhaleCollision _collision;
         private double _patrolStartedAt;
         private double _nextAttackAt;
         private float _patrolWaitUntil;
@@ -57,6 +58,7 @@ namespace Lighthouse.Monsters.MosaWhale.Server
             _targeting = GetComponent<MosaWhaleTargeting>();
             _movement = GetComponent<MosaWhaleMovement>();
             _attack = GetComponent<MosaWhaleAttack>();
+            _collision = GetComponent<MosaWhaleCollision>();
         }
 
         private void OnEnable()
@@ -165,6 +167,10 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         public void EndCycle()
         {
             _isRunning = false;
+            if (_collision != null)
+            {
+                _collision.EndPassThrough();
+            }
             if (_attack != null)
             {
                 _attack.StopAttack();
@@ -216,6 +222,32 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         }
 
         [Server]
+        public void StopAtObstacle()
+        {
+            if (!_isRunning || _monster.IsDead || _phase == MosaWhalePhase.Patrol
+                || (_isAttackCancelled && _lastStopReason == MosaWhaleStopReason.Obstacle))
+            {
+                return;
+            }
+            bool airborne = _phase == MosaWhalePhase.Rising || _phase == MosaWhalePhase.Apex
+                || _phase == MosaWhalePhase.Reentering;
+            MarkCancelled(MosaWhaleStopReason.Obstacle);
+            if (_movement != null)
+            {
+                _movement.BeginObstacleReturn();
+            }
+            if (airborne)
+            {
+                _breachStartedAt = NetworkTime.time - (_settings.RiseDuration + _settings.ApexDuration);
+                SetPhase(MosaWhalePhase.Reentering, _settings.ReentryDuration);
+            }
+            else
+            {
+                SetPhase(MosaWhalePhase.Recovering, _settings.RecoveryDuration);
+            }
+        }
+
+        [Server]
         private void EnterPatrol()
         {
             _targeting.ClearCurrentTarget();
@@ -229,6 +261,20 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         [Server]
         private void CancelAttack(MosaWhaleStopReason reason)
         {
+            MarkCancelled(reason);
+            if (_phase == MosaWhalePhase.Rising || _phase == MosaWhalePhase.Apex
+                || _phase == MosaWhalePhase.Reentering)
+            {
+                // 공중 취소는 즉시 공격을 무효화하되 재입수·회복 동작을 마쳐 자세가 튀지 않게 한다.
+                return;
+            }
+            _motion.Stop();
+            _nextAttackAt = NetworkTime.time + _settings.ReattackDelay;
+            EnterPatrol();
+        }
+
+        private void MarkCancelled(MosaWhaleStopReason reason)
+        {
             _isAttackCancelled = true;
             _lastStopReason = reason;
             if (_attack != null)
@@ -239,15 +285,6 @@ namespace Lighthouse.Monsters.MosaWhale.Server
             {
                 _movement.HideTelegraph();
             }
-            if (_phase == MosaWhalePhase.Rising || _phase == MosaWhalePhase.Apex
-                || _phase == MosaWhalePhase.Reentering)
-            {
-                // 공중 취소는 즉시 공격을 무효화하되 재입수·회복 동작을 마쳐 자세가 튀지 않게 한다.
-                return;
-            }
-            _motion.Stop();
-            _nextAttackAt = NetworkTime.time + _settings.ReattackDelay;
-            EnterPatrol();
         }
 
         [Server]
@@ -288,6 +325,10 @@ namespace Lighthouse.Monsters.MosaWhale.Server
             if (_isRunning && _attack != null)
             {
                 _attack.HandlePhase(phase);
+            }
+            if (_isRunning && _collision != null)
+            {
+                _collision.HandlePhase(phase);
             }
         }
 

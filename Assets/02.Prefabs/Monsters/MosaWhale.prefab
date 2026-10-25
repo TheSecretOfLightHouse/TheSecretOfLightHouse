@@ -1010,6 +1010,7 @@ GameObject:
   - component: {fileID: 4873556891176067880}
   - component: {fileID: 2613979745239694078}
   - component: {fileID: 4812960600492263954}
+  - component: {fileID: 6225597702012196457}
   m_Layer: 0
   m_Name: MosaWhale
   m_TagString: Untagged
@@ -1256,6 +1257,7 @@ MonoBehaviour:
   _diveClip: {fileID: 7400000, guid: d87aac4434cb6e84f9084871fce4534f, type: 2}
   _breachClip: {fileID: 7400000, guid: 37d6c08a2acd17a4898f4106adb0b22b, type: 2}
   _recoveryClip: {fileID: 7400000, guid: 25156a9e4fd111f419360191ba17b5de, type: 2}
+  _interruptedReentryBlendDuration: 0.15
 --- !u!114 &8518323554242146452
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1317,6 +1319,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 09ec0bdb025a3004fbf05f09fd3f96ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &6225597702012196457
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6674311751177937813}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62795448842cf5f49a2cafac49282365, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _obstacleLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &6853744608551770706
 GameObject:
   m_ObjectHideFlags: 0
