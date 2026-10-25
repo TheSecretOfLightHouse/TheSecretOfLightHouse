@@ -15,11 +15,15 @@ namespace Lighthouse.Monsters.MosaWhale.Rules
         [SerializeField, Min(0.01f)] private float _reentryDuration = 2.8f;
         [SerializeField, Min(0.01f)] private float _recoveryDuration = 2.8f;
 
-        [Header("후속 이동·피해 판정 연결용 설정")]
-        [SerializeField, Min(0.01f)] private float _patrolDepth = 2f;
-        [SerializeField, Min(0.01f)] private float _diveDepth = 8f;
-        [SerializeField, Min(0.01f)] private float _breachHeight = 6f;
-        [SerializeField, Min(0.01f)] private float _attackRadius = 5f;
+        [Header("수면 기준 이동·표식 설정 (플레이 테스트로 조정)")]
+        [SerializeField, Min(0.01f)] private float _patrolDepth = 10f;
+        [SerializeField, Min(0.01f)] private float _diveDepth = 24f;
+        [SerializeField, Min(0.01f)] private float _breachHeight = 12f;
+        [SerializeField, Min(0.01f)] private float _attackRadius = 8f;
+        [SerializeField, Min(0.01f)] private float _recoveryDepth = 3f;
+        [SerializeField, Min(0.01f)] private float _recoveryExposureDuration = 1.5f;
+        [SerializeField, Min(0.01f)] private float _patrolSettleDuration = 1.5f;
+        [SerializeField] private float _prototypeSurfaceHeight;
 
         public float MinimumPatrolDuration => _minimumPatrolDuration;
         public float ReattackDelay => _reattackDelay;
@@ -34,12 +38,19 @@ namespace Lighthouse.Monsters.MosaWhale.Rules
         public float DiveDepth => _diveDepth;
         public float BreachHeight => _breachHeight;
         public float AttackRadius => _attackRadius;
+        public float RecoveryDepth => _recoveryDepth;
+        public float RecoveryExposureDuration => _recoveryExposureDuration;
+        public float PatrolSettleDuration => _patrolSettleDuration;
+        public float PrototypeSurfaceHeight => _prototypeSurfaceHeight;
         public bool HasValidValues => IsPositive(_minimumPatrolDuration) && IsPositive(_reattackDelay)
             && IsPositive(_diveDuration) && IsPositive(_telegraphDuration)
             && IsPositive(_riseDuration) && IsPositive(_apexDuration) && IsPositive(_reentryDuration)
             && IsPositive(_recoveryDuration) && IsPositive(BreachDuration)
             && IsPositive(_patrolDepth) && IsPositive(_diveDepth) && _diveDepth > _patrolDepth
-            && IsPositive(_breachHeight) && IsPositive(_attackRadius);
+            && IsPositive(_breachHeight) && IsPositive(_attackRadius)
+            && IsPositive(_recoveryDepth) && _recoveryDepth < _patrolDepth
+            && IsPositive(_recoveryExposureDuration) && IsPositive(_patrolSettleDuration)
+            && !float.IsNaN(_prototypeSurfaceHeight) && !float.IsInfinity(_prototypeSurfaceHeight);
 
         private static bool IsPositive(float value)
         {

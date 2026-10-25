@@ -20,7 +20,10 @@ MonoBehaviour:
   _apexDuration: 0.2
   _reentryDuration: 2.8
   _recoveryDuration: 2.8
-  _patrolDepth: 2
-  _diveDepth: 8
-  _breachHeight: 6
-  _attackRadius: 5
+  _patrolDepth: 10
+  _diveDepth: 24
+  _breachHeight: 12
+  _attackRadius: 8
+  _recoveryDepth: 3
+  _recoveryExposureDuration: 1.5
+  _patrolSettleDuration: 1.5

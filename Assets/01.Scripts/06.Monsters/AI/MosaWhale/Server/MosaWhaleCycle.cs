@@ -8,6 +8,7 @@ namespace Lighthouse.Monsters.MosaWhale.Server
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(SeaMonster), typeof(MonsterMotion), typeof(SeaMonsterSensor))]
+    [RequireComponent(typeof(MosaWhaleTargeting))]
     public sealed class MosaWhaleCycle : NetworkBehaviour
     {
         [SerializeField] private MosaWhaleSettings _settings;
@@ -21,12 +22,16 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         private SeaMonster _monster;
         private MonsterMotion _motion;
         private SeaMonsterSensor _sensor;
+        private MosaWhaleTargeting _targeting;
+        private MosaWhaleMovement _movement;
         private double _patrolStartedAt;
         private double _nextAttackAt;
         private float _patrolWaitUntil;
         private bool _isPatrolWaiting;
         private bool _hasPatrolLeg;
         private bool _isRunning;
+        private bool _isAttackCancelled;
+        private MosaWhaleStopReason _lastStopReason;
 
         public MosaWhaleSettings Settings => _settings;
         public MosaWhalePhase Phase => _phase;
@@ -35,15 +40,21 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         public float PhaseDuration => _phaseDuration;
         public float BreachDuration => _breachDuration;
         public bool IsRunning => _isRunning;
+        public bool IsAttackCancelled => _isAttackCancelled;
+        public MosaWhaleStopReason LastStopReason => _lastStopReason;
         public bool CanRun => isActiveAndEnabled && _monster != null && _monster.isServer
             && _monster.IsInitialized && !_monster.IsDead && _motion != null && _motion.CanMove
-            && _sensor != null && _sensor.isActiveAndEnabled && _settings != null && _settings.HasValidValues;
+            && _sensor != null && _sensor.isActiveAndEnabled
+            && _targeting != null && _targeting.isActiveAndEnabled
+            && _settings != null && _settings.HasValidValues;
 
         private void Awake()
         {
             _monster = GetComponent<SeaMonster>();
             _motion = GetComponent<MonsterMotion>();
             _sensor = GetComponent<SeaMonsterSensor>();
+            _targeting = GetComponent<MosaWhaleTargeting>();
+            _movement = GetComponent<MosaWhaleMovement>();
         }
 
         private void OnEnable()
@@ -95,8 +106,10 @@ namespace Lighthouse.Monsters.MosaWhale.Server
             {
                 if (NetworkTime.time >= _nextAttackAt
                     && NetworkTime.time - _patrolStartedAt >= _settings.MinimumPatrolDuration
-                    && _sensor.TryAcquireTarget(_monster.Profile.DetectionRadius, out _))
+                    && _targeting.TrySelectTarget())
                 {
+                    _isAttackCancelled = false;
+                    _lastStopReason = MosaWhaleStopReason.None;
                     _motion.Stop();
                     _monster.TrySetBehaviorState(MonsterState.Attack);
                     SetPhase(MosaWhalePhase.Diving, _settings.DiveDuration);
@@ -107,6 +120,16 @@ namespace Lighthouse.Monsters.MosaWhale.Server
                 }
                 return true;
             }
+            if (!_isAttackCancelled && _phase != MosaWhalePhase.Recovering)
+            {
+                bool hasProtection = _targeting.RefreshTarget(out bool isProtected);
+                if (!hasProtection || isProtected)
+                {
+                    CancelAttack(hasProtection ? MosaWhaleStopReason.ProtectedTarget
+                        : MosaWhaleStopReason.ProtectionUnavailable);
+                    return true;
+                }
+            }
             if (NetworkTime.time - _phaseStartedAt < _phaseDuration)
             {
                 return true;
@@ -114,6 +137,7 @@ namespace Lighthouse.Monsters.MosaWhale.Server
             switch (_phase)
             {
                 case MosaWhalePhase.Diving:
+                    _targeting.LockAttackPosition();
                     SetPhase(MosaWhalePhase.Telegraph, _settings.TelegraphDuration);
                     break;
                 case MosaWhalePhase.Telegraph:
@@ -142,16 +166,27 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         public void EndCycle()
         {
             _isRunning = false;
+            if (_movement != null)
+            {
+                _movement.Release();
+            }
+            _isAttackCancelled = true;
+            if (_targeting != null)
+            {
+                _targeting.ClearCurrentTarget();
+            }
             if (_motion != null)
             {
                 _motion.Stop();
             }
             if (_monster != null && _monster.IsDead)
             {
+                _lastStopReason = MosaWhaleStopReason.Dead;
                 SetPhase(MosaWhalePhase.Dead, 0f);
             }
             else
             {
+                _lastStopReason = MosaWhaleStopReason.BehaviorStopped;
                 SetPhase(MosaWhalePhase.Patrol, 0f);
                 if (_monster != null && _monster.IsInitialized)
                 {
@@ -163,11 +198,32 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         [Server]
         private void EnterPatrol()
         {
+            _targeting.ClearCurrentTarget();
             _patrolStartedAt = NetworkTime.time;
             _isPatrolWaiting = false;
             _hasPatrolLeg = false;
             _monster.TrySetBehaviorState(MonsterState.Patrol);
             SetPhase(MosaWhalePhase.Patrol, 0f);
+        }
+
+        [Server]
+        private void CancelAttack(MosaWhaleStopReason reason)
+        {
+            _isAttackCancelled = true;
+            _lastStopReason = reason;
+            if (_movement != null)
+            {
+                _movement.HideTelegraph();
+            }
+            if (_phase == MosaWhalePhase.Rising || _phase == MosaWhalePhase.Apex
+                || _phase == MosaWhalePhase.Reentering)
+            {
+                // 공중 취소는 즉시 공격을 무효화하되 재입수·회복 동작을 마쳐 자세가 튀지 않게 한다.
+                return;
+            }
+            _motion.Stop();
+            _nextAttackAt = NetworkTime.time + _settings.ReattackDelay;
+            EnterPatrol();
         }
 
         [Server]
@@ -201,6 +257,10 @@ namespace Lighthouse.Monsters.MosaWhale.Server
             _phaseStartedAt = NetworkTime.time;
             _phaseDuration = duration;
             _phase = phase;
+            if (_isRunning && _movement != null)
+            {
+                _movement.HandlePhase(phase);
+            }
         }
 
         private void HandleDied(MonsterBase monster)
