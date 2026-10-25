@@ -999,6 +999,13 @@ GameObject:
   - component: {fileID: 5918652085056355738}
   - component: {fileID: 3045381897920946800}
   - component: {fileID: 4478069995982697180}
+  - component: {fileID: 5261321470388244214}
+  - component: {fileID: 2974496390878300264}
+  - component: {fileID: 7921467735368155290}
+  - component: {fileID: 1675746178917863437}
+  - component: {fileID: 7552425721334678590}
+  - component: {fileID: 4963765261447215325}
+  - component: {fileID: 5800290647701255961}
   m_Layer: 0
   m_Name: MosaWhale
   m_TagString: Untagged
@@ -1065,7 +1072,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sceneId: 0
-  _assetId: 1993206875
+  _assetId: 0
   serverOnly: 0
   visibility: 0
   hasSpawned: 0
@@ -1081,7 +1088,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ff3ba0becae47b8b9381191598957c8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  syncDirection: 1
+  syncDirection: 0
   syncMode: 0
   syncInterval: 0
   target: {fileID: 6328748798975506735}
@@ -1103,6 +1110,148 @@ MonoBehaviour:
   rotationSensitivity: 0.01
   positionPrecision: 0.01
   scalePrecision: 0.01
+--- !u!54 &5261321470388244214
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6674311751177937813}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 84
+  m_CollisionDetection: 0
+--- !u!114 &2974496390878300264
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6674311751177937813}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0038c16c34866b4f9e25c9c0dc0f7e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Graph: {fileID: -1276845571039540674, guid: 60f46884bd1fe10458d6984916418802, type: 2}
+  m_BlackboardVariableOverridesList:
+  - rid: 149323050162061407
+  m_OriginalGraph: {fileID: -1276845571039540674, guid: 60f46884bd1fe10458d6984916418802, type: 2}
+  m_IsInitialised: 0
+  m_IsStarted: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: 149323050162061407
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 1
+          m_Value1: 0
+        Name: Monster
+        m_Value: {fileID: 6674311751177937813}
+--- !u!114 &7921467735368155290
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6674311751177937813}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd586d36ae9c7db43800360eb61656d3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _profile: {fileID: 11400000, guid: 450fd995206cb0c47bb3874848bcac7b, type: 2}
+  _behaviorAgent: {fileID: 2974496390878300264}
+--- !u!114 &1675746178917863437
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6674311751177937813}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2f8a3c05eecb134c8ef8cbaf2931e5a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _patrolOffsets:
+  - {x: -3, y: 0, z: 0}
+  - {x: -3, y: 0, z: 6}
+  - {x: 3, y: 0, z: 6}
+  - {x: 3, y: 0, z: 0}
+  _arrivalDistance: 0.15
+  _chaseStoppingDistance: 1.5
+  _patrolWaitRange: {x: 1, y: 3}
+  _patrolTurnSpeed: 120
+  _patrolAcceleration: 3
+  _showPatrolGizmos: 1
+--- !u!114 &7552425721334678590
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6674311751177937813}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa72eb5a20b3cf844b361d04fdb08b6b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _showDetectionGizmos: 1
+--- !u!114 &4963765261447215325
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6674311751177937813}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c5fc0e636cc29e439b17e3e441761ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _settings: {fileID: 11400000, guid: 2dd35dbc38cea884d8609148fb6628fd, type: 2}
+--- !u!114 &5800290647701255961
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6674311751177937813}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 565efb0c6dcc8a64692580f77588f040, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _animator: {fileID: 3477286970812412438}
+  _patrolClip: {fileID: -623603649343465320, guid: e76759d1ec4a69c498c4d2f872ec4917, type: 3}
+  _diveClip: {fileID: -623603649343465320, guid: 41e586d00e664fe45906d626ee7a0a5b, type: 3}
+  _breachClip: {fileID: -623603649343465320, guid: 35e6d267637d5394dbc08c7095790c82, type: 3}
+  _recoveryClip: {fileID: -623603649343465320, guid: 32452b1c48b85964f9d8684c1f4f3313, type: 3}
 --- !u!1 &6853744608551770706
 GameObject:
   m_ObjectHideFlags: 0
@@ -1737,6 +1886,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7515551316359405209}
+  - component: {fileID: 3477286970812412438}
   m_Layer: 0
   m_Name: Electric_Blue_Shark_Rig
   m_TagString: Untagged
@@ -1760,3 +1910,25 @@ Transform:
   - {fileID: 2815462794605280931}
   m_Father: {fileID: 6328748798975506735}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &3477286970812412438
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9071295669440852412}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 8a3577472b352f145a049bb9b72b96f9, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0

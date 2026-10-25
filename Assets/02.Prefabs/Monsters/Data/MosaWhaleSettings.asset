@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48657609c8cf4a843971f9fac9e91c77, type: 3}
+  m_Name: MosaWhaleSettings
+  m_EditorClassIdentifier: 
+  _minimumPatrolDuration: 4
+  _reattackDelay: 3
+  _diveDuration: 3
+  _telegraphDuration: 2
+  _riseDuration: 3
+  _apexDuration: 0.2
+  _reentryDuration: 2.8
+  _recoveryDuration: 2.8
+  _patrolDepth: 2
+  _diveDepth: 8
+  _breachHeight: 6
+  _attackRadius: 5
