@@ -35,13 +35,18 @@ public sealed class PlayerInventory : NetworkBehaviour
 
     private WorkbenchNet _serverModuleSource;
     private uint _serverActorId;
+    private PlayerPassiveController _passiveController;
 
-   // private readonly List<KeyValuePair<int, int>> _wreckLossCandidates = new List<KeyValuePair<int, int>>();
+    [SyncVar]
+    private int _stackCapacity = InventoryData.StackCapacity;
+
+    public int StackCapacity => _stackCapacity;
 
     private ModuleInteractionHandler _serverModuleHandler;
     private void Awake()
     {
         syncMode = SyncMode.Owner;
+        _passiveController = GetComponent<PlayerPassiveController>();
     }
 
     public override void OnStartLocalPlayer()
@@ -107,6 +112,11 @@ public sealed class PlayerInventory : NetworkBehaviour
         {
             return false;
         }
+
+        int stackCapacity = _passiveController ? _passiveController.GetStackCapacity() : InventoryData.StackCapacity;
+
+        _stackCapacity = stackCapacity;
+        _data.SetStackCapacity(stackCapacity);
 
         if (!_data.TryAdd(id, amount))
         {
@@ -184,6 +194,12 @@ public sealed class PlayerInventory : NetworkBehaviour
         _moduleSource.Catalog.TryGetById(recipeId, out ModuleRecipe recipe);
 
         return recipe;
+    }
+
+    public string GetResourceDisplayName(int resourceId)
+    {
+        return _resourceCatalog && _resourceCatalog.TryGetById(resourceId, out ResourceDefinition resource)
+            ? resource.DisplayName : "자원";
     }
 
     public void BindModuleSource(WorkbenchNet workbench)
@@ -360,7 +376,7 @@ public sealed class PlayerInventory : NetworkBehaviour
         int resourceSlotCount = 0;
         for (int i = 0; i < resources.Count; i++)
         {
-            resourceSlotCount += InventoryData.GetStackCount(resources[i].Value);
+            resourceSlotCount += InventoryData.GetStackCount(resources[i].Value, _data.StackLimit);
         }
         int candidateCount = resourceSlotCount + (hasModule ? 1 : 0);
 
@@ -380,11 +396,10 @@ public sealed class PlayerInventory : NetworkBehaviour
         KeyValuePair<int, int> selected = default;
         for (int i = 0; i < resources.Count; i++)
         {
-            int stacks = InventoryData.GetStackCount(resources[i].Value);
+            int stacks = InventoryData.GetStackCount(resources[i].Value, _data.StackLimit);
             if (selectedIndex < stacks)
             {
-                int amount = System.Math.Min(InventoryData.StackCapacity,
-                    resources[i].Value - selectedIndex * InventoryData.StackCapacity);
+                int amount = System.Math.Min(_data.StackLimit, resources[i].Value - selectedIndex * _data.StackLimit);
                 selected = new KeyValuePair<int, int>(resources[i].Key, amount);
                 break;
             }

@@ -3,6 +3,7 @@ using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Lighthouse.Network.Connections.Net;
+using Lighthouse.Network.Session.View;
 
 [RequireComponent(typeof(PlayerInputReader), typeof(PlayerMotor), typeof(PlayerAbilityRunner))]
 public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
@@ -65,6 +66,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private CursorLockMode _savedCursorLockMode;
     private bool _savedCursorVisible;
 
+    private PlayerPassiveController _passiveController;
+
     public Transform Actor => transform;
 
     public bool IsDowned => _hfsm.IsDowned;
@@ -75,6 +78,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     public bool CanProcessBoatInput => CanProcessLocalInput;
     public PlayerHFSM StateMachine => _hfsm;
 
+    public PlayerPassiveController PassiveController => _passiveController;
     private bool CanProcessLocalInput
     {
         get
@@ -107,6 +111,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         CacheNetworkTransform();
         _hfsm = new PlayerHFSM(_runMultiplier);
         _networkActor = GetComponent<NetworkActor>();
+        _passiveController = GetComponent<PlayerPassiveController>();
 
         if (_animationDriver)
         {
@@ -207,7 +212,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
             SetDowned(true);
         }
 
-        if (!IsDowned && !_isRescuePromptOpen)
+        if (!IsDowned && !_isRescuePromptOpen && !SessionScreen.IsGameplayOverlayOpen)
         {
             Vector2 look = _lookAction != null ? _lookAction.ReadValue<Vector2>() : Vector2.zero;
             if (IsOnBoat)
@@ -254,7 +259,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         MoveConfig config = MoveConfig.Combine(_hfsm.CurrentMoveConfig,_abilityRunner.MovementModifier);
 
-        bool jumpRequested = _jumpRequested;
+        bool jumpRequested = _jumpRequested && !SessionScreen.IsGameplayOverlayOpen;
         _jumpRequested = false;
 
         Quaternion rotation = Quaternion.Euler(0f, _heading, 0f);
@@ -669,7 +674,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _fireRequested = false;
         _abilityRequested = false;
 
-        if (IsDowned || _isRescuePromptOpen
+        if (IsDowned || _isRescuePromptOpen || SessionScreen.IsGameplayOverlayOpen
             || Time.frameCount <= _rescuePromptClosedFrame)
         {
             return;
@@ -739,7 +744,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void HandleDashRequested()
     {
-        if (!CanProcessLocalInput || IsDowned || !IsOnBoat)
+        if (!CanProcessLocalInput || IsDowned || !IsOnBoat || SessionScreen.IsGameplayOverlayOpen)
         {
             return;
         }
@@ -760,7 +765,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void HandleJumpRequested()
     {
-        if (CanProcessLocalInput && !IsDowned && !IsOnBoat)
+        if (CanProcessLocalInput && !IsDowned && !IsOnBoat && !SessionScreen.IsGameplayOverlayOpen)
         {
             _jumpRequested = true;
         }

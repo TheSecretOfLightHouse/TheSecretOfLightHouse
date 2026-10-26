@@ -9,7 +9,7 @@ using UnityEngine.UI;
 
 namespace Lighthouse.Player.Inventory.View
 {
-    public sealed class InventoryChestScreen : MonoBehaviour
+    public sealed partial class InventoryChestScreen : MonoBehaviour
     {
         [SerializeField] private GameObject _window;
         [SerializeField] private InventoryChestSlot[] _resourceSlots;
@@ -46,6 +46,7 @@ namespace Lighthouse.Player.Inventory.View
             {
                 text.font = _font;
             }
+            BuildTabbedLayout();
             _window.SetActive(false);
         }
 
@@ -69,6 +70,7 @@ namespace Lighthouse.Player.Inventory.View
             {
                 Destroy(_font);
             }
+            DisposeLayout();
         }
 
         private void Update()
@@ -99,6 +101,7 @@ namespace Lighthouse.Player.Inventory.View
                 RefreshModules();
             }
             _installButton.interactable = CanInstall();
+            UpdateShipPanels();
         }
 
         public void Toggle()
@@ -129,6 +132,8 @@ namespace Lighthouse.Player.Inventory.View
             _message.text = "";
             RefreshResources();
             RefreshModules();
+            SelectTab(0);
+            UpdateShipPanels(true);
             _installButton.interactable = CanInstall();
         }
 
@@ -152,7 +157,7 @@ namespace Lighthouse.Player.Inventory.View
         public void SelectModule(int index)
         {
             _selectedModule = index;
-            _message.text = index == 0 ? GetModuleName() : "두 번째 모듈 칸은 운반 기능 확장 후 사용할 수 있습니다.";
+            _message.text = GetModuleName();
             RefreshModules();
         }
 
@@ -180,6 +185,8 @@ namespace Lighthouse.Player.Inventory.View
             _debugPanel = identity ? identity.GetComponent<InventoryDebugPanel>() : null;
             _isInstalling = false;
             _displayedModuleId = -1;
+            _isRepairing = false;
+            BindBoat(null);
             if (_inventory)
             {
                 _inventory.ResourceCountChanged += HandleResourceChanged;
@@ -198,6 +205,7 @@ namespace Lighthouse.Player.Inventory.View
         private void HandleResourceChanged(int id, int count)
         {
             RefreshResources();
+            UpdateShipPanels(true);
         }
 
         private void HandleInventoryReset()
@@ -207,17 +215,19 @@ namespace Lighthouse.Player.Inventory.View
             {
                 _resourceSlots[i].SetContent(null, "");
             }
+            _capacityLabel.text = $"0 / {InventoryData.SlotCapacity} 칸";
         }
 
         private void RefreshResources()
         {
             int slot = 0;
+            int stackCapacity = _inventory ? Mathf.Max(1, _inventory.StackCapacity) : InventoryData.StackCapacity;
             for (int i = 0; i < _resourceIds.Length && slot < _resourceSlots.Length; i++)
             {
                 int count = _inventory && _resourceIds[i] > 0 ? _inventory.GetSyncedCount(_resourceIds[i]) : 0;
                 while (count > 0 && slot < _resourceSlots.Length)
                 {
-                    int stack = Mathf.Min(count, InventoryData.StackCapacity);
+                    int stack = Mathf.Min(count, stackCapacity);
                     _resourceSlots[slot++].SetContent(_resourceIcons[i], stack.ToString());
                     count -= stack;
                 }
@@ -226,6 +236,7 @@ namespace Lighthouse.Player.Inventory.View
             {
                 _resourceSlots[slot++].SetContent(null, "");
             }
+            RefreshCapacity();
         }
 
         private void RefreshModules()
@@ -242,8 +253,7 @@ namespace Lighthouse.Player.Inventory.View
             }
             _moduleSlots[0].SetContent(icon, "");
             _moduleSlots[0].SetSelected(_selectedModule == 0 && _displayedModuleId != 0);
-            _moduleSlots[1].SetContent(null, "");
-            _moduleSlots[1].SetSelected(false);
+            RefreshCarriedModule();
         }
 
         private string GetModuleName()
@@ -279,6 +289,13 @@ namespace Lighthouse.Player.Inventory.View
 
         private void HandleInstallResult(InteractionResult result)
         {
+            if (_isRepairing)
+            {
+                _isRepairing = false;
+                _message.text = result.IsSuccess ? "재료를 투입했습니다. 할당량이 모이면 자동으로 수리됩니다." : $"수리 요청 거절: {result.Code}";
+                UpdateShipPanels(true);
+                return;
+            }
             if (!_isInstalling)
             {
                 return;

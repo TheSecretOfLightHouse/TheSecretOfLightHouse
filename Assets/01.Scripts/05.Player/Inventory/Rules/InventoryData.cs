@@ -8,6 +8,10 @@ public sealed class InventoryData
 
     private readonly Dictionary<int, int> _counts = new Dictionary<int, int>();
 
+    private int _stackLimit = StackCapacity;
+
+    public int StackLimit => _stackLimit;
+
     public int UsedSlots
     {
         get
@@ -15,7 +19,7 @@ public sealed class InventoryData
             int total = 0;
             foreach (KeyValuePair<int, int> entry in _counts)
             {
-                total += GetStackCount(entry.Value);
+                total += GetStackCount(entry.Value, _stackLimit);
             }
             return total;
         }
@@ -23,7 +27,18 @@ public sealed class InventoryData
 
     public static int GetStackCount(int count)
     {
-        return count > 0 ? 1 + (count - 1) / StackCapacity : 0;
+        return GetStackCount(count, StackCapacity);
+    }
+
+    public static int GetStackCount(int count, int stackCapacity)
+    {
+        int capacity = System.Math.Max(1, stackCapacity);
+        return count > 0 ? 1 + (count - 1) / capacity : 0;
+    }
+
+    public void SetStackCapacity(int capacity)
+    {
+        _stackLimit = System.Math.Max(StackCapacity, capacity);
     }
 
     public int GetCount(int id)
@@ -49,7 +64,7 @@ public sealed class InventoryData
             return false;
         }
         int newCount = currentCount + amount;
-        int newSlots = GetStackCount(newCount) - GetStackCount(currentCount);
+        int newSlots = GetStackCount(newCount, _stackLimit) - GetStackCount(currentCount, _stackLimit);
         if (newSlots > SlotCapacity - UsedSlots)
         {
             return false;

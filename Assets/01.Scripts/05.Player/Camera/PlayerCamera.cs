@@ -28,6 +28,11 @@ public sealed class PlayerCamera : MonoBehaviour
     private float _orbitYaw;
     private bool _isBoatOrbit;
     private float _lastLookTime;
+    private float _recoilPitch;
+    private float _recoilDistance;
+    private float _recoilDuration;
+    private float _recoilElapsed;
+    private bool _hasRecoil;
 
     public void Attach()
     {
@@ -61,6 +66,7 @@ public sealed class PlayerCamera : MonoBehaviour
 
     public void Release()
     {
+        _hasRecoil = false;
         if (!_attachedCamera)
         {
             return;
@@ -90,6 +96,30 @@ public sealed class PlayerCamera : MonoBehaviour
             UpdateBoatLookReturn(transform.eulerAngles.y, Time.deltaTime);
             _cameraPivot.rotation = Quaternion.Euler(_pitch, _orbitYaw, 0f);
         }
+
+        if (_attachedCamera && _hasRecoil)
+        {
+            _recoilElapsed = Mathf.Min(_recoilElapsed + Time.deltaTime, _recoilDuration);
+            float progress = _recoilElapsed / _recoilDuration;
+            float weight = 1f - Mathf.SmoothStep(0f, 1f, progress);
+            _attachedCamera.localPosition = Vector3.back * (_recoilDistance * weight);
+            _attachedCamera.localRotation = Quaternion.Euler(-_recoilPitch * weight, 0f, 0f);
+            _hasRecoil = progress < 1f;
+        }
+    }
+
+    public void PlayCannonRecoil(float pitch, float distance, float duration)
+    {
+        if (!_attachedCamera || !isActiveAndEnabled)
+        {
+            return;
+        }
+
+        _recoilPitch = Mathf.Max(0f, pitch);
+        _recoilDistance = Mathf.Max(0f, distance);
+        _recoilDuration = Mathf.Max(0.01f, duration);
+        _recoilElapsed = 0f;
+        _hasRecoil = true;
     }
 
     public void SetBoatOrbit(bool isBoatOrbit, float heading)

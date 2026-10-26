@@ -96,10 +96,22 @@ public sealed class HarvestInteractionHandler
 
         try
         {
+            int multiplier = player.TryGetComponent(out GatheringFever fever) && fever.IsActive
+                ? 2
+                : 1;
+
+            if (reservation.Granted <= 0 || reservation.Granted > int.MaxValue / multiplier)
+            {
+                return InteractionResultCode.Rejected;
+            }
+
+            // Bonus yield changes the shared drop, not the amount reserved from the deposit.
+            int dropAmount = reservation.Granted * multiplier;
+
             isSpawned = _dropSpawner.TrySpawnDrop(
                 reservation.Position,
                 reservation.ResourceId,
-                reservation.Granted,
+                dropAmount,
                 reservation.PickupPrefab,
                 out handle);
 

@@ -16,6 +16,15 @@ namespace Lighthouse.Player.Inventory.View
         private bool _isHovered;
         private bool _isSelected;
 
+        public void Configure(Image icon, Text count, GameObject highlight, InventoryChestScreen screen, int moduleIndex = -1)
+        {
+            _icon = icon;
+            _count = count;
+            _highlight = highlight;
+            _screen = screen;
+            _moduleIndex = moduleIndex;
+        }
+
         public void SetContent(Sprite icon, string count)
         {
             _icon.sprite = icon;
