@@ -1533,6 +1533,7 @@ GameObject:
   - component: {fileID: 2386412800085660064}
   - component: {fileID: 6871806990147281862}
   - component: {fileID: 2918516161393980144}
+  - component: {fileID: 3338106958152903591}
   m_Layer: 0
   m_Name: Spinocroc
   m_TagString: Untagged
@@ -1733,15 +1734,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _patrolOffsets:
-  - {x: -12, y: 0, z: -12}
-  - {x: -12, y: 0, z: 12}
-  - {x: 12, y: 0, z: 12}
-  - {x: 12, y: 0, z: -12}
+  - {x: 50, y: 0, z: 50}
+  - {x: -50, y: 0, z: -50}
   _arrivalDistance: 0.15
   _chaseStoppingDistance: 1.5
   _patrolWaitRange: {x: 1, y: 3}
-  _patrolTurnSpeed: 120
+  _patrolTurnSpeed: 60
   _patrolAcceleration: 3
+  _usePatrolSteering: 1
+  _patrolAngularAcceleration: 90
+  _steeringHeadingResponse: 2
+  _steeringArrivalDistance: 1.5
+  _steeringMinimumLegDistance: 8
+  _steeringForwardHalfAngle: 80
+  _steeringTurnSpeedRatio: 0.35
+  _steeringLookAheadTime: 1
+  _steeringLegTimeout: 30
   _patrolObstacleLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -1768,10 +1776,14 @@ MonoBehaviour:
   syncInterval: 0
   _animator: {fileID: 653084452495661060}
   _patrolClip: {fileID: -6512563844554649692, guid: c26e1edef76033e4bb8e6c4f26996cb0, type: 3}
-  _diveClip: {fileID: -6512563844554649692, guid: 93cd67e0831f1784eb7398ed7fadae1d, type: 3}
+  _diveClip: {fileID: -623603649343465320, guid: 93cd67e0831f1784eb7398ed7fadae1d, type: 3}
   _reappearClip: {fileID: -6512563844554649692, guid: e6aebc6c1ce350c43b63f9353c018c15, type: 3}
-  _windupClip: {fileID: -6512563844554649692, guid: ef1bec19e45720b4c8544befc310c2e6, type: 3}
+  _windupClip: {fileID: -623603649343465320, guid: ef1bec19e45720b4c8544befc310c2e6, type: 3}
   _chargeClip: {fileID: -6512563844554649692, guid: 1f00dfe0ee766ef41ba5a22744ddd27d, type: 3}
+  _recoveryClip: {fileID: -623603649343465320, guid: d20abb8a8ef13c34eb14ff4f8653cca2, type: 3}
+  _turnRateForFullBlend: 60
+  _turnBlendResponse: 0.2
+  _turnSampleResetDistance: 10
 --- !u!114 &2386412800085660064
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1814,6 +1826,20 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+--- !u!114 &3338106958152903591
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7725306694323598128}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b327b23b76de76408669c82a67cb3af, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _recoilSpeed: 4
+  _cooldown: 0.3
 --- !u!1 &8182945717647611537
 GameObject:
   m_ObjectHideFlags: 0
