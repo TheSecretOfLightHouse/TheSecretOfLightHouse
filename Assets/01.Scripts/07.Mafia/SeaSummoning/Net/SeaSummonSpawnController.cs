@@ -1,7 +1,12 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using Lighthouse.Network.Session.Net;
+using Lighthouse.Network.Session.Rules;
 using Lighthouse.Monsters.AI.Net;
 using Lighthouse.Monsters.Spawning.Server;
+using Lighthouse.World.Clock.Rules;
+using Lighthouse.World.Query.Rules;
 using Mirror;
 using UnityEngine;
 
@@ -15,6 +20,9 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         private readonly Dictionary<int, (uint ActorId, ulong RequestId, bool Success, string Reason, uint MonsterId)> _results = new();
         private readonly List<(uint ActorId, MonsterBase Monster)> _summoned = new();
         private readonly Dictionary<uint, int> _usedCounts = new();
+        private IGameClock _clock;
+        private Coroutine _clockBinding;
+        private int _lastDayIndex;
         private ulong _nextRequestId;
         private ulong _pendingRequestId;
         public bool IsPending { get; private set; }
@@ -26,6 +34,13 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         public event Action<bool> SummonResponded;
         public event Action QuotaChanged;
 
+        public override void OnStartServer()
+        {
+            _lastDayIndex = 0;
+            _usedCounts.Clear();
+            _clockBinding = StartCoroutine(WaitForClock());
+        }
+
         public override void OnStartClient()
         {
             _permission.PermissionResponded += HandlePermissionResponded;
@@ -33,6 +48,17 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
 
         public override void OnStopServer()
         {
+            if (_clockBinding != null)
+            {
+                StopCoroutine(_clockBinding);
+                _clockBinding = null;
+            }
+            if (_clock != null)
+            {
+                _clock.DayStarted -= HandleDayStarted;
+                _clock = null;
+            }
+            _lastDayIndex = 0;
             foreach (var record in _summoned)
             {
                 if (record.Monster != null)
@@ -70,7 +96,8 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             remaining = 0;
             limit = 0;
             if (_permission == null || !_permission.CanRequest(sender)
-                || !_permission.TryGetActorId(sender, out uint actorId))
+                || !_permission.TryGetActorId(sender, out uint actorId)
+                || !TrySynchronizeDay())
             {
                 return false;
             }
@@ -78,6 +105,74 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             _usedCounts.TryGetValue(actorId, out int used);
             remaining = Mathf.Max(0, limit - used);
             return true;
+        }
+
+        private IEnumerator WaitForClock()
+        {
+            while (isServer && !TrySynchronizeDay())
+            {
+                yield return null;
+            }
+            _clockBinding = null;
+        }
+
+        [Server]
+        private bool TrySynchronizeDay()
+        {
+            if (NetworkManager.singleton is LighthouseNetworkManager manager
+                && manager.IsSessionFlowEnabled && manager.Phase != MatchPhase.InProgress)
+            {
+                return false;
+            }
+            if (!WorldServices.TryGet<IGameClock>(out IGameClock clock))
+            {
+                return false;
+            }
+            if (!ReferenceEquals(_clock, clock))
+            {
+                if (_clock != null)
+                {
+                    _clock.DayStarted -= HandleDayStarted;
+                }
+                _clock = clock;
+                _clock.DayStarted += HandleDayStarted;
+            }
+            // 서비스 등록과 기본 일차만으로는 실제 시계 시작을 보장할 수 없다.
+            if (clock is GameClock gameClock && !gameClock.IsRunning)
+            {
+                return false;
+            }
+            int dayIndex = clock.DayIndex;
+            if (dayIndex < 1)
+            {
+                return false;
+            }
+            if (dayIndex > _lastDayIndex)
+            {
+                // 아침 이후 재전송된 요청이 중복 소환되지 않도록 기존 처리 결과는 보존한다.
+                _lastDayIndex = dayIndex;
+                _usedCounts.Clear();
+                SendDailyQuotas();
+            }
+            return true;
+        }
+
+        [Server]
+        private void HandleDayStarted(int dayIndex)
+        {
+            TrySynchronizeDay();
+        }
+
+        [Server]
+        private void SendDailyQuotas()
+        {
+            foreach (NetworkConnectionToClient connection in NetworkServer.connections.Values)
+            {
+                if (TryGetQuota(connection, out int remaining, out int limit))
+                {
+                    TargetQuota(connection, true, remaining, limit);
+                }
+            }
         }
 
         private void HandlePermissionResponded(bool allowed)
@@ -162,8 +257,13 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             {
                 return false;
             }
+            reason = "월드 시간이 아직 준비되지 않았습니다.";
+            if (!TryGetQuota(sender, out int remaining, out _))
+            {
+                return false;
+            }
             reason = "오늘 소환 횟수를 모두 사용했습니다.";
-            if (!TryGetQuota(sender, out int remaining, out _) || remaining <= 0)
+            if (remaining <= 0)
             {
                 return false;
             }
