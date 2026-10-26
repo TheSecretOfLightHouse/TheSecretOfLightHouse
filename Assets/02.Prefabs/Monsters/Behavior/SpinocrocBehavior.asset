@@ -1,0 +1,912 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-1276845571039540674
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db920e62f70f420bb33c771449926fa4, type: 3}
+  m_Name: SpinocrocBehavior
+  m_EditorClassIdentifier: 
+  Graphs:
+  - rid: 6255968569297207368
+  m_DebugInfo: {fileID: 48162156267709947}
+  m_WasCompileWithPlaceholderNode: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
+    - rid: 149323010259026010
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 1
+          m_Value1: 0
+        Name: Monster
+        m_Value: {fileID: 0}
+    - rid: 149323010259026011
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 3939507408910004024
+          m_Value1: 5776833759762421790
+        Name: Boat
+        m_Value: {fileID: 0}
+    - rid: 149323010259026012
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 9724891354851918075
+          m_Value1: 17122638825611180285
+        Name: "\uC21C\uCC30 \uB300\uAE30 \uCD5C\uC18C"
+        m_Value: 1
+    - rid: 149323010259026013
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 4296321811690205611
+          m_Value1: 13006404833662482759
+        Name: "\uC21C\uCC30 \uB300\uAE30 \uCD5C\uB300"
+        m_Value: 3
+    - rid: 149323010259026014
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 1108972351930673315
+          m_Value1: 12325857350651331740
+        Name: "\uACF5\uACA9 \uC7AC\uC0AC\uC6A9 \uC2DC\uAC04"
+        m_Value: 2
+    - rid: 149323010259026015
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 1276705729408019489
+          m_Value1: 1459792126966936505
+        Name: "\uC644\uB8CC \uACF5\uACA9 \uC7AC\uC0AC\uC6A9 \uC2DC\uAC04"
+        m_Value: 0
+    - rid: 6255968569297207368
+      type: {class: BehaviorGraphModule, ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        AuthoringAssetID:
+          m_Value0: 7254762271356365981
+          m_Value1: 17905603484111265864
+        m_DebugInfo: {fileID: 48162156267709947}
+        BlackboardReference:
+          rid: 6255968569297207369
+        BlackboardGroupReferences: []
+        Root:
+          rid: 6255968818399019088
+        m_VersionTimestamp: 639284427105650417
+    - rid: 6255968569297207369
+      type: {class: BlackboardReference, ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        m_Blackboard:
+          rid: 6255968569297207371
+        m_Source: {fileID: 8049932104730354357}
+    - rid: 6255968569297207371
+      type: {class: Blackboard, ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        m_Variables:
+        - rid: 149323010259026010
+        - rid: 149323010259026011
+        - rid: 149323010259026012
+        - rid: 149323010259026013
+        - rid: 149323010259026014
+        - rid: 149323010259026015
+    - rid: 6255968818399019088
+      type: {class: Start, ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        ID:
+          m_Value0: 4119182934977911623
+          m_Value1: 4066214369334370689
+        Graph:
+          rid: 6255968569297207368
+        m_Parent:
+          rid: -2
+        m_Child:
+          rid: 6255968818399019089
+        Repeat: 1
+        AllowMultipleRepeatsPerTick: 0
+    - rid: 6255968818399019089
+      type: {class: SequenceComposite, ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        ID:
+          m_Value0: 9904952475285614736
+          m_Value1: 14866993630325504677
+        Graph:
+          rid: 6255968569297207368
+        m_Parent:
+          rid: 6255968818399019088
+        m_Children:
+        - rid: 6255968818399019090
+        - rid: 6255968818399019091
+        - rid: 6255968818399019092
+        - rid: 6255968818399019093
+        m_RegisteredObservers: []
+    - rid: 6255968818399019090
+      type: {class: SpinocrocPatrolAction, ns: Lighthouse.Monsters.Spinocroc.Server, asm: Lighthouse.Runtime}
+      data:
+        ID:
+          m_Value0: 8886201295342289642
+          m_Value1: 7842303147006374961
+        Graph:
+          rid: 6255968569297207368
+        m_Parent:
+          rid: 6255968818399019089
+        _self:
+          rid: 149323010259026010
+        _targetBoat:
+          rid: 149323010259026011
+    - rid: 6255968818399019091
+      type: {class: SpinocrocPrepareAction, ns: Lighthouse.Monsters.Spinocroc.Server, asm: Lighthouse.Runtime}
+      data:
+        ID:
+          m_Value0: 16849322482552295067
+          m_Value1: 12892244208614183490
+        Graph:
+          rid: 6255968569297207368
+        m_Parent:
+          rid: 6255968818399019089
+        _self:
+          rid: 149323010259026010
+        _targetBoat:
+          rid: 149323010259026011
+    - rid: 6255968818399019092
+      type: {class: SpinocrocChargeAction, ns: Lighthouse.Monsters.Spinocroc.Server, asm: Lighthouse.Runtime}
+      data:
+        ID:
+          m_Value0: 9672675923266845489
+          m_Value1: 1790430197272512227
+        Graph:
+          rid: 6255968569297207368
+        m_Parent:
+          rid: 6255968818399019089
+        _self:
+          rid: 149323010259026010
+        _targetBoat:
+          rid: 149323010259026011
+    - rid: 6255968818399019093
+      type: {class: SpinocrocRecoveryAction, ns: Lighthouse.Monsters.Spinocroc.Server, asm: Lighthouse.Runtime}
+      data:
+        ID:
+          m_Value0: 7018546686410968432
+          m_Value1: 10169829238694741923
+        Graph:
+          rid: 6255968569297207368
+        m_Parent:
+          rid: 6255968818399019089
+        _self:
+          rid: 149323010259026010
+        _targetBoat:
+          rid: 149323010259026011
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bad8f2220607dac4db5082ff333fafb8, type: 3}
+  m_Name: SpinocrocBehavior
+  m_EditorClassIdentifier: 
+  Blackboard: {fileID: 693092236105787345}
+  m_Description: 
+  m_Nodes:
+  - rid: 6255968569297207373
+  - rid: 6255968598240264463
+  - rid: 149323010259026025
+  - rid: 149323010259026026
+  - rid: 149323010259026057
+  - rid: 149323010259026027
+  m_VersionTimestamp: 639284427105650417
+  m_SerializedVersion: 3
+  m_DebugInfo: {fileID: 48162156267709947}
+  m_RuntimeGraph: {fileID: -1276845571039540674}
+  AssetID:
+    m_Value0: 7254762271356365981
+    m_Value1: 17905603484111265864
+  Story:
+    Story: 
+    StoryVariableNames: []
+    Variables: []
+  m_NodeModelsInfo:
+  - Name: On Start
+    Story: 
+    RuntimeTypeString: Unity.Behavior.Start, Unity.Behavior, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+    RuntimeTypeID:
+      m_Value0: 3335272451348827663
+      m_Value1: 11549843281177505721
+    Variables: []
+    NamedChildren: []
+    IsPlaceholder: 0
+  - Name: Sequence
+    Story: 
+    RuntimeTypeString: Unity.Behavior.SequenceComposite, Unity.Behavior, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
+    RuntimeTypeID:
+      m_Value0: 10181448252506100447
+      m_Value1: 8737116843063128493
+    Variables: []
+    NamedChildren: []
+    IsPlaceholder: 0
+  - Name: "\uC2A4\uD53C\uB178\uD06C\uB85D \uBC30\uD68C\uC640 \uB300\uC0C1 \uC120\uC815"
+    Story: "[Self]\uAC00 \uBC30\uD68C\uD558\uBA70 \uACF5\uACA9 \uC900\uBE44 \uB300\uC0C1\uC744
+      \uC120\uC815\uD55C\uB2E4"
+    RuntimeTypeString: Lighthouse.Monsters.Spinocroc.Server.SpinocrocPatrolAction,
+      Lighthouse.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    RuntimeTypeID:
+      m_Value0: 8596510826734828521
+      m_Value1: 10040371647996309659
+    Variables:
+    - Name: Self
+      Type:
+        m_SerializableType: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+      Tooltip: 
+    - Name: TargetBoat
+      Type:
+        m_SerializableType: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+      Tooltip: 
+    NamedChildren: []
+    IsPlaceholder: 0
+  - Name: "\uC2A4\uD53C\uB178\uD06C\uB85D \uACF5\uACA9 \uC900\uBE44"
+    Story: "[Self]\uAC00 \uC7A0\uC218\uD558\uACE0 \uC7AC\uB4F1\uC7A5\uD574 \uB3CC\uC9C4
+      \uBC29\uD5A5\uC744 \uACE0\uC815\uD55C\uB2E4"
+    RuntimeTypeString: Lighthouse.Monsters.Spinocroc.Server.SpinocrocPrepareAction,
+      Lighthouse.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    RuntimeTypeID:
+      m_Value0: 9747042751286778779
+      m_Value1: 10401240512514363823
+    Variables:
+    - Name: Self
+      Type:
+        m_SerializableType: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+      Tooltip: 
+    - Name: TargetBoat
+      Type:
+        m_SerializableType: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+      Tooltip: 
+    NamedChildren: []
+    IsPlaceholder: 0
+  - Name: "\uC2A4\uD53C\uB178\uD06C\uB85D \uACE0\uC815 \uBC29\uD5A5 \uB3CC\uC9C4"
+    Story: "[Self]\uAC00 \uACE0\uC815\uD55C \uBC29\uD5A5\uC73C\uB85C \uB3CC\uC9C4\uD558\uBA70
+      \uACF5\uACA9\uD55C\uB2E4"
+    RuntimeTypeString: Lighthouse.Monsters.Spinocroc.Server.SpinocrocChargeAction,
+      Lighthouse.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    RuntimeTypeID:
+      m_Value0: 4846481910858443319
+      m_Value1: 5795607747062210719
+    Variables:
+    - Name: Self
+      Type:
+        m_SerializableType: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+      Tooltip: 
+    - Name: TargetBoat
+      Type:
+        m_SerializableType: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+      Tooltip: 
+    NamedChildren: []
+    IsPlaceholder: 0
+  - Name: "\uC2A4\uD53C\uB178\uD06C\uB85D \uAC10\uC18D\uACFC \uD68C\uBCF5"
+    Story: "[Self]\uAC00 \uAC10\uC18D\uD558\uACE0 \uBC18\uACA9\uC5D0 \uB178\uCD9C\uB41C
+      \uB4A4 \uBC30\uD68C\uB85C \uB3CC\uC544\uAC04\uB2E4"
+    RuntimeTypeString: Lighthouse.Monsters.Spinocroc.Server.SpinocrocRecoveryAction,
+      Lighthouse.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    RuntimeTypeID:
+      m_Value0: 1606080241059140860
+      m_Value1: 10322928740041562006
+    Variables:
+    - Name: Self
+      Type:
+        m_SerializableType: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+      Tooltip: 
+    - Name: TargetBoat
+      Type:
+        m_SerializableType: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+      Tooltip: 
+    NamedChildren: []
+    IsPlaceholder: 0
+  m_Blackboards: []
+  m_MainBlackboardAuthoringAsset: {fileID: 693092236105787345}
+  m_CommandBuffer:
+    m_Commands: []
+  m_SubgraphsInfo: []
+  m_BlackboardMissingManagedRef: 0
+  m_GraphMissingManagedRef: 0
+  m_HasMissingTypeInManagedRef: 0
+  m_EnumDependencyCache:
+    Entries: []
+  references:
+    version: 2
+    RefIds:
+    - rid: 149323010259026025
+      type: {class: ActionNodeModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        Position: {x: 0, y: 400}
+        ID:
+          m_Value0: 8886201295342289642
+          m_Value1: 7842303147006374961
+        Parents: []
+        PortModels:
+        - rid: 149323010259026028
+        - rid: 149323010259026029
+        NodeType:
+          m_SerializableType: Lighthouse.Monsters.Spinocroc.Server.SpinocrocPatrolAction,
+            Lighthouse.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        NodeTypeID:
+          m_Value0: 8596510826734828521
+          m_Value1: 10040371647996309659
+        m_FieldValues:
+        - rid: 149323010259026030
+        - rid: 149323010259026031
+    - rid: 149323010259026026
+      type: {class: ActionNodeModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        Position: {x: 350, y: 400}
+        ID:
+          m_Value0: 16849322482552295067
+          m_Value1: 12892244208614183490
+        Parents: []
+        PortModels:
+        - rid: 149323010259026032
+        - rid: 149323010259026033
+        NodeType:
+          m_SerializableType: Lighthouse.Monsters.Spinocroc.Server.SpinocrocPrepareAction,
+            Lighthouse.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        NodeTypeID:
+          m_Value0: 9747042751286778779
+          m_Value1: 10401240512514363823
+        m_FieldValues:
+        - rid: 149323010259026034
+        - rid: 149323010259026035
+    - rid: 149323010259026027
+      type: {class: ActionNodeModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        Position: {x: 1050, y: 400}
+        ID:
+          m_Value0: 7018546686410968432
+          m_Value1: 10169829238694741923
+        Parents: []
+        PortModels:
+        - rid: 149323010259026036
+        - rid: 149323010259026037
+        NodeType:
+          m_SerializableType: Lighthouse.Monsters.Spinocroc.Server.SpinocrocRecoveryAction,
+            Lighthouse.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        NodeTypeID:
+          m_Value0: 1606080241059140860
+          m_Value1: 10322928740041562006
+        m_FieldValues:
+        - rid: 149323010259026038
+        - rid: 149323010259026039
+    - rid: 149323010259026028
+      type: {class: PortModel, ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        m_Name: InputPort
+        m_PortDataFlowType: 0
+        m_IsFloating: 0
+        m_NodeModel:
+          rid: 149323010259026025
+        m_Connections:
+        - rid: 6255968598240264492
+    - rid: 149323010259026029
+      type: {class: PortModel, ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        m_Name: OutputPort
+        m_PortDataFlowType: 1
+        m_IsFloating: 0
+        m_NodeModel:
+          rid: 149323010259026025
+        m_Connections: []
+    - rid: 149323010259026030
+      type: {class: BehaviorGraphNodeModel/FieldModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        FieldName: Self
+        Type:
+          m_SerializableType: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+            Culture=neutral, PublicKeyToken=null
+        LocalValue:
+          rid: 149323010259026040
+        LinkedVariable:
+          rid: 6255968598240265151
+    - rid: 149323010259026031
+      type: {class: BehaviorGraphNodeModel/FieldModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        FieldName: TargetBoat
+        Type:
+          m_SerializableType: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+            Culture=neutral, PublicKeyToken=null
+        LocalValue:
+          rid: 149323010259026041
+        LinkedVariable:
+          rid: 6255968598240265111
+    - rid: 149323010259026032
+      type: {class: PortModel, ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        m_Name: InputPort
+        m_PortDataFlowType: 0
+        m_IsFloating: 0
+        m_NodeModel:
+          rid: 149323010259026026
+        m_Connections:
+        - rid: 6255968598240264492
+    - rid: 149323010259026033
+      type: {class: PortModel, ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        m_Name: OutputPort
+        m_PortDataFlowType: 1
+        m_IsFloating: 0
+        m_NodeModel:
+          rid: 149323010259026026
+        m_Connections: []
+    - rid: 149323010259026034
+      type: {class: BehaviorGraphNodeModel/FieldModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        FieldName: Self
+        Type:
+          m_SerializableType: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+            Culture=neutral, PublicKeyToken=null
+        LocalValue:
+          rid: 149323010259026042
+        LinkedVariable:
+          rid: 6255968598240265151
+    - rid: 149323010259026035
+      type: {class: BehaviorGraphNodeModel/FieldModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        FieldName: TargetBoat
+        Type:
+          m_SerializableType: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+            Culture=neutral, PublicKeyToken=null
+        LocalValue:
+          rid: 149323010259026043
+        LinkedVariable:
+          rid: 6255968598240265111
+    - rid: 149323010259026036
+      type: {class: PortModel, ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        m_Name: InputPort
+        m_PortDataFlowType: 0
+        m_IsFloating: 0
+        m_NodeModel:
+          rid: 149323010259026027
+        m_Connections:
+        - rid: 6255968598240264492
+    - rid: 149323010259026037
+      type: {class: PortModel, ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        m_Name: OutputPort
+        m_PortDataFlowType: 1
+        m_IsFloating: 0
+        m_NodeModel:
+          rid: 149323010259026027
+        m_Connections: []
+    - rid: 149323010259026038
+      type: {class: BehaviorGraphNodeModel/FieldModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        FieldName: Self
+        Type:
+          m_SerializableType: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+            Culture=neutral, PublicKeyToken=null
+        LocalValue:
+          rid: 149323010259026044
+        LinkedVariable:
+          rid: 6255968598240265151
+    - rid: 149323010259026039
+      type: {class: BehaviorGraphNodeModel/FieldModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        FieldName: TargetBoat
+        Type:
+          m_SerializableType: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+            Culture=neutral, PublicKeyToken=null
+        LocalValue:
+          rid: 149323010259026045
+        LinkedVariable:
+          rid: 6255968598240265111
+    - rid: 149323010259026040
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 0
+          m_Value1: 0
+        Name: 
+        m_Value: {fileID: 0}
+    - rid: 149323010259026041
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 0
+          m_Value1: 0
+        Name: 
+        m_Value: {fileID: 0}
+    - rid: 149323010259026042
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 0
+          m_Value1: 0
+        Name: 
+        m_Value: {fileID: 0}
+    - rid: 149323010259026043
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 0
+          m_Value1: 0
+        Name: 
+        m_Value: {fileID: 0}
+    - rid: 149323010259026044
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 0
+          m_Value1: 0
+        Name: 
+        m_Value: {fileID: 0}
+    - rid: 149323010259026045
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 0
+          m_Value1: 0
+        Name: 
+        m_Value: {fileID: 0}
+    - rid: 149323010259026057
+      type: {class: ActionNodeModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        Position: {x: 700, y: 400}
+        ID:
+          m_Value0: 9672675923266845489
+          m_Value1: 1790430197272512227
+        Parents: []
+        PortModels:
+        - rid: 149323010259026058
+        - rid: 149323010259026059
+        NodeType:
+          m_SerializableType: Lighthouse.Monsters.Spinocroc.Server.SpinocrocChargeAction,
+            Lighthouse.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        NodeTypeID:
+          m_Value0: 4846481910858443319
+          m_Value1: 5795607747062210719
+        m_FieldValues:
+        - rid: 149323010259026060
+        - rid: 149323010259026061
+    - rid: 149323010259026058
+      type: {class: PortModel, ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        m_Name: InputPort
+        m_PortDataFlowType: 0
+        m_IsFloating: 0
+        m_NodeModel:
+          rid: 149323010259026057
+        m_Connections:
+        - rid: 6255968598240264492
+    - rid: 149323010259026059
+      type: {class: PortModel, ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        m_Name: OutputPort
+        m_PortDataFlowType: 1
+        m_IsFloating: 0
+        m_NodeModel:
+          rid: 149323010259026057
+        m_Connections: []
+    - rid: 149323010259026060
+      type: {class: BehaviorGraphNodeModel/FieldModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        FieldName: Self
+        Type:
+          m_SerializableType: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+            Culture=neutral, PublicKeyToken=null
+        LocalValue:
+          rid: 149323010259026062
+        LinkedVariable:
+          rid: 6255968598240265151
+    - rid: 149323010259026061
+      type: {class: BehaviorGraphNodeModel/FieldModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        FieldName: TargetBoat
+        Type:
+          m_SerializableType: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+            Culture=neutral, PublicKeyToken=null
+        LocalValue:
+          rid: 149323010259026063
+        LinkedVariable:
+          rid: 6255968598240265111
+    - rid: 149323010259026062
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 0
+          m_Value1: 0
+        Name: 
+        m_Value: {fileID: 0}
+    - rid: 149323010259026063
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 0
+          m_Value1: 0
+        Name: 
+        m_Value: {fileID: 0}
+    - rid: 6255968569297207373
+      type: {class: StartNodeModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        Position: {x: 0, y: 0}
+        ID:
+          m_Value0: 4119182934977911623
+          m_Value1: 4066214369334370689
+        Parents: []
+        PortModels:
+        - rid: 6255968569297207374
+        NodeType:
+          m_SerializableType: Unity.Behavior.Start, Unity.Behavior, Version=0.0.0.0,
+            Culture=neutral, PublicKeyToken=null
+        NodeTypeID:
+          m_Value0: 3335272451348827663
+          m_Value1: 11549843281177505721
+        m_FieldValues: []
+        Repeat: 1
+        AllowMultipleRepeatsPerTick: 0
+    - rid: 6255968569297207374
+      type: {class: PortModel, ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        m_Name: OutputPort
+        m_PortDataFlowType: 1
+        m_IsFloating: 0
+        m_NodeModel:
+          rid: 6255968569297207373
+        m_Connections:
+        - rid: 6255968598240264491
+    - rid: 6255968598240264463
+      type: {class: CompositeNodeModel, ns: Unity.Behavior, asm: Unity.Behavior.Authoring}
+      data:
+        Position: {x: -0.792989, y: 180.93503}
+        ID:
+          m_Value0: 9904952475285614736
+          m_Value1: 14866993630325504677
+        Parents: []
+        PortModels:
+        - rid: 6255968598240264491
+        - rid: 6255968598240264492
+        NodeType:
+          m_SerializableType: Unity.Behavior.SequenceComposite, Unity.Behavior, Version=0.0.0.0,
+            Culture=neutral, PublicKeyToken=null
+        NodeTypeID:
+          m_Value0: 10181448252506100447
+          m_Value1: 8737116843063128493
+        m_FieldValues: []
+    - rid: 6255968598240264491
+      type: {class: PortModel, ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        m_Name: InputPort
+        m_PortDataFlowType: 0
+        m_IsFloating: 0
+        m_NodeModel:
+          rid: 6255968598240264463
+        m_Connections:
+        - rid: 6255968569297207374
+    - rid: 6255968598240264492
+      type: {class: PortModel, ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        m_Name: OutputPort
+        m_PortDataFlowType: 1
+        m_IsFloating: 0
+        m_NodeModel:
+          rid: 6255968598240264463
+        m_Connections:
+        - rid: 149323010259026028
+        - rid: 149323010259026032
+        - rid: 149323010259026058
+        - rid: 149323010259026036
+    - rid: 6255968598240265111
+      type: {class: 'TypedVariableModel`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        ID:
+          m_Value0: 3939507408910004024
+          m_Value1: 5776833759762421790
+        Name: Boat
+        IsExposed: 1
+        m_IsShared: 0
+        m_Value: {fileID: 0}
+    - rid: 6255968598240265151
+      type: {class: 'TypedVariableModel`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        ID:
+          m_Value0: 1
+          m_Value1: 0
+        Name: Monster
+        IsExposed: 1
+        m_IsShared: 0
+        m_Value: {fileID: 0}
+--- !u!114 &48162156267709947
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b27bb6d9a2c8d540a10dff10acc543e, type: 3}
+  m_Name: SpinocrocBehavior Debug Info
+  m_EditorClassIdentifier: 
+  m_CodeBreakPointsList: []
+--- !u!114 &693092236105787345
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2dd922ae02c94c87a66e46a10a7319b9, type: 3}
+  m_Name: SpinocrocBehavior Blackboard
+  m_EditorClassIdentifier: 
+  AssetID:
+    m_Value0: 7254762271356365981
+    m_Value1: 17905603484111265864
+  m_Variables:
+  - rid: 6255968569297207375
+  - rid: 6255968569297207382
+  - rid: 6255968591876981299
+  - rid: 6255968591876981300
+  - rid: 6255968591876981302
+  - rid: 6255968598240264635
+  m_VersionTimestamp: 639277638059420886
+  m_CommandBuffer:
+    m_Commands: []
+  m_RuntimeBlackboardAsset: {fileID: 8049932104730354357}
+  references:
+    version: 2
+    RefIds:
+    - rid: 6255968569297207375
+      type: {class: 'TypedVariableModel`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        ID:
+          m_Value0: 1
+          m_Value1: 0
+        Name: Monster
+        IsExposed: 1
+        m_IsShared: 0
+        m_Value: {fileID: 0}
+    - rid: 6255968569297207382
+      type: {class: 'TypedVariableModel`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        ID:
+          m_Value0: 3939507408910004024
+          m_Value1: 5776833759762421790
+        Name: Boat
+        IsExposed: 1
+        m_IsShared: 0
+        m_Value: {fileID: 0}
+    - rid: 6255968591876981299
+      type: {class: 'TypedVariableModel`1[[System.Single, mscorlib]]', ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        ID:
+          m_Value0: 9724891354851918075
+          m_Value1: 17122638825611180285
+        Name: "\uC21C\uCC30 \uB300\uAE30 \uCD5C\uC18C"
+        IsExposed: 1
+        m_IsShared: 0
+        m_Value: 1
+    - rid: 6255968591876981300
+      type: {class: 'TypedVariableModel`1[[System.Single, mscorlib]]', ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        ID:
+          m_Value0: 4296321811690205611
+          m_Value1: 13006404833662482759
+        Name: "\uC21C\uCC30 \uB300\uAE30 \uCD5C\uB300"
+        IsExposed: 1
+        m_IsShared: 0
+        m_Value: 3
+    - rid: 6255968591876981302
+      type: {class: 'TypedVariableModel`1[[System.Single, mscorlib]]', ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        ID:
+          m_Value0: 1108972351930673315
+          m_Value1: 12325857350651331740
+        Name: "\uACF5\uACA9 \uC7AC\uC0AC\uC6A9 \uC2DC\uAC04"
+        IsExposed: 1
+        m_IsShared: 0
+        m_Value: 2
+    - rid: 6255968598240264635
+      type: {class: 'TypedVariableModel`1[[System.Single, mscorlib]]', ns: Unity.Behavior.GraphFramework, asm: Unity.Behavior.GraphFramework}
+      data:
+        ID:
+          m_Value0: 1276705729408019489
+          m_Value1: 1459792126966936505
+        Name: "\uC644\uB8CC \uACF5\uACA9 \uC7AC\uC0AC\uC6A9 \uC2DC\uAC04"
+        IsExposed: 1
+        m_IsShared: 0
+        m_Value: 0
+--- !u!114 &8049932104730354357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c02bb70996b49eba31d0c206e28da24, type: 3}
+  m_Name: SpinocrocBehavior Blackboard
+  m_EditorClassIdentifier: 
+  VersionTimestamp: 639277638059420886
+  AssetID:
+    m_Value0: 7254762271356365981
+    m_Value1: 17905603484111265864
+  m_Blackboard:
+    m_Variables:
+    - rid: 6255968569297207376
+    - rid: 6255968569297207398
+    - rid: 6255968591876981461
+    - rid: 6255968591876981462
+    - rid: 6255968591876981464
+    - rid: 6255968598240264680
+  m_SharedBlackboardVariableGuids: []
+  references:
+    version: 2
+    RefIds:
+    - rid: 6255968569297207376
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 1
+          m_Value1: 0
+        Name: Monster
+        m_Value: {fileID: 0}
+    - rid: 6255968569297207398
+      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 3939507408910004024
+          m_Value1: 5776833759762421790
+        Name: Boat
+        m_Value: {fileID: 0}
+    - rid: 6255968591876981461
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 9724891354851918075
+          m_Value1: 17122638825611180285
+        Name: "\uC21C\uCC30 \uB300\uAE30 \uCD5C\uC18C"
+        m_Value: 1
+    - rid: 6255968591876981462
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 4296321811690205611
+          m_Value1: 13006404833662482759
+        Name: "\uC21C\uCC30 \uB300\uAE30 \uCD5C\uB300"
+        m_Value: 3
+    - rid: 6255968591876981464
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 1108972351930673315
+          m_Value1: 12325857350651331740
+        Name: "\uACF5\uACA9 \uC7AC\uC0AC\uC6A9 \uC2DC\uAC04"
+        m_Value: 2
+    - rid: 6255968598240264680
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior, asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 1276705729408019489
+          m_Value1: 1459792126966936505
+        Name: "\uC644\uB8CC \uACF5\uACA9 \uC7AC\uC0AC\uC6A9 \uC2DC\uAC04"
+        m_Value: 0
