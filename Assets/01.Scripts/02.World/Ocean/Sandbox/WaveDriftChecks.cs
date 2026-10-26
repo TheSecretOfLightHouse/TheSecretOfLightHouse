@@ -53,7 +53,11 @@ namespace Lighthouse.World.Ocean.Sandbox
             Vector3 byForce = Target(profile, Vector3.up, force, Far);
             Vector3 combined = Target(profile, new Vector3(0.1f, 1f, 0f), force, Far);
 
-            bool isPassed = Near(byForce.x, 1f) && Near(byForce.z, 0f) && byForce.y == 0f && Near(combined.x, 1.3f);
+            float expected = force.x / (Mass * profile.DriftDamping);
+
+            bool isPassed = expected + 0.3f <= profile.MaxDriftSpeed
+                && Near(byForce.x, expected) && Near(byForce.z, 0f) && byForce.y == 0f
+                && Near(combined.x, expected + 0.3f);
             WaveCheckLog.Report("Drift.ForceResponse", isPassed, $"force={byForce}, combined={combined}");
             return isPassed;
         }
@@ -88,8 +92,11 @@ namespace Lighthouse.World.Ocean.Sandbox
                 previous = fade;
             }
 
-            bool isPassed = Near(atStart, 0f) && Near(atMiddle, 0.5f) && Near(atEnd, 1f)
-                && Near(beyond, 1f) && Near(onLand, 0f) && isMonotonic;
+            float full = force.x / (Mass * profile.DriftDamping);
+
+            bool isPassed = full <= profile.MaxDriftSpeed
+                && Near(atStart, 0f) && Near(atMiddle, full * 0.5f) && Near(atEnd, full)
+                && Near(beyond, full) && Near(onLand, 0f) && isMonotonic;
             WaveCheckLog.Report("Drift.ShoreFade", isPassed, $"start={atStart:F3}, mid={atMiddle:F3}, end={atEnd:F3}, mono={isMonotonic}");
             return isPassed;
         }

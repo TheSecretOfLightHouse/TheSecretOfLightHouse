@@ -10,13 +10,13 @@ namespace Lighthouse.World.Ocean.Rules
         private const float MinPositive = 0.01f;
 
         [SerializeField]
-        private float _driftDamping = 0.5f;
+        private float _driftDamping = 0.25f;
 
         [SerializeField]
         private float _slopeResponse = 3f;
 
         [SerializeField]
-        private float _maxDriftSpeed = 3f;
+        private float _maxDriftSpeed = 4f;
 
         [SerializeField]
         private float _responseTime = 0.5f;
