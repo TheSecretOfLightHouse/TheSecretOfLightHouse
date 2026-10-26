@@ -71,7 +71,7 @@ namespace Lighthouse.World.Ocean.Rules
         }
 
         public Vector3 ForceAt(Vector3 worldPos, Vector3 velocity,
-            float sailArea, double time)
+            float hullExposure, double time)
         {
             if (!IsInfluencing(worldPos) || !IsFinite(velocity))
             {

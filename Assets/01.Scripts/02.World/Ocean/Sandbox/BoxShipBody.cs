@@ -11,7 +11,7 @@ namespace Lighthouse.World.Ocean.Sandbox
         [SerializeField] private float _mass = 500f;
         [SerializeField] private Vector3 _centerOfMassOffset = new Vector3(0f, -0.3f, 0f);
         [SerializeField] private float _rightingStrength = 1f;
-        [SerializeField] private float _sailArea = 4f;
+        [SerializeField] private float _hullExposure = 1f;
 
         [SerializeField]
         private Vector3[] _buoyancyPoints =
@@ -45,7 +45,7 @@ namespace Lighthouse.World.Ocean.Sandbox
 
         public Vector3 CenterOfMassOffset => _centerOfMassOffset;
 
-        public float SailArea => _sailArea;
+        public float HullExposure => _hullExposure;
 
         public float RightingStrength => _rightingStrength;
 

@@ -10,9 +10,6 @@ namespace Lighthouse.World.Ocean.Rules
         private const float MinPositive = 0.01f;
 
         [SerializeField]
-        private float _hullExposure = 1f;
-
-        [SerializeField]
         private float _driftDamping = 0.5f;
 
         [SerializeField]
@@ -30,8 +27,6 @@ namespace Lighthouse.World.Ocean.Rules
         [SerializeField]
         private float _shoreFadeEnd = 24f;
 
-        public float HullExposure => _hullExposure;
-
         public float DriftDamping => _driftDamping;
 
         public float SlopeResponse => _slopeResponse;
@@ -46,7 +41,6 @@ namespace Lighthouse.World.Ocean.Rules
 
         private void OnValidate()
         {
-            _hullExposure = Mathf.Max(0f, _hullExposure);
             _driftDamping = Mathf.Max(MinPositive, _driftDamping);
             _slopeResponse = Mathf.Max(0f, _slopeResponse);
             _maxDriftSpeed = Mathf.Max(0f, _maxDriftSpeed);

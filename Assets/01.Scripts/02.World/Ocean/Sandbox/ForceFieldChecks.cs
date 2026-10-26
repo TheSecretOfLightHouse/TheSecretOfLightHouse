@@ -136,7 +136,7 @@ namespace Lighthouse.World.Ocean.Sandbox
                 return _isInfluencing;
             }
 
-            public Vector3 ForceAt(Vector3 worldPos, Vector3 velocity, float sailArea, double time)
+            public Vector3 ForceAt(Vector3 worldPos, Vector3 velocity, float hullExposure, double time)
             {
                 return _force;
             }

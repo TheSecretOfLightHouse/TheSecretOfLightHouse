@@ -87,7 +87,7 @@ namespace Lighthouse.World.Ocean
                 ForceFieldRoute.Drift,
                 _body.worldCenterOfMass,
                 _driftVelocity,
-                _profile.HullExposure,
+                _ship.HullExposure,
                 _host.CurrentTime);
 
             _shoreDistance = CoastWaveModel.DistanceAt(

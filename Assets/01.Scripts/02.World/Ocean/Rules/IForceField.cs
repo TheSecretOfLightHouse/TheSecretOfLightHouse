@@ -10,6 +10,6 @@ namespace Lighthouse.World.Ocean.Rules
 
         bool IsInfluencing(Vector3 worldPos);
 
-        Vector3 ForceAt(Vector3 worldPos, Vector3 velocity, float sailArea, double time);
+        Vector3 ForceAt(Vector3 worldPos, Vector3 velocity, float hullExposure, double time);
     }
 }

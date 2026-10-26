@@ -10,7 +10,7 @@ namespace Lighthouse.World.Ocean.Rules
         IReadOnlyList<Vector3> BuoyancyPoints { get; }
         float Mass { get; }
         Vector3 CenterOfMassOffset { get; }
-        float SailArea { get; }
+        float HullExposure { get; }
         float RightingStrength { get; }
     }
 }
