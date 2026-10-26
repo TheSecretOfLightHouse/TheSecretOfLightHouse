@@ -2655,6 +2655,7 @@ GameObject:
   m_Component:
   - component: {fileID: 623345282}
   - component: {fileID: 623345281}
+  - component: {fileID: 623345283}
   m_Layer: 0
   m_Name: WeatherHost
   m_TagString: Untagged
@@ -2691,6 +2692,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &623345283
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 623345279}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e45eda71ea8a1a542b668a51c6697db0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _forceCoefficient: 1
 --- !u!1 &658246172
 GameObject:
   m_ObjectHideFlags: 0
@@ -4661,6 +4675,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65651df296db69d478042a55a433a51d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _coastalShelfMaterial: {fileID: 0}
+  _coastalRockMaterial: {fileID: 0}
+  _coastalShelfWidth: 7
 --- !u!4 &1398708802
 Transform:
   m_ObjectHideFlags: 0
