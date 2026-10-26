@@ -1770,6 +1770,7 @@ GameObject:
   m_Component:
   - component: {fileID: 623345282}
   - component: {fileID: 623345281}
+  - component: {fileID: 623345283}
   m_Layer: 0
   m_Name: WeatherHost
   m_TagString: Untagged
@@ -1791,6 +1792,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _catalog: {fileID: 11400000, guid: eeed1fbcc6118034d8c53be253eeaae6, type: 2}
   _initialWeather: 0
+--- !u!114 &623345283
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 623345279}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e45eda71ea8a1a542b668a51c6697db0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _forceCoefficient: 1
 --- !u!4 &623345282
 Transform:
   m_ObjectHideFlags: 0
