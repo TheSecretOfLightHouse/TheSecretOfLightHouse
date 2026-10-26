@@ -71,3 +71,14 @@
 - 제안: CoverStanceAbility(기존 PlayerAbility 전략), 서버 요청 어댑터, 배의 BoatDamageModifiers(출처별 감소·서버 종료시각)로 분리. 기존 Runner는 입력/요청 대기/짧은 발동 표현까지만 관리하고 대상 배의 10초 효과 수명과 분리한다.
 - 서버가 대상 netId·거리·직군·난파·단계·재사용 제한을 검증해 효과 부여. 피해 직전 서버 시각으로 만료 검사. 피해 출처를 도입하고 기존 일반 ApplyDamage 호출은 미분류로 유지, 몬스터 경로만 명시적으로 분류하는 방안. Monsters 코드 변경은 박태욱과 경계 확인 필요하며 이번에는 수정하지 않음.
 - 다음: 사용거리·선택 방식·횟수/쿨다운·재적용 정책 결정 후 대상 배 효과와 서버 피해 시험부터 구현. 정적 코드 읽기만 수행, 실행 검증 없음.
+
+## 2026-10-25 직군 스킬 현황 재확인
+- 요청: 최명기 사용자 확인. 캐릭터 직군 능력의 현재 구현과 다음 작업 설명. 구현 변경 요청으로 확대하지 않음.
+- 기준: feature/myeongki / 7a7b748. 기존 Build Profile 수정과 미추적 10/24 기록 보존.
+- 확인 범위: Abilities 전체 C#, PlayerController 호출, BoatCannon/BoatDurability/암초/몬스터 피해 경로, Player 프리팹 직렬화 참조, v4 3.2~4.2, 시스템/기술 설계, 승패 결정, R17/R23 원문과 대장.
+- 액티브: 입력→Controller 이벤트→Runner 실행/취소 틀 존재. 전체 Assets/01.Scripts에서 PlayerAbility 파생 구현·SetJobAbility 외부 호출 미발견. Player 프리팹 8개의 _jobAbility는 null. 구체 액티브·서버 승인/효과 경로는 미구현.
+- 패시브: PlayerPassiveController·ReloadPassive 구현, BoatCannon 서버 발사 시 배율 조회 연결. Tech 1 프리팹에 참조·0.5배 설정 존재. 직군 배정에 의한 부여/회수 완료는 확인되지 않음. SetJobAbilityEnabled 외부 호출 미발견으로 소환 시 차단 연결은 남음. 0.5는 현재 설정이며 확정 밸런스로 단정하지 않음.
+- 엄호 태세: 이전 사용자 결정(근처 배 하나·자기 배 허용·10초·몬스터 피해50% 감소) 유지. BoatDamageType 및 Monster/Reef 호출 분류는 현재 존재하지만 ApplyDamage 내부는 damageType을 소비하지 않고 그대로 차감. CoverStanceAbility/BoatDamageModifiers는 검색에서 미발견.
+- 다음 권장: 서버 피해 계산에 몬스터 전용 임시 감소/만료를 먼저 구현→엄호 선택·거리·재사용/중첩·취소 규칙 확정→서버 요청 검증 및 구체 액티브→직군/소환 연결→호스트·원격 회귀. R17 배정과 R23 잔여 효과 정책은 미확정 유지.
+- 실제 검증: 파일/호출/직렬화 텍스트 읽기와 git 상태 확인만. Unity 프로세스 조회 결과 없음. 컴파일·Play·Mirror Weaver·M2는 이번 조사에서 미실행. 에디터 접속 도구로 연결 가능 여부까지 확인한 것은 아님.
+- 변경: 본 원문과 담당자 pointer의 현황 기록만. 게임 코드·씬·프리팹 수정, 커밋 없음.
