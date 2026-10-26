@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de97b4450d2db6b4db05bdd5bf79e509, type: 3}
+  m_Name: SpinocrocSettings
+  m_EditorClassIdentifier: 
+  _diveDepth: 6
+  _diveDuration: 2.5
+  _reappearDuration: 2
+  _windupDuration: 1.5
+  _lockedPreparationDuration: 0.75
+  _minimumPatrolDuration: 3
+  _turnSpeed: 90
+  _minimumReappearDistance: 12
+  _maximumReappearDistance: 20
+  _chargeSpeed: 12
+  _chargeDuration: 2
+  _attackLocalCenter: {x: 0, y: 0.25, z: 0.3}
+  _attackRadius: 2
+  _attackHalfLength: 3
+  _decelerationDuration: 0.6
+  _recoveryDuration: 2
