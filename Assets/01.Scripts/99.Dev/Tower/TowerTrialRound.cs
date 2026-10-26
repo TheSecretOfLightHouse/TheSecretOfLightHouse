@@ -49,6 +49,9 @@ namespace Lighthouse.Dev.Tower
         [Tooltip("Attack power for a forced summon when voting is off (fewer than two players).")]
         [SerializeField, Min(0f)]
         private float _devSummonAttackPower = 10f;
+        [Tooltip("Lighthouse damage per press of the dev hit button, for checking the hit effects without monsters.")]
+        [SerializeField, Min(0f)]
+        private float _devDamage = 100f;
 
         [SyncVar]
         private bool _isStarted;
@@ -73,6 +76,7 @@ namespace Lighthouse.Dev.Tower
         public int DeadlineDays => _flow ? _flow.DeadlineDays : 0;
         public bool IsClockStopped => _flow && _flow.IsDeadlineStopped;
         public uint RevealedMafiaId => _flow ? _flow.RevealedMafiaId : 0;
+        public float DevDamage => _devDamage;
         // Client-side: this player's own role, sent to this player only.
         public bool HasOwnRole { get; private set; }
         public bool IsOwnMafia { get; private set; }
@@ -168,6 +172,18 @@ namespace Lighthouse.Dev.Tower
             CmdForceSummon();
         }
 
+        [Client]
+        public void RequestDevDamage()
+        {
+            CmdDevDamage();
+        }
+
+        [Client]
+        public void RequestForceEnd(bool isCitizensWin)
+        {
+            CmdForceEnd(isCitizensWin);
+        }
+
         // Server-only. The ritual's vote count, read by the scripted match.
         public int CountCitizenVotesOnMafia()
         {
@@ -261,6 +277,28 @@ namespace Lighthouse.Dev.Tower
 
             _attackPower = attack;
             _match.TryBeginFinalBattle();
+        }
+
+        // Same path as a monster's valid hit; the match ignores it outside the final battle.
+        [Command(requiresAuthority = false)]
+        private void CmdDevDamage()
+        {
+            if (_isStarted)
+            {
+                _match.ApplyDamage(_devDamage);
+            }
+        }
+
+        // Ends through TryEnd like a real result, so voting and the end screen follow as usual. The reasons are ones
+        // every phase can have (repair done, deadline), since nothing in the trial reads them as proof of a dev end.
+        [Command(requiresAuthority = false)]
+        private void CmdForceEnd(bool isCitizensWin)
+        {
+            if (_isStarted)
+            {
+                _match.TryEnd(isCitizensWin ? TowerOutcome.CitizensWin : TowerOutcome.MafiaWin,
+                    isCitizensWin ? TowerEndReason.RepairCompleted : TowerEndReason.Deadline);
+            }
         }
 
         [TargetRpc]

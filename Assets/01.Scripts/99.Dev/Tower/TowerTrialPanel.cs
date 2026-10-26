@@ -571,7 +571,29 @@ namespace Lighthouse.Dev.Tower
                 _round.RequestForceSummon();
             }
 
+            if (_match.Phase == TowerPhase.FinalBattle && GUILayout.Button($"등대 피해 {_round.DevDamage:0}"))
+            {
+                _round.RequestDevDamage();
+            }
+
             GUILayout.EndHorizontal();
+
+            if (_match.Phase != TowerPhase.Ended)
+            {
+                GUILayout.BeginHorizontal();
+
+                if (GUILayout.Button("시민 승리 강제"))
+                {
+                    _round.RequestForceEnd(true);
+                }
+
+                if (GUILayout.Button("마피아 승리 강제"))
+                {
+                    _round.RequestForceEnd(false);
+                }
+
+                GUILayout.EndHorizontal();
+            }
         }
 
         private void Send(uint targetNetId, InteractionAction action, int arg0 = 0, int arg1 = 0, int arg2 = 0)

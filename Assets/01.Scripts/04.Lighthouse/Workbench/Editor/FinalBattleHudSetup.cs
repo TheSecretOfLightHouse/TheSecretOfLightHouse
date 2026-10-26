@@ -21,6 +21,7 @@ namespace Lighthouse.Workbench.Editor
         private static readonly Color Cream = new Color(0.96f, 0.89f, 0.74f);
         private static readonly Color Faded = new Color(0.86f, 0.79f, 0.65f);
         private static readonly Color Gold = new Color(0.98f, 0.73f, 0.15f);
+        private static readonly Color Hit = new Color(1f, 0.35f, 0.28f);
         private static readonly Color Shadow = new Color(0.1f, 0.07f, 0.04f, 0.85f);
 
         [MenuItem("Lighthouse/Tower/Build Final Battle HUD Prefab")]
@@ -79,6 +80,7 @@ namespace Lighthouse.Workbench.Editor
                 Image healthFill = Bar("HealthBar", hud, "fb_bar_fill_hp_red", 1110f, 84f);
                 Text healthText = Label("HealthValue", hud, "0 / 0", 24, Cream, 1360f, 80f, 140f, 46f, TextAnchor.MiddleLeft);
                 Label("HealthGoal", hud, "0이 되면 마피아 승리", 17, Faded, 1112f, 124f, 300f, 28f, TextAnchor.MiddleLeft);
+                Text damageText = Label("HealthDamage", hud, "-0", 28, Hit, 1360f, 34f, 140f, 40f, TextAnchor.MiddleLeft);
 
                 FinalBattleHud view = root.AddComponent<FinalBattleHud>();
                 SerializedObject serialized = new SerializedObject(view);
@@ -87,6 +89,7 @@ namespace Lighthouse.Workbench.Editor
                 Set(serialized, "_repairText", repairText);
                 Set(serialized, "_healthFill", healthFill);
                 Set(serialized, "_healthText", healthText);
+                Set(serialized, "_damageText", damageText);
                 serialized.ApplyModifiedPropertiesWithoutUndo();
                 hud.gameObject.SetActive(false);
                 System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(PrefabPath));
