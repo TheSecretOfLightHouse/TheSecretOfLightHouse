@@ -23,6 +23,17 @@ namespace Lighthouse.Monsters.AI.Server
         [SerializeField, Min(1f)] private float _patrolTurnSpeed = 120f;
         [SerializeField, Min(0.01f)] private float _patrolAcceleration = 3f;
 
+        [Header("전방 선회 순찰")]
+        [SerializeField] private bool _usePatrolSteering;
+        [SerializeField, Min(1f)] private float _patrolAngularAcceleration = 90f;
+        [SerializeField, Min(0.1f)] private float _steeringHeadingResponse = 2f;
+        [SerializeField, Min(0.1f)] private float _steeringArrivalDistance = 1.5f;
+        [SerializeField, Min(0.1f)] private float _steeringMinimumLegDistance = 8f;
+        [SerializeField, Range(1f, 180f)] private float _steeringForwardHalfAngle = 80f;
+        [SerializeField, Range(0.1f, 1f)] private float _steeringTurnSpeedRatio = 0.35f;
+        [SerializeField, Min(0.1f)] private float _steeringLookAheadTime = 1f;
+        [SerializeField, Min(1f)] private float _steeringLegTimeout = 30f;
+
         [Header("순찰 장애물 검사")]
         [SerializeField] private LayerMask _patrolObstacleLayers = ~0;
         [SerializeField, Min(1)] private int _patrolCandidateAttempts = 12;
@@ -58,6 +69,9 @@ namespace Lighthouse.Monsters.AI.Server
         private float _patrolRetryAt;
         private float _patrolProgressAt;
         private float _patrolProgressRemaining;
+        private Vector3 _patrolProgressPosition;
+        private float _patrolAngularSpeed;
+        private float _patrolLegStartedAt;
 
         public Vector3 HomePosition => _homePosition;
         public float ArrivalDistance => _arrivalDistance;
@@ -187,7 +201,14 @@ namespace Lighthouse.Monsters.AI.Server
             {
                 Vector3 candidate = new Vector3(Random.Range(_patrolMin.x, _patrolMax.x),
                     _homePosition.y, Random.Range(_patrolMin.z, _patrolMax.z));
-                if (HasArrived(candidate, _arrivalDistance)
+                Vector3 offset = candidate - _body.position;
+                offset.y = 0f;
+                // 앞쪽 후보를 우선하되 해역 가장자리에서는 뒤쪽 후보도 허용한다.
+                bool isBehind = _usePatrolSteering && i < _patrolCandidateAttempts * 2 / 3
+                    && Vector3.Angle(_body.rotation * Vector3.forward, offset) > _steeringForwardHalfAngle;
+                float minimumDistance = _usePatrolSteering
+                    ? Mathf.Max(_steeringMinimumLegDistance, _steeringArrivalDistance * 2f) : _arrivalDistance;
+                if (isBehind || HasArrived(candidate, minimumDistance)
                     || !IsPatrolRouteClear(candidate, center, halfExtents))
                 {
                     continue;
@@ -196,6 +217,8 @@ namespace Lighthouse.Monsters.AI.Server
                 _hasPatrolDestination = true;
                 _patrolProgressRemaining = GetHorizontalDistance(_body.position, candidate);
                 _patrolProgressAt = Time.time;
+                _patrolProgressPosition = _body.position;
+                _patrolLegStartedAt = Time.time;
                 return true;
             }
             // 혼잡하거나 막힌 해역에서도 순찰 노드를 유지해 대기 후 다시 탐색한다.
@@ -237,9 +260,19 @@ namespace Lighthouse.Monsters.AI.Server
                 }
             }
             float remaining = GetHorizontalDistance(_body.position, _patrolDestination);
-            if (_patrolProgressRemaining - remaining >= _patrolProgressDistance)
+            if (_usePatrolSteering && (remaining <= _steeringArrivalDistance
+                || Time.time - _patrolLegStartedAt >= _steeringLegTimeout))
+            {
+                Stop();
+                return true;
+            }
+            // 선회 호에서는 목표와 잠시 멀어질 수 있으므로 실제 수평 이동으로 막힘을 판정한다.
+            float progress = _usePatrolSteering
+                ? GetHorizontalDistance(_body.position, _patrolProgressPosition) : _patrolProgressRemaining - remaining;
+            if (progress >= _patrolProgressDistance)
             {
                 _patrolProgressRemaining = remaining;
+                _patrolProgressPosition = _body.position;
                 _patrolProgressAt = Time.time;
             }
             else if (Time.time - _patrolProgressAt >= _patrolStuckDuration)
@@ -346,6 +379,7 @@ namespace Lighthouse.Monsters.AI.Server
             _isPatrolRequest = false;
             _isMoving = false;
             _patrolSpeed = 0f;
+            _patrolAngularSpeed = 0f;
             _hasPatrolDestination = false;
             // 회복 중 노드 종료나 이동 요청이 물리 반동을 지우지 않도록 한다.
             if (_isMovementLocked)
@@ -415,7 +449,12 @@ namespace Lighthouse.Monsters.AI.Server
 
         private bool IsPatrolRouteClear(Vector3 destination, Vector3 center, Vector3 halfExtents)
         {
-            Vector3 delta = destination - _body.position;
+            return IsPatrolSegmentClear(_body.position, destination, center, halfExtents);
+        }
+
+        private bool IsPatrolSegmentClear(Vector3 origin, Vector3 destination, Vector3 center, Vector3 halfExtents)
+        {
+            Vector3 delta = destination - origin;
             int count = Physics.OverlapBoxNonAlloc(center + delta, halfExtents,
                 _patrolOverlaps, Quaternion.identity, _patrolObstacleLayers, QueryTriggerInteraction.Ignore);
             if (count == _patrolOverlaps.Length)
@@ -547,6 +586,12 @@ namespace Lighthouse.Monsters.AI.Server
 
         private void StepPatrolSwim(float deltaTime)
         {
+            // 공격 후 재배치 등 기존 부드러운 이동에는 순찰 전용 선회를 적용하지 않는다.
+            if (_usePatrolSteering && _clampPatrolToArea)
+            {
+                StepSteeringPatrol(deltaTime);
+                return;
+            }
             Vector3 position = _body.position;
             Vector3 offset = _patrolDestination - position;
             offset.y = 0f;
@@ -585,6 +630,77 @@ namespace Lighthouse.Monsters.AI.Server
             _isMoving = velocity.sqrMagnitude > 0f;
             _body.MoveRotation(rotation);
             SetHorizontalVelocity(velocity);
+        }
+
+        private void StepSteeringPatrol(float deltaTime)
+        {
+            Vector3 position = _body.position;
+            Vector3 offset = _patrolDestination - position;
+            offset.y = 0f;
+            float distance = offset.magnitude;
+            if (distance <= _steeringArrivalDistance)
+            {
+                _patrolSpeed = 0f;
+                _isMoving = false;
+                SetHorizontalVelocity(Vector3.zero);
+                return;
+            }
+
+            Vector3 forward = _body.rotation * Vector3.forward;
+            forward.y = 0f;
+            forward.Normalize();
+            float angle = Vector3.SignedAngle(forward, offset, Vector3.up);
+            float desiredAngularSpeed = Mathf.Clamp(angle * _steeringHeadingResponse, -_patrolTurnSpeed, _patrolTurnSpeed);
+            _patrolAngularSpeed = Mathf.MoveTowards(_patrolAngularSpeed, desiredAngularSpeed,
+                _patrolAngularAcceleration * deltaTime);
+            Quaternion rotation = Quaternion.AngleAxis(_patrolAngularSpeed * deltaTime, Vector3.up) * _body.rotation;
+            Vector3 direction = rotation * Vector3.forward;
+            direction.y = 0f;
+            direction.Normalize();
+
+            float alignment = Mathf.Clamp01(Vector3.Dot(direction, offset / distance));
+            float speedRatio = Mathf.Lerp(_steeringTurnSpeedRatio, 1f, alignment);
+            float brakingSpeed = Mathf.Sqrt(2f * _patrolAcceleration * Mathf.Max(0f, distance - _steeringArrivalDistance * 0.5f));
+            float desiredSpeed = Mathf.Min(_requestedSpeed * speedRatio, brakingSpeed);
+            _patrolSpeed = Mathf.MoveTowards(_patrolSpeed, desiredSpeed, _patrolAcceleration * deltaTime);
+
+            _body.MoveRotation(rotation);
+            // 정지 직후에도 검사 거리를 유지해 장애물 앞에서 조금씩 전진하는 떨림을 방지한다.
+            float probeSpeed = Mathf.Max(_patrolSpeed, _requestedSpeed * _steeringTurnSpeedRatio);
+            if (!IsSteeringPathClear(position, direction, probeSpeed))
+            {
+                // 경계나 동적 장애물에서는 전진을 멈추고 방향 전환과 재탐색으로 벗어난다.
+                _patrolSpeed = 0f;
+                _isMoving = false;
+                SetHorizontalVelocity(Vector3.zero);
+                return;
+            }
+            SetHorizontalVelocity(direction * _patrolSpeed);
+            _isMoving = _patrolSpeed > 0f;
+        }
+
+        private bool IsSteeringPathClear(Vector3 origin, Vector3 forward, float speed)
+        {
+            if (!TryGetPatrolShape(out Vector3 center, out Vector3 halfExtents))
+            {
+                return false;
+            }
+            const int ProbeSegments = 3;
+            float interval = Mathf.Max(Time.fixedDeltaTime, _steeringLookAheadTime) / ProbeSegments;
+            Vector3 point = origin;
+            for (int i = 0; i < ProbeSegments; i++)
+            {
+                forward = Quaternion.AngleAxis(_patrolAngularSpeed * interval, Vector3.up) * forward;
+                Vector3 next = point + forward * (speed * interval);
+                if (next.x < _patrolMin.x || next.x > _patrolMax.x
+                    || next.z < _patrolMin.z || next.z > _patrolMax.z
+                    || !IsPatrolSegmentClear(point, next, center + point - origin, halfExtents))
+                {
+                    return false;
+                }
+                point = next;
+            }
+            return true;
         }
 
         private static bool IsFinitePositive(float value)
