@@ -8,7 +8,7 @@ public sealed class PlayerMotor : MonoBehaviour
     private Rigidbody _rb;
 
     [SerializeField]
-    private float _speed = 5f;
+    private float _speed = 3f;
 
     [SerializeField]
     private float _originAcceleration = 10f;
@@ -41,6 +41,8 @@ public sealed class PlayerMotor : MonoBehaviour
     private readonly RaycastHit[] _groundHits = new RaycastHit[16];
 
     public bool IsJumping { get; private set; }
+    public bool IsOffGround => _rb && !_rb.isKinematic && _rb.detectCollisions
+        && !CheckGrounded();
     private void Awake()
     {
         if (!_rb)
