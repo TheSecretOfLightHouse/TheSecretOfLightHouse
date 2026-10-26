@@ -9,8 +9,7 @@ namespace Lighthouse.Monsters.Spawning.Server
     public sealed class MonsterSpawnerRuntime
     {
         private readonly MonsterBase[] _prefabs;
-        private readonly CapsuleCollider[] _capsules;
-        private readonly Vector3[] _scales;
+        private readonly MonsterSpawnShape[] _shapes;
         private readonly Quaternion[] _rotations;
         private readonly List<MonsterBase> _owned;
         private readonly MonsterRespawnSchedule _respawns;
@@ -47,15 +46,13 @@ namespace Lighthouse.Monsters.Spawning.Server
             _respawns = new MonsterRespawnSchedule(MaxAliveCount, isRunning, now);
             int count = data.MonsterIds.Count;
             _prefabs = new MonsterBase[count];
-            _capsules = new CapsuleCollider[count];
-            _scales = new Vector3[count];
+            _shapes = new MonsterSpawnShape[count];
             _rotations = new Quaternion[count];
             for (int i = 0; i < count; i++)
             {
                 data.Catalog.TryResolve(data.MonsterIds[i], out MonsterCatalogEntry entry, out _);
                 _prefabs[i] = entry.Prefab;
-                _capsules[i] = entry.Prefab.GetComponent<CapsuleCollider>();
-                _scales[i] = entry.Prefab.transform.lossyScale;
+                MonsterSpawnShape.TryCreate(entry.Prefab, out _shapes[i]);
                 _rotations[i] = entry.Prefab.transform.rotation;
             }
 
@@ -104,7 +101,7 @@ namespace Lighthouse.Monsters.Spawning.Server
             }
 
             int option = _pendingOption;
-            if (_prefabs[option] == null || _capsules[option] == null)
+            if (_prefabs[option] == null || _shapes[option].Collider == null)
             {
                 Error = "시작 시 선택한 몬스터 프리팹이 제거되었습니다. 배치를 다시 등록해 주세요.";
                 return false;
@@ -121,7 +118,7 @@ namespace Lighthouse.Monsters.Spawning.Server
             }
 
             if (!MonsterSpawnerData.IsFinite(position)
-                || !MonsterSpawnPlacement.IsClear(_capsules[option], _scales[option], position, _rotations[option]))
+                || !MonsterSpawnPlacement.IsClear(_shapes[option], position, _rotations[option]))
             {
                 return true;
             }

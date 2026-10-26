@@ -1,3 +1,4 @@
+using System.Collections;
 using Lighthouse.Monsters.AI.Net;
 using Lighthouse.Monsters.AI.Server;
 using Lighthouse.World.MapGeneration.Net;
@@ -12,7 +13,9 @@ namespace Lighthouse.Monsters.MosaWhale.Server
     [RequireComponent(typeof(SeaMonster), typeof(SeaMonsterSensor))]
     public sealed class MosaWhaleTargeting : NetworkBehaviour
     {
-        [Header("서버 섬 경계 조회 (미할당 시 서버 시작 때 등록된 맵 확인)")]
+        private const float MapRefreshInterval = 0.25f;
+
+        [Header("서버 섬 경계 조회 (미할당·연결 해제 시 등록된 단일 맵 재탐색)")]
         [SerializeField] private MapStateNet _mapState;
 
         [Header("피해 0 프로토타입에서 월드 조회 미연결 허용")]
@@ -25,6 +28,8 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         private Vector3 _lastTargetPosition;
         private Vector3 _lockedAttackPosition;
         private bool _hasLockedAttackPosition;
+        private Coroutine _mapWatch;
+        private WaitForSeconds _mapWait;
 
         public MonsterBoatTarget Target => _target;
         public MonsterBoatTarget PreviousTarget => _previousTarget;
@@ -40,27 +45,76 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         {
             _monster = GetComponent<SeaMonster>();
             _sensor = GetComponent<SeaMonsterSensor>();
+            _mapWait = new WaitForSeconds(MapRefreshInterval);
+        }
+
+        private void OnEnable()
+        {
+            if (isServer)
+            {
+                BeginMapWatch();
+            }
+        }
+
+        private void OnDisable()
+        {
+            StopMapWatch();
         }
 
         public override void OnStartServer()
         {
-            if (_mapState != null)
+            BeginMapWatch();
+        }
+
+        private void BeginMapWatch()
+        {
+            if (_mapWatch == null && isActiveAndEnabled)
             {
-                return;
+                _mapWatch = StartCoroutine(WatchMap());
             }
-            // 생성 순서상 맵이 먼저 등록된 경우에만 자동 연결하고, 늦은 연결은 BindMap으로 받는다.
-            foreach (NetworkIdentity identity in NetworkServer.spawned.Values)
+        }
+
+        private void StopMapWatch()
+        {
+            if (_mapWatch != null)
             {
-                if (identity != null && identity.TryGetComponent(out MapStateNet mapState))
+                StopCoroutine(_mapWatch);
+                _mapWatch = null;
+            }
+        }
+
+        private IEnumerator WatchMap()
+        {
+            while (isServer)
+            {
+                if (_mapState == null || !_mapState.isActiveAndEnabled || !_mapState.isServer)
                 {
-                    _mapState = mapState;
-                    break;
+                    MapStateNet candidate = null;
+                    bool ambiguous = false;
+                    foreach (NetworkIdentity identity in NetworkServer.spawned.Values)
+                    {
+                        if (identity == null || !identity.TryGetComponent(out MapStateNet map)
+                            || !map.isActiveAndEnabled || !map.isServer)
+                        {
+                            continue;
+                        }
+                        if (candidate != null)
+                        {
+                            ambiguous = true;
+                            break;
+                        }
+                        candidate = map;
+                    }
+                    // 여러 월드 중 임의의 보호구역을 적용하지 않고 명시적 BindMap을 기다린다.
+                    _mapState = ambiguous ? null : candidate;
                 }
+                yield return _mapWait;
             }
         }
 
         public override void OnStopServer()
         {
+            StopMapWatch();
             ClearCurrentTarget();
             _previousTarget = null;
         }

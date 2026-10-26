@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Lighthouse.Monsters.AI.Net;
+using Lighthouse.Monsters.Spawning.Rules;
 using Lighthouse.Monsters.Spawning.Server;
 using Mirror;
 using UnityEngine;
@@ -180,13 +181,12 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             }
             reason = "몬스터 프리팹 설정이 유효하지 않습니다.";
             MonsterBase prefab = entry.Prefab;
-            if (prefab == null || !prefab.gameObject.activeSelf
-                || !prefab.TryGetComponent(out CapsuleCollider capsule) || !capsule.enabled)
+            if (!MonsterSpawnShape.TryCreate(prefab, out MonsterSpawnShape shape))
             {
                 return false;
             }
             reason = "다른 몬스터와 겹칩니다. 지점을 다시 선택해 주세요.";
-            if (!MonsterSpawnPlacement.IsClear(capsule, prefab.transform.lossyScale, point, prefab.transform.rotation))
+            if (!MonsterSpawnPlacement.IsClear(shape, point, prefab.transform.rotation))
             {
                 return false;
             }
