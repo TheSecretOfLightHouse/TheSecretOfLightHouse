@@ -591,6 +591,14 @@ MonoBehaviour:
   _patrolWaitRange: {x: 1, y: 3}
   _patrolTurnSpeed: 120
   _patrolAcceleration: 3
+  _patrolObstacleLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _patrolCandidateAttempts: 12
+  _patrolClearance: 0.1
+  _patrolRetryDelay: 1
+  _patrolStuckDuration: 3
+  _patrolProgressDistance: 0.05
   _showPatrolGizmos: 1
 --- !u!114 &1209894092458537283
 MonoBehaviour:

@@ -767,8 +767,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2, y: 2, z: 2}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 4, y: 4, z: 4}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 2163211076224278894}
   - {fileID: 9052770145078957410}
@@ -941,6 +941,14 @@ MonoBehaviour:
   _patrolWaitRange: {x: 1, y: 3}
   _patrolTurnSpeed: 120
   _patrolAcceleration: 3
+  _patrolObstacleLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _patrolCandidateAttempts: 12
+  _patrolClearance: 0.1
+  _patrolRetryDelay: 1
+  _patrolStuckDuration: 3
+  _patrolProgressDistance: 0.05
   _showPatrolGizmos: 1
 --- !u!114 &3979028442922128522
 MonoBehaviour:
