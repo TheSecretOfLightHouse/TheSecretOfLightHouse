@@ -12,6 +12,7 @@ public sealed class PlayerAbilityRunner : MonoBehaviour, IPlayerAbilitySource
     private IPlayerAbility _activeAbility;
 
     public bool IsExecuting => IsAvailable(_activeAbility);
+    public PlayerAbility JobAbility => _jobAbility;
     public IPlayerAbility CurrentAbility => IsExecuting ? _activeAbility : null;
     public MoveConfig MovementModifier => IsExecuting ? _activeAbility.MovementModifier : MoveConfig.Normal;
 
