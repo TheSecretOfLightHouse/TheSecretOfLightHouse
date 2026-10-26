@@ -23,6 +23,8 @@ public sealed class BoatCannon : NetworkBehaviour
     private Collider[] _boatColliders;
     private double _nextServerFireTime;
 
+    public event System.Action Fired;
+
     private void Awake()
     {
         _boat = GetComponent<BoatController>();
@@ -44,11 +46,6 @@ public sealed class BoatCannon : NetworkBehaviour
         if (!isClient || !isOwned || player != _boat.Owner)
         {
             return;
-        }
-
-        if (player.TryGetComponent(out PlayerActionEvents actionEvents))
-        {
-            actionEvents.Publish(PlayerAnimationAction.Fire);
         }
 
         CmdRequestFire();
@@ -106,7 +103,6 @@ public sealed class BoatCannon : NetworkBehaviour
 
 
         float reloadDuration = _boat.ReloadDuration * reloadDurationMultiplier;
-        Debug.Log($"{reloadDuration}");
 
         _nextServerFireTime = NetworkTime.time + reloadDuration;
 
@@ -115,5 +111,18 @@ public sealed class BoatCannon : NetworkBehaviour
         projectile.Initialize(_muzzle.forward * _launchSpeed,_damage, _boatColliders, owner.GetComponentsInChildren<Collider>(true));
 
         NetworkServer.Spawn(projectile.gameObject);
+        RpcPlayFireEffects();
+    }
+
+    [ClientRpc]
+    private void RpcPlayFireEffects()
+    {
+        PlayerController owner = _boat.Owner;
+        if (owner && owner.isOwned && owner.TryGetComponent(out PlayerActionEvents actionEvents))
+        {
+            actionEvents.Publish(PlayerAnimationAction.Fire);
+        }
+
+        Fired?.Invoke();
     }
 }

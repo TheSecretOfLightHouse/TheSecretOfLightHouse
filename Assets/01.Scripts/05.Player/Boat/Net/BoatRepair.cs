@@ -31,6 +31,15 @@ public sealed class BoatRepair : NetworkBehaviour
     private BoatDurability _durability;
     private bool _isConfigured;
 
+    public int RequirementCount => _requirements == null ? 0 : _requirements.Length;
+    public float RepairAmount => _repairAmount;
+
+    public int GetRequirementResourceId(int index)
+    {
+        return _requirements != null && index >= 0 && index < _requirements.Length && _requirements[index] != null
+            ? _requirements[index].ResourceId : 0;
+    }
+
     private void Awake()
     {
         _boat = GetComponent<BoatController>();
