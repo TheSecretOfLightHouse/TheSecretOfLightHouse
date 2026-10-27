@@ -8,6 +8,7 @@ using Lighthouse.Stations.View;
 using Lighthouse.Tower.Net;
 using Lighthouse.Tower.Rules;
 using Lighthouse.Workbench.Rules;
+using Lighthouse.Workbench.View;
 using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -92,6 +93,10 @@ namespace Lighthouse.Tower.View
         [SerializeField]
         private string[] _osFontNames = { "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Arial" };
 
+        [Header("Effects (2026-10-27): install flight, slot click, floor sweep, count")]
+        [SerializeField]
+        private WorkbenchScreenEffects.Settings _effectSettings = new WorkbenchScreenEffects.Settings();
+
         private NetworkIdentity _player;
         private InteractionRelay _relay;
         private PlayerInput _playerInput;
@@ -104,6 +109,13 @@ namespace Lighthouse.Tower.View
         private bool _isPending;
         private int _pendingSlot = -1;
         private string _pendingName;
+        private WorkbenchScreenEffects _effects;
+        // This player's install, on its own screen only: from the click the slot keeps waiting and the count stays,
+        // until the module icon has flown in from the carried panel (the host hears of the slot before the result).
+        private int _landingSlot = -1;
+        private float _landingAt;
+        private Vector3 _installFrom;
+        private Sprite _installIcon;
 
         public bool IsOpen => _isOpen;
 
@@ -115,6 +127,7 @@ namespace Lighthouse.Tower.View
             }
 
             _installButton.onClick.AddListener(HandleInstallClicked);
+            _effects = new WorkbenchScreenEffects(_effectSettings, (RectTransform)_window.transform, _message.font, null, null);
             _window.SetActive(false);
             _prompt.SetActive(false);
         }
@@ -124,6 +137,7 @@ namespace Lighthouse.Tower.View
             if (_tower)
             {
                 _tower.Changed += HandleChanged;
+                _tower.SlotInstalled += HandleSlotInstalled;
 
                 if (_tower.Workbench)
                 {
@@ -151,6 +165,12 @@ namespace Lighthouse.Tower.View
                 {
                     Close();
                 }
+            }
+
+            if (_isOpen)
+            {
+                _effects.Tick(Time.unscaledDeltaTime);
+                TickLanding();
             }
 
             // The workbench shares the open key and stands within reach, so only the nearer one answers it.
@@ -182,6 +202,7 @@ namespace Lighthouse.Tower.View
             if (_tower)
             {
                 _tower.Changed -= HandleChanged;
+                _tower.SlotInstalled -= HandleSlotInstalled;
 
                 if (_tower.Workbench)
                 {
@@ -220,6 +241,9 @@ namespace Lighthouse.Tower.View
 
             _isOpen = false;
             SessionScreen.SetGameplayOverlayOpen(this, false);
+            _effects.StopAll();
+            _landingSlot = -1;
+            _landingAt = 0f;
             _window.SetActive(false);
             LockPlayer(false);
         }
@@ -329,7 +353,8 @@ namespace Lighthouse.Tower.View
                 }
 
                 TowerSlot slot = layout[i];
-                TowerSlotView.State state = _tower.IsInstalled(i) ? TowerSlotView.State.Installed
+                TowerSlotView.State state = i == _landingSlot ? TowerSlotView.State.Target
+                    : _tower.IsInstalled(i) ? TowerSlotView.State.Installed
                     : i == targetSlot ? TowerSlotView.State.Target
                     : _tower.IsFloorOpen(slot.Floor) ? TowerSlotView.State.Open
                     : TowerSlotView.State.Locked;
@@ -337,7 +362,7 @@ namespace Lighthouse.Tower.View
                 _slots[i].Show(GetRecipeIcon(slot.Recipe), state);
             }
 
-            int installed = _tower.InstalledCount;
+            int installed = _tower.InstalledCount - (_landingSlot >= 0 && _tower.IsInstalled(_landingSlot) ? 1 : 0);
             _progressText.text = $"{installed}/{layout.SlotCount}";
             _progressFill.anchorMax = new Vector2(layout.GetRepairRatio(installed), 1f);
 
@@ -402,6 +427,10 @@ namespace Lighthouse.Tower.View
             _isPending = true;
             _pendingSlot = slot;
             _pendingName = recipe ? recipe.DisplayName : "모듈";
+            _landingSlot = slot;
+            _landingAt = 0f;
+            _installFrom = WorkbenchScreenEffects.CenterOf(_carryIcon.rectTransform);
+            _installIcon = GetRecipeIcon(recipe);
             Refresh();
         }
 
@@ -414,6 +443,11 @@ namespace Lighthouse.Tower.View
 
             _isPending = false;
 
+            if (!_isOpen || !result.IsSuccess)
+            {
+                _landingSlot = -1;
+            }
+
             if (!_isOpen)
             {
                 return;
@@ -423,6 +457,8 @@ namespace Lighthouse.Tower.View
             {
                 string floor = _tower.Layout.GetFloorName(_tower.Layout[_pendingSlot].Floor);
                 SetMessage($"{_pendingName}을(를) {floor}에 장착했습니다.", _messageSuccessColor);
+                _effects.PlayFlight(_installIcon, _installFrom, _slots[_landingSlot].IconRect, null, WorkbenchEffectCue.ModuleStored);
+                _landingAt = Time.unscaledTime + _effectSettings.FlightSeconds;
             }
             else
             {
@@ -430,6 +466,81 @@ namespace Lighthouse.Tower.View
             }
 
             Refresh();
+        }
+
+        // The slot fills when the icon lands. A remote client may still be waiting for the slot itself, so it waits a
+        // little longer for that rather than letting the slot's own change play as someone else's install.
+        private void TickLanding()
+        {
+            if (_landingAt <= 0f || Time.unscaledTime < _landingAt)
+            {
+                return;
+            }
+
+            int slot = _landingSlot;
+
+            if (!_tower.IsInstalled(slot) && Time.unscaledTime < _landingAt + _effectSettings.CraftWaitSeconds)
+            {
+                return;
+            }
+
+            _landingSlot = -1;
+            _landingAt = 0f;
+            Refresh();
+
+            if (_tower.IsInstalled(slot))
+            {
+                PlayInstalled(slot);
+            }
+        }
+
+        // Another crew member's install while this screen is open, or this player's once it lands.
+        private void HandleSlotInstalled(int slot)
+        {
+            if (_isOpen && slot != _landingSlot && slot >= 0 && slot < _slots.Length)
+            {
+                PlayInstalled(slot);
+            }
+        }
+
+        // The slot clicks in with a glow and the count jumps; a finished floor gets a sweep and its line.
+        private void PlayInstalled(int slot)
+        {
+            TowerSlotView view = _slots[slot];
+            _effects.PlayPunch((RectTransform)view.transform, _effectSettings.BadgePunchStrength);
+            _effects.PlayFlash(view.Frame, _effectSettings.HighlightColor, 1);
+            _effects.PlayPunch(_progressText.rectTransform, _effectSettings.BadgePunchStrength);
+
+            TowerLayout layout = _tower.Layout;
+            int floor = layout[slot].Floor;
+
+            if (!_tower.IsFloorComplete(floor))
+            {
+                return;
+            }
+
+            RectTransform first = null;
+            RectTransform last = null;
+
+            for (int i = 0; i < layout.SlotCount && i < _slots.Length; i++)
+            {
+                if (layout[i].Floor == floor)
+                {
+                    first = first ? first : (RectTransform)_slots[i].transform;
+                    last = (RectTransform)_slots[i].transform;
+                }
+            }
+
+            if (!last)
+            {
+                return;
+            }
+
+            RectTransform start = floor < _floorLabels.Length ? _floorLabels[floor].rectTransform : first;
+            Vector3 from = start.TransformPoint(new Vector3(start.rect.xMin, start.rect.center.y, 0f));
+            Vector3 to = last.TransformPoint(new Vector3(last.rect.xMax, last.rect.center.y, 0f));
+            _effects.PlaySweep(from, to, last.rect.height * 1.3f);
+            _effects.PlayText((from + to) * 0.5f, $"{layout.GetFloorName(floor)} 수리 완료");
         }
 
         private string DescribeRejection(InteractionResultCode code)

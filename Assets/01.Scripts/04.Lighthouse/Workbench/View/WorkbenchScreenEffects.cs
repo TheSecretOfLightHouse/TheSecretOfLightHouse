@@ -5,7 +5,8 @@ using UnityEngine.UI;
 namespace Lighthouse.Workbench.View
 {
     // Short tweens for the workbench screen (deposit flight, gain "+N", punches, shakes, blinks, the ready glow, and
-    // for a craft the ingredients gathering into a burst of light that leaves the module icon behind).
+    // for a craft the ingredients gathering into a burst of light that leaves the module icon behind). The lighthouse
+    // install screen uses it too (flight into a slot, a light sweep over a finished floor, a line of text).
     // The screen decides when; this only draws. Everything it shows is built once and reused, so ticking allocates
     // nothing. Unscaled time, like the other screen feedback, so a slowed match still answers at once.
     internal sealed class WorkbenchScreenEffects
@@ -53,6 +54,8 @@ namespace Lighthouse.Workbench.View
             public Color HighlightColor = new Color(1f, 0.86f, 0.45f);
             [Tooltip("How long a craft result and the finish call may wait for each other, and a stock count may lag behind.")]
             public float CraftWaitSeconds = 1.5f;
+            public float SweepSeconds = 0.6f;
+            public float SweepWidth = 90f;
         }
 
         private struct Punch
@@ -111,6 +114,10 @@ namespace Lighthouse.Workbench.View
         private readonly Image _glow;
         private readonly Image _burstLight;
         private readonly Image _burstIcon;
+        private readonly Image _sweep;
+        private Vector3 _sweepFrom;
+        private Vector3 _sweepTo;
+        private float _sweepElapsed = -1f;
         private int _punchCount;
         private int _flashCount;
         private int _shakeCount;
@@ -158,8 +165,11 @@ namespace Lighthouse.Workbench.View
                 _floaters[i].Text = text;
             }
 
-            _burstLight = CreateLayerImage("CraftBurst", BuildBurstSprite(), settings.BurstLightSize);
+            Sprite glowSprite = BuildBurstSprite();
+            _burstLight = CreateLayerImage("CraftBurst", glowSprite, settings.BurstLightSize);
             _burstIcon = CreateLayerImage("CraftModule", null, settings.ModuleIconSize);
+            _sweep = CreateLayerImage("Sweep", glowSprite, settings.SweepWidth);
+            _sweep.preserveAspect = false;
 
             if (glowHost && glowHost.image)
             {
@@ -189,6 +199,7 @@ namespace Lighthouse.Workbench.View
             TickFloaters(deltaTime);
             TickGlow(deltaTime);
             TickBurst(deltaTime);
+            TickSweep(deltaTime);
         }
 
         // Where the module icon of the last burst sits, for the flight that carries it away.
@@ -240,6 +251,8 @@ namespace Lighthouse.Workbench.View
             _isBursting = false;
             _burstLight.gameObject.SetActive(false);
             HideBurstIcon();
+            _sweepElapsed = -1f;
+            _sweep.gameObject.SetActive(false);
         }
 
         public void PlayPunch(RectTransform target, float strength)
@@ -391,6 +404,18 @@ namespace Lighthouse.Workbench.View
             _burstIcon.gameObject.SetActive(false);
         }
 
+        // A band of light passes from one world point to another, height in canvas units (a row of slots).
+        public void PlaySweep(Vector3 from, Vector3 to, float height)
+        {
+            _sweepFrom = from;
+            _sweepTo = to;
+            _sweepElapsed = 0f;
+            _sweep.rectTransform.sizeDelta = new Vector2(_settings.SweepWidth, height);
+            _sweep.transform.SetAsLastSibling();
+            _sweep.gameObject.SetActive(true);
+            TickSweep(0f);
+        }
+
         private void StartFlight(Sprite icon, RectTransform from, RectTransform to, RectTransform landCount, WorkbenchEffectCue landCue,
             bool isGather)
         {
@@ -439,6 +464,12 @@ namespace Lighthouse.Workbench.View
                 return;
             }
 
+            PlayText(CenterOf(anchor), "+" + amount);
+        }
+
+        // A line of text that rises from a world point and fades, like the gain "+N".
+        public void PlayText(Vector3 at, string caption)
+        {
             for (int i = 0; i < FloaterCapacity; i++)
             {
                 if (_floaters[i].IsActive)
@@ -447,9 +478,9 @@ namespace Lighthouse.Workbench.View
                 }
 
                 Text text = _floaters[i].Text;
-                text.text = "+" + amount;
+                text.text = caption;
                 text.color = _settings.FloaterColor;
-                text.rectTransform.position = anchor.TransformPoint(anchor.rect.center);
+                text.rectTransform.position = at;
                 text.transform.SetAsLastSibling();
                 text.gameObject.SetActive(true);
                 _floaters[i].From = text.rectTransform.position;
@@ -689,6 +720,30 @@ namespace Lighthouse.Workbench.View
             Color color = _settings.BurstColor;
             color.a = 1f - t;
             _burstLight.color = color;
+        }
+
+        private void TickSweep(float deltaTime)
+        {
+            if (_sweepElapsed < 0f)
+            {
+                return;
+            }
+
+            _sweepElapsed += deltaTime;
+            float t = _sweepElapsed / Mathf.Max(0.01f, _settings.SweepSeconds);
+
+            if (t >= 1f)
+            {
+                _sweepElapsed = -1f;
+                _sweep.gameObject.SetActive(false);
+                return;
+            }
+
+            _sweep.rectTransform.position = Vector3.LerpUnclamped(_sweepFrom, _sweepTo, t);
+            Color color = _settings.HighlightColor;
+            // Brightest in the middle of the pass.
+            color.a = Mathf.Sin(t * Mathf.PI);
+            _sweep.color = color;
         }
 
         private Image CreateLayerImage(string name, Sprite sprite, float size)
