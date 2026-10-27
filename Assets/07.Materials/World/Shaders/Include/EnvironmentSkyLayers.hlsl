@@ -33,7 +33,7 @@ float EnvironmentCloudMask(
     float coverage,
     float scale)
 {
-    float2 uv = direction.xz / max(0.25, direction.y + 0.15);
+    float2 uv = direction.xz / (saturate(direction.y) + 0.15);
     float2 drift = float2(time * 0.008, time * 0.003);
     float density = SkyFbm(uv * scale + drift);
     float threshold = lerp(1.0, 0.1, saturate(coverage));

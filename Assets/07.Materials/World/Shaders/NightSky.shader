@@ -218,7 +218,7 @@ Shader "Lighthouse/World/NightSky"
                 // Project onto a high cloud layer; fade the horizon to avoid stretching.
                 if (direction.y > 0.01 && _CloudCoverage > 0.001)
                 {
-                    float2 cloudUv = direction.xz / max(direction.y, 0.15) * _CloudScale;
+                    float2 cloudUv = direction.xz / (direction.y + 0.15) * _CloudScale;
                     float2 drift = float2(1.0, 0.35) * skyTime * _CloudSpeed;
                     float cloudNoise = SkyFbm(cloudUv + drift);
                     float detail = SkyFbm(cloudUv * 2.7 - drift * 0.4);
