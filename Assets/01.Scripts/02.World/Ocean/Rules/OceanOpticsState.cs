@@ -12,6 +12,8 @@ namespace Lighthouse.World.Ocean.Rules
         [SerializeField, Range(0f, 1f)] private float _baseOpacity;
         [SerializeField, Range(0f, 1f)] private float _shallowsOpacity;
         [SerializeField, Range(0f, 1f)] private float _smoothness;
+        [SerializeField, Range(0f, 1f)] private float _clarity;
+        [SerializeField, Range(0f, 2f)] private float _skyLight;
 
         public Color ShallowColor => _shallowColor;
         public Color DeepColor => _deepColor;
@@ -19,6 +21,8 @@ namespace Lighthouse.World.Ocean.Rules
         public float BaseOpacity => Mathf.Clamp01(_baseOpacity);
         public float ShallowsOpacity => Mathf.Clamp01(_shallowsOpacity);
         public float Smoothness => Mathf.Clamp01(_smoothness);
+        public float Clarity => Mathf.Clamp01(_clarity);
+        public float SkyLight => Mathf.Clamp(_skyLight, 0f, 2f);
 
         public OceanOpticsState(
             Color shallowColor,
@@ -26,7 +30,9 @@ namespace Lighthouse.World.Ocean.Rules
             Color veryDeepColor,
             float baseOpacity,
             float shallowsOpacity,
-            float smoothness)
+            float smoothness,
+            float clarity = 0f,
+            float skyLight = 0f)
         {
             _shallowColor = shallowColor;
             _deepColor = deepColor;
@@ -34,6 +40,8 @@ namespace Lighthouse.World.Ocean.Rules
             _baseOpacity = Mathf.Clamp01(baseOpacity);
             _shallowsOpacity = Mathf.Clamp01(shallowsOpacity);
             _smoothness = Mathf.Clamp01(smoothness);
+            _clarity = Mathf.Clamp01(clarity);
+            _skyLight = Mathf.Clamp(skyLight, 0f, 2f);
         }
 
         public static OceanOpticsState Lerp(
@@ -49,7 +57,9 @@ namespace Lighthouse.World.Ocean.Rules
                 Color.Lerp(from.VeryDeepColor, to.VeryDeepColor, blend),
                 Mathf.Lerp(from.BaseOpacity, to.BaseOpacity, blend),
                 Mathf.Lerp(from.ShallowsOpacity, to.ShallowsOpacity, blend),
-                Mathf.Lerp(from.Smoothness, to.Smoothness, blend));
+                Mathf.Lerp(from.Smoothness, to.Smoothness, blend),
+                Mathf.Lerp(from.Clarity, to.Clarity, blend),
+                Mathf.Lerp(from.SkyLight, to.SkyLight, blend));
         }
     }
 }
