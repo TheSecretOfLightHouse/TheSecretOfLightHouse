@@ -13,15 +13,19 @@ namespace Lighthouse.World.Ocean.View
         [SerializeField] private Transform _focus;
         [SerializeField] private ComputeShader _simulation;
         [SerializeField] private Texture2D _foamDetail;
-        [SerializeField] private Shader _sprayShader;
         [SerializeField] private Shader _crestShader;
+        [SerializeField] private Shader _breakerShader;
         [SerializeField, Range(0f, 2f)] private float _staticContactFoam = 1.2f;
         private IWorldQuery _query;
         private IClock _clock;
         private WaterSamplerHost _host;
         private SurfaceInteractionGrid _grid;
-        private WaterSprayRenderer _spray;
+        private SurfCrestRenderer _crestRenderer;
+        private BreakerWaveRenderer _breaker;
 
+        public int BreakerSourceCount => _breaker != null ? _breaker.SourceCount : 0;
+        public int BreakerCandidateCount => _breaker != null ? _breaker.CandidateCount : 0;
+        public int BreakerActiveCount => _breaker != null ? _breaker.ActiveCount : 0;
         public int TrackedContactCount => _grid != null ? _grid.ObstacleCount : 0;
         public int SimulationStepCount => _grid != null ? _grid.StepCount : 0;
         public int UnsupportedMeshCount => _grid != null ? _grid.UnsupportedMeshCount : 0;
@@ -44,8 +48,7 @@ namespace Lighthouse.World.Ocean.View
                 enabled = false;
                 return;
             }
-            if (_focus == null || _simulation == null || _foamDetail == null || _sprayShader == null
-                || !_sprayShader.isSupported || _crestShader == null || !_crestShader.isSupported || !SystemInfo.supportsComputeShaders
+            if (_focus == null || _simulation == null || _foamDetail == null || _crestShader == null || !_crestShader.isSupported || !SystemInfo.supportsComputeShaders
                 || !SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.ARGBFloat))
             {
                 Debug.LogError($"[{nameof(WaterContactEffectsView)}] Focus, simulation, foam texture and compute support are required.");
@@ -55,7 +58,11 @@ namespace Lighthouse.World.Ocean.View
             _active = this;
             Shader.SetGlobalTexture("_OceanFoamDetail", _foamDetail);
             _grid = new SurfaceInteractionGrid(_simulation);
-            _spray = new WaterSprayRenderer(_grid, _sprayShader, _crestShader);
+            _crestRenderer = new SurfCrestRenderer(_crestShader);
+            if (_breakerShader != null && _breakerShader.isSupported)
+            {
+                _breaker = new BreakerWaveRenderer(_breakerShader);
+            }
             _query = null;
             _clock = null;
             _host = null;
@@ -82,15 +89,24 @@ namespace Lighthouse.World.Ocean.View
             float seaLevel = _query.SampleWaterHeight(_focus.position);
             _grid.StaticContactFoam = _staticContactFoam;
             _grid.Update(_focus.position, seaLevel, Time.deltaTime, Time.time, _host, (float)_clock.Now);
-            _spray.Update(_focus.position, Time.deltaTime, gameObject.layer);
+            _crestRenderer.Update(_focus.position, gameObject.layer);
+            if (_breaker != null)
+            {
+                _breaker.Update(_focus.position, seaLevel, _host, _clock.Now, gameObject.layer);
+            }
         }
 
         private void OnDisable()
         {
-            if (_spray != null)
+            if (_breaker != null)
             {
-                _spray.Dispose();
-                _spray = null;
+                _breaker.Dispose();
+                _breaker = null;
+            }
+            if (_crestRenderer != null)
+            {
+                _crestRenderer.Dispose();
+                _crestRenderer = null;
             }
             if (_grid != null)
             {

@@ -23,5 +23,13 @@ namespace Lighthouse.World.Ocean.Sandbox
 
             Debug.Log($"[{nameof(ForceFieldCheck)}] WaveDrift {(isAllPassed ? "ALL PASS" : "FAILED")}");
         }
+
+        [ContextMenu("Breaker/Run All Tests")]
+        private void RunBreakerTests()
+        {
+            bool isAllPassed = BreakerEventChecks.RunAll();
+
+            Debug.Log($"[{nameof(ForceFieldCheck)}] Breaker {(isAllPassed ? "ALL PASS" : "FAILED")}");
+        }
     }
 }

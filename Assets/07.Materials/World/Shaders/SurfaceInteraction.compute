@@ -2,16 +2,12 @@
 #pragma kernel Flow
 #pragma kernel Integrate
 #pragma kernel Shift
-#pragma kernel SprayUpdate
-#pragma kernel ShoreSpray
-#pragma kernel ContactSpray
 #include "Include/OceanGerstner.hlsl"
 
 Texture2D<float4> _Read;
 Texture2D<float4> _Background;
 Texture2D<float4> _Domain;
 Texture2D<float4> _Obstacles;
-Texture2D<float4> _SprayState;
 SamplerState sampler_Read;
 RWTexture2D<float4> _Write;
 RWTexture2D<float4> _BackgroundWrite;
@@ -26,111 +22,6 @@ int2 Safe(int2 p) { return clamp(p,0,_Resolution-1); }
 float4 State(int2 p) { return _Read[Safe(p)]; }
 float4 Domain(int2 p) { return _Domain[Safe(p)]; }
 float4 Background(int2 p) { return _Background[Safe(p)]; }
-
-struct SprayParticle { float4 positionAge; float4 velocityLife; float4 sizeSeed; };
-RWStructuredBuffer<SprayParticle> _SprayParticles;
-RWStructuredBuffer<uint> _SprayCounter;
-int _SprayCapacity;
-int _SprayFrame;
-float _SprayDelta;
-float3 _SprayFocus;
-
-float SprayHash(float n) { return frac(sin(n*127.1+311.7)*43758.5453); }
-void EmitSpray(float3 position,float3 velocity,float seed,float size,float kind)
-{
-    uint slot;
-    InterlockedAdd(_SprayCounter[0],1,slot);
-    SprayParticle particle;
-    particle.positionAge=float4(position,0);
-    particle.velocityLife=float4(velocity,0.65+SprayHash(seed+7)*0.8);
-    particle.sizeSeed=float4(size,seed,kind,0);
-    _SprayParticles[slot%(uint)_SprayCapacity]=particle;
-}
-
-[numthreads(64,1,1)]
-void SprayUpdate(uint3 id:SV_DispatchThreadID)
-{
-    if(id.x>=(uint)_SprayCapacity) return;
-    SprayParticle p=_SprayParticles[id.x];
-    if(p.velocityLife.w<=0 || p.positionAge.w>=p.velocityLife.w) return;
-    p.positionAge.w+=_SprayDelta;
-    p.velocityLife.y-=_SprayDelta*9.81;
-    p.velocityLife.xyz*=exp(-_SprayDelta*0.35);
-    p.positionAge.xyz+=p.velocityLife.xyz*_SprayDelta;
-    float2 samplePosition=(p.positionAge.xz-_Origin)/_CellSize;
-    float water;
-    if(all(samplePosition>=0)&&all(samplePosition<_Resolution))
-    {
-        int2 cell=int2(samplePosition);
-        water=_Background[cell].x+_SprayState[cell].x;
-    }
-    else
-    {
-        float3 surface,normal;
-        OceanGerstner_float(float3(p.positionAge.x,0,p.positionAge.z),surface,normal);
-        water=surface.y;
-    }
-    if(p.positionAge.y<water && p.velocityLife.y<0) p.positionAge.w=p.velocityLife.w;
-    _SprayParticles[id.x]=p;
-}
-
-[numthreads(64,1,1)]
-void ShoreSpray(uint3 id:SV_DispatchThreadID)
-{
-    if(id.x>=OCEAN_COAST_CAPACITY*OCEAN_COAST_SEGMENTS) return;
-    uint island=id.x/OCEAN_COAST_SEGMENTS;
-    float4 area=_OceanCoastBounds[island];
-    if(area.w<=0) return;
-    float4 edge=_OceanCoastEdges[id.x];
-    float2 midpoint=(edge.xy+edge.zw)*0.5;
-    if(distance(midpoint,_SprayFocus.xz)>42) return;
-    float2 tangent=normalize(edge.zw-edge.xy);
-    float2 outward=float2(tangent.y,-tangent.x);
-    float width=CoastWidth(area.w,_OceanCoastProfiles[island],midpoint);
-    float beach=saturate((width/area.w-0.14)/0.86);
-    float rock=1-beach;
-    float seed=id.x*17.13+_SprayFrame*3.73;
-    float d=lerp(0.35,2.2,beach);
-    float phase=CoastPhase(d,_OceanTime);
-    float crest=smoothstep(0.45,0.9,sin(phase));
-    float energy=0;
-    for(int i=0;i<min((int)_OceanWaveCount,OCEAN_MAX_WAVES);i++) energy+=_OceanWaveB[i].x;
-    float strength=saturate(energy*2);
-    if(SprayHash(seed)>_SprayDelta*22*crest*strength) return;
-    float2 shore=lerp(edge.xy,edge.zw,SprayHash(seed+1));
-    float2 position=shore+outward*(d+(SprayHash(seed+2)-0.5)*lerp(0.4,1.6,beach));
-    float h=CoastHeight(d,width,_OceanTime,0,energy);
-    for(int j=0;j<8;j++)
-    {
-        float s=seed+j*31.7;
-        float lift=lerp(1.5,3.8,rock)*(0.6+SprayHash(s+3)*0.7)*sqrt(strength);
-        float2 lateral=outward*lerp(-0.7,1.3,rock)+tangent*(SprayHash(s+4)-0.5)*1.6;
-        float kind=step(0.5,SprayHash(s+5));
-        float size=lerp(0.018,0.055,SprayHash(s+6))*lerp(1.2,0.32,kind);
-        EmitSpray(float3(position.x,h+0.025,position.y),float3(lateral.x,lift,lateral.y),s,size,kind);
-    }
-}
-
-[numthreads(8,8,1)]
-void ContactSpray(uint3 id:SV_DispatchThreadID)
-{
-    int2 p=int2(id.xy);
-    if(Domain(p).x>0.5) return;
-    float2 normal=float2(Domain(p+int2(1,0)).x-Domain(p-int2(1,0)).x,
-        Domain(p+int2(0,1)).x-Domain(p-int2(0,1)).x);
-    if(dot(normal,normal)<0.1) return;
-    normal=normalize(normal);
-    int2 wall=Safe(p+int2(round(normal)));
-    float2 relative=Background(p).yz-Domain(wall).yz;
-    float hit=max(0,dot(relative,normal)-0.08);
-    float seed=p.x+p.y*127+_SprayFrame*7.13;
-    if(SprayHash(seed)>min(0.7,hit*_SprayDelta*12)) return;
-    float2 world=_Origin+(p+0.5)*_CellSize;
-    float lift=min(3,0.6+hit*0.8);
-    float2 lateral=-normal*(0.15+hit*0.25)+Domain(wall).yz*0.15;
-    EmitSpray(float3(world.x,Background(p).x+0.02,world.y),float3(lateral.x,lift,lateral.y),seed,
-        0.008+SprayHash(seed+3)*0.016,1);
-}
 
 float _StaticContactFoam;
 float _WaveEnergy;
