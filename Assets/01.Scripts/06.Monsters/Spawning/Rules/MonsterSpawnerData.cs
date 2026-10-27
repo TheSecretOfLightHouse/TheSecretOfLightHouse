@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Lighthouse.Monsters.AI.Net;
 using UnityEngine;
 
 namespace Lighthouse.Monsters.Spawning.Rules
@@ -51,16 +50,9 @@ namespace Lighthouse.Monsters.Spawning.Rules
                     return false;
                 }
 
-                MonsterBase prefab = entry.Prefab;
-                CapsuleCollider capsule = prefab.GetComponent<CapsuleCollider>();
-                Vector3 scale = prefab.transform.lossyScale;
-                if (!prefab.gameObject.activeSelf || capsule == null || !capsule.enabled
-                    || !IsFiniteNonNegative(capsule.radius) || capsule.radius <= 0f
-                    || !IsFiniteNonNegative(capsule.height) || capsule.height <= 0f
-                    || !IsFinite(capsule.center) || !IsFinite(scale)
-                    || scale.x == 0f || scale.y == 0f || scale.z == 0f)
+                if (!MonsterSpawnShape.TryCreate(entry.Prefab, out _))
                 {
-                    error = $"{entry.Id}: 활성 프리팹에 유효한 루트 CapsuleCollider가 필요합니다.";
+                    error = $"{entry.Id}: 활성 프리팹에 유효한 루트 BoxCollider 또는 CapsuleCollider 하나가 필요합니다.";
                     return false;
                 }
             }
