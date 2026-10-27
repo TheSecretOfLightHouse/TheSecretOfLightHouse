@@ -48,6 +48,7 @@ namespace Lighthouse.Workbench.View
         public int ResourceId => _resourceId;
         public Image Icon => _icon;
         public RectTransform CountRect => _count.rectTransform;
+        public Text Count => _count;
         // Null when the row deposits through the screen's own button instead (sketch layout).
         public RectTransform AddOneRect => _addOneButton && _addOneButton.gameObject.activeInHierarchy ? (RectTransform)_addOneButton.transform : null;
 

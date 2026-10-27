@@ -5,6 +5,8 @@ using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Interaction.Requests.Rules;
 using Lighthouse.Interaction.Targets.Net;
+using Lighthouse.Network.Session.Net;
+using Lighthouse.Network.Session.Rules;
 using Lighthouse.Network.Session.View;
 using Lighthouse.Stations.View;
 using Lighthouse.Tower.Rules;
@@ -96,6 +98,9 @@ namespace Lighthouse.Workbench.View
         private bool _isSketchLayout;
         [SerializeField]
         private Button _depositButton;
+        [Tooltip("Mafia only (2026-10-27): takes one of the selected ingredient back out. Shown to the mafia alone; the server checks the role.")]
+        [SerializeField]
+        private Button _withdrawButton;
         [SerializeField]
         private RectTransform _overallFill;
         [SerializeField]
@@ -194,6 +199,14 @@ namespace Lighthouse.Workbench.View
         private int _craftAwaitingRecipeId;
         private int _heldFinishRecipeId;
         private int _heldFinishBaseline;
+        // Last finish seen on this machine, to tell a craft's drop from a withdraw.
+        private int _lastFinishRecipeId;
+        private float _lastFinishTime = float.NegativeInfinity;
+        // Rows of the viewed recipe that dropped (bit per ingredient) waiting to be told apart: a craft empties them
+        // too, and on the host the finish call comes just after the drop.
+        private int _dropRecipeId;
+        private int _dropRows;
+        private float _dropSeenAt;
         private int _ownFinishRecipeId;
         private float _ownFinishUntil;
         // The module this player crafts stays out of their stock until the show lands it there (2026-10-27): one above the
@@ -285,6 +298,11 @@ namespace Lighthouse.Workbench.View
                     _depositButton.onClick.AddListener(HandleSelectedDepositClicked);
                 }
 
+                if (_withdrawButton)
+                {
+                    _withdrawButton.onClick.AddListener(HandleSelectedWithdrawClicked);
+                }
+
                 if (_takeButton)
                 {
                     _takeButton.onClick.AddListener(HandleSelectedTakeClicked);
@@ -311,8 +329,7 @@ namespace Lighthouse.Workbench.View
                 _sectionHeaderView.gameObject.SetActive(false);
             }
 
-            _effects = new WorkbenchScreenEffects(_effectSettings, (RectTransform)_window.transform, _message.font, _craftButton,
-                HandleEffectCued);
+            _effects = new WorkbenchScreenEffects(_effectSettings, CreateEffectLayer(), _message.font, _craftButton, HandleEffectCued);
             _window.SetActive(false);
             _prompt.SetActive(false);
         }
@@ -435,6 +452,7 @@ namespace Lighthouse.Workbench.View
             _stockPulseRecipeId = 0;
             ReleaseReserved();
             ReleaseCarryHolds();
+            _dropRows = 0;
             _window.SetActive(false);
             RefreshCarryCard();
             LockPlayer(false);
@@ -460,6 +478,10 @@ namespace Lighthouse.Workbench.View
             else if (keyboard.gKey.wasPressedThisFrame)
             {
                 HandleReturnClicked();
+            }
+            else if (keyboard.rKey.wasPressedThisFrame)
+            {
+                HandleSelectedWithdrawClicked();
             }
         }
 
@@ -773,6 +795,10 @@ namespace Lighthouse.Workbench.View
                 {
                     HandleDepositSeen(recipe.Id, i, deposited - _seenDeposited[i]);
                 }
+                else if (i < _seenDeposited.Count && deposited < _seenDeposited[i])
+                {
+                    QueueDropFlash(recipe.Id, i);
+                }
             }
 
             _seenDeposited.Clear();
@@ -799,6 +825,12 @@ namespace Lighthouse.Workbench.View
             if (_isSketchLayout && _depositButton)
             {
                 _depositButton.interactable = CanDepositSelected();
+            }
+
+            if (_isSketchLayout && _withdrawButton)
+            {
+                _withdrawButton.gameObject.SetActive(recipe && IsOwnMafia());
+                _withdrawButton.interactable = CanWithdrawSelected();
             }
         }
 
@@ -827,6 +859,19 @@ namespace Lighthouse.Workbench.View
         {
             return _viewedRecipe && !IsCapped(_viewedRecipe) && _viewedRecipe.IndexOf(_selectedResourceId) >= 0
                 && Held(_selectedResourceId) > 0 && _workbench.GetRemaining(_viewedRecipe.Id, _selectedResourceId) > 0;
+        }
+
+        private bool CanWithdrawSelected()
+        {
+            return IsOwnMafia() && _viewedRecipe && _workbench.GetDeposited(_viewedRecipe.Id, _selectedResourceId) > 0;
+        }
+
+        // Only the player's own role is ever sent to a client (2026-10-22), so this hides the button from citizens; the
+        // server still checks the role on every withdraw.
+        private static bool IsOwnMafia()
+        {
+            LighthouseNetworkManager manager = LighthouseNetworkManager.Instance;
+            return manager && manager.OwnRole == MatchRole.Mafia;
         }
 
         private void RefreshProgressHeader(ModuleRecipe recipe)
@@ -993,6 +1038,22 @@ namespace Lighthouse.Workbench.View
         }
 
         // Only this player's own module: who holds what is private (2026-10-21).
+        // Flights are drawn over everything on this canvas: the carried module card sits outside the window, after it,
+        // and an icon taken into that card would otherwise pass behind it (2026-10-27).
+        private RectTransform CreateEffectLayer()
+        {
+            GameObject layer = new GameObject("Effects", typeof(RectTransform));
+            layer.layer = gameObject.layer;
+            RectTransform rect = (RectTransform)layer.transform;
+            rect.SetParent(transform, false);
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            rect.SetAsLastSibling();
+            return rect;
+        }
+
         // With the screen closed the card stays only while a module is carried, where it was (2026-10-27). Another
         // screen (the lighthouse one shows the carried module itself) hides it, as it would cover that screen.
         private bool IsCarryCardShown()
@@ -1084,6 +1145,23 @@ namespace Lighthouse.Workbench.View
                 _isStockFocused = false;
                 HandleDepositClicked(_selectedResourceId, false);
                 Refresh();
+            }
+        }
+
+        // One unit of the selected ingredient back into the mafia's inventory, through the existing Withdraw request.
+        private void HandleSelectedWithdrawClicked()
+        {
+            if (!CanWithdrawSelected())
+            {
+                return;
+            }
+
+            _isStockFocused = false;
+
+            if (Send(InteractionAction.Withdraw, _viewedRecipe.Id, _selectedResourceId, 1))
+            {
+                _pendingResourceId = _selectedResourceId;
+                _pendingRecipeName = _viewedRecipe.DisplayName;
             }
         }
 
@@ -1347,6 +1425,9 @@ namespace Lighthouse.Workbench.View
         // Comes on every machine, open screen or not, so the bookkeeping for this player's own craft stays right.
         private void HandleRecipeCompleted(int recipeId)
         {
+            _lastFinishRecipeId = recipeId;
+            _lastFinishTime = Time.unscaledTime;
+
             if (recipeId == _craftAwaitingRecipeId)
             {
                 _heldFinishRecipeId = recipeId;
@@ -1630,12 +1711,67 @@ namespace Lighthouse.Workbench.View
             return _takeButton ? (RectTransform)_takeButton.transform : null;
         }
 
+        // A deposit that went down without a craft was withdrawn (2026-10-27 decision, R19): the row blinks red, and who
+        // took it is not shown. Decided after a short grace, since the host sees a craft's drop before its finish call.
+        private void QueueDropFlash(int recipeId, int ingredientIndex)
+        {
+            if (recipeId == _lastFinishRecipeId && Time.unscaledTime - _lastFinishTime <= _effectSettings.CraftWaitSeconds)
+            {
+                return;
+            }
+
+            if (_dropRows != 0 && _dropRecipeId != recipeId)
+            {
+                FlushDropFlash();
+            }
+
+            if (_dropRows == 0)
+            {
+                _dropSeenAt = Time.unscaledTime;
+            }
+
+            _dropRecipeId = recipeId;
+            _dropRows |= 1 << ingredientIndex;
+        }
+
+        private void TickDropFlash()
+        {
+            if (_dropRows != 0 && Time.unscaledTime >= _dropSeenAt + _effectSettings.DropGraceSeconds)
+            {
+                FlushDropFlash();
+            }
+        }
+
+        private void FlushDropFlash()
+        {
+            bool isCraft = _dropRecipeId == _lastFinishRecipeId && _lastFinishTime >= _dropSeenAt - _effectSettings.CraftWaitSeconds;
+            int rows = _dropRows;
+            _dropRows = 0;
+
+            if (isCraft || !_viewedRecipe || _viewedRecipe.Id != _dropRecipeId)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                if ((rows & (1 << i)) != 0 && _rows[i].gameObject.activeSelf)
+                {
+                    _effects.PlayFlash(_rows[i].Icon);
+                    _effects.PlayFlash(_rows[i].Count);
+                }
+            }
+
+            HandleEffectCued(WorkbenchEffectCue.Withdrawn);
+        }
+
         private void TickEffects(float deltaTime)
         {
             _effects.Tick(deltaTime);
             TickCraftShow(deltaTime);
             TickStockPulse();
             TickCarryReveal();
+            TickDropFlash();
 
             if (_ownCredit > 0 && Time.unscaledTime > _ownCreditUntil)
             {
@@ -1709,6 +1845,8 @@ namespace Lighthouse.Workbench.View
                     return $"{_pendingRecipeName}을(를) 가져갈 수 없습니다. (이미 모듈을 들고 있거나 다른 선원이 먼저 가져감, 쓰러짐·배 탑승 상태)";
                 case InteractionAction.ReturnModule:
                     return "되돌려놓을 수 없습니다. (이 작업대에서 가져온 모듈만, 쓰러짐·배 탑승 상태)";
+                case InteractionAction.Withdraw:
+                    return $"{_pendingRecipeName}에서 뺄 수 없습니다. (넣은 자원이 없거나 인벤토리가 가득 참, 쓰러짐·배 탑승 상태)";
             }
 
             return Held(_pendingResourceId) <= 0
@@ -1726,6 +1864,8 @@ namespace Lighthouse.Workbench.View
                     return $"{_pendingRecipeName}을(를) 가져갔습니다. 등대나 내 배에서 장착하세요.";
                 case InteractionAction.ReturnModule:
                     return $"{_pendingRecipeName}을(를) 보관함에 되돌려놓았습니다.";
+                case InteractionAction.Withdraw:
+                    return $"{_pendingRecipeName}에서 자원을 1개 뺐습니다.";
                 default:
                     return $"{_pendingRecipeName}에 자원을 넣었습니다.";
             }

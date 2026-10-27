@@ -54,6 +54,8 @@ namespace Lighthouse.Workbench.View
             public Color HighlightColor = new Color(1f, 0.86f, 0.45f);
             [Tooltip("How long a craft result and the finish call may wait for each other, and a stock count may lag behind.")]
             public float CraftWaitSeconds = 1.5f;
+            [Tooltip("How long a drop in a deposit waits for a finish call before it shows as withdrawn.")]
+            public float DropGraceSeconds = 0.3f;
             public float SweepSeconds = 0.6f;
             public float SweepWidth = 90f;
         }

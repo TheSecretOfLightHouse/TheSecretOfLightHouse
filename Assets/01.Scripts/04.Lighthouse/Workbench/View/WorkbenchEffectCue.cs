@@ -11,6 +11,7 @@ namespace Lighthouse.Workbench.View
         ModuleStored,
         OtherCrafted,
         ModuleTaken,
-        ModuleReturned
+        ModuleReturned,
+        Withdrawn
     }
 }

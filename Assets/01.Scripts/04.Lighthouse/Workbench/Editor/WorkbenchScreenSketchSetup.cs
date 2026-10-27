@@ -83,10 +83,23 @@ namespace Lighthouse.Workbench.Editor
                 Image track = Picture("ProgressTrack", progress.transform, "ws_bar_track", 24f, 337f, 322f, 26f);
                 Image fill = Picture("Fill", track.transform, "ws_bar_fill", 4f, 4f, 314f, 18f);
                 Stretch((RectTransform)fill.transform, 4f);
-                Button deposit = MakeButton("Deposit", progress.transform, "투입", "ws_button_active", 26f, 378f, 146f, 48f, 21, true);
-                Button craft = MakeButton("Craft", progress.transform, "제작", "ws_button_craft", 191f, 378f, 154f, 48f, 21, true);
-                Keycap(progress.transform, "E", 81f, 420f);
-                Keycap(progress.transform, "F", 254f, 420f);
+                // The mafia's withdraw sits between deposit and craft (2026-10-27). A row layout shares the width, so on
+                // citizens' screens, where it is hidden, the two buttons stand as before. Keys ride on their buttons.
+                RectTransform actions = Rect("Actions", progress.transform, 24f, 378f, 322f, 48f);
+                HorizontalLayoutGroup actionRow = actions.gameObject.AddComponent<HorizontalLayoutGroup>();
+                actionRow.spacing = 14f;
+                actionRow.childControlWidth = true;
+                actionRow.childControlHeight = true;
+                actionRow.childForceExpandWidth = true;
+                actionRow.childForceExpandHeight = true;
+                Button deposit = MakeActionButton("Deposit", actions, "투입", "ws_button_active", "E", true);
+                Button withdraw = MakeActionButton("Withdraw", actions, "빼기", "ws_button", "R", false);
+                Button craft = MakeActionButton("Craft", actions, "제작", "ws_button_craft", "F", true);
+                // The mask from the mafia's identity screen marks the button as theirs alone.
+                Image mafiaMark = Picture("MafiaMark", withdraw.transform, "ws_icon_mafia_mask", 0f, 0f, 34f, 34f);
+                mafiaMark.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+                mafiaMark.rectTransform.anchoredPosition = new Vector2(4f, -4f);
+                withdraw.gameObject.SetActive(false);
 
                 Image shelf = Picture("Stock", frame, "ws_panel_shelf", 1023f, 273f, 305f, 397f);
                 Label("Title", shelf.transform, "선반", 24, 20f, 18f, 100f, 36f, TextAnchor.MiddleLeft);
@@ -143,6 +156,7 @@ namespace Lighthouse.Workbench.Editor
                 Set(serialized, "_progressKind", kind);
                 Set(serialized, "_craftButton", craft);
                 Set(serialized, "_depositButton", deposit);
+                Set(serialized, "_withdrawButton", withdraw);
                 Set(serialized, "_takeButton", take);
                 Set(serialized, "_overallFill", fill.rectTransform);
                 Set(serialized, "_carryBar", carry.gameObject);
@@ -509,6 +523,20 @@ namespace Lighthouse.Workbench.Editor
             Button button = rect.gameObject.AddComponent<Button>();
             button.targetGraphic = hit;
             button.transition = Selectable.Transition.None;
+            return button;
+        }
+
+        // A button sized by its row layout, its caption filling it and its key just under its bottom edge.
+        private static Button MakeActionButton(string name, Transform parent, string caption, string sprite, string key, bool isFilled)
+        {
+            Button button = MakeButton(name, parent, caption, sprite, 0f, 0f, 100f, 48f, 21, isFilled);
+            Stretch((RectTransform)button.transform.Find("Text"), 4f);
+            Image keycap = Picture($"Key{key}", button.transform, "ws_key", 0f, 0f, 32f, 32f);
+            Label("Text", keycap.transform, key, 19, 1f, 0f, 30f, 30f);
+            RectTransform keyRect = keycap.rectTransform;
+            keyRect.anchorMin = keyRect.anchorMax = new Vector2(0.5f, 0f);
+            keyRect.pivot = new Vector2(0.5f, 1f);
+            keyRect.anchoredPosition = new Vector2(0f, 6f);
             return button;
         }
 
