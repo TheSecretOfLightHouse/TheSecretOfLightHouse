@@ -163,8 +163,29 @@ namespace Lighthouse.Workbench.View
         [SerializeField]
         private string[] _osFontNames = { "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Arial" };
 
+        [Header("Effects (2026-10-27): deposit flight, ready glow, other crew's deposits, rejection")]
+        [SerializeField]
+        private WorkbenchScreenEffects.Settings _effectSettings = new WorkbenchScreenEffects.Settings();
+
         private readonly List<WorkbenchRecipeCard> _cards = new List<WorkbenchRecipeCard>();
         private readonly List<WorkbenchIngredientRow> _rows = new List<WorkbenchIngredientRow>();
+        private readonly List<bool> _wasCardReady = new List<bool>();
+        // Deposited amounts of the viewed recipe as last drawn, to tell what came in since.
+        private readonly List<int> _seenDeposited = new List<int>();
+        private WorkbenchScreenEffects _effects;
+        private bool _hasSeenCards;
+        private int _seenRecipeId;
+        private float _overallShown;
+        private float _overallTarget;
+        // Who deposited is never sent (contributors are server-only), and the result can reach this machine before
+        // or after the new amount. So this player's own deposit is remembered here and taken out of the next
+        // increase on that ingredient; whatever is left came from someone else.
+        private int _ownCreditRecipeId;
+        private int _ownCreditIndex;
+        private int _ownCredit;
+        private float _ownCreditUntil;
+        private bool _isDepositAwaiting;
+        private int _pendingRecipeId;
         private readonly StringBuilder _builder = new StringBuilder();
         private GameObject _lighthouseHeader;
         private GameObject _boatHeader;
@@ -191,6 +212,9 @@ namespace Lighthouse.Workbench.View
         private bool _isStockFocused;
 
         public bool IsOpen => _isOpen;
+
+        // Sound hook; nothing listens yet.
+        public event Action<WorkbenchEffectCue> EffectCued;
 
         private void Awake()
         {
@@ -252,6 +276,8 @@ namespace Lighthouse.Workbench.View
                 _sectionHeaderView.gameObject.SetActive(false);
             }
 
+            _effects = new WorkbenchScreenEffects(_effectSettings, (RectTransform)_window.transform, _message.font, _craftButton,
+                HandleEffectCued);
             _window.SetActive(false);
             _prompt.SetActive(false);
         }
@@ -283,6 +309,11 @@ namespace Lighthouse.Workbench.View
                 {
                     Close();
                 }
+            }
+
+            if (_isOpen)
+            {
+                TickEffects(Time.unscaledDeltaTime);
             }
 
             bool isFocused = _isInRange && StationScreenFocus.IsNearest(this);
@@ -334,6 +365,9 @@ namespace Lighthouse.Workbench.View
             PickDefaultRecipe();
             _selectedResourceId = 0;
             _isStockFocused = false;
+            // The first draw after opening only takes note; nothing that happened while closed plays.
+            _hasSeenCards = false;
+            _seenRecipeId = 0;
             _window.SetActive(true);
             _prompt.SetActive(false);
             SetMessage(IdleMessage, _messageInfoColor);
@@ -350,6 +384,8 @@ namespace Lighthouse.Workbench.View
 
             _isOpen = false;
             SessionScreen.SetGameplayOverlayOpen(this, false);
+            _effects.StopAll();
+            _ownCredit = 0;
             _window.SetActive(false);
             LockPlayer(false);
         }
@@ -585,6 +621,11 @@ namespace Lighthouse.Workbench.View
 
         private void RefreshCards()
         {
+            while (_wasCardReady.Count < _cards.Count)
+            {
+                _wasCardReady.Add(false);
+            }
+
             for (int i = 0; i < _cards.Count; i++)
             {
                 WorkbenchRecipeCard card = _cards[i];
@@ -596,15 +637,26 @@ namespace Lighthouse.Workbench.View
                 }
 
                 bool isSelected = recipe == _viewedRecipe;
+                bool isReady = _workbench.IsReadyToCraft(recipe.Id);
                 card.SetState(isSelected, !isSelected, DescribeBadge(recipe));
 
                 if (_isBadgeTinted)
                 {
-                    card.SetBadgeColor(_workbench.IsReadyToCraft(recipe.Id) ? _badgeReadyColor
+                    card.SetBadgeColor(isReady ? _badgeReadyColor
                         : _workbench.IsStarted(recipe.Id) ? _badgeProgressColor
                         : _badgeCappedColor);
                 }
+
+                if (_hasSeenCards && isReady && !_wasCardReady[i])
+                {
+                    _effects.PlayPunch(card.BadgeRect, _effectSettings.BadgePunchStrength);
+                    HandleEffectCued(WorkbenchEffectCue.ReadyToCraft);
+                }
+
+                _wasCardReady[i] = isReady;
             }
+
+            _hasSeenCards = true;
         }
 
         private void RefreshProgress(ModuleRecipe recipe)
@@ -624,9 +676,12 @@ namespace Lighthouse.Workbench.View
             }
             _craftButton.gameObject.SetActive(recipe);
             _craftButton.interactable = isReady;
+            _effects.SetReadyGlow(isReady);
             int count = recipe ? recipe.IngredientCount : 0;
             int depositedTotal = 0;
             int requiredTotal = 0;
+            // A recipe just switched to (or the screen just opened) is drawn as is, without effects.
+            bool isTracked = recipe && recipe.Id == _seenRecipeId;
 
             if (_isSketchLayout)
             {
@@ -657,13 +712,36 @@ namespace Lighthouse.Workbench.View
                 _rows[i].SetSelected(_isSketchLayout && !_isStockFocused && ingredient.ResourceId == _selectedResourceId);
                 depositedTotal += deposited;
                 requiredTotal += ingredient.Amount;
+
+                if (!isTracked)
+                {
+                    _rows[i].SnapFill();
+                }
+                else if (i < _seenDeposited.Count && deposited > _seenDeposited[i])
+                {
+                    HandleDepositSeen(recipe.Id, i, deposited - _seenDeposited[i]);
+                }
             }
+
+            _seenDeposited.Clear();
+
+            for (int i = 0; i < count; i++)
+            {
+                _seenDeposited.Add(_workbench.GetDepositedAt(recipe.Id, i));
+            }
+
+            _seenRecipeId = recipe ? recipe.Id : 0;
 
             if (_isSketchLayout && _overallFill)
             {
-                float ratio = requiredTotal > 0 ? Mathf.Clamp01((float)depositedTotal / requiredTotal) : 0f;
-                _overallFill.anchorMax = new Vector2(ratio, 1f);
-                _overallFill.gameObject.SetActive(ratio > 0f);
+                _overallTarget = requiredTotal > 0 ? Mathf.Clamp01((float)depositedTotal / requiredTotal) : 0f;
+
+                if (!isTracked || _overallTarget < _overallShown)
+                {
+                    _overallShown = _overallTarget;
+                }
+
+                ApplyOverallFill();
             }
 
             if (_isSketchLayout && _depositButton)
@@ -959,12 +1037,19 @@ namespace Lighthouse.Workbench.View
                 return;
             }
 
-            int amount = isAll ? _workbench.GetRemaining(_viewedRecipe.Id, resourceId) : 1;
+            int amount = Mathf.Max(1, isAll ? _workbench.GetRemaining(_viewedRecipe.Id, resourceId) : 1);
 
-            if (Send(InteractionAction.Deposit, _viewedRecipe.Id, resourceId, Mathf.Max(1, amount)))
+            if (Send(InteractionAction.Deposit, _viewedRecipe.Id, resourceId, amount))
             {
                 _pendingResourceId = resourceId;
+                _pendingRecipeId = _viewedRecipe.Id;
                 _pendingRecipeName = _viewedRecipe.DisplayName;
+                _isDepositAwaiting = true;
+                // The server clamps to what is held and still missing, so this never exceeds the real deposit.
+                _ownCreditRecipeId = _viewedRecipe.Id;
+                _ownCreditIndex = _viewedRecipe.IndexOf(resourceId);
+                _ownCredit = Mathf.Min(amount, Held(resourceId));
+                _ownCreditUntil = float.PositiveInfinity;
             }
         }
 
@@ -996,6 +1081,22 @@ namespace Lighthouse.Workbench.View
 
         private void HandleResultReceived(InteractionResult result)
         {
+            bool wasDeposit = _isDepositAwaiting;
+            _isDepositAwaiting = false;
+
+            if (wasDeposit)
+            {
+                if (result.IsSuccess)
+                {
+                    // The new amount may still be on its way; give it a moment to arrive and be matched.
+                    _ownCreditUntil = Time.unscaledTime + _effectSettings.OwnDepositSeconds;
+                }
+                else
+                {
+                    _ownCredit = 0;
+                }
+            }
+
             if (!_isOpen)
             {
                 return;
@@ -1004,10 +1105,149 @@ namespace Lighthouse.Workbench.View
             if (result.IsSuccess)
             {
                 SetMessage(DescribeSuccess(), _messageSuccessColor);
+
+                if (wasDeposit)
+                {
+                    PlayDepositLanded();
+                }
+
                 return;
             }
 
             SetMessage(DescribeRejection(result.Code), _messageRejectColor);
+
+            if (wasDeposit)
+            {
+                PlayDepositRejected();
+            }
+        }
+
+        // The icon flies from this player's stock (or the deposit button when no stock cell shows it) to the row.
+        private void PlayDepositLanded()
+        {
+            if (!_viewedRecipe || _viewedRecipe.Id != _pendingRecipeId)
+            {
+                return;
+            }
+
+            WorkbenchIngredientRow row = FindRow(_pendingResourceId);
+
+            if (!row)
+            {
+                return;
+            }
+
+            WorkbenchItemSlot slot = FindResourceSlot(_pendingResourceId);
+            RectTransform from = slot ? slot.IconRect
+                : _depositButton && _depositButton.gameObject.activeInHierarchy ? (RectTransform)_depositButton.transform
+                : row.AddOneRect;
+
+            if (slot)
+            {
+                _effects.PlayPunch(slot.CountRect, _effectSettings.PunchStrength);
+            }
+
+            if (from)
+            {
+                _effects.PlayFlight(row.Icon.sprite, from, row.Icon.rectTransform, row.CountRect);
+            }
+            else
+            {
+                _effects.PlayPunch(row.Icon.rectTransform, _effectSettings.PunchStrength);
+                _effects.PlayPunch(row.CountRect, _effectSettings.PunchStrength);
+                HandleEffectCued(WorkbenchEffectCue.DepositLanded);
+            }
+        }
+
+        private void PlayDepositRejected()
+        {
+            WorkbenchIngredientRow row = _viewedRecipe && _viewedRecipe.Id == _pendingRecipeId ? FindRow(_pendingResourceId) : null;
+            RectTransform button = _isSketchLayout && _depositButton ? (RectTransform)_depositButton.transform
+                : row ? row.AddOneRect
+                : null;
+            _effects.PlayShake(button);
+            _effects.PlayFlash(_message);
+
+            if (row)
+            {
+                _effects.PlayFlash(row.Icon);
+            }
+
+            HandleEffectCued(WorkbenchEffectCue.DepositRejected);
+        }
+
+        private void HandleDepositSeen(int recipeId, int ingredientIndex, int added)
+        {
+            if (_ownCredit > 0 && _ownCreditRecipeId == recipeId && _ownCreditIndex == ingredientIndex)
+            {
+                int own = Mathf.Min(_ownCredit, added);
+                _ownCredit -= own;
+                added -= own;
+            }
+
+            if (added <= 0)
+            {
+                return;
+            }
+
+            WorkbenchIngredientRow row = _rows[ingredientIndex];
+            _effects.PlayGain(row.CountRect, added);
+            _effects.PlayPunch(row.CountRect, _effectSettings.PunchStrength);
+            HandleEffectCued(WorkbenchEffectCue.OtherDeposited);
+        }
+
+        private void TickEffects(float deltaTime)
+        {
+            _effects.Tick(deltaTime);
+
+            if (_ownCredit > 0 && Time.unscaledTime > _ownCreditUntil)
+            {
+                _ownCredit = 0;
+            }
+
+            if (_isSketchLayout && _overallFill && _overallShown != _overallTarget)
+            {
+                _overallShown = Mathf.MoveTowards(_overallShown, _overallTarget, _effectSettings.FillSpeed * deltaTime);
+                ApplyOverallFill();
+            }
+        }
+
+        private void ApplyOverallFill()
+        {
+            _overallFill.anchorMax = new Vector2(_overallShown, 1f);
+            _overallFill.gameObject.SetActive(_overallShown > 0f);
+        }
+
+        private WorkbenchIngredientRow FindRow(int resourceId)
+        {
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                if (_rows[i].gameObject.activeSelf && _rows[i].ResourceId == resourceId)
+                {
+                    return _rows[i];
+                }
+            }
+
+            return null;
+        }
+
+        // Stock cells follow the resource icon list one to one (see RefreshStock); a cell off screen does not count.
+        private WorkbenchItemSlot FindResourceSlot(int resourceId)
+        {
+            for (int i = 0; i < _resourceSlots.Length && i < _resourceIcons.Length; i++)
+            {
+                if (_resourceIcons[i].Resource && _resourceIcons[i].Resource.Id == resourceId && _resourceSlots[i].gameObject.activeInHierarchy)
+                {
+                    return _resourceSlots[i];
+                }
+            }
+
+            return null;
+        }
+
+        private void HandleEffectCued(WorkbenchEffectCue cue)
+        {
+            EffectCued?.Invoke(cue);
         }
 
         private string DescribeRejection(InteractionResultCode code)
@@ -1066,6 +1306,7 @@ namespace Lighthouse.Workbench.View
 
         private void SetMessage(string text, Color color)
         {
+            _effects.CancelFlash(_message);
             // The sketch layout keeps the line empty until a request answers.
             _message.text = _isSketchLayout && text == IdleMessage ? string.Empty : text;
             _message.color = color;

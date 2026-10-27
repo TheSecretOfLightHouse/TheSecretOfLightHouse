@@ -27,6 +27,9 @@ namespace Lighthouse.Workbench.View
         private Action<int> _actionClicked;
         private int _actionId;
 
+        public RectTransform IconRect => _icon.rectTransform;
+        public RectTransform CountRect => _count.rectTransform;
+
         private void Awake()
         {
             if (_actionButton)
