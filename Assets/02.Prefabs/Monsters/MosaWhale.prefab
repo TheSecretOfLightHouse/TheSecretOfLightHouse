@@ -1054,6 +1054,9 @@ MonoBehaviour:
   _diveClip: {fileID: 7400000, guid: d87aac4434cb6e84f9084871fce4534f, type: 2}
   _breachClip: {fileID: 7400000, guid: 37d6c08a2acd17a4898f4106adb0b22b, type: 2}
   _recoveryClip: {fileID: 7400000, guid: 25156a9e4fd111f419360191ba17b5de, type: 2}
+  _turnRateForFullBlend: 60
+  _turnBlendResponse: 0.2
+  _turnSampleResetDistance: 10
   _interruptedReentryBlendDuration: 0.15
 --- !u!114 &8518323554242146452
 MonoBehaviour:
