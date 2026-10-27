@@ -20,14 +20,20 @@ public sealed class BoatCannon : NetworkBehaviour
     private float _damage = 10f;
 
     private BoatController _boat;
+    private Rigidbody _boatBody;
     private Collider[] _boatColliders;
     private double _nextServerFireTime;
+    private Vector3 _previousMuzzlePosition;
+    private Vector3 _muzzleVelocity;
+    private double _previousSampleTime;
+    private bool _hasMotionSample;
 
     public event System.Action Fired;
 
     private void Awake()
     {
         _boat = GetComponent<BoatController>();
+        _boatBody = GetComponent<Rigidbody>();
         _boatColliders = GetComponentsInChildren<Collider>(true);
     }
 
@@ -39,6 +45,22 @@ public sealed class BoatCannon : NetworkBehaviour
     private void OnDisable()
     {
         _boat.CannonFired -= HandleCannonFired;
+    }
+
+    public override void OnStartServer()
+    {
+        base.OnStartServer();
+        _hasMotionSample = false;
+        _muzzleVelocity = Vector3.zero;
+        SampleMuzzleVelocity();
+    }
+
+    private void LateUpdate()
+    {
+        if (isServer)
+        {
+            SampleMuzzleVelocity();
+        }
     }
 
     private void HandleCannonFired(PlayerController player)
@@ -108,10 +130,48 @@ public sealed class BoatCannon : NetworkBehaviour
 
         Cannonball projectile = Instantiate(_projectilePrefab, _muzzle.position, _muzzle.rotation);
 
-        projectile.Initialize(_muzzle.forward * _launchSpeed,_damage, _boatColliders, owner.GetComponentsInChildren<Collider>(true));
+        projectile.Initialize(GetLaunchVelocity(), _damage, _boatColliders, owner.GetComponentsInChildren<Collider>(true));
 
         NetworkServer.Spawn(projectile.gameObject);
         RpcPlayFireEffects();
+    }
+
+    private Vector3 GetLaunchVelocity()
+    {
+        SampleMuzzleVelocity();
+
+        // Remote boats are kinematic on the server, so their Rigidbody velocity is not authoritative motion.
+        Vector3 inheritedVelocity = _boatBody.isKinematic
+            ? _muzzleVelocity
+            : _boatBody.GetPointVelocity(_muzzle.position);
+
+        return _muzzle.forward * _launchSpeed + inheritedVelocity;
+    }
+
+    private void SampleMuzzleVelocity()
+    {
+        if (!_muzzle)
+        {
+            return;
+        }
+
+        double now = Time.timeAsDouble;
+        Vector3 position = _muzzle.position;
+
+        if (_hasMotionSample)
+        {
+            double elapsed = now - _previousSampleTime;
+            if (elapsed <= 0d)
+            {
+                return;
+            }
+
+            _muzzleVelocity = (position - _previousMuzzlePosition) / (float)elapsed;
+        }
+
+        _previousMuzzlePosition = position;
+        _previousSampleTime = now;
+        _hasMotionSample = true;
     }
 
     [ClientRpc]
