@@ -589,8 +589,24 @@ MonoBehaviour:
   _arrivalDistance: 0.15
   _chaseStoppingDistance: 1.5
   _patrolWaitRange: {x: 1, y: 3}
-  _patrolTurnSpeed: 120
+  _patrolTurnSpeed: 60
   _patrolAcceleration: 3
+  _usePatrolSteering: 1
+  _patrolAngularAcceleration: 90
+  _steeringArrivalDistance: 1.5
+  _steeringMinimumLegDistance: 8
+  _steeringForwardHalfAngle: 80
+  _steeringTurnSpeedRatio: 0.35
+  _steeringLookAheadTime: 1
+  _steeringLegTimeout: 30
+  _patrolObstacleLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _patrolCandidateAttempts: 12
+  _patrolClearance: 0.1
+  _patrolRetryDelay: 1
+  _patrolStuckDuration: 3
+  _patrolProgressDistance: 0.05
   _showPatrolGizmos: 1
 --- !u!114 &1209894092458537283
 MonoBehaviour:
@@ -655,6 +671,9 @@ MonoBehaviour:
   _animator: {fileID: 2417491521181515817}
   _transitionDuration: 0.1
   _attackOpeningDuration: 0.4
+  _turnRateForFullBlend: 60
+  _turnBlendResponse: 0.2
+  _turnSampleResetDistance: 10
 --- !u!1 &3577697292619952690
 GameObject:
   m_ObjectHideFlags: 0
