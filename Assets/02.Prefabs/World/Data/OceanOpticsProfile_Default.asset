@@ -22,14 +22,14 @@ MonoBehaviour:
     _clarity: 1
     _skyLight: 0
   _night:
-    _shallowColor: {r: 0.06, g: 0.18, b: 0.7, a: 1}
-    _deepColor: {r: 0.03, g: 0.09, b: 0.5, a: 1}
-    _veryDeepColor: {r: 0.015, g: 0.045, b: 0.34, a: 1}
+    _shallowColor: {r: 0.012, g: 0.028, b: 0.1, a: 1}
+    _deepColor: {r: 0.006, g: 0.014, b: 0.06, a: 1}
+    _veryDeepColor: {r: 0.003, g: 0.007, b: 0.032, a: 1}
     _baseOpacity: 0.93
     _shallowsOpacity: 0.55
     _smoothness: 0.85
-    _clarity: 0.35
-    _skyLight: 1
+    _clarity: 0.1
+    _skyLight: 0.6
   _storm:
     _shallowColor: {r: 0.12, g: 0.32, b: 0.32, a: 1}
     _deepColor: {r: 0.06, g: 0.2, b: 0.22, a: 1}
