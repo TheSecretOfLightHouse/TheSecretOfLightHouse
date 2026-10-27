@@ -16,11 +16,13 @@ Shader "Lighthouse/World/ClearOcean"
         _Ripple_Strength ("Ripple Strength", Range(0, 0.3)) = 0.055
         _Reflection_Strength ("Reflection Strength", Range(0, 1)) = 0.25
         _Refraction_Strength ("Refraction Strength", Range(0, 0.02)) = 0.002
+        _Refraction_Falloff ("Refraction Distance Falloff", Range(0, 0.2)) = 0
         _Sparkle_Strength ("Sun Sparkle", Range(0, 3)) = 1
         _Far_Smooth ("Far Normal Smoothing", Range(0, 1)) = 0.65
         _Depth_Fade ("Seabed Fade Per Metre", Range(0, 2)) = 0.35
         _Clarity ("Open Sea Clarity", Range(0, 1)) = 0
         _Lagoon_Reach ("Island Lagoon Reach Metres", Range(2, 14)) = 11
+        _Shallow_Caustic ("Surface Shallow Caustic", Range(0, 0.4)) = 0.22
         _Sky_Light ("Sky Light", Range(0, 2)) = 0
         _Zone_Radii ("Zone Outer Radii + Blend Half Width", Vector) = (200, 360, 490, 60)
         _Zone_Tint0 ("Inner Tint + Clarity Scale", Vector) = (1, 1, 1, 1)
@@ -71,11 +73,13 @@ Shader "Lighthouse/World/ClearOcean"
                 float _Ripple_Strength;
                 float _Reflection_Strength;
                 float _Refraction_Strength;
+                float _Refraction_Falloff;
                 float _Sparkle_Strength;
                 float _Far_Smooth;
                 float _Depth_Fade;
                 float _Clarity;
                 float _Lagoon_Reach;
+                float _Shallow_Caustic;
                 float _Sky_Light;
                 float4 _Zone_Radii;
                 float4 _Zone_Tint0;
@@ -192,7 +196,7 @@ Shader "Lighthouse/World/ClearOcean"
                 normalWS = normalize(lerp(normalWS, float3(0, 1, 0), smoothstep(250, 900, cameraDistance) * _Far_Smooth));
                 float footprint = max(length(ddx(input.positionWS.xz)), length(ddy(input.positionWS.xz)));
                 float3 viewWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
-                float2 offset = normalWS.xz * _Refraction_Strength * saturate(thickness);
+                float2 offset = normalWS.xz * _Refraction_Strength * saturate(thickness) / (1.0 + cameraDistance * _Refraction_Falloff);
                 float2 refractedUV = saturate(uv + offset);
                 float refractedEye = LinearEyeDepth(SampleSceneDepth(refractedUV), _ZBufferParams);
                 float edgeFade = saturate(min(min(uv.x, uv.y), min(1 - uv.x, 1 - uv.y)) * 40);
@@ -229,7 +233,7 @@ Shader "Lighthouse/World/ClearOcean"
                     * OceanCaustic(input.positionWS.xz, normalWS.xz, _OceanTime) * (1 - transmission.g);
                 float shallowCaustic = OceanCaustic(input.positionWS.xz, normalWS.xz, _OceanTime)
                     * transmission.g * clarityZ * clarityZ * causticFade;
-                color += sun.color * sun.shadowAttenuation * shallowCaustic * 0.22;
+                color += sun.color * sun.shadowAttenuation * shallowCaustic * _Shallow_Caustic;
                 color += OceanCrestGlow(_Shallow_Color.rgb, sun.color, viewWS, sun.direction,
                     input.positionWS.y - input.restWS.y, _Path_Tint);
                 color += sun.color * sun.shadowAttenuation * _Sparkle_Strength

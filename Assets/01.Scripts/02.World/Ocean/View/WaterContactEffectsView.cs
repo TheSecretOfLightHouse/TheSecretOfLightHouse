@@ -15,6 +15,7 @@ namespace Lighthouse.World.Ocean.View
         [SerializeField] private Texture2D _foamDetail;
         [SerializeField] private Shader _sprayShader;
         [SerializeField] private Shader _crestShader;
+        [SerializeField, Range(0f, 2f)] private float _staticContactFoam = 1.2f;
         private IWorldQuery _query;
         private IClock _clock;
         private WaterSamplerHost _host;
@@ -79,6 +80,7 @@ namespace Lighthouse.World.Ocean.View
                 return;
             }
             float seaLevel = _query.SampleWaterHeight(_focus.position);
+            _grid.StaticContactFoam = _staticContactFoam;
             _grid.Update(_focus.position, seaLevel, Time.deltaTime, Time.time, _host, (float)_clock.Now);
             _spray.Update(_focus.position, Time.deltaTime, gameObject.layer);
         }

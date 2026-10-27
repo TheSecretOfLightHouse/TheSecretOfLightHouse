@@ -32,11 +32,15 @@ Material:
     - _Deep_Height: 1.25
     - _Depth_Fade: 0.35
     - _Far_Smooth: 0.65
+    - _Lagoon_Reach: 11
     - _Path_Tint: 0.35
     - _Reflection_Strength: 0.25
-    - _Refraction_Strength: 0.002
+    - _Refraction_Falloff: 0.02
+    - _Refraction_Strength: 0.006
     - _Ripple_Strength: 0.055
+    - _Shallow_Caustic: 0.22
     - _Shallows_Opacity: 0.14
+    - _Sky_Light: 0
     - _Smoothness: 0.75
     - _Sparkle_Strength: 1
     - _Very_Deep_Height: 22
@@ -44,5 +48,10 @@ Material:
     - _Deep_Color: {r: 0.03, g: 0.7, b: 0.95, a: 1}
     - _Shallow_Color: {r: 0.12, g: 0.95, b: 0.85, a: 1}
     - _Very_Deep_Color: {r: 0.02, g: 0.42, b: 0.92, a: 1}
+    - _Zone_Radii: {r: 200, g: 360, b: 490, a: 60}
+    - _Zone_Sky: {r: 1, g: 1, b: 1, a: 0}
+    - _Zone_Tint0: {r: 1, g: 1, b: 1, a: 1}
+    - _Zone_Tint1: {r: 1, g: 1, b: 1, a: 1}
+    - _Zone_Tint2: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

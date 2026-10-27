@@ -132,6 +132,9 @@ void ContactSpray(uint3 id:SV_DispatchThreadID)
         0.008+SprayHash(seed+3)*0.016,1);
 }
 
+float _StaticContactFoam;
+float _WaveEnergy;
+
 [numthreads(8,8,1)]
 void Shift(uint3 id : SV_DispatchThreadID)
 {
@@ -191,6 +194,21 @@ float Impact(int2 p,int2 offset,float2 normal)
     return wall.x*max(0,dot(relative,normal)-0.035);
 }
 
+// Walls that are not moving (rocks, piers, a moored hull) keep a lapping foam ring.
+float StaticWall(int2 p)
+{
+    float4 wall=Domain(p);
+    return wall.x*step(dot(wall.yz,wall.yz),0.0025);
+}
+
+float StaticContactFoam(int2 p)
+{
+    float near1=max(max(StaticWall(p+int2(1,0)),StaticWall(p-int2(1,0))),max(StaticWall(p+int2(0,1)),StaticWall(p-int2(0,1))));
+    float near2=max(max(StaticWall(p+int2(2,0)),StaticWall(p-int2(2,0))),max(StaticWall(p+int2(0,2)),StaticWall(p-int2(0,2))));
+    float lap=saturate(0.5+Background(p).x*6);
+    return _StaticContactFoam*max(near1,near2*0.5)*lap*(0.4+0.6*saturate(_WaveEnergy*5));
+}
+
 [numthreads(8,8,1)]
 void Integrate(uint3 id : SV_DispatchThreadID)
 {
@@ -215,6 +233,6 @@ void Integrate(uint3 id : SV_DispatchThreadID)
         +Impact(p,int2(0,1),float2(0,1))+Impact(p,int2(0,-1),float2(0,-1));
     float breaking = max(0,abs(divergence)-0.25)*0.2;
     float surf = saturate((Background(p).x-0.012)*40)*(1-smoothstep(0.3,0.65,d.w));
-    foam = saturate(foam + _Step*(impact*5+breaking+surf*1.8));
+    foam = saturate(foam + _Step*(impact*5+breaking+surf*1.8+StaticContactFoam(p)*3));
     _Write[p] = float4(clamp(height,-0.14,0.14)*sponge,s.yz*sponge,foam*sponge);
 }

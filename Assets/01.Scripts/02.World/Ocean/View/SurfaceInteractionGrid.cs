@@ -49,6 +49,7 @@ namespace Lighthouse.World.Ocean.View
             public float Seen;
         }
 
+        public float StaticContactFoam { get; set; }
         public int ObstacleCount { get; private set; }
         public int UnsupportedMeshCount { get; private set; }
         public int SaturatedScanCount { get; private set; }
@@ -58,6 +59,7 @@ namespace Lighthouse.World.Ocean.View
         public ComputeShader Simulation => _solver;
         public RenderTexture Background => _background;
         public RenderTexture Domain => _domain;
+        public Texture2D Obstacles => _obstacles;
 
         public SurfaceInteractionGrid(ComputeShader solver)
         {
@@ -88,15 +90,19 @@ namespace Lighthouse.World.Ocean.View
             WaterSamplerHost host, float waveTime)
         {
             var waves = host.Inputs.Waves;
+            float waveEnergy = 0f;
             for (int i = 0; i < waves.Length; i++)
             {
                 WaveParams wave = waves[i];
+                waveEnergy += wave.Amplitude;
                 _waveA[i] = new Vector4(wave.Direction.x, wave.Direction.y, wave.Wavelength, wave.Speed);
                 _waveB[i] = new Vector4(wave.Amplitude, wave.Steepness, 0f, 0f);
             }
             _solver.SetVectorArray("_OceanWaveA", _waveA);
             _solver.SetVectorArray("_OceanWaveB", _waveB);
             _solver.SetFloat("_OceanWaveCount", waves.Length);
+            _solver.SetFloat("_WaveEnergy", waveEnergy);
+            _solver.SetFloat("_StaticContactFoam", StaticContactFoam);
             _solver.SetFloat("_OceanTime", waveTime);
             var modifiers = host.Inputs.Modifiers;
             for (int i = 0; i < modifiers.Length; i++)
