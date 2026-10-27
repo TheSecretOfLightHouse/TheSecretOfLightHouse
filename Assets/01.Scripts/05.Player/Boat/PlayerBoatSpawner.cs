@@ -67,7 +67,7 @@ namespace Lighthouse.Player.Boat
                 return;
             }
 
-            if (!_boatPrefab || !_networkManager.spawnPrefabs.Contains(_boatPrefab.gameObject))
+            if (!TryGetBoatPrefab(player, out BoatController boatPrefab))
             {
                 return;
             }
@@ -92,9 +92,9 @@ namespace Lighthouse.Player.Boat
 
             recovery.ConfigureRecovery(this, spawnPoint, actorId);
 
-            BoatController boat = Instantiate(_boatPrefab, spawnPoint.position, spawnPoint.rotation);
+            BoatController boat = Instantiate(boatPrefab, spawnPoint.position, spawnPoint.rotation);
 
-            boat.name = $"{_boatPrefab.name} [actor={actorId}]";
+            boat.name = $"{boatPrefab.name} [actor={actorId}]";
             boat.GetComponent<BoatContactBoarding>().ConfigureLandLayers(_landLayers);
             if (!boat.TrySetOwner(player))
             {
@@ -129,13 +129,14 @@ namespace Lighthouse.Player.Boat
                 return false;
             }
 
-            if (!_networkManager || !_boatPrefab || !_networkManager.spawnPrefabs.Contains(_boatPrefab.gameObject))
+            if (!TryGetBoatPrefab(player, out BoatController boatPrefab))
             {
                 return false;
             }
 
-            BoatController instance = Instantiate(_boatPrefab, spawnPoint.position, spawnPoint.rotation);
+            BoatController instance = Instantiate(boatPrefab, spawnPoint.position, spawnPoint.rotation);
 
+            instance.name = $"{boatPrefab.name} [actor={player.ActorID}]";
             instance.GetComponent<BoatContactBoarding>().ConfigureLandLayers(_landLayers);
 
             if (!instance.TrySetOwner(player))
@@ -146,6 +147,24 @@ namespace Lighthouse.Player.Boat
 
             NetworkServer.Spawn(instance.gameObject, connection);
             boat = instance;
+
+            return true;
+        }
+
+        private bool TryGetBoatPrefab(PlayerController player, out BoatController boatPrefab)
+        {
+            boatPrefab = player.BoatPrefab ? player.BoatPrefab : _boatPrefab;
+
+            if (!_networkManager || !boatPrefab)
+            {
+                return false;
+            }
+
+            if (!_networkManager.spawnPrefabs.Contains(boatPrefab.gameObject))
+            {
+                Debug.LogError($"[{nameof(PlayerBoatSpawner)}] Boat prefab '{boatPrefab.name}' is not registered in NetworkManager.spawnPrefabs.");
+                return false;
+            }
 
             return true;
         }
