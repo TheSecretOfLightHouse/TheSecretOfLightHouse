@@ -6,6 +6,13 @@ Shader "Lighthouse/World/NightSky"
         _DayZenithColor ("Day Zenith", Color) = (0.22, 0.45, 0.78, 1)
         _DayHorizonColor ("Day Horizon", Color) = (0.72, 0.84, 0.93, 1)
 
+        [Header(Clouds)]
+        _CloudColor ("Cloud Color", Color) = (0.93, 0.96, 1, 1)
+        _CloudCoverage ("Cloud Coverage", Range(0, 1)) = 0.6
+        _CloudOpacity ("Cloud Opacity", Range(0, 1)) = 0.75
+        _CloudScale ("Cloud Scale", Range(0.5, 10)) = 3
+        _CloudSpeed ("Cloud Drift Speed", Range(0, 0.1)) = 0.008
+
         [Header(Night)]
         _NightZenithColor ("Night Zenith", Color) = (0.008, 0.014, 0.04, 1)
         _NightHorizonColor ("Night Horizon", Color) = (0.03, 0.05, 0.09, 1)
@@ -62,6 +69,11 @@ Shader "Lighthouse/World/NightSky"
             CBUFFER_START(UnityPerMaterial)
                 float4 _DayZenithColor;
                 float4 _DayHorizonColor;
+                float4 _CloudColor;
+                float _CloudCoverage;
+                float _CloudOpacity;
+                float _CloudScale;
+                float _CloudSpeed;
                 float4 _NightZenithColor;
                 float4 _NightHorizonColor;
                 float4 _TwilightColor;
@@ -130,7 +142,10 @@ Shader "Lighthouse/World/NightSky"
                 float cosRadius = 1.0 - _SunSize;
                 float disc = smoothstep(cosRadius - 0.0006, cosRadius, sunDot);
                 float glow = pow(sunDot, 64.0) * _SunGlow;
-                sky += _SunColor.rgb * (disc + glow) * (1.0 - night) * (1.0 - below);
+                float sunVisibility = smoothstep(-0.04, 0.04, sunDirection.y);
+                float3 sunColor = lerp(_SunColor.rgb, _TwilightColor.rgb, twilight);
+                sky += sunColor * (disc + glow) * sunVisibility
+                    * (1.0 - smoothstep(0.65, 1.0, night)) * (1.0 - below);
 
                 float skyTime = _Time.y;
 
@@ -197,7 +212,25 @@ Shader "Lighthouse/World/NightSky"
                     (stars + constellations + aurora) * (1.0 - moon.a)
                     + moon.rgb;
 
-                sky += nightDetails * night * horizonFade;
+                float celestialVisibility = smoothstep(0.65, 1.0, night);
+                sky += nightDetails * celestialVisibility * horizonFade;
+
+                // Project onto a high cloud layer; fade the horizon to avoid stretching.
+                if (direction.y > 0.01 && _CloudCoverage > 0.001)
+                {
+                    float2 cloudUv = direction.xz / max(direction.y, 0.15) * _CloudScale;
+                    float2 drift = float2(1.0, 0.35) * skyTime * _CloudSpeed;
+                    float cloudNoise = SkyFbm(cloudUv + drift);
+                    float detail = SkyFbm(cloudUv * 2.7 - drift * 0.4);
+                    float density = cloudNoise * 0.8 + detail * 0.2;
+                    float threshold = lerp(0.85, 0.2, _CloudCoverage);
+                    float cloudMask = smoothstep(threshold, threshold + 0.16, density);
+                    cloudMask *= smoothstep(0.02, 0.22, direction.y);
+                    cloudMask *= _CloudOpacity * (1.0 - night);
+                    float3 cloudColor = _CloudColor.rgb * lerp(0.72, 1.0, detail);
+                    cloudColor = lerp(cloudColor, _TwilightColor.rgb * 0.8, twilight * 0.65);
+                    sky = lerp(sky, cloudColor, cloudMask);
+                }
 
                 return float4(sky, 1.0);
             }
