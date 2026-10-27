@@ -31,8 +31,14 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     [SerializeField, Min(0f)]
     private float _mouseSensitivity = 0.15f;
 
+    [SerializeField, Min(0f)]
+    private float _onFootTurnSpeed = 720f;
+
     [SerializeField]
     private bool _allowOfflineControl = true;
+
+    [SerializeField]
+    private BoatController _boatPrefab;
 
     [SyncVar]
     private BoatController _ownedBoat;
@@ -75,6 +81,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     public BoatController OwnedBoat => NetworkClient.active || NetworkServer.active ? _ownedBoat : _offlineOwnedBoat;
     public BoatController CurrentBoat => _boatController;
+    public BoatController BoatPrefab => _boatPrefab;
     public bool CanProcessBoatInput => CanProcessLocalInput;
     public PlayerHFSM StateMachine => _hfsm;
 
@@ -234,6 +241,12 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         Vector2 input = _inputReader.MoveInput;
 
+        if (!IsOnBoat && _camera)
+        {
+            _camera.SetOnFootHeading(_heading);
+        }
+
+        // Body rotation must not change the camera-relative movement basis.
         Vector3 direction = Quaternion.Euler(0f, _heading, 0f) * new Vector3(input.x, 0f, input.y);
 
         _hfsm.SetInput(direction, _inputReader.RunHeld);
@@ -262,20 +275,27 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         bool jumpRequested = _jumpRequested && !SessionScreen.IsGameplayOverlayOpen;
         _jumpRequested = false;
 
-        Quaternion rotation = Quaternion.Euler(0f, _heading, 0f);
-
         if (IsOnBoat)
         {
             _boatController.Move(this, _inputReader.MoveInput, config, fixedDeltaTime);
             return;
         }
 
+        Vector3 moveDirection = _hfsm.MoveDirection;
         if (!IsDowned)
         {
+            Quaternion rotation = _rb.rotation;
+            if (!config.InputLocked && moveDirection.sqrMagnitude > 0f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
+                rotation = Quaternion.RotateTowards(
+                    rotation, targetRotation, _onFootTurnSpeed * fixedDeltaTime);
+            }
+
             _motor.Face(rotation);
         }
 
-        _motor.Move(_hfsm.MoveDirection, config,fixedDeltaTime);
+        _motor.Move(moveDirection, config,fixedDeltaTime);
 
         if (jumpRequested && !IsDowned && !config.InputLocked)
         {

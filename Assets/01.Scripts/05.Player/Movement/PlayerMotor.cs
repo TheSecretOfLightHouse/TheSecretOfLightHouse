@@ -1,5 +1,5 @@
-using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Rigidbody))]
 public sealed class PlayerMotor : MonoBehaviour
@@ -34,10 +34,15 @@ public sealed class PlayerMotor : MonoBehaviour
     [SerializeField, Range(0f, 1f)]
     private float _minimumGroundNormalY = 0.65f;
 
+    [SerializeField, Min(0f)]
+    private float _groundStickSpeed = 1.5f;
+
     [SerializeField]
     private LayerMask _groundLayers = ~0;
 
     private Collider _bodyCollider;
+    private CapsuleCollider _capsuleCollider;
+    private PhysicsScene _physicsScene;
     private readonly RaycastHit[] _groundHits = new RaycastHit[16];
 
     public bool IsJumping { get; private set; }
@@ -51,6 +56,8 @@ public sealed class PlayerMotor : MonoBehaviour
         }
 
         _bodyCollider = GetComponent<Collider>();
+        _capsuleCollider = _bodyCollider as CapsuleCollider;
+        _physicsScene = gameObject.scene.GetPhysicsScene();
     }
 
     private void Reset()
@@ -84,6 +91,15 @@ public sealed class PlayerMotor : MonoBehaviour
 
     public void Face(Quaternion rotation)
     {
+        if (_rb.isKinematic)
+        {
+            return;
+        }
+
+        // Facing is input-driven; collision spin must not survive after input stops.
+        Vector3 angularVelocity = _rb.angularVelocity;
+        angularVelocity.y = 0f;
+        _rb.angularVelocity = angularVelocity;
         _rb.MoveRotation(rotation);
     }
 
@@ -122,7 +138,8 @@ public sealed class PlayerMotor : MonoBehaviour
         float acceleration = _originAcceleration * config.AccelerationMultiplier;
         Vector3 velocity = _rb.linearVelocity;
 
-        if (!IsJumping && TryGetGroundNormal(out Vector3 groundNormal))
+        if (!IsJumping && TryGetGroundNormal(
+            out Vector3 groundNormal, out float groundDistance))
         {
             float inputAmount = direction.magnitude;
 
@@ -145,10 +162,25 @@ public sealed class PlayerMotor : MonoBehaviour
                 groundAcceleration = _turnAcceleration;
             }
 
-            _rb.linearVelocity = Vector3.MoveTowards(
+            Vector3 movementVelocity = Vector3.MoveTowards(
                 groundVelocity,
                 targetVelocity,
                 groundAcceleration * config.AccelerationMultiplier * fixedDt);
+
+            float stickSpeed = 0f;
+
+            if (groundDistance > _bodyCollider.contactOffset
+                && fixedDt > 0f)
+            {
+                stickSpeed = Mathf.Min(
+                    _groundStickSpeed,
+                    groundDistance * groundNormal.y / fixedDt);
+            }
+
+            float normalSpeed = Mathf.Min(
+                Vector3.Dot(velocity, groundNormal), -stickSpeed);
+
+            _rb.linearVelocity = movementVelocity + groundNormal * normalSpeed;
 
             return;
         }
@@ -184,7 +216,14 @@ public sealed class PlayerMotor : MonoBehaviour
 
     private bool TryGetGroundNormal(out Vector3 groundNormal)
     {
+        return TryGetGroundNormal(out groundNormal, out _);
+    }
+
+    private bool TryGetGroundNormal(
+        out Vector3 groundNormal, out float groundDistance)
+    {
         groundNormal = Vector3.up;
+        groundDistance = 0f;
 
         if (!_bodyCollider || !_bodyCollider.enabled)
         {
@@ -192,12 +231,28 @@ public sealed class PlayerMotor : MonoBehaviour
         }
 
         Bounds bounds = _bodyCollider.bounds;
+        float radius = Mathf.Min(bounds.extents.x, bounds.extents.z);
 
-        int hitCount = Physics.RaycastNonAlloc(
-            bounds.center,
+        if (_capsuleCollider && _capsuleCollider.direction == 1)
+        {
+            Vector3 scale = _capsuleCollider.transform.lossyScale;
+            radius = _capsuleCollider.radius
+                * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
+        }
+
+        float skin = Mathf.Max(_bodyCollider.contactOffset, 0.001f);
+        float probeRadius = Mathf.Max(radius - skin, 0.001f);
+        Vector3 origin = new Vector3(
+            bounds.center.x,
+            bounds.min.y + radius + skin,
+            bounds.center.z);
+
+        int hitCount = _physicsScene.SphereCast(
+            origin,
+            probeRadius,
             Vector3.down,
             _groundHits,
-            bounds.extents.y + _groundCheckDistance,
+            _groundCheckDistance + skin * 2f,
             _groundLayers,
             QueryTriggerInteraction.Ignore);
 
@@ -208,8 +263,7 @@ public sealed class PlayerMotor : MonoBehaviour
         {
             RaycastHit hit = _groundHits[i];
 
-            if (hit.collider.attachedRigidbody == _rb
-                || hit.collider.transform.IsChildOf(transform)
+            if (!CanUseGround(hit.collider)
                 || hit.normal.y < _minimumGroundNormalY
                 || hit.distance >= nearestDistance)
             {
@@ -218,9 +272,20 @@ public sealed class PlayerMotor : MonoBehaviour
 
             nearestDistance = hit.distance;
             groundNormal = hit.normal;
+            groundDistance = Mathf.Max(0f, hit.distance - skin * 2f);
             hasGround = true;
         }
 
         return hasGround;
+    }
+
+    private bool CanUseGround(Collider candidate)
+    {
+        return candidate && !candidate.isTrigger
+            && candidate.attachedRigidbody != _rb
+            && !candidate.transform.IsChildOf(transform)
+            && (_groundLayers.value & (1 << candidate.gameObject.layer)) != 0
+            && !Physics.GetIgnoreLayerCollision(gameObject.layer, candidate.gameObject.layer)
+            && !Physics.GetIgnoreCollision(_bodyCollider, candidate);
     }
 }
