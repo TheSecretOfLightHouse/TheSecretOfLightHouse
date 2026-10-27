@@ -47,7 +47,8 @@ namespace Lighthouse.Monsters.AI.View
                     _animationState = state;
                 }
             }
-            if (isClient && _renderedState != _animationState)
+            // 서버에서도 꼬리 뼈를 피해 경로에 사용하므로 동일한 애니메이션을 갱신한다.
+            if ((isServer || isClient) && _renderedState != _animationState)
             {
                 ApplyAnimation(_renderedState < 0);
             }
@@ -61,6 +62,11 @@ namespace Lighthouse.Monsters.AI.View
         public override void OnStartServer()
         {
             _stateStartedAt = NetworkTime.time;
+            if (_animator != null)
+            {
+                _animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            }
+            ApplyAnimation(true);
         }
 
         public override void OnStartClient()
