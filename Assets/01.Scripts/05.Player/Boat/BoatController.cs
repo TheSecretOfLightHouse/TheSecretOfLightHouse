@@ -179,6 +179,10 @@ public sealed class BoatController : NetworkBehaviour
                 BoatWreckEffect effect = Instantiate(_wreckEffectPrefab, transform.position, transform.rotation);
                 effect.transform.localScale = transform.lossyScale;
                 UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(effect.gameObject, gameObject.scene);
+                if (TryGetComponent(out BoatHullDamage hullDamage))
+                {
+                    effect.SetHullDamageStage(hullDamage.DamageStage);
+                }
                 effect.Initialize(elapsed);
             }
         }

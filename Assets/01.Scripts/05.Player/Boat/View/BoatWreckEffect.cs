@@ -14,6 +14,9 @@ namespace Lighthouse.Player.Boat.View
         [SerializeField, Min(0f)] private float _sinkDepth = 3.5f;
         [SerializeField] private Vector3 _frontTilt = new Vector3(-24f, 8f, -10f);
         [SerializeField] private Vector3 _backTilt = new Vector3(24f, -8f, 10f);
+        [SerializeField] private BoatWreckPiece[] _pieces;
+        [SerializeField] private MeshFilter _bowMesh;
+        [SerializeField] private Mesh[] _damagedBowMeshes;
 
         private Vector3 _frontPosition;
         private Vector3 _backPosition;
@@ -23,7 +26,25 @@ namespace Lighthouse.Player.Boat.View
         private float _elapsed;
         private bool _isInitialized;
 
-        public float Duration => _breakDelay + _splitDuration + _sinkDuration;
+        public float Duration
+        {
+            get
+            {
+                float duration = _breakDelay + _splitDuration + _sinkDuration;
+                if (_pieces != null)
+                {
+                    foreach (BoatWreckPiece piece in _pieces)
+                    {
+                        if (piece)
+                        {
+                            duration = Mathf.Max(duration, piece.Duration);
+                        }
+                    }
+                }
+
+                return duration;
+            }
+        }
 
         private void Update()
         {
@@ -40,6 +61,17 @@ namespace Lighthouse.Player.Boat.View
             }
         }
 
+        public void SetHullDamageStage(int stage)
+        {
+            if (_isInitialized || !_bowMesh || _damagedBowMeshes == null
+                || stage <= 0 || stage > _damagedBowMeshes.Length || !_damagedBowMeshes[stage - 1])
+            {
+                return;
+            }
+
+            _bowMesh.sharedMesh = _damagedBowMeshes[stage - 1];
+        }
+
         public void Initialize(float elapsed)
         {
             if (_isInitialized)
@@ -47,17 +79,31 @@ namespace Lighthouse.Player.Boat.View
                 return;
             }
 
-            if (!_frontHalf || !_backHalf)
+            if (_pieces != null && _pieces.Length > 0)
+            {
+                foreach (BoatWreckPiece piece in _pieces)
+                {
+                    if (piece)
+                    {
+                        piece.Initialize();
+                    }
+                }
+            }
+            else if (!_frontHalf || !_backHalf)
             {
                 Destroy(gameObject);
                 return;
             }
 
+            else
+            {
+                _frontPosition = _frontHalf.localPosition;
+                _backPosition = _backHalf.localPosition;
+                _frontRotation = _frontHalf.localRotation;
+                _backRotation = _backHalf.localRotation;
+            }
+
             // The effect owns its lifetime so an early rescue can remove the network boat independently.
-            _frontPosition = _frontHalf.localPosition;
-            _backPosition = _backHalf.localPosition;
-            _frontRotation = _frontHalf.localRotation;
-            _backRotation = _backHalf.localRotation;
             _origin = transform.position;
             _elapsed = Mathf.Max(0f, elapsed);
             _isInitialized = true;
@@ -66,6 +112,19 @@ namespace Lighthouse.Player.Boat.View
 
         private void ApplyPose(float elapsed)
         {
+            if (_pieces != null && _pieces.Length > 0)
+            {
+                foreach (BoatWreckPiece piece in _pieces)
+                {
+                    if (piece)
+                    {
+                        piece.ApplyPose(elapsed);
+                    }
+                }
+
+                return;
+            }
+
             float split = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((elapsed - _breakDelay) / _splitDuration));
             float sink = Mathf.Clamp01((elapsed - _breakDelay - _splitDuration) / _sinkDuration);
             float tilt = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((elapsed - _breakDelay) / (_splitDuration + _sinkDuration)));

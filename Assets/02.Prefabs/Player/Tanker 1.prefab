@@ -379,7 +379,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1662103558280590262}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.07277508, y: 0.020368773, z: -0.018689858, w: 0.99696517}
+  m_LocalRotation: {x: 0.0727751, y: 0.020368773, z: -0.018689863, w: 0.99696517}
   m_LocalPosition: {x: 0.0000000018626451, y: 0.08687012, z: -0.00000004004687}
   m_LocalScale: {x: 0.9999999, y: 1.0000002, z: 1.0000001}
   m_ConstrainProportionsScale: 0
@@ -762,6 +762,7 @@ MonoBehaviour:
   _jumpSpeed: 5
   _groundCheckDistance: 0.15
   _minimumGroundNormalY: 0.65
+  _groundStickSpeed: 1.5
   _groundLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -800,7 +801,9 @@ MonoBehaviour:
   _camera: {fileID: 6568711687284579916}
   _runMultiplier: 1.5
   _mouseSensitivity: 0.15
+  _onFootTurnSpeed: 720
   _allowOfflineControl: 1
+  _boatPrefab: {fileID: 574665130920709553, guid: 3ab134b47e46cc047b6bc4867af5c04c, type: 3}
 --- !u!136 &1477268973471061571
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -2732,7 +2735,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8649543908422682062}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.04205338, y: 0.01200312, z: 0.08647075, w: 0.99529403}
+  m_LocalRotation: {x: 0.04205339, y: 0.01200312, z: 0.086470775, w: 0.99529403}
   m_LocalPosition: {x: 0.000000007450581, y: 0.023136117, z: -0.00000017136335}
   m_LocalScale: {x: 0.99999994, y: 0.9999999, z: 1.0000001}
   m_ConstrainProportionsScale: 0

@@ -1811,6 +1811,7 @@ MonoBehaviour:
   _jumpSpeed: 5
   _groundCheckDistance: 0.15
   _minimumGroundNormalY: 0.65
+  _groundStickSpeed: 1.5
   _groundLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -1850,6 +1851,7 @@ MonoBehaviour:
   _runMultiplier: 1.5
   _mouseSensitivity: 0.15
   _allowOfflineControl: 1
+  _boatPrefab: {fileID: 8528022499122927033, guid: 235038b1b4101af4db1c1b66d9b92d27, type: 3}
 --- !u!136 &676716863915785658
 CapsuleCollider:
   m_ObjectHideFlags: 0
