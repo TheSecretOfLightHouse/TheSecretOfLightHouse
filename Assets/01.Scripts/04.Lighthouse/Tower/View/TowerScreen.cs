@@ -51,6 +51,11 @@ namespace Lighthouse.Tower.View
         private Color _messageRejectColor = new Color(0.92f, 0.45f, 0.38f);
 
         [Header("Tower")]
+        [SerializeField]
+        private Image _towerCard;
+        [Tooltip("Indexed by finished floors from the bottom; the last one also stands for every floor after it.")]
+        [SerializeField]
+        private Sprite[] _towerStages = new Sprite[0];
         [Tooltip("Indexed like the layout's slots.")]
         [SerializeField]
         private TowerSlotView[] _slots = new TowerSlotView[0];
@@ -335,6 +340,19 @@ namespace Lighthouse.Tower.View
                     : TowerSlotView.State.Locked;
                 _slots[i].gameObject.SetActive(true);
                 _slots[i].Show(GetRecipeIcon(slot.Recipe), state);
+            }
+
+            // Floors open bottom first, so counting finished floors from the bottom gives the restoration stage.
+            int finishedFloors = 0;
+
+            while (finishedFloors < layout.FloorCount && _tower.IsFloorComplete(finishedFloors))
+            {
+                finishedFloors++;
+            }
+
+            if (_towerStages.Length > 0)
+            {
+                _towerCard.sprite = _towerStages[Mathf.Min(finishedFloors, _towerStages.Length - 1)];
             }
 
             int installed = _tower.InstalledCount;

@@ -11,36 +11,55 @@ using UnityEngine.UI;
 
 namespace Lighthouse.Workbench.Editor
 {
-    // Builds the lighthouse install screen from the 2026-10-21 sketch (v3) with the workbench sketch's sprites, so the
-    // two screens share one look. Positions are the sketch's pixels at 1672x941.
+    // Builds the lighthouse install screen from the 2026-10-21 sketch (v3) layout with the 2026-10-27 tower art in
+    // TowerUi. Positions are the sketch's pixels at 1672x941; the tower card keeps the sketch card's top, height and
+    // centre, and the floor rows follow the lines drawn into the tower art.
     public static class TowerScreenSketchSetup
     {
         private const string PrefabPath = "Assets/02.Prefabs/UI/Tower/TowerScreen_Sketch.prefab";
         private const string LayoutPath = "Assets/02.Prefabs/Lighthouse/Data/Trial/TowerLayout_JH04Trial.asset";
         private const string SketchFolder = "Assets/03.Images/WorkbenchUiSketch/";
-        private const string TowerFolder = "Assets/03.Images/TowerUiSketch/";
-        private const float CardX = 651f;
+        private const string TowerFolder = "Assets/03.Images/TowerUi/";
+        private const float CardWidth = 503f;
+        private const float CardHeight = 874f;
+        private const float CardScale = 715f / CardHeight;
+        private const float CardX = 871f - CardWidth * CardScale * 0.5f;
         private const float CardY = 55f;
-        private const float CardScale = 440f / 480f;
-        private const float RowTop = 228f;
-        private const float RowHeight = 133f;
         private const float SlotSize = 76f;
         private const float SlotX = 810f;
         private const float SlotStep = 86f;
         private static readonly Color Cream = new Color(0.98f, 0.92f, 0.79f);
         private static readonly Color Dark = new Color(0.12f, 0.09f, 0.05f);
+        // Floor lines in the tower art (card pixels, top floor first), then the body's bottom edge.
+        private static readonly float[] CardRowEdges = { 250.5f, 401.5f, 548.5f, 697.5f, 860f };
+        // Rusted until the first floor is done, worn while the second fills, restored from the third.
+        private static readonly string[] TowerStages = { "tw_tower_rusted", "tw_tower_worn", "tw_tower_restored" };
+        private static readonly Dictionary<string, Vector4> SpriteBorders = new Dictionary<string, Vector4>
+        {
+            { "tw_slot", new Vector4(24f, 24f, 24f, 24f) },
+            { "tw_slot_selected", new Vector4(24f, 24f, 24f, 24f) },
+            { "tw_slot_locked", new Vector4(24f, 24f, 24f, 24f) },
+            { "tw_panel", new Vector4(40f, 40f, 40f, 40f) },
+            { "tw_button", new Vector4(16f, 16f, 16f, 16f) },
+            { "tw_button_active", new Vector4(28f, 28f, 28f, 28f) },
+            { "tw_button_blocked", new Vector4(28f, 28f, 28f, 28f) },
+            { "tw_key", new Vector4(18f, 18f, 18f, 18f) },
+            { "tw_bar_track", new Vector4(27f, 27f, 27f, 27f) },
+            { "tw_bar_fill", new Vector4(11f, 11f, 11f, 11f) }
+        };
+        // The tower art only redraws the lighthouse modules; boat modules keep the workbench sketch icons.
         private static readonly Dictionary<string, string> RecipeSprites = new Dictionary<string, string>
         {
-            { "ModuleRecipe_Frame", "ws_icon_frame" },
-            { "ModuleRecipe_Frame_JH04Trial", "ws_icon_frame" },
-            { "ModuleRecipe_Gear", "ws_icon_gear" },
-            { "ModuleRecipe_Gear_JH04Trial", "ws_icon_gear" },
-            { "ModuleRecipe_Lens", "ws_icon_lens" },
-            { "ModuleRecipe_LightCore", "ws_icon_core" },
-            { "ModuleRecipe_BoatSearchlight", "ws_icon_boat_searchlight" },
-            { "ModuleRecipe_BoatDash", "ws_icon_boat_dash" },
-            { "ModuleRecipe_BoatObstacleAlarm", "ws_icon_boat_alarm" },
-            { "ModuleRecipe_BoatStabilizer", "ws_icon_boat_stabilizer" }
+            { "ModuleRecipe_Frame", TowerFolder + "tw_icon_frame" },
+            { "ModuleRecipe_Frame_JH04Trial", TowerFolder + "tw_icon_frame" },
+            { "ModuleRecipe_Gear", TowerFolder + "tw_icon_gear" },
+            { "ModuleRecipe_Gear_JH04Trial", TowerFolder + "tw_icon_gear" },
+            { "ModuleRecipe_Lens", TowerFolder + "tw_icon_lens" },
+            { "ModuleRecipe_LightCore", TowerFolder + "tw_icon_core" },
+            { "ModuleRecipe_BoatSearchlight", SketchFolder + "ws_icon_boat_searchlight" },
+            { "ModuleRecipe_BoatDash", SketchFolder + "ws_icon_boat_dash" },
+            { "ModuleRecipe_BoatObstacleAlarm", SketchFolder + "ws_icon_boat_alarm" },
+            { "ModuleRecipe_BoatStabilizer", SketchFolder + "ws_icon_boat_stabilizer" }
         };
 
         [MenuItem("Lighthouse/Tower/Build Sketch Screen Prefab")]
@@ -48,9 +67,10 @@ namespace Lighthouse.Workbench.Editor
         {
             TowerLayout layout = AssetDatabase.LoadAssetAtPath<TowerLayout>(LayoutPath);
 
-            if (EditorApplication.isPlayingOrWillChangePlaymode || !layout || layout.Validate() != null)
+            if (EditorApplication.isPlayingOrWillChangePlaymode || !layout || layout.Validate() != null
+                || layout.FloorCount > CardRowEdges.Length - 1)
             {
-                Debug.LogError($"[{nameof(TowerScreenSketchSetup)}] Stop play mode and check {LayoutPath} before building.");
+                Debug.LogError($"[{nameof(TowerScreenSketchSetup)}] Stop play mode and check {LayoutPath} (at most {CardRowEdges.Length - 1} floors) before building.");
                 return;
             }
 
@@ -80,13 +100,13 @@ namespace Lighthouse.Workbench.Editor
                 frame.anchorMin = frame.anchorMax = frame.pivot = new Vector2(0.5f, 0.5f);
                 frame.anchoredPosition = Vector2.zero;
 
-                Image card = Picture("Tower", frame, TowerFolder, "tw_card_tower", CardX, CardY, 480f * CardScale, 780f * CardScale);
+                Image card = Picture("Tower", frame, TowerFolder, TowerStages[0], CardX, CardY, CardWidth * CardScale, CardHeight * CardScale);
                 card.preserveAspect = true;
                 Text[] floorLabels = BuildFloors(frame, layout.FloorCount);
                 TowerSlotView[] slots = BuildSlots(frame, layout);
 
-                Image track = Picture("ProgressTrack", frame, SketchFolder, "ws_bar_track", 670f, 795f, 393f, 30f);
-                Image fill = Picture("Fill", track.transform, SketchFolder, "ws_bar_fill", 0f, 0f, 1f, 1f);
+                Image track = Picture("ProgressTrack", frame, TowerFolder, "tw_bar_track", 670f, 795f, 393f, 30f);
+                Image fill = Picture("Fill", track.transform, TowerFolder, "tw_bar_fill", 0f, 0f, 1f, 1f);
                 RectTransform fillRect = fill.rectTransform;
                 fillRect.anchorMin = Vector2.zero;
                 fillRect.anchorMax = new Vector2(0.375f, 1f);
@@ -94,12 +114,12 @@ namespace Lighthouse.Workbench.Editor
                 fillRect.offsetMax = new Vector2(-4f, -4f);
                 Text progress = Label("ProgressText", frame, "0/8", 26, 670f, 830f, 393f, 40f);
 
-                Image carryPanel = Picture("Carry", frame, SketchFolder, "ws_panel_shelf", 1128f, 315f, 200f, 300f);
+                Image carryPanel = Picture("Carry", frame, TowerFolder, "tw_panel", 1128f, 315f, 200f, 300f);
                 Label("Title", carryPanel.transform, "들고 있는 모듈", 20, 0f, 18f, 200f, 32f);
-                Image carrySlot = Picture("Slot", carryPanel.transform, SketchFolder, "ws_slot", 38f, 62f, 124f, 124f);
+                Image carrySlot = Picture("Slot", carryPanel.transform, TowerFolder, "tw_slot", 38f, 62f, 124f, 124f);
                 Image carryIcon = Picture("Icon", carrySlot.transform, null, null, 18f, 18f, 88f, 88f);
                 carryIcon.preserveAspect = true;
-                Image installImage = Picture("Install", carryPanel.transform, SketchFolder, "ws_button_active", 26f, 200f, 148f, 50f);
+                Image installImage = Picture("Install", carryPanel.transform, TowerFolder, "tw_button_active", 26f, 200f, 148f, 50f);
                 installImage.raycastTarget = true;
                 Button install = installImage.gameObject.AddComponent<Button>();
                 install.targetGraphic = installImage;
@@ -123,7 +143,7 @@ namespace Lighthouse.Workbench.Editor
                 Keycap(frame, "ESC", 1482f, 80f, 72f);
                 Label("CloseHint", frame, "닫기", 22, 1566f, 80f, 100f, 40f, TextAnchor.MiddleLeft);
 
-                Image prompt = Picture("Prompt", root.transform, SketchFolder, "ws_button", 0f, 0f, 270f, 48f);
+                Image prompt = Picture("Prompt", root.transform, TowerFolder, "tw_button", 0f, 0f, 270f, 48f);
                 RectTransform promptRect = prompt.rectTransform;
                 promptRect.anchorMin = promptRect.anchorMax = new Vector2(0.5f, 0f);
                 promptRect.pivot = new Vector2(0.5f, 0f);
@@ -142,8 +162,19 @@ namespace Lighthouse.Workbench.Editor
                 Set(serialized, "_installBackground", installImage);
                 Set(serialized, "_installText", installText);
                 Set(serialized, "_installKeycap", installKeyGroup);
-                Set(serialized, "_installReadySprite", Load(SketchFolder, "ws_button_active"));
-                Set(serialized, "_installBlockedSprite", Load(SketchFolder, "ws_button"));
+                Set(serialized, "_installReadySprite", Load(TowerFolder, "tw_button_active"));
+                Set(serialized, "_installBlockedSprite", Load(TowerFolder, "tw_button_blocked"));
+                // The blocked button is a light grey plate, so its caption goes dark instead of the default grey.
+                serialized.FindProperty("_installBlockedTextColor").colorValue = new Color(0.32f, 0.29f, 0.24f);
+                Set(serialized, "_towerCard", card);
+                var stages = new Object[TowerStages.Length];
+
+                for (int i = 0; i < stages.Length; i++)
+                {
+                    stages[i] = Load(TowerFolder, TowerStages[i]);
+                }
+
+                SetArray(serialized, "_towerStages", stages);
                 SetArray(serialized, "_slots", slots);
                 SetArray(serialized, "_floorLabels", floorLabels);
                 SetRecipeIcons(serialized);
@@ -209,18 +240,16 @@ namespace Lighthouse.Workbench.Editor
             Debug.Log($"[{nameof(TowerScreenSketchSetup)}] Install screen connected. Save the scene to keep it.");
         }
 
-        // Rows run top-down from the highest floor, like the sketch, each with a label and a line along the body.
+        // Rows run top-down from the highest floor, like the sketch. The floor lines are drawn into the tower art.
         private static Text[] BuildFloors(Transform parent, int floorCount)
         {
             var labels = new Text[floorCount];
 
             for (int floor = 0; floor < floorCount; floor++)
             {
-                float top = RowTop + (floorCount - 1 - floor) * RowHeight;
-                float left = BodyLeft(top) + 12f;
-                float right = CardX * 2f + 480f * CardScale - left;
-                Picture($"Line{floor + 1}", parent, TowerFolder, "tw_floor_line", left, top - 3f, right - left, 6f);
-                labels[floor] = Label($"Floor{floor + 1}", parent, string.Empty, 22, 700f, top + RowHeight * 0.5f - 22f, 100f, 44f, TextAnchor.MiddleRight);
+                int row = floorCount - 1 - floor;
+                float middle = (RowTop(row, floorCount) + RowTop(row + 1, floorCount)) * 0.5f;
+                labels[floor] = Label($"Floor{floor + 1}", parent, string.Empty, 22, 700f, middle - 22f, 100f, 44f, TextAnchor.MiddleRight);
             }
 
             return labels;
@@ -235,8 +264,9 @@ namespace Lighthouse.Workbench.Editor
             {
                 int floor = layout[i].Floor;
                 column = i > 0 && layout[i - 1].Floor == floor ? column + 1 : 0;
-                float top = RowTop + (layout.FloorCount - 1 - floor) * RowHeight + (RowHeight - SlotSize) * 0.5f;
-                Image frame = Picture($"Slot{i + 1}", parent, SketchFolder, "ws_slot", SlotX + column * SlotStep, top, SlotSize, SlotSize);
+                int row = layout.FloorCount - 1 - floor;
+                float top = (RowTop(row, layout.FloorCount) + RowTop(row + 1, layout.FloorCount) - SlotSize) * 0.5f;
+                Image frame = Picture($"Slot{i + 1}", parent, TowerFolder, "tw_slot", SlotX + column * SlotStep, top, SlotSize, SlotSize);
                 Image icon = Picture("Icon", frame.transform, null, null, 10f, 10f, SlotSize - 20f, SlotSize - 20f);
                 icon.preserveAspect = true;
                 Image padlock = Picture("Lock", frame.transform, TowerFolder, "tw_lock", SlotSize - 26f, SlotSize - 30f, 24f, 28f);
@@ -249,8 +279,9 @@ namespace Lighthouse.Workbench.Editor
                 Set(serialized, "_icon", icon);
                 Set(serialized, "_lock", padlock.gameObject);
                 Set(serialized, "_hereMarker", here.gameObject);
-                Set(serialized, "_normalSprite", Load(SketchFolder, "ws_slot"));
-                Set(serialized, "_highlightSprite", Load(SketchFolder, "ws_slot_selected"));
+                Set(serialized, "_normalSprite", Load(TowerFolder, "tw_slot"));
+                Set(serialized, "_highlightSprite", Load(TowerFolder, "tw_slot_selected"));
+                Set(serialized, "_lockedSprite", Load(TowerFolder, "tw_slot_locked"));
                 serialized.ApplyModifiedPropertiesWithoutUndo();
                 padlock.gameObject.SetActive(false);
                 here.gameObject.SetActive(false);
@@ -260,12 +291,11 @@ namespace Lighthouse.Workbench.Editor
             return slots;
         }
 
-        // Left edge of the tower body at a screen height, from the trapezoid drawn in tw_card_tower (182 to 772 of 780).
-        private static float BodyLeft(float screenY)
+        // Screen top of a row counted from the highest floor; the row after the last one is the body's bottom edge.
+        // A layout with fewer floors than the art uses the lowest rows.
+        private static float RowTop(int row, int floorCount)
         {
-            float local = Mathf.Clamp((screenY - CardY) / CardScale, 182f, 772f);
-            float edge = 126f - (126f - 14f) * (local - 182f) / (772f - 182f);
-            return CardX + edge * CardScale;
+            return CardY + CardRowEdges[row + CardRowEdges.Length - 1 - floorCount] * CardScale;
         }
 
         private static void SetRecipeIcons(SerializedObject serialized)
@@ -289,7 +319,7 @@ namespace Lighthouse.Workbench.Editor
             {
                 SerializedProperty item = icons.GetArrayElementAtIndex(i);
                 item.FindPropertyRelative("Recipe").objectReferenceValue = recipes[i];
-                item.FindPropertyRelative("Icon").objectReferenceValue = Load(SketchFolder, RecipeSprites[recipes[i].name]);
+                item.FindPropertyRelative("Icon").objectReferenceValue = Load(string.Empty, RecipeSprites[recipes[i].name]);
             }
         }
 
@@ -308,13 +338,16 @@ namespace Lighthouse.Workbench.Editor
                 importer.filterMode = FilterMode.Bilinear;
                 importer.wrapMode = TextureWrapMode.Clamp;
                 importer.maxTextureSize = 2048;
+                importer.spriteBorder = SpriteBorders.TryGetValue(System.IO.Path.GetFileNameWithoutExtension(path), out Vector4 border)
+                    ? border
+                    : Vector4.zero;
                 importer.SaveAndReimport();
             }
         }
 
         private static Image Keycap(Transform parent, string key, float x, float y, float width)
         {
-            Image image = Picture($"Key{key}", parent, SketchFolder, "ws_key", x, y, width, width < 40f ? width : 40f);
+            Image image = Picture($"Key{key}", parent, TowerFolder, "tw_key", x, y, width, width < 40f ? width : 40f);
             Label("Text", image.transform, key, key.Length > 1 ? 18 : 20, 1f, 0f, width - 2f, image.rectTransform.sizeDelta.y - 2f);
             return image;
         }

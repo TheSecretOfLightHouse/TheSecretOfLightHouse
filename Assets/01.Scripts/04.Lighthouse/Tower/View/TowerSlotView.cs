@@ -28,13 +28,18 @@ namespace Lighthouse.Tower.View
         private Sprite _normalSprite;
         [SerializeField]
         private Sprite _highlightSprite;
+        [Tooltip("Frame for slots on a floor that is not open yet. Falls back to the normal frame when empty.")]
+        [SerializeField]
+        private Sprite _lockedSprite;
         [SerializeField, Range(0f, 1f)]
         private float _faintAlpha = 0.35f;
 
         public void Show(Sprite icon, State state)
         {
             bool isHighlighted = state == State.Installed || state == State.Target;
-            _frame.sprite = isHighlighted ? _highlightSprite : _normalSprite;
+            _frame.sprite = isHighlighted ? _highlightSprite
+                : state == State.Locked && _lockedSprite ? _lockedSprite
+                : _normalSprite;
             // The target slot is drawn empty, waiting for the carried module.
             _icon.sprite = icon;
             _icon.enabled = icon && state != State.Target;
