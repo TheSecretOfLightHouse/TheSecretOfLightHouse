@@ -20,12 +20,12 @@ MonoBehaviour:
     _starStrength: 0
     _nebulaStrength: 0.09
     _lightScale: 0.82
-    _cloudCoverage: 0.35
+    _cloudCoverage: 0.5
   _night:
-    _zenith: {r: 0.02, g: 0.03, b: 0.22, a: 1}
-    _horizon: {r: 0.3, g: 0.15, b: 0.46, a: 1}
-    _nebulaColor: {r: 0.32, g: 0.28, b: 0.62, a: 1}
-    _starStrength: 1
-    _nebulaStrength: 0.15
+    _zenith: {r: 0.003, g: 0.004, b: 0.02, a: 1}
+    _horizon: {r: 0.03, g: 0.018, b: 0.055, a: 1}
+    _nebulaColor: {r: 0.2, g: 0.18, b: 0.4, a: 1}
+    _starStrength: 0.9
+    _nebulaStrength: 0.05
     _lightScale: 0.85
-    _cloudCoverage: 0.18
+    _cloudCoverage: 0.2

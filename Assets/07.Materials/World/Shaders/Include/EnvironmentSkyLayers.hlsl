@@ -27,21 +27,43 @@ float3 EnvironmentNebula(
     return float3(flow, flow, flow) * horizonFade;
 }
 
+float EnvironmentCloudLayer(
+    float3 direction,
+    float time,
+    float coverage,
+    float scale,
+    float3 sunDirection,
+    out float light)
+{
+    float2 uv = direction.xz / (saturate(direction.y) + 0.15);
+    float2 drift = float2(time * 0.008, time * 0.003);
+    float2 baseUv = uv * scale * 0.55 + drift;
+
+    float baseDensity = SkyFbm(baseUv);
+    float detail = SkyFbm(uv * scale * 2.1 - drift * 1.6);
+    float density = (baseDensity * 0.78 + detail * 0.22 - 0.5) * 1.6 + 0.5;
+
+    float2 towardSun = normalize(sunDirection.xz + float2(0.0001, 0.0001)) * 0.12;
+    float sunSide = (SkyFbm((uv + towardSun) * scale * 0.55 + drift) * 0.78 + detail * 0.22 - 0.5) * 1.6 + 0.5;
+
+    float threshold = lerp(1.0, 0.1, saturate(coverage));
+    float mask = smoothstep(threshold, threshold + 0.08, density);
+    float core = smoothstep(threshold, threshold + 0.3, density);
+
+    light = saturate(0.55 + (density - sunSide) * 5.0) * lerp(1.0, 0.78, core);
+
+    mask *= smoothstep(0.0, 0.12, direction.y);
+    return mask * saturate(coverage * 8.0);
+}
+
 float EnvironmentCloudMask(
     float3 direction,
     float time,
     float coverage,
     float scale)
 {
-    float2 uv = direction.xz / (saturate(direction.y) + 0.15);
-    float2 drift = float2(time * 0.008, time * 0.003);
-    float density = SkyFbm(uv * scale + drift);
-    float threshold = lerp(1.0, 0.1, saturate(coverage));
-
-    float mask = smoothstep(threshold, threshold + 0.12, density);
-    mask *= smoothstep(0.0, 0.12, direction.y);
-
-    return mask * saturate(coverage * 8.0);
+    float light;
+    return EnvironmentCloudLayer(direction, time, coverage, scale, float3(0.0, 1.0, 0.0), light);
 }
 
 #endif

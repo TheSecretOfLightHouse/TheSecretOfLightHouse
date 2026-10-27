@@ -92,19 +92,36 @@ Shader "Lighthouse/World/EnvironmentSky"
                 float disc = smoothstep(0.9994, 0.9998, sunDot);
                 float glow = pow(sunDot, 96.0) * 0.25;
                 float sunVisibility = smoothstep(-0.02, 0.05, lightDirection.y);
-                float3 sunColor = float3(1.0, 0.93, 0.8);
+
+                float sunsetRange = lightDirection.y < 0.0 ? 0.2 : 0.38;
+                float sunset = saturate(1.0 - abs(lightDirection.y) / sunsetRange) *
+                    _EnvironmentValues.w * smoothstep(0.3, 0.55, _Daylight);
+                float3 warm = float3(1.0, 0.5, 0.32);
+                float3 sunColor = lerp(float3(1.0, 0.93, 0.8), float3(1.0, 0.62, 0.35), sunset);
+
+                float2 flatSun = normalize(lightDirection.xz + float2(0.0001, 0.0001));
+                float2 flatView = normalize(direction.xz + float2(0.0001, 0.0001));
+                float azimuth = saturate(dot(flatView, flatSun));
+                float lowSky = pow(saturate(1.0 - height), 1.6);
+
+                sky += warm * sunset * (0.25 + 0.75 * pow(azimuth, 2.5)) * lowSky * 1.5;
 
                 sky += sunColor * (disc + glow) *
                     sunVisibility * _Daylight * _EnvironmentValues.w;
 
-                float cloudMask = EnvironmentCloudMask(
-                    direction, time, _EnvironmentValues.z, _PatternScale);
+                float cloudLight;
+                float cloudMask = EnvironmentCloudLayer(
+                    direction, time, _EnvironmentValues.z, _PatternScale,
+                    lightDirection, cloudLight);
 
                 float3 nightCloud = _Horizon.rgb * 0.55;
                 float3 dayCloud = lerp(float3(0.92, 0.9, 0.96), _Horizon.rgb * 1.25, 0.3) *
                     _EnvironmentValues.w;
+                dayCloud *= lerp(float3(0.66, 0.64, 0.82), float3(1.0, 1.0, 1.0), cloudLight);
 
                 float3 cloudColor = lerp(nightCloud, dayCloud, _Daylight);
+                float warmCloud = sunset * (0.3 + 0.7 * azimuth) * (1.0 - cloudLight * 0.4);
+                cloudColor = lerp(cloudColor, warm * 1.1, saturate(warmCloud * 0.85));
                 sky = lerp(sky, cloudColor, cloudMask * 0.9);
 
                 float below = saturate(-direction.y * 5.0);

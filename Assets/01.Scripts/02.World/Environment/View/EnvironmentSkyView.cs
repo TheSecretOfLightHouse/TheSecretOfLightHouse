@@ -22,6 +22,13 @@ namespace Lighthouse.World.Environment.View
         [SerializeField] private WeatherEnvironmentProfile[] _weatherProfiles;
         [SerializeField, Min(0.1f)] private float _boundaryHalfWidth = 20f;
 
+        private const float AmbientStep = 0.03f;
+        private const float AmbientMinInterval = 0.5f;
+
+        private float _ambientDaylight = -1f;
+        private float _ambientLightScale = -1f;
+        private float _ambientNextTime;
+
         private EnvironmentRegionSampler _regions;
         private WeatherEnvironmentSampler _weatherSampler;
         private EnvironmentSkyMaterial _material;
@@ -35,6 +42,10 @@ namespace Lighthouse.World.Environment.View
             {
                 return;
             }
+
+            _ambientDaylight = -1f;
+            _ambientLightScale = -1f;
+            _ambientNextTime = 0f;
 
             if (_gameClock == null || _gameClock.Config == null ||
                 _sunConfig == null ||
@@ -103,10 +114,25 @@ namespace Lighthouse.World.Environment.View
             CurrentState = state;
             HasState = true;
 
-            _material.Apply(
-                in state,
-                daylight * (1f - appearance.AbyssWeight),
-                (float)elapsed);
+            float skyDaylight = daylight * (1f - appearance.AbyssWeight);
+            _material.Apply(in state, skyDaylight, (float)elapsed);
+            RefreshAmbient(skyDaylight, state.LightScale);
+        }
+
+        private void RefreshAmbient(float daylight, float lightScale)
+        {
+            float change = Mathf.Abs(daylight - _ambientDaylight) +
+                Mathf.Abs(lightScale - _ambientLightScale);
+
+            if (change < AmbientStep || Time.unscaledTime < _ambientNextTime)
+            {
+                return;
+            }
+
+            DynamicGI.UpdateEnvironment();
+            _ambientDaylight = daylight;
+            _ambientLightScale = lightScale;
+            _ambientNextTime = Time.unscaledTime + AmbientMinInterval;
         }
 
         private void OnDisable()

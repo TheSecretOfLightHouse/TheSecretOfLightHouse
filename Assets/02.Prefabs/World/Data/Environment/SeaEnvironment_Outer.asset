@@ -22,10 +22,10 @@ MonoBehaviour:
     _lightScale: 0.58
     _cloudCoverage: 0.38
   _night:
-    _zenith: {r: 0.004, g: 0.008, b: 0.03, a: 1}
-    _horizon: {r: 0.02, g: 0.03, b: 0.08, a: 1}
-    _nebulaColor: {r: 0.4, g: 0.42, b: 0.55, a: 1}
+    _zenith: {r: 0.001, g: 0.002, b: 0.01, a: 1}
+    _horizon: {r: 0.006, g: 0.009, b: 0.025, a: 1}
+    _nebulaColor: {r: 0.3, g: 0.32, b: 0.42, a: 1}
     _starStrength: 0.5
-    _nebulaStrength: 0.1
+    _nebulaStrength: 0.05
     _lightScale: 0.65
     _cloudCoverage: 0.28
