@@ -14,12 +14,16 @@ namespace Lighthouse.Monsters.MosaWhale.View
         private static readonly int DiveHash = Animator.StringToHash("Base Layer.DeepDive");
         private static readonly int BreachHash = Animator.StringToHash("Base Layer.BreachAttackReentry");
         private static readonly int RecoveryHash = Animator.StringToHash("Base Layer.UnderwaterRecover");
+        private static readonly int TurnHash = Animator.StringToHash("Turn");
 
         [SerializeField] private Animator _animator;
         [SerializeField] private AnimationClip _patrolClip;
         [SerializeField] private AnimationClip _diveClip;
         [SerializeField] private AnimationClip _breachClip;
         [SerializeField] private AnimationClip _recoveryClip;
+        [SerializeField, Min(1f)] private float _turnRateForFullBlend = 60f;
+        [SerializeField, Min(0.01f)] private float _turnBlendResponse = 0.2f;
+        [SerializeField, Min(0.1f)] private float _turnSampleResetDistance = 10f;
         [Header("공중 강제 재입수 전환 시간")]
         [SerializeField, Min(0.01f)] private float _interruptedReentryBlendDuration = 0.15f;
 
@@ -27,6 +31,10 @@ namespace Lighthouse.Monsters.MosaWhale.View
         private double _lastStartedAt = -1d;
         private MosaWhalePhase _lastPhase;
         private bool _hasApplied;
+        private Vector3 _previousForward;
+        private Vector3 _previousPosition;
+        private bool _hasTurnSample;
+        private float _smoothedAngularSpeed;
 
         private void Awake()
         {
@@ -41,6 +49,8 @@ namespace Lighthouse.Monsters.MosaWhale.View
         private void OnEnable()
         {
             _hasApplied = false;
+            _hasTurnSample = false;
+            _smoothedAngularSpeed = 0f;
         }
 
         private void LateUpdate()
@@ -48,8 +58,10 @@ namespace Lighthouse.Monsters.MosaWhale.View
             if (_cycle == null || !_cycle.isClient || _animator == null
                 || !_animator.isActiveAndEnabled || _animator.runtimeAnimatorController == null)
             {
+                _hasTurnSample = false;
                 return;
             }
+            UpdateTurnBlend(Time.deltaTime);
             if (!_hasApplied || _lastPhase != _cycle.Phase || _lastStartedAt != _cycle.PhaseStartedAt)
             {
                 ApplyAnimation();
@@ -58,10 +70,44 @@ namespace Lighthouse.Monsters.MosaWhale.View
 
         private void OnDisable()
         {
+            _hasTurnSample = false;
+            _smoothedAngularSpeed = 0f;
             if (_animator != null)
             {
                 _animator.speed = 0f;
             }
+        }
+
+        private void UpdateTurnBlend(float deltaTime)
+        {
+            if (deltaTime <= 0f)
+            {
+                _hasTurnSample = false;
+                return;
+            }
+            Vector3 forward = transform.forward;
+            forward.y = 0f;
+            Vector3 position = transform.position;
+            float angularSpeed = 0f;
+            float displacement = (position - _previousPosition).sqrMagnitude;
+            bool isPatrol = _cycle.Phase == MosaWhalePhase.Patrol && forward.sqrMagnitude > 0.0001f;
+
+            // Sample the interpolated network root without treating attack rotations or teleports as steering.
+            if (_hasTurnSample && isPatrol
+                && displacement < _turnSampleResetDistance * _turnSampleResetDistance)
+            {
+                angularSpeed = Vector3.SignedAngle(_previousForward, forward, Vector3.up) / deltaTime;
+            }
+            else
+            {
+                _smoothedAngularSpeed = 0f;
+            }
+            float blend = 1f - Mathf.Exp(-deltaTime / _turnBlendResponse);
+            _smoothedAngularSpeed = Mathf.Lerp(_smoothedAngularSpeed, angularSpeed, blend);
+            _animator.SetFloat(TurnHash, Mathf.Clamp(_smoothedAngularSpeed / _turnRateForFullBlend, -1f, 1f));
+            _previousForward = forward;
+            _previousPosition = position;
+            _hasTurnSample = isPatrol;
         }
 
         private void ApplyAnimation()
