@@ -3,6 +3,7 @@ using Lighthouse.Monsters.AI.Rules;
 using Lighthouse.Monsters.AI.Server;
 using Mirror;
 using UnityEngine;
+using UnityEngine.VFX;
 
 namespace Lighthouse.Monsters.AI.View
 {
@@ -20,15 +21,18 @@ namespace Lighthouse.Monsters.AI.View
         }
 
         [SerializeField] private MantaElectricTrailEmitter _trailPrefab;
+        [SerializeField] private VisualEffect[] _bodyElectricEffects;
         [Tooltip("공격 중 꼬리에서 초당 생성할 스파크 개수.")]
         [SerializeField, Min(0f)] private float _sparksPerSecond = 140f;
         private readonly Dictionary<uint, CastView> _casts = new Dictionary<uint, CastView>();
         private readonly List<uint> _finished = new List<uint>();
         private MantaElectricAttack _attack;
+        private bool _bodyEffectsPlaying;
 
         private void Awake()
         {
             _attack = GetComponent<MantaElectricAttack>();
+            SetBodyEffects(false, true);
         }
 
         private void OnEnable()
@@ -39,6 +43,8 @@ namespace Lighthouse.Monsters.AI.View
 
         private void LateUpdate()
         {
+            SetBodyEffects(_attack.isClient && _attack.isActiveAndEnabled
+                && _attack.Phase == MantaAttackPhase.Laying);
             if (!_attack.isClient || !_attack.isActiveAndEnabled || _trailPrefab == null
                 || _attack.ActiveLifetime <= 0f)
             {
@@ -133,9 +139,41 @@ namespace Lighthouse.Monsters.AI.View
 
         private void OnDisable()
         {
+            SetBodyEffects(false, true);
             _attack.TrailPointAdded -= OnTrailPointAdded;
             _attack.TrailCleared -= ClearAll;
             ClearAll();
+        }
+
+        private void SetBodyEffects(bool playing, bool force = false)
+        {
+            if (!force && _bodyEffectsPlaying == playing)
+            {
+                return;
+            }
+
+            _bodyEffectsPlaying = playing;
+            if (_bodyElectricEffects == null)
+            {
+                return;
+            }
+
+            foreach (VisualEffect effect in _bodyElectricEffects)
+            {
+                if (effect == null)
+                {
+                    continue;
+                }
+
+                if (playing)
+                {
+                    effect.Play();
+                }
+                else
+                {
+                    effect.Stop();
+                }
+            }
         }
 
         private void ClearAll()
