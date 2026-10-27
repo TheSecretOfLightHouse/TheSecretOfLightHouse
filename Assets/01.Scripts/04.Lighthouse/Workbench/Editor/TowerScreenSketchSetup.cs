@@ -127,7 +127,8 @@ namespace Lighthouse.Workbench.Editor
                 RectTransform promptRect = prompt.rectTransform;
                 promptRect.anchorMin = promptRect.anchorMax = new Vector2(0.5f, 0f);
                 promptRect.pivot = new Vector2(0.5f, 0f);
-                promptRect.anchoredPosition = new Vector2(0f, 90f);
+                // Above the workbench screen's carried module card at the bottom centre (2026-10-27).
+                promptRect.anchoredPosition = new Vector2(0f, 150f);
                 Label("Text", prompt.transform, "E  등대 열기", 22, 8f, 2f, 254f, 44f);
 
                 TowerScreen screen = root.AddComponent<TowerScreen>();

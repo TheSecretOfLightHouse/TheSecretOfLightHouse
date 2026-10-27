@@ -4,7 +4,8 @@ using UnityEngine.UI;
 
 namespace Lighthouse.Workbench.View
 {
-    // Short tweens for the workbench screen (deposit flight, gain "+N", punches, shakes, blinks and the ready glow).
+    // Short tweens for the workbench screen (deposit flight, gain "+N", punches, shakes, blinks, the ready glow, and
+    // for a craft the ingredients gathering into a burst of light that leaves the module icon behind).
     // The screen decides when; this only draws. Everything it shows is built once and reused, so ticking allocates
     // nothing. Unscaled time, like the other screen feedback, so a slowed match still answers at once.
     internal sealed class WorkbenchScreenEffects
@@ -12,7 +13,7 @@ namespace Lighthouse.Workbench.View
         private const int PunchCapacity = 8;
         private const int FlashCapacity = 4;
         private const int ShakeCapacity = 2;
-        private const int FlightCapacity = 4;
+        private const int FlightCapacity = 8;
         private const int FloaterCapacity = 4;
 
         [Serializable]
@@ -42,6 +43,16 @@ namespace Lighthouse.Workbench.View
             public float FillSpeed = 1.6f;
             [Tooltip("How long after a successful deposit an increase on that ingredient still counts as this player's own.")]
             public float OwnDepositSeconds = 1.5f;
+            public float GatherSeconds = 0.4f;
+            public float BurstSeconds = 0.55f;
+            [Tooltip("How long the new module icon stays in the middle before it flies to the stock.")]
+            public float BurstHoldSeconds = 0.45f;
+            public float BurstLightSize = 260f;
+            public Color BurstColor = new Color(1f, 0.9f, 0.62f);
+            public float ModuleIconSize = 96f;
+            public Color HighlightColor = new Color(1f, 0.86f, 0.45f);
+            [Tooltip("How long a craft result and the finish call may wait for each other, and a stock count may lag behind.")]
+            public float CraftWaitSeconds = 1.5f;
         }
 
         private struct Punch
@@ -56,6 +67,8 @@ namespace Lighthouse.Workbench.View
         {
             public Graphic Target;
             public Color BaseColor;
+            public Color Color;
+            public int Blinks;
             public float Elapsed;
         }
 
@@ -72,8 +85,11 @@ namespace Lighthouse.Workbench.View
             public Vector3 From;
             public RectTransform To;
             public RectTransform LandCount;
+            public WorkbenchEffectCue LandCue;
             public float Elapsed;
             public bool IsActive;
+            // Straight in and shrinking away, with nothing on landing (ingredients gathering into a craft).
+            public bool IsGather;
         }
 
         private struct Floater
@@ -93,11 +109,15 @@ namespace Lighthouse.Workbench.View
         private readonly Flight[] _flights = new Flight[FlightCapacity];
         private readonly Floater[] _floaters = new Floater[FloaterCapacity];
         private readonly Image _glow;
+        private readonly Image _burstLight;
+        private readonly Image _burstIcon;
         private int _punchCount;
         private int _flashCount;
         private int _shakeCount;
         private bool _isGlowing;
         private float _glowElapsed;
+        private bool _isBursting;
+        private float _burstElapsed;
 
         // layer is where flights and floaters are drawn (the window); glowHost is the craft button.
         public WorkbenchScreenEffects(Settings settings, RectTransform layer, Font font, Button glowHost, Action<WorkbenchEffectCue> cued)
@@ -138,6 +158,9 @@ namespace Lighthouse.Workbench.View
                 _floaters[i].Text = text;
             }
 
+            _burstLight = CreateLayerImage("CraftBurst", BuildBurstSprite(), settings.BurstLightSize);
+            _burstIcon = CreateLayerImage("CraftModule", null, settings.ModuleIconSize);
+
             if (glowHost && glowHost.image)
             {
                 GameObject glow = new GameObject("ReadyGlow", typeof(RectTransform), typeof(Image));
@@ -165,7 +188,11 @@ namespace Lighthouse.Workbench.View
             TickFlights(deltaTime);
             TickFloaters(deltaTime);
             TickGlow(deltaTime);
+            TickBurst(deltaTime);
         }
+
+        // Where the module icon of the last burst sits, for the flight that carries it away.
+        public RectTransform BurstIconRect => _burstIcon.rectTransform;
 
         // Puts every touched graphic back as it was, for a closed screen to reopen at rest.
         public void StopAll()
@@ -210,6 +237,9 @@ namespace Lighthouse.Workbench.View
             _flashCount = 0;
             _shakeCount = 0;
             SetReadyGlow(false);
+            _isBursting = false;
+            _burstLight.gameObject.SetActive(false);
+            HideBurstIcon();
         }
 
         public void PlayPunch(RectTransform target, float strength)
@@ -240,6 +270,11 @@ namespace Lighthouse.Workbench.View
         // Blinks toward the flash colour and settles back on the graphic's colour at the moment it started.
         public void PlayFlash(Graphic target)
         {
+            PlayFlash(target, _settings.FlashColor, _settings.FlashBlinks);
+        }
+
+        public void PlayFlash(Graphic target, Color color, int blinks)
+        {
             if (!target || !target.gameObject.activeInHierarchy)
             {
                 return;
@@ -249,6 +284,8 @@ namespace Lighthouse.Workbench.View
             {
                 if (_flashes[i].Target == target)
                 {
+                    _flashes[i].Color = color;
+                    _flashes[i].Blinks = blinks;
                     _flashes[i].Elapsed = 0f;
                     return;
                 }
@@ -259,7 +296,7 @@ namespace Lighthouse.Workbench.View
                 return;
             }
 
-            _flashes[_flashCount++] = new Flash { Target = target, BaseColor = target.color };
+            _flashes[_flashCount++] = new Flash { Target = target, BaseColor = target.color, Color = color, Blinks = blinks };
         }
 
         // For a graphic whose colour the screen is about to change: the old blink must not paint it back later.
@@ -303,7 +340,70 @@ namespace Lighthouse.Workbench.View
         // An icon arcs from one place to another; on landing the target icon and its count punch.
         public void PlayFlight(Sprite icon, RectTransform from, RectTransform to, RectTransform landCount)
         {
-            if (!icon || !from || !to)
+            StartFlight(icon, from, to, landCount, WorkbenchEffectCue.DepositLanded, false);
+        }
+
+        public void PlayFlight(Sprite icon, RectTransform from, RectTransform to, RectTransform landCount, WorkbenchEffectCue landCue)
+        {
+            StartFlight(icon, from, to, landCount, landCue, false);
+        }
+
+        // From a world point taken earlier (see CenterOf), for a source that may be gone by the time the flight starts.
+        public void PlayFlight(Sprite icon, Vector3 from, RectTransform to, RectTransform landCount, WorkbenchEffectCue landCue)
+        {
+            StartFlight(icon, from, to, landCount, landCue, false);
+        }
+
+        // A copy of the icon is pulled into the target and vanishes there.
+        public void PlayGather(Sprite icon, RectTransform from, RectTransform to)
+        {
+            StartFlight(icon, from, to, null, WorkbenchEffectCue.DepositLanded, true);
+        }
+
+        public static Vector3 CenterOf(RectTransform rect)
+        {
+            return rect.TransformPoint(rect.rect.center);
+        }
+
+        // Light swells and fades at the target while the module icon pops in and stays until HideBurstIcon.
+        public void PlayBurst(Sprite moduleIcon, RectTransform at)
+        {
+            if (!at)
+            {
+                return;
+            }
+
+            Vector3 center = at.TransformPoint(at.rect.center);
+            _burstLight.rectTransform.position = center;
+            _burstLight.transform.SetAsLastSibling();
+            _burstLight.gameObject.SetActive(true);
+            _burstIcon.sprite = moduleIcon;
+            _burstIcon.rectTransform.position = center;
+            _burstIcon.transform.SetAsLastSibling();
+            _burstIcon.gameObject.SetActive(moduleIcon);
+            _burstElapsed = 0f;
+            _isBursting = true;
+            TickBurst(0f);
+        }
+
+        public void HideBurstIcon()
+        {
+            _burstIcon.gameObject.SetActive(false);
+        }
+
+        private void StartFlight(Sprite icon, RectTransform from, RectTransform to, RectTransform landCount, WorkbenchEffectCue landCue,
+            bool isGather)
+        {
+            if (from)
+            {
+                StartFlight(icon, CenterOf(from), to, landCount, landCue, isGather);
+            }
+        }
+
+        private void StartFlight(Sprite icon, Vector3 from, RectTransform to, RectTransform landCount, WorkbenchEffectCue landCue,
+            bool isGather)
+        {
+            if (!icon || !to)
             {
                 return;
             }
@@ -317,13 +417,15 @@ namespace Lighthouse.Workbench.View
 
                 Image image = _flights[i].Image;
                 image.sprite = icon;
-                image.rectTransform.position = from.TransformPoint(from.rect.center);
+                image.rectTransform.position = from;
                 image.rectTransform.localScale = Vector3.one;
                 image.transform.SetAsLastSibling();
                 image.gameObject.SetActive(true);
                 _flights[i].From = image.rectTransform.position;
                 _flights[i].To = to;
                 _flights[i].LandCount = landCount;
+                _flights[i].LandCue = landCue;
+                _flights[i].IsGather = isGather;
                 _flights[i].Elapsed = 0f;
                 _flights[i].IsActive = true;
                 return;
@@ -406,12 +508,12 @@ namespace Lighthouse.Workbench.View
         private void TickFlashes(float deltaTime)
         {
             float duration = Mathf.Max(0.01f, _settings.FlashSeconds);
-            int blinks = Mathf.Max(1, _settings.FlashBlinks);
 
             for (int i = _flashCount - 1; i >= 0; i--)
             {
                 ref Flash flash = ref _flashes[i];
                 flash.Elapsed += deltaTime;
+                int blinks = Mathf.Max(1, flash.Blinks);
 
                 if (!flash.Target)
                 {
@@ -430,7 +532,7 @@ namespace Lighthouse.Workbench.View
 
                 // Snaps to the flash colour at the start of each blink and fades back within it.
                 float blink = 1f - Mathf.Repeat(t * blinks, 1f);
-                Color color = Color.Lerp(flash.BaseColor, _settings.FlashColor, blink);
+                Color color = Color.Lerp(flash.BaseColor, flash.Color, blink);
                 color.a = flash.BaseColor.a;
                 flash.Target.color = color;
             }
@@ -488,18 +590,27 @@ namespace Lighthouse.Workbench.View
                     flight.IsActive = false;
                     flight.Image.gameObject.SetActive(false);
 
-                    if (t >= 1f)
+                    if (t >= 1f && !flight.IsGather)
                     {
                         PlayPunch(flight.To, _settings.PunchStrength);
                         PlayPunch(flight.LandCount, _settings.PunchStrength);
-                        _cued?.Invoke(WorkbenchEffectCue.DepositLanded);
+                        _cued?.Invoke(flight.LandCue);
                     }
 
                     continue;
                 }
 
-                float eased = 1f - (1f - t) * (1f - t);
                 Vector3 to = flight.To.TransformPoint(flight.To.rect.center);
+
+                if (flight.IsGather)
+                {
+                    // Speeds up as it is drawn in.
+                    flight.Image.rectTransform.position = Vector3.LerpUnclamped(flight.From, to, t * t);
+                    flight.Image.rectTransform.localScale = Vector3.one * Mathf.Lerp(1f, 0.3f, t * t);
+                    continue;
+                }
+
+                float eased = 1f - (1f - t) * (1f - t);
                 Vector3 position = Vector3.LerpUnclamped(flight.From, to, eased);
                 position.y += Mathf.Sin(t * Mathf.PI) * arc;
                 flight.Image.rectTransform.position = position;
@@ -550,6 +661,71 @@ namespace Lighthouse.Workbench.View
             _glowElapsed += deltaTime;
             float phase = _glowElapsed / Mathf.Max(0.05f, _settings.GlowPeriod);
             SetGlowAlpha(_settings.GlowAlpha * (0.5f - 0.5f * Mathf.Cos(phase * Mathf.PI * 2f)));
+        }
+
+        private void TickBurst(float deltaTime)
+        {
+            if (!_isBursting)
+            {
+                return;
+            }
+
+            _burstElapsed += deltaTime;
+            float t = _burstElapsed / Mathf.Max(0.01f, _settings.BurstSeconds);
+
+            // The icon grows past full size in the first quarter, settles in the second and stays until HideBurstIcon.
+            float iconScale = t < 0.25f ? Mathf.Sin(t * 4f * Mathf.PI * 0.5f) * 1.2f : Mathf.Lerp(1.2f, 1f, Mathf.Clamp01((t - 0.25f) * 4f));
+            _burstIcon.rectTransform.localScale = Vector3.one * iconScale;
+
+            if (t >= 1f)
+            {
+                _isBursting = false;
+                _burstLight.gameObject.SetActive(false);
+                return;
+            }
+
+            float eased = 1f - (1f - t) * (1f - t);
+            _burstLight.rectTransform.localScale = Vector3.one * Mathf.Lerp(0.3f, 1.4f, eased);
+            Color color = _settings.BurstColor;
+            color.a = 1f - t;
+            _burstLight.color = color;
+        }
+
+        private Image CreateLayerImage(string name, Sprite sprite, float size)
+        {
+            GameObject item = new GameObject(name, typeof(RectTransform), typeof(Image));
+            item.transform.SetParent(_layer, false);
+            Image image = item.GetComponent<Image>();
+            image.sprite = sprite;
+            image.raycastTarget = false;
+            image.preserveAspect = true;
+            image.rectTransform.sizeDelta = new Vector2(size, size);
+            item.SetActive(false);
+            return image;
+        }
+
+        // Built once so the screen needs no image asset: a soft round glow, full in the middle and gone at the rim.
+        private static Sprite BuildBurstSprite()
+        {
+            const int Size = 64;
+            Texture2D texture = new Texture2D(Size, Size, TextureFormat.RGBA32, false);
+            texture.wrapMode = TextureWrapMode.Clamp;
+            Color32[] pixels = new Color32[Size * Size];
+
+            for (int y = 0; y < Size; y++)
+            {
+                for (int x = 0; x < Size; x++)
+                {
+                    float u = (x + 0.5f) / Size * 2f - 1f;
+                    float v = (y + 0.5f) / Size * 2f - 1f;
+                    float falloff = 1f - Mathf.Clamp01(Mathf.Sqrt(u * u + v * v));
+                    pixels[y * Size + x] = new Color32(255, 255, 255, (byte)(falloff * falloff * 255f));
+                }
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply(false, true);
+            return Sprite.Create(texture, new Rect(0f, 0f, Size, Size), new Vector2(0.5f, 0.5f));
         }
 
         private void SetGlowAlpha(float alpha)

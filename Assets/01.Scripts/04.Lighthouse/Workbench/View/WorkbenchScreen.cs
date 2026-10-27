@@ -30,6 +30,8 @@ namespace Lighthouse.Workbench.View
     {
         private const string IdleMessage = "레시피를 골라 진행도를 보고 자원을 넣으세요. 넣은 자원은 되돌릴 수 없습니다.";
 
+        private static int _openCount;
+
         [Serializable]
         private struct ResourceIcon
         {
@@ -114,6 +116,7 @@ namespace Lighthouse.Workbench.View
         private ResourceIcon[] _resourceIcons = new ResourceIcon[0];
 
         [Header("Carry (2026-10-20): take a stored module, put it back")]
+        [Tooltip("Shown with the screen open, and with it closed while a module is carried (2026-10-27). Keep it outside the window for that.")]
         [SerializeField]
         private GameObject _carryBar;
         [SerializeField]
@@ -122,8 +125,6 @@ namespace Lighthouse.Workbench.View
         private Text _carryText;
         [SerializeField]
         private Button _returnButton;
-        [SerializeField]
-        private Button _returnShortcutButton;
 
         [Header("Recipe sections")]
         [Tooltip("Inactive heading in the recipe list, copied once for lighthouse and once for boat modules.")]
@@ -186,6 +187,43 @@ namespace Lighthouse.Workbench.View
         private float _ownCreditUntil;
         private bool _isDepositAwaiting;
         private int _pendingRecipeId;
+        // Who crafted is not sent either, and this player's result and the finish call (sent to everyone) may arrive in
+        // either order. A finish for the recipe this player asked to craft waits for the result: a success makes it
+        // this player's own, a failure means someone else got there first. A success that comes first leaves one
+        // finish of that recipe still to be taken as its own.
+        private int _craftAwaitingRecipeId;
+        private int _heldFinishRecipeId;
+        private int _heldFinishBaseline;
+        private int _ownFinishRecipeId;
+        private float _ownFinishUntil;
+        // The module this player crafts stays out of their stock until the show lands it there (2026-10-27): one above the
+        // count at the click is left off, and while the icon flies its cell waits as an empty frame. Only this screen;
+        // the server holds the module as stored all along.
+        private int _reservedRecipeId;
+        private int _reservedBaseline;
+        private bool _isReservedLanding;
+        // This player's craft playing out: gather, burst, flight to the stock, landing.
+        private int _craftShowRecipeId;
+        private Sprite _craftShowIcon;
+        private int _craftShowStage;
+        private float _craftShowElapsed;
+        // Someone else's finished module, pulsed on its stock cell once the new count is in.
+        private int _stockPulseRecipeId;
+        private int _stockPulseBaseline;
+        private float _stockPulseUntil;
+        // Take and put back, shown on this player's screen only (what one carries is private): the module flies between
+        // its stock cell and the carry bar, and shows up where it lands only once it lands. From the click (the host
+        // hears of the change before the result) a taken module is kept off the carry bar, and a put-back one off the
+        // stock, by one above the count at the click. The start is taken on the click too, as cell or bar may change.
+        private int _carryMoveRecipeId;
+        private bool _isCarryMoveTake;
+        private Vector3 _carryMoveFrom;
+        private bool _isCarryHeld;
+        private int _returnReservedRecipeId;
+        private int _returnReservedBaseline;
+        private bool _isReturnLanding;
+        private int _carryRevealRecipeId;
+        private float _carryRevealAt;
         private readonly StringBuilder _builder = new StringBuilder();
         private GameObject _lighthouseHeader;
         private GameObject _boatHeader;
@@ -212,6 +250,8 @@ namespace Lighthouse.Workbench.View
         private bool _isStockFocused;
 
         public bool IsOpen => _isOpen;
+        // True while this machine has any workbench screen open, for effects elsewhere that the screen already shows.
+        public static bool IsAnyOpen => _openCount > 0;
 
         // Sound hook; nothing listens yet.
         public event Action<WorkbenchEffectCue> EffectCued;
@@ -236,11 +276,6 @@ namespace Lighthouse.Workbench.View
             if (_returnButton)
             {
                 _returnButton.onClick.AddListener(HandleReturnClicked);
-            }
-
-            if (_returnShortcutButton)
-            {
-                _returnShortcutButton.onClick.AddListener(HandleReturnClicked);
             }
 
             if (_isSketchLayout)
@@ -287,9 +322,11 @@ namespace Lighthouse.Workbench.View
             if (_workbench)
             {
                 _workbench.Changed += HandleWorkbenchChanged;
+                _workbench.RecipeCompleted += HandleRecipeCompleted;
             }
 
             StationScreenFocus.Register(this);
+            RefreshCarryCard();
         }
 
         private void Update()
@@ -314,6 +351,11 @@ namespace Lighthouse.Workbench.View
             if (_isOpen)
             {
                 TickEffects(Time.unscaledDeltaTime);
+            }
+            // Other screens open and close without telling the workbench, so the card follows them here.
+            else if (_carryBar && _workbench && _carryBar.activeSelf != IsCarryCardShown())
+            {
+                RefreshCarryCard();
             }
 
             bool isFocused = _isInRange && StationScreenFocus.IsNearest(this);
@@ -344,6 +386,7 @@ namespace Lighthouse.Workbench.View
             if (_workbench)
             {
                 _workbench.Changed -= HandleWorkbenchChanged;
+                _workbench.RecipeCompleted -= HandleRecipeCompleted;
             }
 
             StationScreenFocus.Unregister(this);
@@ -359,6 +402,7 @@ namespace Lighthouse.Workbench.View
             }
 
             _isOpen = true;
+            _openCount++;
             SessionScreen.SetGameplayOverlayOpen(this, true);
             EnsureEventSystem();
             BuildCards();
@@ -383,10 +427,16 @@ namespace Lighthouse.Workbench.View
             }
 
             _isOpen = false;
+            _openCount--;
             SessionScreen.SetGameplayOverlayOpen(this, false);
             _effects.StopAll();
             _ownCredit = 0;
+            _craftShowRecipeId = 0;
+            _stockPulseRecipeId = 0;
+            ReleaseReserved();
+            ReleaseCarryHolds();
             _window.SetActive(false);
+            RefreshCarryCard();
             LockPlayer(false);
         }
 
@@ -609,6 +659,8 @@ namespace Lighthouse.Workbench.View
 
         private void Refresh()
         {
+            RefreshCarryCard();
+
             if (!_isOpen)
             {
                 return;
@@ -833,13 +885,18 @@ namespace Lighthouse.Workbench.View
 
             for (int i = 0; i < catalog.Count && slot < _storedSlots.Length; i++)
             {
-                int stored = _workbench.GetStoredCount(catalog[i].Id);
+                ModuleRecipe recipe = catalog[i];
+                int stored = ShownStoredCount(recipe.Id);
 
                 if (stored > 0)
                 {
-                    ModuleRecipe recipe = catalog[i];
                     _storedSlots[slot].Show(GetRecipeIcon(recipe), recipe.DisplayName, stored);
                     _storedSlots[slot++].SetAction(recipe.Id, canTake, HandleTakeClicked);
+                }
+                else if (IsAwaitingCell(recipe.Id))
+                {
+                    _storedSlots[slot].ShowAwaiting();
+                    _storedSlots[slot++].SetAction(recipe.Id, false, HandleTakeClicked);
                 }
             }
 
@@ -857,7 +914,7 @@ namespace Lighthouse.Workbench.View
 
             for (int i = 0; i < catalog.Count; i++)
             {
-                if (_workbench.GetStoredCount(catalog[i].Id) > 0)
+                if (ShownStoredCount(catalog[i].Id) > 0 || IsAwaitingCell(catalog[i].Id))
                 {
                     storedKinds++;
                 }
@@ -874,15 +931,25 @@ namespace Lighthouse.Workbench.View
             for (int i = 0; i < catalog.Count && slot < capacity; i++)
             {
                 ModuleRecipe recipe = catalog[i];
-                int stored = _workbench.GetStoredCount(recipe.Id);
+                int stored = ShownStoredCount(recipe.Id);
+                bool isAwaiting = stored <= 0 && IsAwaitingCell(recipe.Id);
 
-                if (stored <= 0)
+                if (stored <= 0 && !isAwaiting)
                 {
                     continue;
                 }
 
                 if (storedIndex++ < first)
                 {
+                    continue;
+                }
+
+                if (isAwaiting)
+                {
+                    _storedSlots[slot].ShowAwaiting();
+                    _storedSlots[slot].SetAction(recipe.Id, false, HandleStoredSelected);
+                    _storedSlots[slot].SetSelected(false);
+                    slot++;
                     continue;
                 }
 
@@ -926,6 +993,29 @@ namespace Lighthouse.Workbench.View
         }
 
         // Only this player's own module: who holds what is private (2026-10-21).
+        // With the screen closed the card stays only while a module is carried, where it was (2026-10-27). Another
+        // screen (the lighthouse one shows the carried module itself) hides it, as it would cover that screen.
+        private bool IsCarryCardShown()
+        {
+            return _isOpen || _workbench.OwnCarriedRecipe != 0 && !SessionScreen.IsGameplayOverlayOpen;
+        }
+
+        private void RefreshCarryCard()
+        {
+            if (!_carryBar || !_workbench || !_workbench.Catalog)
+            {
+                return;
+            }
+
+            bool isShown = IsCarryCardShown();
+            _carryBar.SetActive(isShown);
+
+            if (isShown && !_isOpen)
+            {
+                RefreshCarry(_workbench.Catalog);
+            }
+        }
+
         private void RefreshCarry(ModuleRecipeCatalog catalog)
         {
             if (!_carryBar)
@@ -933,7 +1023,8 @@ namespace Lighthouse.Workbench.View
                 return;
             }
 
-            int carriedId = _workbench.OwnCarriedRecipe;
+            // A module being taken shows here only once its flight lands.
+            int carriedId = _isCarryHeld ? 0 : _workbench.OwnCarriedRecipe;
             ModuleRecipe carried = carriedId != 0 && catalog.TryGetById(carriedId, out ModuleRecipe recipe) ? recipe : null;
             _carryText.text = carried ? $"인벤토리 모듈: {carried.DisplayName}" : "인벤토리 모듈: 없음";
 
@@ -947,11 +1038,6 @@ namespace Lighthouse.Workbench.View
             {
                 _returnButton.gameObject.SetActive(_isSketchLayout || carried);
                 _returnButton.interactable = carried;
-            }
-
-            if (_returnShortcutButton)
-            {
-                _returnShortcutButton.interactable = carried;
             }
         }
 
@@ -1004,7 +1090,7 @@ namespace Lighthouse.Workbench.View
         private void HandleSelectedTakeClicked()
         {
             if (_selectedStoredRecipeId != 0 && _workbench.OwnCarriedRecipe == 0
-                && _workbench.GetStoredCount(_selectedStoredRecipeId) > 0)
+                && ShownStoredCount(_selectedStoredRecipeId) > 0)
             {
                 HandleTakeClicked(_selectedStoredRecipeId);
             }
@@ -1058,6 +1144,12 @@ namespace Lighthouse.Workbench.View
             if (_viewedRecipe && Send(InteractionAction.Craft, _viewedRecipe.Id, 0, 0))
             {
                 _pendingRecipeName = _viewedRecipe.DisplayName;
+                _craftAwaitingRecipeId = _viewedRecipe.Id;
+                _heldFinishRecipeId = 0;
+                // Taken on the click: the host's stock can count the new module before the result arrives.
+                _reservedRecipeId = _viewedRecipe.Id;
+                _reservedBaseline = _workbench.GetStoredCount(_viewedRecipe.Id);
+                _isReservedLanding = false;
             }
         }
 
@@ -1066,16 +1158,33 @@ namespace Lighthouse.Workbench.View
             if (_workbench.Catalog.TryGetById(recipeId, out ModuleRecipe recipe) && Send(InteractionAction.TakeModule, recipeId, 0, 0))
             {
                 _pendingRecipeName = recipe.DisplayName;
+                WorkbenchItemSlot slot = FindStoredSlot(recipeId);
+                RectTransform from = slot ? slot.IconRect : _takeButton ? (RectTransform)_takeButton.transform : null;
+                _carryMoveRecipeId = from && _carryIcon ? recipeId : 0;
+                _isCarryMoveTake = true;
+                _carryMoveFrom = from ? WorkbenchScreenEffects.CenterOf(from) : Vector3.zero;
+                _isCarryHeld = _carryMoveRecipeId != 0;
             }
         }
 
         private void HandleReturnClicked()
         {
-            int carriedId = _workbench.OwnCarriedRecipe;
+            // Not before a module being taken has landed in hand.
+            int carriedId = _isCarryHeld ? 0 : _workbench.OwnCarriedRecipe;
 
             if (carriedId != 0 && _workbench.Catalog.TryGetById(carriedId, out ModuleRecipe recipe) && Send(InteractionAction.ReturnModule, 0, 0, 0))
             {
                 _pendingRecipeName = recipe.DisplayName;
+                _carryMoveRecipeId = _carryIcon ? carriedId : 0;
+                _isCarryMoveTake = false;
+                _carryMoveFrom = _carryIcon ? WorkbenchScreenEffects.CenterOf(_carryIcon.rectTransform) : Vector3.zero;
+
+                if (_carryMoveRecipeId != 0)
+                {
+                    _returnReservedRecipeId = carriedId;
+                    _returnReservedBaseline = _workbench.GetStoredCount(carriedId);
+                    _isReturnLanding = false;
+                }
             }
         }
 
@@ -1083,6 +1192,37 @@ namespace Lighthouse.Workbench.View
         {
             bool wasDeposit = _isDepositAwaiting;
             _isDepositAwaiting = false;
+            int craftedId = _craftAwaitingRecipeId;
+            bool isFinishHeld = craftedId != 0 && _heldFinishRecipeId == craftedId;
+            _craftAwaitingRecipeId = 0;
+            _heldFinishRecipeId = 0;
+            int carryMoveId = _carryMoveRecipeId;
+            _carryMoveRecipeId = 0;
+
+            if (craftedId != 0)
+            {
+                if (result.IsSuccess && !isFinishHeld)
+                {
+                    _ownFinishRecipeId = craftedId;
+                    _ownFinishUntil = Time.unscaledTime + _effectSettings.CraftWaitSeconds;
+                }
+                else if (!result.IsSuccess && isFinishHeld)
+                {
+                    // Pressed together and lost: the finish that came in was someone else's.
+                    QueueStockPulse(craftedId, _heldFinishBaseline);
+                }
+
+                // Nothing will land without a show, so the module goes straight into the stock.
+                if (!result.IsSuccess || !_isOpen)
+                {
+                    ReleaseReserved();
+                }
+            }
+
+            if (carryMoveId != 0 && (!result.IsSuccess || !_isOpen))
+            {
+                ReleaseCarryHolds();
+            }
 
             if (wasDeposit)
             {
@@ -1109,6 +1249,14 @@ namespace Lighthouse.Workbench.View
                 if (wasDeposit)
                 {
                     PlayDepositLanded();
+                }
+                else if (craftedId != 0)
+                {
+                    StartCraftShow(craftedId);
+                }
+                else if (carryMoveId != 0)
+                {
+                    PlayCarryMove(carryMoveId);
                 }
 
                 return;
@@ -1196,9 +1344,298 @@ namespace Lighthouse.Workbench.View
             HandleEffectCued(WorkbenchEffectCue.OtherDeposited);
         }
 
+        // Comes on every machine, open screen or not, so the bookkeeping for this player's own craft stays right.
+        private void HandleRecipeCompleted(int recipeId)
+        {
+            if (recipeId == _craftAwaitingRecipeId)
+            {
+                _heldFinishRecipeId = recipeId;
+                _heldFinishBaseline = StockPulseBaseline(recipeId);
+                return;
+            }
+
+            if (recipeId == _ownFinishRecipeId && Time.unscaledTime <= _ownFinishUntil)
+            {
+                _ownFinishRecipeId = 0;
+                return;
+            }
+
+            QueueStockPulse(recipeId, StockPulseBaseline(recipeId));
+        }
+
+        // On the host the stock already counts the module when the finish call comes; a remote client gets the count
+        // just after it. Should a count ever come first, the pulse still plays once the wait runs out.
+        private int StockPulseBaseline(int recipeId)
+        {
+            return _workbench.isServer ? -1 : _workbench.GetStoredCount(recipeId);
+        }
+
+        private void QueueStockPulse(int recipeId, int baseline)
+        {
+            if (!_isOpen)
+            {
+                return;
+            }
+
+            if (_stockPulseRecipeId != 0)
+            {
+                PlayStockPulse(_stockPulseRecipeId);
+            }
+
+            _stockPulseRecipeId = recipeId;
+            _stockPulseBaseline = baseline;
+            _stockPulseUntil = Time.unscaledTime + _effectSettings.CraftWaitSeconds;
+        }
+
+        // Someone else's craft: the rows simply empty, and only the stock cell gets "+1". No name is shown.
+        private void PlayStockPulse(int recipeId)
+        {
+            HandleEffectCued(WorkbenchEffectCue.OtherCrafted);
+            WorkbenchItemSlot slot = FindStoredSlot(recipeId);
+
+            if (!slot)
+            {
+                return;
+            }
+
+            _effects.PlayPunch(slot.IconRect, _effectSettings.PunchStrength);
+            _effects.PlayPunch(slot.CountRect, _effectSettings.PunchStrength);
+            _effects.PlayGain(slot.CountRect, 1);
+        }
+
+        // This player's own craft, after the server said yes: the ingredient icons are drawn into the middle of the
+        // progress pane, light bursts there leaving the module icon, and the icon flies to its stock cell.
+        private void StartCraftShow(int recipeId)
+        {
+            if (!_workbench.Catalog.TryGetById(recipeId, out ModuleRecipe recipe))
+            {
+                ReleaseReserved();
+                return;
+            }
+
+            RectTransform center = (RectTransform)_rowTemplate.transform.parent;
+
+            // The rows may already read 0 (the new amounts can land first); their icons stay all the same.
+            if (_viewedRecipe == recipe)
+            {
+                for (int i = 0; i < _rows.Count; i++)
+                {
+                    if (_rows[i].gameObject.activeSelf)
+                    {
+                        _effects.PlayGather(_rows[i].Icon.sprite, _rows[i].Icon.rectTransform, center);
+                    }
+                }
+            }
+
+            _craftShowRecipeId = recipeId;
+            _craftShowIcon = GetRecipeIcon(recipe);
+            _craftShowStage = 0;
+            _craftShowElapsed = 0f;
+        }
+
+        private void TickCraftShow(float deltaTime)
+        {
+            if (_craftShowRecipeId == 0)
+            {
+                return;
+            }
+
+            _craftShowElapsed += deltaTime;
+            float burstAt = _effectSettings.GatherSeconds;
+            float flightAt = burstAt + _effectSettings.BurstHoldSeconds;
+
+            if (_craftShowStage == 0 && _craftShowElapsed >= burstAt)
+            {
+                _craftShowStage = 1;
+                _effects.PlayBurst(_craftShowIcon, (RectTransform)_rowTemplate.transform.parent);
+                HandleEffectCued(WorkbenchEffectCue.Crafted);
+            }
+            else if (_craftShowStage == 1 && _craftShowElapsed >= flightAt)
+            {
+                // By now the new stock count is in. Its cell is put up as an empty frame to land on, unless it is on
+                // another page.
+                _craftShowStage = 2;
+                _isReservedLanding = true;
+                RefreshStock();
+                WorkbenchItemSlot slot = FindStoredSlot(_craftShowRecipeId);
+                _effects.HideBurstIcon();
+                _effects.PlayFlight(_craftShowIcon, _effects.BurstIconRect, slot ? slot.IconRect : StockFallbackTarget(),
+                    slot ? slot.CountRect : null, WorkbenchEffectCue.ModuleStored);
+            }
+            else if (_craftShowStage == 2 && _craftShowElapsed >= flightAt + _effectSettings.FlightSeconds)
+            {
+                // Landed: from here the module shows in the stock and can be taken.
+                ReleaseReserved();
+                RefreshStock();
+                WorkbenchItemSlot slot = FindStoredSlot(_craftShowRecipeId);
+
+                if (slot)
+                {
+                    _effects.PlayGain(slot.CountRect, 1);
+                }
+
+                if (_takeButton && _takeButton.image)
+                {
+                    _effects.PlayFlash(_takeButton.image, _effectSettings.HighlightColor, 1);
+                    _effects.PlayPunch((RectTransform)_takeButton.transform, _effectSettings.PunchStrength);
+                }
+
+                _craftShowRecipeId = 0;
+            }
+        }
+
+        // Taken: from the stock cell into the carry bar. Put back: the reverse, onto its cell put up as an empty frame.
+        // Either way the module shows where it lands only when it lands (TickCarryReveal).
+        private void PlayCarryMove(int recipeId)
+        {
+            if (!_workbench.Catalog.TryGetById(recipeId, out ModuleRecipe recipe))
+            {
+                ReleaseCarryHolds();
+                Refresh();
+                return;
+            }
+
+            Sprite icon = GetRecipeIcon(recipe);
+
+            if (_isCarryMoveTake)
+            {
+                _effects.PlayFlight(icon, _carryMoveFrom, _carryIcon.rectTransform, null, WorkbenchEffectCue.ModuleTaken);
+            }
+            else
+            {
+                _isReturnLanding = true;
+                RefreshStock();
+                WorkbenchItemSlot slot = FindStoredSlot(recipeId);
+                _effects.PlayFlight(icon, _carryMoveFrom, slot ? slot.IconRect : StockFallbackTarget(), null,
+                    WorkbenchEffectCue.ModuleReturned);
+            }
+
+            _carryRevealRecipeId = recipeId;
+            _carryRevealAt = Time.unscaledTime + _effectSettings.FlightSeconds;
+        }
+
+        private void TickCarryReveal()
+        {
+            if (_carryRevealRecipeId == 0 || Time.unscaledTime < _carryRevealAt)
+            {
+                return;
+            }
+
+            int recipeId = _carryRevealRecipeId;
+            bool wasTake = _isCarryHeld;
+            ReleaseCarryHolds();
+            Refresh();
+
+            if (wasTake)
+            {
+                _effects.PlayPunch(_carryIcon.rectTransform, _effectSettings.BadgePunchStrength);
+
+                if (_carryText)
+                {
+                    _effects.PlayFlash(_carryText, _effectSettings.HighlightColor, 1);
+                }
+
+                return;
+            }
+
+            WorkbenchItemSlot slot = FindStoredSlot(recipeId);
+
+            if (slot)
+            {
+                _effects.PlayPunch(slot.IconRect, _effectSettings.BadgePunchStrength);
+                _effects.PlayPunch(slot.CountRect, _effectSettings.PunchStrength);
+                _effects.PlayGain(slot.CountRect, 1);
+            }
+        }
+
+        private void ReleaseCarryHolds()
+        {
+            _isCarryHeld = false;
+            _returnReservedRecipeId = 0;
+            _isReturnLanding = false;
+            _carryRevealRecipeId = 0;
+        }
+
+        // A count above the one at the click holds this player's own module (crafted, or put back), which is left off
+        // until it lands.
+        private int ShownStoredCount(int recipeId)
+        {
+            int stored = _workbench.GetStoredCount(recipeId);
+            int shown = stored;
+
+            if (recipeId == _reservedRecipeId && stored > _reservedBaseline)
+            {
+                shown--;
+            }
+
+            if (recipeId == _returnReservedRecipeId && stored > _returnReservedBaseline)
+            {
+                shown--;
+            }
+
+            return Mathf.Max(0, shown);
+        }
+
+        private bool IsAwaitingCell(int recipeId)
+        {
+            return _isReservedLanding && recipeId == _reservedRecipeId || _isReturnLanding && recipeId == _returnReservedRecipeId;
+        }
+
+        private void ReleaseReserved()
+        {
+            _reservedRecipeId = 0;
+            _isReservedLanding = false;
+        }
+
+        private void TickStockPulse()
+        {
+            if (_stockPulseRecipeId == 0)
+            {
+                return;
+            }
+
+            if (_workbench.GetStoredCount(_stockPulseRecipeId) > _stockPulseBaseline || Time.unscaledTime > _stockPulseUntil)
+            {
+                PlayStockPulse(_stockPulseRecipeId);
+                _stockPulseRecipeId = 0;
+            }
+        }
+
+        private WorkbenchItemSlot FindStoredSlot(int recipeId)
+        {
+            for (int i = 0; i < _storedSlots.Length; i++)
+            {
+                if (_storedSlots[i].ActionId == recipeId && _storedSlots[i].gameObject.activeInHierarchy)
+                {
+                    return _storedSlots[i];
+                }
+            }
+
+            return null;
+        }
+
+        // A module whose cell is on another stock page lands on the page button that leads there, else on take.
+        private RectTransform StockFallbackTarget()
+        {
+            if (_nextStockPageButton && _nextStockPageButton.interactable)
+            {
+                return (RectTransform)_nextStockPageButton.transform;
+            }
+
+            if (_previousStockPageButton && _previousStockPageButton.interactable)
+            {
+                return (RectTransform)_previousStockPageButton.transform;
+            }
+
+            return _takeButton ? (RectTransform)_takeButton.transform : null;
+        }
+
         private void TickEffects(float deltaTime)
         {
             _effects.Tick(deltaTime);
+            TickCraftShow(deltaTime);
+            TickStockPulse();
+            TickCarryReveal();
 
             if (_ownCredit > 0 && Time.unscaledTime > _ownCreditUntil)
             {
@@ -1471,6 +1908,13 @@ namespace Lighthouse.Workbench.View
             {
                 texts[i].font = font;
             }
+        }
+
+        // Domain reload is off in the editor, so a count left from the last play would carry over.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            _openCount = 0;
         }
     }
 }

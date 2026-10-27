@@ -6,6 +6,11 @@ namespace Lighthouse.Workbench.View
         DepositLanded,
         OtherDeposited,
         ReadyToCraft,
-        DepositRejected
+        DepositRejected,
+        Crafted,
+        ModuleStored,
+        OtherCrafted,
+        ModuleTaken,
+        ModuleReturned
     }
 }

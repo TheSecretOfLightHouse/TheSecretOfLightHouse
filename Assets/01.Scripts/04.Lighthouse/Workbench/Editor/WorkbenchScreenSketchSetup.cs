@@ -104,12 +104,15 @@ namespace Lighthouse.Workbench.Editor
                 carryText.resizeTextMinSize = 12;
                 carryText.resizeTextMaxSize = 16;
 
-                Image carry = Picture("CarriedModule", frame, "ws_card", 744f, 793f, 90f, 90f);
+                // The carried module card stays on screen while a module is carried, also with the window closed, so it
+                // sits outside the window, pinned to the bottom centre of the screen like the open prompt above it
+                // (2026-10-27). The sketch's empty "G" slot beside it went, as the shelf's put-back button does that.
+                Image carry = Picture("CarriedModule", root.transform, "ws_card", 0f, 0f, 90f, 90f);
+                RectTransform carryRect = carry.rectTransform;
+                carryRect.anchorMin = carryRect.anchorMax = carryRect.pivot = new Vector2(0.5f, 0f);
+                carryRect.anchoredPosition = new Vector2(0f, 43f);
                 Image carryIcon = Picture("Icon", carry.transform, null, 15f, 12f, 60f, 62f);
                 carryIcon.preserveAspect = true;
-                // The sketch draws this as an empty slot with only the key.
-                Button returnShortcut = MakeButton("ReturnShortcut", frame, string.Empty, "ws_card", 845f, 793f, 86f, 90f, 16);
-                Keycap(returnShortcut.transform, "G", 59f, 58f);
                 Text message = Label("Message", frame, string.Empty, 16, 627f, 712f, 373f, 30f);
                 message.resizeTextForBestFit = true;
                 message.resizeTextMinSize = 12;
@@ -121,7 +124,8 @@ namespace Lighthouse.Workbench.Editor
                 RectTransform promptRect = (RectTransform)prompt.transform;
                 promptRect.anchorMin = promptRect.anchorMax = new Vector2(0.5f, 0f);
                 promptRect.pivot = new Vector2(0.5f, 0f);
-                promptRect.anchoredPosition = new Vector2(0f, 90f);
+                // Above the carried module card, which sits at the bottom centre (2026-10-27).
+                promptRect.anchoredPosition = new Vector2(0f, 150f);
                 Text promptText = Label("Text", prompt.transform, "E  작업대 열기", 22, 8f, 2f, 254f, 44f);
 
                 WorkbenchScreen screen = root.AddComponent<WorkbenchScreen>();
@@ -145,7 +149,6 @@ namespace Lighthouse.Workbench.Editor
                 Set(serialized, "_carryIcon", carryIcon);
                 Set(serialized, "_carryText", carryText);
                 Set(serialized, "_returnButton", putBack);
-                Set(serialized, "_returnShortcutButton", returnShortcut);
                 Set(serialized, "_previousStockPageButton", previous);
                 Set(serialized, "_nextStockPageButton", next);
                 Set(serialized, "_stockPageText", page);
@@ -168,6 +171,7 @@ namespace Lighthouse.Workbench.Editor
                 SetRecipeIcons(serialized);
                 serialized.ApplyModifiedPropertiesWithoutUndo();
                 window.gameObject.SetActive(false);
+                carry.gameObject.SetActive(false);
                 prompt.gameObject.SetActive(false);
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
                 Debug.Log($"[{nameof(WorkbenchScreenSketchSetup)}] Built {PrefabPath}.");
@@ -399,7 +403,8 @@ namespace Lighthouse.Workbench.Editor
                 Object resource = item.FindPropertyRelative("Resource").objectReferenceValue;
                 string name = resource ? resource.name.ToLowerInvariant() : string.Empty;
                 string sprite = name.Contains("glass") ? "ws_icon_glass" : name.Contains("iron") ? "ws_icon_iron"
-                    : name.Contains("crystal") ? "ws_icon_crystal" : null;
+                    : name.Contains("crystal") ? "ws_icon_crystal" : name.Contains("wood") ? "ws_icon_wood"
+                    : name.Contains("stone") ? "ws_icon_stone" : name.Contains("fiber") ? "ws_icon_fiber" : null;
 
                 if (sprite != null)
                 {

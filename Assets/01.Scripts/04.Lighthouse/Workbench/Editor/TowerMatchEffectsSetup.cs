@@ -1,6 +1,5 @@
 using Lighthouse.Tower.Net;
 using Lighthouse.Tower.View;
-using Lighthouse.Workbench.View;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -9,16 +8,14 @@ using UnityEngine.UI;
 namespace Lighthouse.Workbench.Editor
 {
     // Builds the lighthouse match effects canvas (UI effects plan 2026-10-26) on a 1920x1080 reference: centre title,
-    // ritual countdown, edge flash, end fade and the carried-module tag. Notice lines go through the shared
-    // ScreenNotice strip (ScreenNoticeSetup). The tag's placeholder icon is a final battle HUD sprite, so build that
-    // HUD first once to import them.
+    // ritual countdown, edge flash and end fade. Notice lines go through the shared ScreenNotice strip
+    // (ScreenNoticeSetup). The carried-module tag that sat bottom left moved to the workbench screen's own carry card
+    // (2026-10-27).
     public static class TowerMatchEffectsSetup
     {
         private const string PrefabPath = "Assets/02.Prefabs/UI/Tower/TowerMatchEffects.prefab";
-        private const string Folder = "Assets/03.Images/FinalBattleHud/";
         private static readonly Color Cream = new Color(0.96f, 0.89f, 0.74f);
         private static readonly Color Shadow = new Color(0.1f, 0.07f, 0.04f, 0.85f);
-        private static readonly Color Backing = new Color(0.04f, 0.06f, 0.09f, 0.72f);
 
         [MenuItem("Lighthouse/Tower/Build Match Effects Prefab")]
         public static void Build()
@@ -56,23 +53,6 @@ namespace Lighthouse.Workbench.Editor
                 fade.color = new Color(0f, 0f, 0f, 0f);
                 Image edge = Stretch("Edge", root.transform);
                 edge.color = new Color(1f, 1f, 1f, 0f);
-
-                // The carried-module tag, bottom left; only the carrier's machine ever fills it.
-                RectTransform carried = Rect("CarriedModule", root.transform, 0f, 0f, 380f, 64f);
-                carried.anchorMin = carried.anchorMax = carried.pivot = new Vector2(0f, 0f);
-                carried.anchoredPosition = new Vector2(24f, 24f);
-                Image carriedBacking = carried.gameObject.AddComponent<Image>();
-                carriedBacking.color = Backing;
-                carriedBacking.raycastTarget = false;
-                Image carriedIcon = Picture("Icon", carried, "fb_icon_lighthouse", 10f, 6f, 52f, 52f);
-                carriedIcon.preserveAspect = true;
-                Text carriedText = Label("Text", carried, "들고 있는 부품: -", 22, Cream, 72f, 13f, 300f, 38f, TextAnchor.MiddleLeft);
-                CarriedModuleIndicator indicator = root.AddComponent<CarriedModuleIndicator>();
-                SerializedObject indicatorFields = new SerializedObject(indicator);
-                Set(indicatorFields, "_root", carried.gameObject);
-                Set(indicatorFields, "_icon", carriedIcon);
-                Set(indicatorFields, "_text", carriedText);
-                indicatorFields.ApplyModifiedPropertiesWithoutUndo();
 
                 Text countdown = Label("Countdown", root.transform, "점화 의식 60초", 40, Cream, 0f, 0f, 520f, 64f, TextAnchor.MiddleCenter);
                 RectTransform countdownRect = countdown.rectTransform;
@@ -142,14 +122,6 @@ namespace Lighthouse.Workbench.Editor
             SerializedObject links = new SerializedObject(effects);
             Set(links, "_match", matches[0]);
             links.ApplyModifiedProperties();
-            CarriedModuleIndicator indicator = effects.GetComponent<CarriedModuleIndicator>();
-
-            if (indicator)
-            {
-                SerializedObject indicatorLinks = new SerializedObject(indicator);
-                Set(indicatorLinks, "_workbench", matches[0].GetComponent<TowerNet>().Workbench);
-                indicatorLinks.ApplyModifiedProperties();
-            }
 
             // The notices go through the shared strip, so the scene needs one too.
             ScreenNoticeSetup.UseInOpenScene();
@@ -168,7 +140,6 @@ namespace Lighthouse.Workbench.Editor
             image.raycastTarget = false;
             return image;
         }
-
 
         private static Text Label(string name, Transform parent, string caption, int size, Color color, float x, float y, float width, float height, TextAnchor alignment)
         {
@@ -190,15 +161,6 @@ namespace Lighthouse.Workbench.Editor
             return text;
         }
 
-        private static Image Picture(string name, Transform parent, string sprite, float x, float y, float width, float height)
-        {
-            RectTransform rect = Rect(name, parent, x, y, width, height);
-            Image image = rect.gameObject.AddComponent<Image>();
-            image.sprite = Load(sprite);
-            image.raycastTarget = false;
-            return image;
-        }
-
         private static RectTransform Rect(string name, Transform parent, float x, float y, float width, float height)
         {
             GameObject gameObject = new GameObject(name, typeof(RectTransform));
@@ -209,18 +171,6 @@ namespace Lighthouse.Workbench.Editor
             rect.anchoredPosition = new Vector2(x, -y);
             rect.sizeDelta = new Vector2(width, height);
             return rect;
-        }
-
-        private static Sprite Load(string name)
-        {
-            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>($"{Folder}{name}.png");
-
-            if (!sprite)
-            {
-                throw new System.InvalidOperationException($"Missing sprite {Folder}{name}. Build the final battle HUD prefab first.");
-            }
-
-            return sprite;
         }
 
         private static void Set(SerializedObject serialized, string name, Object value)

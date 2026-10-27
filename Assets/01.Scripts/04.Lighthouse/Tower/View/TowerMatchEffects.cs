@@ -3,6 +3,7 @@ using Lighthouse.Tower.Net;
 using Lighthouse.Tower.Rules;
 using Lighthouse.Workbench.Net;
 using Lighthouse.Workbench.Rules;
+using Lighthouse.Workbench.View;
 using Mirror;
 using UnityEngine;
 using UnityEngine.UI;
@@ -218,8 +219,14 @@ namespace Lighthouse.Tower.View
             }
         }
 
+        // An open workbench screen already shows the finish on its stock, so the strip is left out there (2026-10-27).
         private void HandleRecipeCompleted(int recipeId)
         {
+            if (WorkbenchScreen.IsAnyOpen)
+            {
+                return;
+            }
+
             if (_workbench.Catalog && _workbench.Catalog.TryGetById(recipeId, out ModuleRecipe recipe))
             {
                 ScreenNotice.Show(new ScreenNoticeRequest($"{recipe.DisplayName} 완성", ScreenNoticeStyle.Normal, recipe.Icon));
