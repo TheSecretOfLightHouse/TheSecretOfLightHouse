@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Lighthouse.World.Ocean
 {
     [RequireComponent(typeof(Rigidbody))]
-    public class BuoyantObject : MonoBehaviour, IWaterSampleSource
+    public class BuoyancyObject : MonoBehaviour, IWaterSampleSource
     {
         [SerializeField] private bool _isSimulating = true;
         [SerializeField] private BuoyancyProfile _profile = new BuoyancyProfile();
@@ -61,7 +61,7 @@ namespace Lighthouse.World.Ocean
                 || !TryBuildPoints(points))
             {
                 Debug.LogError(
-                    $"[{nameof(BuoyantObject)}] Profile, Rigidbody and a collider or manual points are required.");
+                    $"[{nameof(BuoyancyObject)}] Profile, Rigidbody and a collider or manual points are required.");
 
                 enabled = false;
                 return;
@@ -73,7 +73,7 @@ namespace Lighthouse.World.Ocean
             if (!_body.useGravity)
             {
                 Debug.LogWarning(
-                    $"[{nameof(BuoyantObject)}] Rigidbody gravity is off; buoyancy will lift the body without a counterweight.");
+                    $"[{nameof(BuoyancyObject)}] Rigidbody gravity is off; buoyancy will lift the body without a counterweight.");
             }
         }
 
@@ -141,7 +141,7 @@ namespace Lighthouse.World.Ocean
             if (_samples != null || profile == null)
             {
                 Debug.LogWarning(
-                    $"[{nameof(BuoyantObject)}] Configure must run before the component wakes with a non-null profile.");
+                    $"[{nameof(BuoyancyObject)}] Configure must run before the component wakes with a non-null profile.");
 
                 return;
             }
@@ -253,7 +253,7 @@ namespace Lighthouse.World.Ocean
             _nextWarnTime = Time.unscaledTime + _warnInterval;
 
             Debug.LogWarning(
-                $"[{nameof(BuoyantObject)}] {name}: sampler host missing or no free contiguous slots; retrying.");
+                $"[{nameof(BuoyancyObject)}] {name}: sampler host missing or no free contiguous slots; retrying.");
         }
     }
 }
