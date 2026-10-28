@@ -1657,6 +1657,7 @@ MonoBehaviour:
   _selectedSkin: {fileID: 21300000, guid: 2332e844268c8a04783b0e3b4e051519, type: 3}
   _buttonSkin: {fileID: 21300000, guid: 865e5ad695f6fff49ab35789eae6369e, type: 3}
   _activeButtonSkin: {fileID: 21300000, guid: f685b97c07e90cb478531e13ac2ef360, type: 3}
+  _boatIllustration: {fileID: 0}
   _window: {fileID: 2138162813}
   _resourceSlots:
   - {fileID: 1563157211}
@@ -1692,7 +1693,6 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 35bdf279415166242a76fef762cb28a8, type: 3}
   - {fileID: 21300000, guid: 7a93c54b760209845afb77ca9cd5f52a, type: 3}
   - {fileID: 21300000, guid: e186a48f0b27f484fae01a23da13d0d3, type: 3}
-  _installButton: {fileID: 1160316535}
   _closeButton: {fileID: 1512663889}
   _message: {fileID: 824210281}
 --- !u!114 &184861698
@@ -12562,6 +12562,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65651df296db69d478042a55a433a51d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _coastalShelfMaterial: {fileID: 0}
+  _coastalRockMaterial: {fileID: 0}
+  _coastalShelfWidth: 7
+  _lagoonRadiusScale: 0.55
+  _lagoonMinReach: 4
 --- !u!4 &1398708802
 Transform:
   m_ObjectHideFlags: 0
