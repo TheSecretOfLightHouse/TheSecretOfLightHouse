@@ -22,6 +22,7 @@ GameObject:
   - component: {fileID: 4272518262497333127}
   - component: {fileID: 3243906163405673606}
   - component: {fileID: 3303832943296480846}
+  - component: {fileID: 1536424188150505026}
   m_Layer: 0
   m_Name: BubbleTurtle
   m_TagString: Untagged
@@ -332,6 +333,26 @@ MonoBehaviour:
   _duration: 1
   _redBlend: 1
   _hitColor: {r: 1, g: 0.15448934, b: 0.019607842, a: 1}
+--- !u!114 &1536424188150505026
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 622197146839384064}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 519c3fbd05aea5d47bd5b610a78fcac5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _animator: {fileID: 3778765388127560629}
+  _deathClip: {fileID: 7400000, guid: 2588ec1834d6bd642b0e7adcb4a68a4e, type: 2}
+  _presentationToDisable: {fileID: 0}
+  _revealOnDeath: {fileID: 0}
+  _hideOnDeath: {fileID: 0}
 --- !u!1 &1231606977744514834
 GameObject:
   m_ObjectHideFlags: 0

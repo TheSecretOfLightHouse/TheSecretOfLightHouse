@@ -402,6 +402,7 @@ GameObject:
   - component: {fileID: 3500470669398193022}
   - component: {fileID: 6731376440937682364}
   - component: {fileID: 2428030884621516504}
+  - component: {fileID: 8513781819814513109}
   m_Layer: 2
   m_Name: BlueShark
   m_TagString: Untagged
@@ -711,6 +712,26 @@ MonoBehaviour:
   _duration: 1
   _redBlend: 1
   _hitColor: {r: 1, g: 0.15448934, b: 0.019607842, a: 1}
+--- !u!114 &8513781819814513109
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3061826974098303317}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 519c3fbd05aea5d47bd5b610a78fcac5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _animator: {fileID: 2417491521181515817}
+  _deathClip: {fileID: 7400000, guid: d1d494e7ab8ce79499662d44a378cba2, type: 2}
+  _presentationToDisable: {fileID: 0}
+  _revealOnDeath: {fileID: 0}
+  _hideOnDeath: {fileID: 0}
 --- !u!1 &3577697292619952690
 GameObject:
   m_ObjectHideFlags: 0

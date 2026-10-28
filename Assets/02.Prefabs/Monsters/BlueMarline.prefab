@@ -752,6 +752,7 @@ GameObject:
   - component: {fileID: 1613517810118871938}
   - component: {fileID: 6421167299884494296}
   - component: {fileID: 3719146635547263079}
+  - component: {fileID: 3290677534952682000}
   m_Layer: 2
   m_Name: BlueMarline
   m_TagString: Untagged
@@ -1065,6 +1066,26 @@ MonoBehaviour:
   _duration: 1
   _redBlend: 1
   _hitColor: {r: 1, g: 0.15448934, b: 0.019607842, a: 1}
+--- !u!114 &3290677534952682000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8612343004966537504}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 519c3fbd05aea5d47bd5b610a78fcac5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _animator: {fileID: 87938426497595948}
+  _deathClip: {fileID: 7400000, guid: 10c9619221d012447860734bc761d873, type: 2}
+  _presentationToDisable: {fileID: 0}
+  _revealOnDeath: {fileID: 0}
+  _hideOnDeath: {fileID: 0}
 --- !u!1 &8654307395362441973
 GameObject:
   m_ObjectHideFlags: 0

@@ -22,6 +22,7 @@ GameObject:
   - component: {fileID: 7449903486662866639}
   - component: {fileID: 704468626831668642}
   - component: {fileID: 8869363228346506411}
+  - component: {fileID: 3802159521505352999}
   m_Layer: 2
   m_Name: Manta
   m_TagString: Untagged
@@ -341,6 +342,26 @@ MonoBehaviour:
   _duration: 1
   _redBlend: 1
   _hitColor: {r: 1, g: 0.15448934, b: 0.019607842, a: 1}
+--- !u!114 &3802159521505352999
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1600035957298383073}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 519c3fbd05aea5d47bd5b610a78fcac5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _animator: {fileID: 3577646578444696623}
+  _deathClip: {fileID: 7400000, guid: fa85d3a6d72ab7243865eafffe7f81d9, type: 2}
+  _presentationToDisable: {fileID: 0}
+  _revealOnDeath: {fileID: 0}
+  _hideOnDeath: {fileID: 0}
 --- !u!1 &1644724051019218317
 GameObject:
   m_ObjectHideFlags: 0
