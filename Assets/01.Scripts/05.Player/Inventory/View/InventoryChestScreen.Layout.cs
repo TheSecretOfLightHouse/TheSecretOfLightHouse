@@ -6,7 +6,7 @@ namespace Lighthouse.Player.Inventory.View
 {
     public sealed partial class InventoryChestScreen
     {
-        private static readonly Color Ink = new Color(0.12f, 0.065f, 0.035f, 1f);
+        private static readonly Color Ink = new Color(0.13f, 0.09f, 0.055f, 0.96f);
         private static readonly Color PanelColor = new Color(0.19f, 0.105f, 0.06f, 1f);
         private static readonly Color Gold = new Color(1f, 0.78f, 0.27f, 1f);
         private static readonly Color Cream = new Color(0.98f, 0.92f, 0.79f, 1f);
@@ -18,11 +18,12 @@ namespace Lighthouse.Player.Inventory.View
         [SerializeField] private Sprite _selectedSkin;
         [SerializeField] private Sprite _buttonSkin;
         [SerializeField] private Sprite _activeButtonSkin;
+        [SerializeField] private Sprite _boatIllustration;
         private static readonly BoatModuleType[] ModuleKinds =
         {
             BoatModuleType.Searchlight, BoatModuleType.Dash, BoatModuleType.DepthAlarm, BoatModuleType.Stabilizer
         };
-        private static readonly string[] ModuleNames = { "탐조등", "대시 추진기", "장애물 경보", "선체 안정기" };
+        private static readonly string[] ModuleNames = { "탐조등", "대쉬", "장애물 경보", "선체 안정기" };
         private static readonly string[] ModuleDescriptions = { "어두운 바다를 밝히는 빛", "위험을 벗어나는 순간 가속", "지형과 몬스터 충돌 경고", "배의 좌우·앞뒤 흔들림 완화" };
         private static readonly int[] BoatRecipeIds = { 101, 102, 103, 104 };
 
@@ -31,12 +32,17 @@ namespace Lighthouse.Player.Inventory.View
         private readonly UnityEngine.UI.Text[] _tabLabels = new UnityEngine.UI.Text[3];
         private readonly UnityEngine.UI.Text[] _moduleStates = new UnityEngine.UI.Text[4];
         private readonly UnityEngine.UI.Image[] _moduleCards = new UnityEngine.UI.Image[4];
+        private readonly UnityEngine.UI.Button[] _moduleButtons = new UnityEngine.UI.Button[4];
+        private readonly InventoryFrameGraphic[] _moduleFrames = new InventoryFrameGraphic[4];
+        private readonly UnityEngine.UI.Image[] _installedIcons = new UnityEngine.UI.Image[4];
+        private readonly GameObject[] _tabUnderlines = new GameObject[3];
+        private readonly UnityEngine.UI.Image[] _repairIcons = new UnityEngine.UI.Image[8];
         private readonly UnityEngine.UI.Text[] _repairRows = new UnityEngine.UI.Text[8];
         private readonly UnityEngine.UI.Text[] _repairAmounts = new UnityEngine.UI.Text[8];
         private UnityEngine.UI.Text _capacityLabel;
         private UnityEngine.UI.Text _carriedLabel;
         private UnityEngine.UI.Text _loadoutCarriedLabel;
-        private UnityEngine.UI.Image _loadoutCarriedIcon;
+
         private UnityEngine.UI.Text _durabilityLabel;
         private UnityEngine.UI.Text _repairDescription;
         private UnityEngine.UI.Text _repairStatus;
@@ -55,7 +61,10 @@ namespace Lighthouse.Player.Inventory.View
 
         private void BuildTabbedLayout()
         {
-            // Preserve serialized legacy objects while replacing the presentation at runtime.
+            if (!_boatIllustration)
+            {
+                _boatIllustration = Resources.Load<Sprite>("Inventory/boat_deck");
+            }
             foreach (Transform child in _window.transform)
             {
                 child.gameObject.SetActive(false);
@@ -66,121 +75,188 @@ namespace Lighthouse.Player.Inventory.View
                 oldBackground.enabled = false;
             }
             RectTransform window = (RectTransform)_window.transform;
-            window.anchorMin = window.anchorMax = new Vector2(0.5f, 0.5f);
-            window.pivot = new Vector2(0.5f, 0.5f);
+            window.anchorMin = window.anchorMax = window.pivot = new Vector2(0.5f, 0.5f);
             window.anchoredPosition = Vector2.zero;
-            window.sizeDelta = new Vector2(1140f, 760f);
+            window.sizeDelta = new Vector2(1000f, 660f);
             window.localScale = Vector3.one;
             UnityEngine.UI.CanvasScaler scaler = GetComponentInParent<UnityEngine.UI.CanvasScaler>();
             if (scaler)
             {
                 scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 scaler.referenceResolution = new Vector2(1280f, 900f);
-                scaler.matchWidthOrHeight = 1f;
+                scaler.matchWidthOrHeight = 0.5f;
             }
             CreateRoundedSprite();
-            var dim = MakePanel("Backdrop", window, -2500f, -1500f, 6140f, 3760f, new Color(0.01f, 0.025f, 0.035f, 0.8f));
+            UnityEngine.UI.Image dim = MakePanel("Backdrop", window, -2500f, -1500f, 6000f, 4000f, new Color(0.01f, 0.015f, 0.025f, 0.42f));
             dim.raycastTarget = true;
-            MakePanel("Frame", window, -2f, -2f, 1144f, 764f, Cream);
-            MakePanel("Body", window, 0f, 0f, 1140f, 760f, Ink);
-            MakeText("Eyebrow", window, "등대 항해일지  /  개인 보관함", 32f, 20f, 750f, 24f, 13, Muted);
-            MakeText("Title", window, "항해자의 보관함", 30f, 48f, 700f, 48f, 32, Cream);
-            MakeText("CloseHint", window, "I · TAB · ESC 닫기", 850f, 49f, 250f, 40f, 14, Muted, TextAnchor.MiddleRight);
-            string[] names = { "01   소지품", "02   선체 수리", "03   배 모듈" };
+            MakeFrame("Lid", window, 0f, -56f, 1000f, 68f, Ink, Cream);
+            MakeFrame("Handle", window, 450f, -65f, 100f, 27f, Ink, Cream);
+            MakeFrame("Body", window, 0f, 0f, 1000f, 600f, Ink, Cream);
+            for (int i = 0; i < 2; i++)
+            {
+                MakeFrame("Hinge" + i, window, i == 0 ? 90f : 870f, -9f, 32f, 22f, Ink, Muted);
+            }
+            string[] names = { "소지품", "선체 수리", "배 모듈" };
             for (int i = 0; i < 3; i++)
             {
                 int index = i;
-                UnityEngine.UI.Button tab = MakeButton("Tab" + i, window, names[i], 30f + i * 362f, 112f, 352f, 52f, () => SelectTab(index));
+                UnityEngine.UI.Button tab = MakeButton("Tab" + i, window, names[i], 35f + i * 298f, 13f, 278f, 68f, () => SelectTab(index));
                 _tabImages[i] = tab.GetComponent<UnityEngine.UI.Image>();
                 _tabLabels[i] = tab.GetComponentInChildren<UnityEngine.UI.Text>();
-                _pages[i] = MakeRect("Page" + i, window, 30f, 184f, 1080f, 466f).gameObject;
+                _tabLabels[i].fontSize = 26;
+                _tabLabels[i].rectTransform.anchoredPosition = new Vector2(35f, 0f);
+                _tabLabels[i].rectTransform.sizeDelta = new Vector2(230f, 68f);
+                InventoryTabGlyph glyph = MakeRect("Glyph", tab.transform, 17f, 15f, 38f, 38f).gameObject.AddComponent<InventoryTabGlyph>();
+                glyph.color = Cream;
+                glyph.Configure(i);
+                _tabUnderlines[i] = MakePanel("Selected", window, 55f + i * 298f, 84f, 238f, 5f, Gold).gameObject;
+                _pages[i] = MakeRect("Page" + i, window, 40f, 120f, 920f, 420f).gameObject;
             }
+            MakePanel("HeaderLine", window, 5f, 91f, 990f, 1f, Muted);
             BuildInventoryPage(_pages[0].transform);
             BuildRepairPage(_pages[1].transform);
             BuildLoadoutPage(_pages[2].transform);
-            MakePanel("FooterDivider", window, 30f, 674f, 1080f, 1f, new Color(0.3f, 0.36f, 0.34f));
-            _message = MakeText("Message", window, "", 32f, 689f, 850f, 44f, 15, Gold);
-            _closeButton = MakeButton("Close", window, "닫기  ×", 965f, 690f, 145f, 42f, null);
+            _message = MakeText("Message", window, "", 40f, 551f, 920f, 34f, 14, Gold);
+            _closeButton = MakeButton("Close", window, "×", 939f, 15f, 43f, 43f, null);
+            _closeButton.GetComponentInChildren<UnityEngine.UI.Text>().fontSize = 34;
             SelectTab(0);
         }
 
         private void BuildInventoryPage(Transform page)
         {
-            MakeText("Heading", page, "항해에 필요한 것들", 0f, 0f, 600f, 38f, 23, Cream);
-            _capacityLabel = MakeText("Capacity", page, "0 / 8 칸", 505f, 0f, 180f, 38f, 15, Gold, TextAnchor.MiddleRight);
-            MakeText("Hint", page, "같은 자원은 한 묶음으로 정리됩니다.", 0f, 40f, 700f, 30f, 14, Muted);
+            MakePanel("Divider", page, 600f, 0f, 1f, 410f, Muted);
             _resourceSlots = new InventoryChestSlot[8];
             for (int i = 0; i < 8; i++)
             {
-                float x = i % 4 * 176f;
-                float y = 87f + i / 4 * 166f;
-                Transform cell = MakePanel("Resource" + i, page, x, y, 160f, 150f, PanelColor).transform;
-                MakeText("Index", cell, (i + 1).ToString("00"), 12f, 8f, 36f, 24f, 12, Muted);
-                _resourceSlots[i] = MakeSlot(cell, 0f, 0f, 160f, 150f, -1);
+                Transform cell = MakeFrame("Resource" + i, page, i % 4 * 144f, 26f + i / 4 * 154f, 126f, 130f, Color.clear, Muted).transform;
+                _resourceSlots[i] = MakeSlot(cell, 0f, 0f, 126f, 130f, -1);
             }
-            Transform carry = MakePanel("Carried", page, 730f, 0f, 350f, 422f, PanelColor).transform;
-            MakeText("Title", carry, "운반 중인 모듈", 24f, 20f, 300f, 36f, 21, Cream);
-            MakeText("Limit", carry, "개인 운반  0–1개", 24f, 60f, 300f, 24f, 13, Muted);
+            _capacityLabel = MakeText("Capacity", page, "0 / 8", 0f, 366f, 300f, 35f, 23, Cream);
+            MakeText("Heading", page, "모듈", 640f, 0f, 260f, 40f, 25, Cream);
+            MakePanel("ModuleLine", page, 640f, 48f, 270f, 1f, Muted);
+            Transform carry = MakeFrame("Carried", page, 655f, 80f, 240f, 238f, Color.clear, Muted).transform;
             _moduleSlots = new InventoryChestSlot[1];
-            _moduleSlots[0] = MakeSlot(carry, 95f, 107f, 160f, 145f, 0);
-            _carriedLabel = MakeText("Name", carry, "운반 중인 모듈 없음", 24f, 263f, 300f, 42f, 19, Gold, TextAnchor.MiddleCenter);
-            MakeText("Help", carry, "작업대에서 완성품을 가져온 뒤\n배 모듈 탭에서 장착하세요.", 24f, 315f, 300f, 65f, 15, Muted, TextAnchor.MiddleCenter);
-            MakeText("BottomHint", page, "소지품은 본인에게만 표시됩니다.", 0f, 430f, 700f, 26f, 13, Muted);
+            _moduleSlots[0] = MakeSlot(carry, 0f, 0f, 240f, 238f, 0);
+            _carriedLabel = MakeText("Name", page, "", 635f, 331f, 275f, 35f, 16, Muted, TextAnchor.MiddleCenter);
         }
 
         private void BuildRepairPage(Transform page)
         {
-            Transform status = MakePanel("HullStatus", page, 0f, 0f, 440f, 446f, PanelColor).transform;
-            MakeText("Eyebrow", status, "선체 점검", 28f, 22f, 380f, 26f, 13, Gold);
-            MakeText("Heading", status, "내 배의 상태", 26f, 57f, 380f, 40f, 26, Cream);
-            _durabilityLabel = MakeText("Durability", status, "배 정보 없음", 26f, 126f, 388f, 60f, 36, Cream);
-            Transform bar = MakePanel("Track", status, 28f, 207f, 384f, 18f, Ink).transform;
-            _durabilityFill = MakePanel("Fill", bar, 0f, 0f, 384f, 18f, Teal);
-            MakeText("Threshold", status, "수리 가능 기준  ·  내구도 30% 이상", 28f, 240f, 385f, 36f, 15, Gold);
-            _repairStatus = MakeText("Status", status, "배에 탑승하면 수리할 수 있습니다.", 28f, 302f, 385f, 100f, 17, Muted);
-            Transform recipe = MakePanel("RepairRecipe", page, 460f, 0f, 620f, 446f, PanelColor).transform;
-            MakeText("Title", recipe, "선체 수리 레시피", 28f, 22f, 550f, 38f, 23, Cream);
-            _repairDescription = MakeText("Description", recipe, "재료가 모이면 내구도를 회복합니다.", 28f, 65f, 550f, 42f, 15, Muted);
-            MakeText("MaterialHeading", recipe, "필요 재료", 28f, 116f, 220f, 28f, 14, Gold);
-            MakeText("AmountsHeading", recipe, "보유 / 투입 / 필요", 300f, 116f, 255f, 28f, 14, Gold, TextAnchor.MiddleRight);
+            MakePanel("Divider", page, 600f, 0f, 1f, 410f, Muted);
+            RectTransform boat = MakeBoat(page, 120f, -85f, 285f, 455f);
+            boat.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            MakeText("DurabilityHeading", page, "내구도", 20f, 316f, 250f, 36f, 22, Cream);
+            _durabilityLabel = MakeText("Durability", page, "배 정보 없음", 265f, 316f, 305f, 36f, 22, Cream, TextAnchor.MiddleRight);
+            Transform bar = MakeFrame("Track", page, 20f, 359f, 550f, 26f, Color.clear, Muted).transform;
+            _durabilityFill = MakePanel("Fill", bar, 4f, 4f, 542f, 18f, Gold);
+            MakeText("RecipeHeading", page, "수리 재료", 640f, 0f, 270f, 38f, 25, Cream);
+            MakePanel("RecipeLine", page, 640f, 48f, 270f, 1f, Muted);
             for (int i = 0; i < _repairRows.Length; i++)
             {
-                _repairRows[i] = MakeText("Material" + i, recipe, "", 28f, 151f + i * 23f, 255f, 24f, 16, Cream);
-                _repairAmounts[i] = MakeText("Amounts" + i, recipe, "", 300f, 151f + i * 23f, 255f, 24f, 16, Cream, TextAnchor.MiddleRight);
+                float x = 640f + i % 4 * 68f;
+                float y = 66f + i / 4 * 105f;
+                Transform cell = MakeRect("Material" + i, page, x, y, 64f, 100f);
+                _repairIcons[i] = MakePanel("Icon", cell, 4f, 0f, 56f, 56f, Color.white);
+                _repairIcons[i].type = UnityEngine.UI.Image.Type.Simple;
+                _repairIcons[i].preserveAspect = true;
+                _repairRows[i] = MakeText("Name", cell, "", 0f, 56f, 64f, 19f, 11, Muted, TextAnchor.MiddleCenter);
+                _repairAmounts[i] = MakeText("Amount", cell, "", 0f, 76f, 64f, 24f, 17, Cream, TextAnchor.MiddleCenter);
             }
-            MakeText("PartialDeposit", recipe, "재료가 부족해도 보유한 만큼 먼저 투입할 수 있습니다.", 28f, 328f, 564f, 22f, 12, Muted);
-            _repairButton = MakeButton("Repair", recipe, "재료 투입 · 수리", 28f, 355f, 564f, 58f, HandleRepairClicked);
+            _repairDescription = MakeText("RepairAmount", page, "", 640f, 282f, 270f, 35f, 22, Gold);
+            _repairButton = MakeButton("Repair", page, "수리", 650f, 334f, 250f, 56f, HandleRepairClicked);
+            _repairStatus = MakeText("Status", page, "", 20f, 395f, 550f, 30f, 13, Muted);
         }
 
         private void BuildLoadoutPage(Transform page)
         {
-            MakeText("Heading", page, "나의 배 · 장착 현황", 0f, 0f, 700f, 36f, 23, Cream);
-            MakeText("Slots", page, "종류별 1개  /  최대 4종 동시 장착", 680f, 0f, 400f, 36f, 14, Gold, TextAnchor.MiddleRight);
-            Transform sea = MakePanel("BoatDiagram", page, 359f, 50f, 362f, 320f, PanelColor).transform;
-            RectTransform boat = MakeRect("Boat", sea, 81f, 5f, 200f, 305f);
-            boat.gameObject.AddComponent<InventoryBoatGraphic>().raycastTarget = false;
+            MakePanel("Divider", page, 350f, 0f, 1f, 410f, Muted);
+            RectTransform boat = MakeBoat(page, 475f, -20f, 310f, 445f);
+            Vector2[] positions = { new Vector2(113f, 52f), new Vector2(111f, 228f), new Vector2(172f, 167f), new Vector2(112f, 322f) };
             for (int i = 0; i < 4; i++)
             {
-                float x = i < 2 ? 0f : 744f;
-                float y = i % 2 == 0 ? 52f : 219f;
-                _moduleCards[i] = MakePanel("Module" + i, page, x, y, 336f, 145f, PanelColor);
-                Transform card = _moduleCards[i].transform;
-                UnityEngine.UI.Image icon = MakePanel("Icon", card, 17f, 23f, 64f, 64f, Color.white);
-                icon.sprite = GetRecipeIcon(BoatRecipeIds[i]);
-                icon.type = UnityEngine.UI.Image.Type.Simple;
-                icon.preserveAspect = true;
-                icon.enabled = icon.sprite;
-                MakeText("Name", card, ModuleNames[i], 98f, 15f, 222f, 32f, 20, Cream);
-                _moduleStates[i] = MakeText("State", card, "미장착", 98f, 50f, 220f, 30f, 16, Muted);
-                MakeText("Description", card, ModuleDescriptions[i], 17f, 101f, 302f, 30f, 13, Muted);
-                MakePanel("Connector" + i, page, i < 2 ? 336f : 721f, y + 68f, 23f, 2f, Gold);
+                int index = i;
+                int displayIndex = i == 1 ? 2 : i == 2 ? 1 : i;
+                float x = displayIndex % 2 * 165f;
+                float y = displayIndex / 2 * 195f;
+                Transform card = MakeFrame("ModuleFrame" + i, page, x, y, 135f, 125f, Color.clear, Muted).transform;
+                _moduleFrames[i] = card.GetComponent<InventoryFrameGraphic>();
+                _moduleCards[i] = MakePanel("ModuleIcon" + i, card, 14f, 10f, 107f, 101f, Color.white);
+                _moduleCards[i].sprite = GetRecipeIcon(BoatRecipeIds[i]);
+                _moduleCards[i].type = UnityEngine.UI.Image.Type.Simple;
+                _moduleCards[i].preserveAspect = true;
+                _moduleCards[i].raycastTarget = true;
+                UnityEngine.UI.Button button = card.gameObject.AddComponent<UnityEngine.UI.Button>();
+                button.targetGraphic = _moduleCards[i];
+                UnityEngine.UI.ColorBlock moduleColors = button.colors;
+                moduleColors.disabledColor = Color.white;
+                button.colors = moduleColors;
+                button.onClick.AddListener(() => HandleModuleClicked(index));
+                card.gameObject.AddComponent<Lighthouse.Common.UI.UiButtonFeedback>();
+                _moduleButtons[i] = button;
+                MakeText("Name", page, ModuleNames[i], x - 5f, y + 128f, 150f, 30f, 17, Cream, TextAnchor.MiddleCenter);
+                _moduleStates[i] = MakeText("State", page, "", x - 5f, y + 157f, 150f, 25f, 13, Muted, TextAnchor.MiddleCenter);
+                _installedIcons[i] = MakePanel("Installed" + i, boat, positions[i].x, positions[i].y, 70f, 70f, Color.white);
+                _installedIcons[i].sprite = GetRecipeIcon(BoatRecipeIds[i]);
+                _installedIcons[i].type = UnityEngine.UI.Image.Type.Simple;
+                _installedIcons[i].preserveAspect = true;
+                _installedIcons[i].enabled = false;
             }
-            Transform carry = MakePanel("InstallBar", page, 0f, 389f, 1080f, 77f, PanelColor).transform;
-            _loadoutCarriedIcon = MakePanel("Icon", carry, 17f, 12f, 52f, 52f, Color.white);
-            _loadoutCarriedIcon.type = UnityEngine.UI.Image.Type.Simple;
-            _loadoutCarriedIcon.preserveAspect = true;
-            _loadoutCarriedLabel = MakeText("Carried", carry, "운반 중인 모듈 없음", 87f, 12f, 650f, 52f, 17, Cream);
-            _installButton = MakeButton("Install", carry, "내 배에 장착", 815f, 14f, 244f, 49f, null);
+            _loadoutCarriedLabel = MakeText("ClickHint", page, "모듈 클릭 시 바로 장착", 0f, 391f, 345f, 28f, 15, Muted);
+
+        }
+
+        private RectTransform MakeBoat(Transform parent, float x, float y, float width, float height)
+        {
+            RectTransform rect = MakeRect("Boat", parent, x, y, width, height);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = new Vector2(x + width * 0.5f, -y - height * 0.5f);
+            if (_boatIllustration)
+            {
+                UnityEngine.UI.Image image = rect.gameObject.AddComponent<UnityEngine.UI.Image>();
+                image.sprite = _boatIllustration;
+                image.preserveAspect = true;
+                image.raycastTarget = false;
+            }
+            else
+            {
+                rect.gameObject.AddComponent<InventoryBoatGraphic>().raycastTarget = false;
+            }
+            return rect;
+        }
+
+        private InventoryFrameGraphic MakeFrame(string name, Transform parent, float x, float y, float width, float height, Color fill, Color border)
+        {
+            InventoryFrameGraphic frame = MakeRect(name, parent, x, y, width, height).gameObject.AddComponent<InventoryFrameGraphic>();
+            frame.color = fill;
+            frame.Configure(border);
+            frame.raycastTarget = false;
+            return frame;
+        }
+
+        private void HandleModuleClicked(int index)
+        {
+            if (!CanInstall() || !_inventory || _inventory.ModuleRecipeId != BoatRecipeIds[index]
+                || (_equipment && _equipment.HasModule(ModuleKinds[index])))
+            {
+                return;
+            }
+            HandleInstallClicked();
+            RefreshModuleButtons();
+        }
+
+        private void RefreshModuleButtons()
+        {
+            for (int i = 0; i < _moduleButtons.Length; i++)
+            {
+                bool installed = _equipment && _equipment.HasModule(ModuleKinds[i]);
+                bool carried = _inventory && _inventory.ModuleRecipeId == BoatRecipeIds[i];
+                _moduleButtons[i].interactable = carried && !installed && CanInstall();
+                _moduleCards[i].color = installed || carried ? Color.white : new Color(1f, 1f, 1f, 0.55f);
+                _moduleStates[i].text = installed ? "장착 완료" : carried ? "운반 중" : "미보유";
+                _moduleStates[i].color = installed || carried ? Gold : Muted;
+                _moduleFrames[i].Configure(installed || carried ? Gold : Muted);
+                _installedIcons[i].enabled = installed && _installedIcons[i].sprite;
+            }
         }
 
         private InventoryChestSlot MakeSlot(Transform parent, float x, float y, float width, float height, int moduleIndex)
@@ -188,7 +264,7 @@ namespace Lighthouse.Player.Inventory.View
             RectTransform root = MakeRect("Slot", parent, x, y, width, height);
             UnityEngine.UI.Image hitArea = root.gameObject.AddComponent<UnityEngine.UI.Image>();
             hitArea.color = new Color(0f, 0f, 0f, 0.001f);
-            GameObject highlight = MakePanel("Highlight", root, 3f, 3f, width - 6f, height - 6f, new Color(0.9f, 0.72f, 0.38f, 0.18f)).gameObject;
+            GameObject highlight = MakeFrame("Highlight", root, 1f, 1f, width - 2f, height - 2f, Color.clear, Gold).gameObject;
             highlight.SetActive(false);
             UnityEngine.UI.Image icon = MakePanel("Icon", root, 30f, 27f, width - 60f, height - 62f, Color.white);
             icon.sprite = null;
@@ -211,10 +287,9 @@ namespace Lighthouse.Player.Inventory.View
             for (int i = 0; i < _pages.Length; i++)
             {
                 _pages[i].SetActive(i == _selectedTab);
-                Sprite tabSkin = i == _selectedTab ? _activeButtonSkin : _buttonSkin;
-                _tabImages[i].sprite = tabSkin ? tabSkin : _roundedSprite;
-                _tabImages[i].color = tabSkin ? Color.white : i == _selectedTab ? Gold : PanelColor;
-                _tabLabels[i].color = i == _selectedTab ? Ink : Cream;
+                _tabImages[i].color = Color.clear;
+                _tabLabels[i].color = i == _selectedTab ? Gold : Cream;
+                _tabUnderlines[i].SetActive(i == _selectedTab);
             }
             if (_message)
             {
@@ -248,6 +323,10 @@ namespace Lighthouse.Player.Inventory.View
             hash = hash * 31 + (_player && _player.IsOnBoat ? 1 : 0);
             hash = hash * 31 + (_inventory ? _inventory.ModuleRecipeId : 0);
             hash = hash * 31 + (_relay && _relay.IsAwaitingResult ? 1 : 0);
+            hash = hash * 31 + (_isInstalling ? 1 : 0);
+            hash = hash * 31 + (_isRepairing ? 1 : 0);
+            hash = hash * 31 + (NetworkClient.ready ? 1 : 0);
+            hash = hash * 31 + GetDisplayedRepairMultiplier().GetHashCode();
             for (int i = 0; i < ModuleKinds.Length; i++)
             {
                 hash = hash * 31 + (_equipment && _equipment.HasModule(ModuleKinds[i]) ? 1 : 0);
@@ -267,14 +346,7 @@ namespace Lighthouse.Player.Inventory.View
             }
             _lastShipHash = hash;
             RefreshRepairPage();
-            for (int i = 0; i < ModuleKinds.Length; i++)
-            {
-                bool installed = _equipment && _equipment.HasModule(ModuleKinds[i]);
-                _moduleStates[i].text = !_equipment ? "배 정보 없음" : installed ? "● 장착 완료" : "○ 빈 슬롯";
-                _moduleStates[i].color = installed ? Teal : Muted;
-                _moduleCards[i].sprite = installed && _selectedSkin ? _selectedSkin : _panelSkin ? _panelSkin : _roundedSprite;
-                _moduleCards[i].color = _panelSkin ? Color.white : PanelColor;
-            }
+            RefreshModuleButtons();
             RefreshCarriedModule();
         }
 
@@ -283,14 +355,14 @@ namespace Lighthouse.Player.Inventory.View
             float current = _boatDurability ? _boatDurability.CurrentDurability : 0f;
             float maximum = _boatDurability ? _boatDurability.MaxDurability : 0f;
             float ratio = maximum > 0f ? current / maximum : 0f;
-            _durabilityLabel.text = _boatDurability ? $"{current:0} / {maximum:0}  ·  {ratio:P0}" : "배 정보 없음";
-            _durabilityFill.rectTransform.sizeDelta = new Vector2(384f * Mathf.Clamp01(ratio), 18f);
+            _durabilityLabel.text = _boatDurability ? $"{current:0} / {maximum:0}" : "배 정보 없음";
+            _durabilityFill.rectTransform.sizeDelta = new Vector2(542f * Mathf.Clamp01(ratio), 18f);
             _durabilityFill.color = ratio < 0.3f ? new Color(0.9f, 0.35f, 0.28f) : Teal;
             bool hasMaterials = false;
             for (int i = 0; i < _repairRows.Length; i++)
             {
                 bool valid = _boatRepair && i < _boatRepair.RequirementCount;
-                _repairRows[i].gameObject.SetActive(valid);
+                _repairRows[i].transform.parent.gameObject.SetActive(valid);
                 _repairAmounts[i].gameObject.SetActive(valid);
                 if (!valid)
                 {
@@ -301,14 +373,24 @@ namespace Lighthouse.Player.Inventory.View
                 int deposited = _boatRepair.GetDepositedAmount(id);
                 int required = _boatRepair.GetRequiredAmount(id);
                 _repairRows[i].text = _inventory ? _inventory.GetResourceDisplayName(id) : "자원";
-                _repairAmounts[i].text = $"{owned}  /  {deposited}  /  {required}";
+                _repairAmounts[i].text = deposited > 0 ? $"{owned}+{deposited} / {required}" : $"{owned} / {required}";
+                _repairIcons[i].sprite = GetResourceIcon(id);
+                _repairIcons[i].enabled = _repairIcons[i].sprite;
+                int columns = Mathf.Min(4, _boatRepair.RequirementCount);
+                RectTransform cell = (RectTransform)_repairRows[i].transform.parent;
+                float spacing = 270f / Mathf.Max(1, columns);
+                cell.anchoredPosition = new Vector2(640f + i % 4 * spacing + (spacing - 64f) * 0.5f, -66f - i / 4 * 105f);
                 _repairRows[i].color = owned + deposited >= required ? Teal : Cream;
                 _repairAmounts[i].color = _repairRows[i].color;
                 hasMaterials |= owned > 0 && deposited < required;
             }
-            float multiplier = _player && _player.PassiveController && _displayBoat
-                ? _player.PassiveController.GetRepairAmountMultiplier(_displayBoat) : 1f;
-            _repairDescription.text = _boatRepair ? $"할당량 충족 시 내구도 +{_boatRepair.RepairAmount * multiplier:0.#} · 최대치까지만 회복" : "배의 수리 정보를 기다리고 있습니다.";
+            float multiplier = GetDisplayedRepairMultiplier();
+            _repairDescription.text = _boatRepair
+                ? $"수리량  +{_boatRepair.RepairAmount * multiplier:0.#}" : "";
+            if (_boatRepair && multiplier > 1f)
+            {
+                _repairDescription.text += $"  (×{multiplier:0.##})";
+            }
             bool aboard = _player && _player.IsOnBoat && _player.CurrentBoat == _displayBoat;
             _repairStatus.text = !_boatDurability ? "소유한 배 정보가 없습니다." : _boatDurability.IsWrecked ? "난파한 배는 일반 수리를 할 수 없습니다."
                 : ratio < 0.3f ? "내구도 30% 미만 · 일반 수리 불가" : ratio >= 1f ? "선체 상태가 완전합니다."
@@ -316,6 +398,12 @@ namespace Lighthouse.Player.Inventory.View
             _repairButton.interactable = _boatRepair && _boatRepair.RequirementCount > 0 && _boatDurability && !_boatDurability.IsWrecked
                 && ratio >= 0.3f && ratio < 1f && aboard && hasMaterials && _inventory && _relay && !_relay.IsAwaitingResult
                 && !_isRepairing && !_isInstalling && NetworkClient.ready;
+        }
+
+        private float GetDisplayedRepairMultiplier()
+        {
+            return _player && _player.PassiveController && _displayBoat
+                ? _player.PassiveController.GetRepairAmountMultiplier(_displayBoat) : 1f;
         }
 
         private void HandleRepairClicked()
@@ -348,7 +436,7 @@ namespace Lighthouse.Player.Inventory.View
                     used += InventoryData.GetStackCount(entry.Value, _inventory.StackCapacity);
                 }
             }
-            _capacityLabel.text = $"{used} / {InventoryData.SlotCapacity} 칸";
+            _capacityLabel.text = $"{used} / {InventoryData.SlotCapacity}";
         }
 
         private void RefreshCarriedModule()
@@ -357,12 +445,20 @@ namespace Lighthouse.Player.Inventory.View
             {
                 return;
             }
-            int recipeId = _inventory ? _inventory.ModuleRecipeId : 0;
-            string name = GetModuleName();
-            _carriedLabel.text = name;
-            _loadoutCarriedLabel.text = recipeId == 0 ? "운반 중인 모듈 없음 · 작업대에서 가져오세요." : name + "  ·  자기 배 탑승 후 장착";
-            _loadoutCarriedIcon.sprite = GetRecipeIcon(recipeId);
-            _loadoutCarriedIcon.enabled = _loadoutCarriedIcon.sprite;
+            _carriedLabel.text = "";
+            _loadoutCarriedLabel.text = "모듈 클릭 시 바로 장착";
+        }
+
+        private Sprite GetResourceIcon(int resourceId)
+        {
+            for (int i = 0; i < _resourceIds.Length && i < _resourceIcons.Length; i++)
+            {
+                if (_resourceIds[i] == resourceId)
+                {
+                    return _resourceIcons[i];
+                }
+            }
+            return null;
         }
 
         private Sprite GetRecipeIcon(int recipeId)
@@ -396,21 +492,6 @@ namespace Lighthouse.Player.Inventory.View
             image.type = UnityEngine.UI.Image.Type.Sliced;
             image.color = color;
             image.raycastTarget = false;
-            Sprite skin = null;
-            if (name == "Body")
-            {
-                skin = _frameSkin;
-            }
-            else if (color == PanelColor)
-            {
-                skin = name.StartsWith("Resource") ? _slotSkin : _panelSkin;
-            }
-            if (skin)
-            {
-                image.sprite = skin;
-                image.color = Color.white;
-                image.pixelsPerUnitMultiplier = 1.5f;
-            }
             return image;
         }
 
@@ -429,11 +510,10 @@ namespace Lighthouse.Player.Inventory.View
         private UnityEngine.UI.Button MakeButton(string name, Transform parent, string label, float x, float y, float width, float height, UnityEngine.Events.UnityAction clicked)
         {
             UnityEngine.UI.Image image = MakePanel(name, parent, x, y, width, height, Gold);
-            if (_activeButtonSkin)
+            image.color = Color.clear;
+            if (name == "Repair")
             {
-                image.sprite = _activeButtonSkin;
-                image.color = Color.white;
-                image.pixelsPerUnitMultiplier = 1.5f;
+                MakeFrame("Border", image.transform, 0f, 0f, width, height, Color.clear, Gold);
             }
             image.raycastTarget = true;
             UnityEngine.UI.Button button = image.gameObject.AddComponent<UnityEngine.UI.Button>();
@@ -441,13 +521,14 @@ namespace Lighthouse.Player.Inventory.View
             UnityEngine.UI.ColorBlock colors = button.colors;
             colors.highlightedColor = new Color(1f, 0.94f, 0.78f);
             colors.pressedColor = new Color(0.65f, 0.75f, 0.72f);
-            colors.disabledColor = new Color(0.35f, 0.4f, 0.4f, 0.6f);
+            colors.disabledColor = Color.clear;
             button.colors = colors;
             if (clicked != null)
             {
                 button.onClick.AddListener(clicked);
             }
-            MakeText("Label", image.transform, label, 0f, 0f, width, height, 18, Ink, TextAnchor.MiddleCenter);
+            MakeText("Label", image.transform, label, 0f, 0f, width, height, 23, Cream, TextAnchor.MiddleCenter);
+            image.gameObject.AddComponent<Lighthouse.Common.UI.UiButtonFeedback>();
             return button;
         }
 
