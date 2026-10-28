@@ -20,6 +20,9 @@ public sealed class PlayerCamera : MonoBehaviour
     [SerializeField]
     private Transform _cameraPivot;
 
+    [SerializeField, Tooltip("Mounted camera offset: X right, Y world up, Z forward relative to view yaw.")]
+    private Vector3 _boatCameraOffset = Vector3.zero;
+
     [SerializeField, Min(0f)]
     private float _boatLookReturnDelay = 0.5f;
     [SerializeField, Min(0f)]
@@ -181,7 +184,13 @@ public sealed class PlayerCamera : MonoBehaviour
         }
 
         _attachedCamera.localRotation = recoilRotation;
-        _attachedCamera.position = GetUnobstructedPosition(_cameraAnchor.TransformPoint(recoilOffset));
+        Vector3 desiredPosition = _cameraAnchor.TransformPoint(recoilOffset);
+        if (_isBoatOrbit)
+        {
+            // Keep height independent of pitch so looking up cannot lower the mounted camera.
+            desiredPosition += Quaternion.Euler(0f, _viewYaw, 0f) * _boatCameraOffset;
+        }
+        _attachedCamera.position = GetUnobstructedPosition(desiredPosition);
         SetCharacterHidden(_cameraPivot &&
             Vector3.Distance(_attachedCamera.position, _cameraPivot.position) < _hideCharacterDistance);
     }
