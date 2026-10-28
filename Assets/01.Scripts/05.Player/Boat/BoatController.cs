@@ -269,8 +269,8 @@ public sealed class BoatController : NetworkBehaviour
 
     private void StopWreckPhysics()
     {
-        // Recovery still uses the hidden boat's anchor; stop it without changing the boarding contract.
-        if (TryGetComponent(out BuoyancyBody buoyancy))
+        // The network boat remains until recovery, but its hidden hull must not simulate waves.
+        if (TryGetComponent(out BuoyancyObject buoyancy))
         {
             buoyancy.IsSimulating = false;
             buoyancy.enabled = false;
@@ -295,6 +295,21 @@ public sealed class BoatController : NetworkBehaviour
     }
 
     [Server]
+    public bool TryDetachForWreck(PlayerController player)
+    {
+        if (!player || !player.isActiveAndEnabled || Owner != player || player.OwnedBoat != this || !IsWrecked
+            || !player.IsDowned || !_isOccupied || player.CurrentBoat != this)
+        {
+            return false;
+        }
+
+        _landingPosition = player.transform.position;
+        _isOccupied = false;
+        ApplyOccupiedState();
+        return !player.IsOnBoat;
+    }
+
+    [Server]
     public bool TryDisembarkForRecovery(PlayerController player, Vector3 recoveryPosition)
     {
         if (!player || Owner != player || !IsWrecked || !player.IsDowned)
@@ -302,20 +317,13 @@ public sealed class BoatController : NetworkBehaviour
             return false;
         }
 
-        if (!_isOccupied || player.CurrentBoat != this)
+        if (player.OwnedBoat != this || _isOccupied || player.IsOnBoat)
         {
             return false;
         }
 
         _landingPosition = recoveryPosition;
-        _isOccupied = false;
-        ApplyOccupiedState();
-
-        if (player.IsOnBoat)
-        {
-            return false;
-        }
-
+        player.ApplyRecoveryPosition(this, recoveryPosition);
         RpcDisembarkForRecovery(recoveryPosition);
         return true;
     }
@@ -328,7 +336,7 @@ public sealed class BoatController : NetworkBehaviour
             return;
         }
 
-        Owner.ApplyDisembarking(this, recoveryPosition);
+        Owner.ApplyRecoveryPosition(this, recoveryPosition);
     }
 
     [Server]

@@ -4,6 +4,7 @@
 
 | 담당자 | 작업 pointer |
 |---|---|
+| 강민서 | [강민서/POINTER.md](강민서/POINTER.md) |
 | 김지훈 | [김지훈/POINTER.md](김지훈/POINTER.md) |
 | 최명기 | [최명기/POINTER.md](최명기/POINTER.md) |
 | 박태욱 | [박태욱/POINTER.md](박태욱/POINTER.md) |
