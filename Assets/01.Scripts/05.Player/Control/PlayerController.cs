@@ -47,6 +47,9 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     [SerializeField]
     private BoatController _boatPrefab;
 
+    [SerializeField, Tooltip("Optional Player buoyancy component, enabled only while locally simulating a wreck survivor.")]
+    private Behaviour _wreckBuoyancy;
+
     [SyncVar]
     private BoatController _ownedBoat;
     private BoatController _offlineOwnedBoat;
@@ -98,6 +101,9 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         && !_hasStoppedClient
         && HasLocalControlAuthority
         && CanRunLocalWorld();
+    public bool CanUseWreckBuoyancy => isActiveAndEnabled && CanProcessLocalInput
+        && IsDowned && !IsOnBoat && OwnedBoat && OwnedBoat.IsWrecked
+        && IsSessionSimulationReady && _rb && !_rb.isKinematic;
     public PlayerHFSM StateMachine => _hfsm;
 
     public PlayerPassiveController PassiveController => _passiveController;
@@ -120,6 +126,22 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         && HasLocalControlAuthority
         && _canRunLocalWorld;
 
+    private bool IsSessionSimulationReady
+    {
+        get
+        {
+            if ((!NetworkClient.active && !NetworkServer.active)
+                || !(NetworkManager.singleton is LighthouseNetworkManager manager)
+                || !manager.IsSessionFlowEnabled)
+            {
+                return true;
+            }
+
+            return (NetworkServer.active ? manager.Phase : manager.ClientState.Phase)
+                == MatchPhase.InProgress;
+        }
+    }
+
     public event Action<PlayerController> InteractionRequested;
     public event Action<PlayerController> HarvestRequested;
     public event Action<PlayerController> AbilityRequested;
@@ -141,6 +163,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _hfsm = new PlayerHFSM(_runMultiplier);
         _networkActor = GetComponent<NetworkActor>();
         _passiveController = GetComponent<PlayerPassiveController>();
+        SetWreckBuoyancy(false);
 
         if (_animationDriver)
         {
@@ -288,7 +311,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private void FixedUpdate()
     {
         RefreshWorldReadiness();
-
+        SetWreckBuoyancy(CanUseWreckBuoyancy);
         if (!CanProcessLocalInput)
         {
             return;
@@ -342,6 +365,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void OnDisable()
     {
+        SetWreckBuoyancy(false);
         RestoreCursor();
 
         if (_inputReader)
@@ -402,6 +426,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     public override void OnStopLocalPlayer()
     {
+        SetWreckBuoyancy(false);
         RestoreCursor();
         _camera.Release();
         base.OnStopLocalPlayer();
@@ -454,7 +479,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     public bool ApplyBoarding(BoatController boat)
     {
-        if (!isActiveAndEnabled || !boat || boat.Owner != this || !boat.IsOccupied)
+        if (!isActiveAndEnabled || !boat || boat.Owner != this || !boat.IsOccupied || boat.IsWrecked)
         {
             return false;
         }
@@ -510,6 +535,32 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         _heading = boat.transform.eulerAngles.y;
         LeaveBoat(position);
+    }
+
+    public void ApplyRecoveryPosition(BoatController wreckedBoat, Vector3 position)
+    {
+        if (!wreckedBoat || wreckedBoat.Owner != this
+            || (IsOnBoat && _boatController != wreckedBoat))
+        {
+            return;
+        }
+
+        if (_boatController == wreckedBoat)
+        {
+            ApplyDisembarking(wreckedBoat, position);
+            return;
+        }
+
+        ClearActionRequests();
+        _rb.position = position;
+        transform.position = position;
+        if (!_rb.isKinematic)
+        {
+            _rb.linearVelocity = Vector3.zero;
+            _rb.angularVelocity = Vector3.zero;
+        }
+        ClearMovementSnapshots();
+        RefreshState();
     }
 
     public bool TryDisembark(Vector3 landingPosition)
@@ -779,6 +830,15 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     {
         _hfsm.SetInput(Vector3.zero, false);
         _hfsm.Tick(0f);
+        SetWreckBuoyancy(CanUseWreckBuoyancy);
+    }
+
+    private void SetWreckBuoyancy(bool isEnabled)
+    {
+        if (_wreckBuoyancy && _wreckBuoyancy != this && _wreckBuoyancy.enabled != isEnabled)
+        {
+            _wreckBuoyancy.enabled = isEnabled;
+        }
     }
 
     private void HandleInteractRequested()
@@ -855,6 +915,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         {
             ClearActionRequests();
         }
+        SetWreckBuoyancy(CanUseWreckBuoyancy);
     }
 
     private void RefreshWorldReadiness()
