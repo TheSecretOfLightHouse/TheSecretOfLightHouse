@@ -41,8 +41,6 @@ namespace Lighthouse.World.Ocean.Sandbox
 
         public IReadOnlyList<Vector3> BuoyancyPoints => _buoyancyPoints;
 
-        public float Mass => _mass;
-
         public Vector3 CenterOfMassOffset => _centerOfMassOffset;
 
         public float HullExposure => _hullExposure;

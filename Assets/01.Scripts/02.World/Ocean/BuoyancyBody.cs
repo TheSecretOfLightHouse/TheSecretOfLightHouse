@@ -1,6 +1,6 @@
 namespace Lighthouse.World.Ocean
 {
-    public sealed class BuoyancyBody : BuoyantObject
+    public sealed class BuoyancyBody : BuoyancyObject
     {
     }
 }

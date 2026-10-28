@@ -5,10 +5,10 @@ namespace Lighthouse.World.Ocean.Net
 {
     [DefaultExecutionOrder(-150)]
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(BuoyantObject), typeof(NetworkIdentity))]
+    [RequireComponent(typeof(BuoyancyObject), typeof(NetworkIdentity))]
     public sealed class BoatBuoyancyAuthority : NetworkBehaviour
     {
-        private BuoyantObject _buoyancy;
+        private BuoyancyObject _buoyancy;
         private Rigidbody _body;
         private bool _hasStoppedClient;
 
@@ -25,7 +25,7 @@ namespace Lighthouse.World.Ocean.Net
                 }
 
                 Debug.LogError(
-                    $"[{nameof(BoatBuoyancyAuthority)}] BuoyantObject and Rigidbody are required.",
+                    $"[{nameof(BoatBuoyancyAuthority)}] BuoyancyObject and Rigidbody are required.",
                     this);
 
                 enabled = false;

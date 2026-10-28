@@ -13,7 +13,7 @@ namespace Lighthouse.World.Ocean
 
         private readonly SlamReporter _slam = new SlamReporter();
 
-        private BuoyantObject _buoyancy;
+        private BuoyancyObject _buoyancy;
         private IShipBody _ship;
         private WaterSamplerHost _host;
 
@@ -22,7 +22,7 @@ namespace Lighthouse.World.Ocean
             if (!TryGetComponent(out _buoyancy) || !TryGetComponent(out _ship))
             {
                 Debug.LogError(
-                    $"[{nameof(WaveSlamSource)}] BuoyantObject and IShipBody are required.",
+                    $"[{nameof(WaveSlamSource)}] BuoyancyObject and IShipBody are required.",
                     this);
 
                 enabled = false;
