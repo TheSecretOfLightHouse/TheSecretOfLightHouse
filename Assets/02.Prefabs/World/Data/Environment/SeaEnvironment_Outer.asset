@@ -14,13 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _zone: 4
   _day:
-    _zenith: {r: 0.03529412, g: 0.06666667, b: 0.13333334, a: 1}
-    _horizon: {r: 0.12941177, g: 0.18431373, b: 0.22745098, a: 1}
-    _nebulaColor: {r: 0.4509804, g: 0.52156866, b: 0.60784316, a: 1}
+    _zenith: {r: 0.05, g: 0.11, b: 0.16, a: 1}
+    _horizon: {r: 0.17, g: 0.26, b: 0.28, a: 1}
+    _nebulaColor: {r: 0.4, g: 0.55, b: 0.55, a: 1}
     _starStrength: 0
-    _nebulaStrength: 0.12
+    _nebulaStrength: 0.04
     _lightScale: 0.58
-    _cloudCoverage: 0.38
+    _cloudCoverage: 0.55
   _night:
     _zenith: {r: 0.001, g: 0.002, b: 0.01, a: 1}
     _horizon: {r: 0.006, g: 0.009, b: 0.025, a: 1}
