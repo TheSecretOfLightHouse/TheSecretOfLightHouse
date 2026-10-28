@@ -20,6 +20,8 @@ GameObject:
   - component: {fileID: 1248134620652032759}
   - component: {fileID: 7222896787540228908}
   - component: {fileID: 7449903486662866639}
+  - component: {fileID: 704468626831668642}
+  - component: {fileID: 8869363228346506411}
   m_Layer: 2
   m_Name: Manta
   m_TagString: Untagged
@@ -79,7 +81,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sceneId: 0
-  _assetId: 3183025051
+  _assetId: 0
   serverOnly: 0
   visibility: 0
   hasSpawned: 0
@@ -306,6 +308,39 @@ MonoBehaviour:
   syncInterval: 0
   _animator: {fileID: 3577646578444696623}
   _transitionDuration: 0.15
+--- !u!114 &704468626831668642
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1600035957298383073}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 948f7a45eb9fc1c438ec1c248f15130d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _visualRoots:
+  - {fileID: 375513606875701861}
+  _duration: 0.7
+  _angle: 15
+--- !u!114 &8869363228346506411
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1600035957298383073}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 686ae540cb7c90c458b5397d71937ce1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _renderers:
+  - {fileID: 5260354309437067577}
+  _duration: 1
+  _redBlend: 1
+  _hitColor: {r: 1, g: 0.15448934, b: 0.019607842, a: 1}
 --- !u!1 &1644724051019218317
 GameObject:
   m_ObjectHideFlags: 0
@@ -751,6 +786,11 @@ Transform:
 --- !u!4 &3673401952013857956 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3478508733352948010, guid: ea21f4cdcb35dff4e9bda58c1724ef98, type: 3}
+  m_PrefabInstance: {fileID: 197224759528490382}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &5260354309437067577 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5457279179700212919, guid: ea21f4cdcb35dff4e9bda58c1724ef98, type: 3}
   m_PrefabInstance: {fileID: 197224759528490382}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &7316372101595746323 stripped

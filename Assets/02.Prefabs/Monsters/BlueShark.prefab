@@ -400,6 +400,8 @@ GameObject:
   - component: {fileID: 4883212538549895950}
   - component: {fileID: 2077795861757451822}
   - component: {fileID: 3500470669398193022}
+  - component: {fileID: 6731376440937682364}
+  - component: {fileID: 2428030884621516504}
   m_Layer: 2
   m_Name: BlueShark
   m_TagString: Untagged
@@ -460,7 +462,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sceneId: 0
-  _assetId: 3799906804
+  _assetId: 0
   serverOnly: 0
   visibility: 0
   hasSpawned: 0
@@ -593,6 +595,7 @@ MonoBehaviour:
   _patrolAcceleration: 3
   _usePatrolSteering: 1
   _patrolAngularAcceleration: 90
+  _steeringHeadingResponse: 2
   _steeringArrivalDistance: 1.5
   _steeringMinimumLegDistance: 8
   _steeringForwardHalfAngle: 80
@@ -674,6 +677,40 @@ MonoBehaviour:
   _turnRateForFullBlend: 60
   _turnBlendResponse: 0.2
   _turnSampleResetDistance: 10
+--- !u!114 &6731376440937682364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3061826974098303317}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 948f7a45eb9fc1c438ec1c248f15130d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _visualRoots:
+  - {fileID: 1893087708724182710}
+  - {fileID: 1743033088772472104}
+  _duration: 0.7
+  _angle: 15
+--- !u!114 &2428030884621516504
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3061826974098303317}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 686ae540cb7c90c458b5397d71937ce1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _renderers:
+  - {fileID: 9071778329367652005}
+  _duration: 1
+  _redBlend: 1
+  _hitColor: {r: 1, g: 0.15448934, b: 0.019607842, a: 1}
 --- !u!1 &3577697292619952690
 GameObject:
   m_ObjectHideFlags: 0
