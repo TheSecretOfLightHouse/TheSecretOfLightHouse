@@ -7,6 +7,9 @@ namespace Lighthouse.World.Ocean.Rules
     {
         private readonly Vector3[] _velocities;
         private readonly Vector3[] _forces;
+        private readonly float[] _heights;
+        private float _baseline;
+        private bool _hasBaseline;
 
         public BuoyancyForceApplier(int pointCount)
         {
@@ -17,6 +20,12 @@ namespace Lighthouse.World.Ocean.Rules
 
             _velocities = new Vector3[pointCount];
             _forces = new Vector3[pointCount];
+            _heights = new float[pointCount];
+        }
+
+        public void Reset()
+        {
+            _hasBaseline = false;
         }
 
         public bool TryApply(
@@ -41,6 +50,8 @@ namespace Lighthouse.World.Ocean.Rules
                 _velocities[i] = body.GetPointVelocity(worldPoints[i]);
             }
 
+            ReadOnlySpan<float> heights = AttenuateHeave(profile, waterHeights);
+
             if (!BuoyancySolver.TryEvaluate(
                     profile,
                     body.mass,
@@ -49,7 +60,7 @@ namespace Lighthouse.World.Ocean.Rules
                     thickness,
                     targetDepth,
                     worldPoints,
-                    waterHeights,
+                    heights,
                     _velocities,
                     _forces,
                     out reading))
@@ -68,6 +79,45 @@ namespace Lighthouse.World.Ocean.Rules
                 reading.SubmergedFraction));
 
             return true;
+        }
+
+        private ReadOnlySpan<float> AttenuateHeave(
+            BuoyancyProfile profile,
+            ReadOnlySpan<float> waterHeights)
+        {
+            float follow = profile.HeaveFollow;
+
+            if (follow >= 1f || waterHeights.Length != _heights.Length)
+            {
+                return waterHeights;
+            }
+
+            float mean = 0f;
+
+            for (int i = 0; i < waterHeights.Length; i++)
+            {
+                mean += waterHeights[i];
+            }
+
+            mean /= waterHeights.Length;
+
+            if (!_hasBaseline)
+            {
+                _baseline = mean;
+                _hasBaseline = true;
+            }
+            else
+            {
+                float blend = 1f - Mathf.Exp(-Time.fixedDeltaTime / profile.HeaveBaselineSeconds);
+                _baseline += (mean - _baseline) * blend;
+            }
+
+            for (int i = 0; i < waterHeights.Length; i++)
+            {
+                _heights[i] = _baseline + follow * (waterHeights[i] - _baseline);
+            }
+
+            return _heights;
         }
     }
 }

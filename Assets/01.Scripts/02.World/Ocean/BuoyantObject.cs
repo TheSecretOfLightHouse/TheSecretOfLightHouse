@@ -8,6 +8,7 @@ namespace Lighthouse.World.Ocean
     [RequireComponent(typeof(Rigidbody))]
     public class BuoyantObject : MonoBehaviour, IWaterSampleSource
     {
+        [SerializeField] private bool _isSimulating = true;
         [SerializeField] private BuoyancyProfile _profile = new BuoyancyProfile();
         [SerializeField] private SamplerPool _pool = SamplerPool.Drift;
         [SerializeField] private Vector3Int _divisions = new Vector3Int(2, 2, 2);
@@ -25,6 +26,20 @@ namespace Lighthouse.World.Ocean
         private float _targetDepth = BuoyancySolver.NoTargetDepth;
         private float _nextWarnTime;
         private bool _hasLease;
+
+        public bool IsSimulating
+        {
+            get { return _isSimulating; }
+            set
+            {
+                _isSimulating = value;
+
+                if (!value)
+                {
+                    _reading = default;
+                }
+            }
+        }
 
         public BuoyancyReading Reading => _reading;
 
@@ -75,7 +90,7 @@ namespace Lighthouse.World.Ocean
                 return;
             }
 
-            if (_body.isKinematic)
+            if (!_isSimulating || _body.isKinematic)
             {
                 ReleaseLease();
                 _reading = default;
@@ -107,7 +122,7 @@ namespace Lighthouse.World.Ocean
         {
             if (_samples != null)
             {
-                _samples.SubmitPoints(isActiveAndEnabled);
+                _samples.SubmitPoints(isActiveAndEnabled && _isSimulating);
             }
         }
 
@@ -140,18 +155,20 @@ namespace Lighthouse.World.Ocean
             float scaleY = Mathf.Abs(transform.lossyScale.y);
             float autoThickness;
 
-            if (_manualPoints != null && _manualPoints.Length > 0)
+            IReadOnlyList<Vector3> explicitPoints = ResolveExplicitPoints();
+
+            if (explicitPoints != null)
             {
                 float minY = float.MaxValue;
                 float maxY = float.MinValue;
 
-                for (int i = 0; i < _manualPoints.Length; i++)
+                for (int i = 0; i < explicitPoints.Count; i++)
                 {
-                    minY = Mathf.Min(minY, _manualPoints[i].y);
-                    maxY = Mathf.Max(maxY, _manualPoints[i].y);
+                    minY = Mathf.Min(minY, explicitPoints[i].y);
+                    maxY = Mathf.Max(maxY, explicitPoints[i].y);
                 }
 
-                points.AddRange(_manualPoints);
+                points.AddRange(explicitPoints);
                 _bodyHeight = (maxY - minY) * scaleY;
                 autoThickness = _bodyHeight;
             }
@@ -172,6 +189,23 @@ namespace Lighthouse.World.Ocean
             _thickness = _profile.ResolveThickness(autoThickness);
 
             return true;
+        }
+
+        private IReadOnlyList<Vector3> ResolveExplicitPoints()
+        {
+            if (_manualPoints != null && _manualPoints.Length > 0)
+            {
+                return _manualPoints;
+            }
+
+            if (TryGetComponent(out IShipBody ship)
+                && ship.BuoyancyPoints != null
+                && ship.BuoyancyPoints.Count > 0)
+            {
+                return ship.BuoyancyPoints;
+            }
+
+            return null;
         }
 
         private bool EnsureLease()
@@ -202,6 +236,11 @@ namespace Lighthouse.World.Ocean
 
             _samples.Close();
             _hasLease = false;
+
+            if (_applier != null)
+            {
+                _applier.Reset();
+            }
         }
 
         private void WarnThrottled()

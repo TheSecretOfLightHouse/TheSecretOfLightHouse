@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Lighthouse.World.Ocean.Rules;
+using Lighthouse.World.Ocean.View;
 using Mirror;
 using UnityEngine;
 
@@ -74,6 +75,22 @@ namespace Lighthouse.World.Ocean
             if (!TryGetComponent(out WaveDriftBody _))
             {
                 gameObject.AddComponent<WaveDriftBody>();
+            }
+
+            if (TryGetComponent(out BuoyantObject _) && !TryGetComponent(out WaveSlamSource _))
+            {
+                gameObject.AddComponent<WaveSlamSource>();
+            }
+
+            if (!TryGetComponent(out WaveTiltVisual _)
+                && transform.Find(WaveTiltVisual.DefaultModelName) != null)
+            {
+                gameObject.AddComponent<WaveTiltVisual>();
+            }
+
+            if (!TryGetComponent(out WaveCameraGuard _))
+            {
+                gameObject.AddComponent<WaveCameraGuard>();
             }
         }
     }
