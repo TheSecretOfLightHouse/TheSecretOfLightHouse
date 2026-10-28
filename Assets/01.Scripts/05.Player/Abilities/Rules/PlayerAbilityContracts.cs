@@ -3,7 +3,11 @@ using UnityEngine;
 
 public enum PlayerAbilityKind
 {
-    None
+    None = 0,
+    NavigatorRoute = 1,
+    EmergencyRepair = 2,
+    GuardShield = 3,
+    GatheringFever = 4
 }
 
 public interface IPlayerAbilityContext

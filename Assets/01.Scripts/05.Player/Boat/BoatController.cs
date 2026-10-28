@@ -1,6 +1,8 @@
 using System;
 using Mirror;
 using UnityEngine;
+using Lighthouse.Player.Boat.View;
+using Lighthouse.World.Ocean;
 
 [DefaultExecutionOrder(-200)]
 [DisallowMultipleComponent]
@@ -69,6 +71,9 @@ public sealed class BoatController : NetworkBehaviour
     private bool _hasLocalAuthority;
     private bool _hasStoppedClient;
 
+    [SerializeField]
+    private BoatWreckEffect _wreckEffectPrefab;
+
     public float ReloadDuration => _reloadDuration;
     public PlayerController Owner => IsNetworkActive ? _owner : _offlineOwner;
     private bool IsNetworkActive => NetworkClient.active || NetworkServer.active;
@@ -92,6 +97,7 @@ public sealed class BoatController : NetworkBehaviour
             }
 
             return netIdentity != null
+                && !IsWrecked
                 && isClient
                 && isOwned
                 && _hasLocalAuthority
@@ -195,6 +201,7 @@ public sealed class BoatController : NetworkBehaviour
 
         _isWreckPresentationApplied = true;
         Stop();
+        StopWreckPhysics();
 
         foreach (Renderer boatRenderer in GetComponentsInChildren<Renderer>(true))
         {
@@ -204,6 +211,27 @@ public sealed class BoatController : NetworkBehaviour
         foreach (Collider boatCollider in GetComponentsInChildren<Collider>(true))
         {
             boatCollider.enabled = false;
+        }
+
+        foreach (Light boatLight in GetComponentsInChildren<Light>(true))
+        {
+            boatLight.enabled = false;
+        }
+
+        if (_wreckEffectPrefab && (NetworkClient.active || !NetworkServer.active))
+        {
+            float elapsed = IsNetworkActive ? (float)Math.Max(0d, NetworkTime.time - _durability.WreckTime) : 0f;
+            if (elapsed < _wreckEffectPrefab.Duration)
+            {
+                BoatWreckEffect effect = Instantiate(_wreckEffectPrefab, transform.position, transform.rotation);
+                effect.transform.localScale = transform.lossyScale;
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(effect.gameObject, gameObject.scene);
+                if (TryGetComponent(out BoatHullDamage hullDamage))
+                {
+                    effect.SetHullDamageStage(hullDamage.DamageStage);
+                }
+                effect.Initialize(elapsed);
+            }
         }
     }
 
@@ -237,6 +265,23 @@ public sealed class BoatController : NetworkBehaviour
 
         RefreshLocalPhysics();
         ApplyOccupiedState();
+    }
+
+    private void StopWreckPhysics()
+    {
+        // Recovery still uses the hidden boat's anchor; stop it without changing the boarding contract.
+        if (TryGetComponent(out BuoyancyBody buoyancy))
+        {
+            buoyancy.IsSimulating = false;
+            buoyancy.enabled = false;
+        }
+
+        if (!_rb.isKinematic)
+        {
+            _rb.linearVelocity = Vector3.zero;
+            _rb.angularVelocity = Vector3.zero;
+        }
+        _rb.isKinematic = true;
     }
 
     public override void OnStopAuthority()
@@ -374,8 +419,13 @@ public sealed class BoatController : NetworkBehaviour
         bool isDashing = _dashModule && _dashModule.isActiveAndEnabled && _dashModule.IsDashing && !config.InputLocked && input.y > 0f;
 
         float dashMultiplier = isDashing ? _dashModule.SpeedMultiplier : 1f;
+        float passiveMultiplier = 1f;
+        if (player.PassiveController)
+        {
+            passiveMultiplier = player.PassiveController.GetBoatSpeedMultiplier(this);
+        }
 
-        Vector3 targetVelocity = forward * Mathf.Clamp(input.y, -1f, 1f) * _speed * config.SpeedMultiplier * dashMultiplier;
+        Vector3 targetVelocity = forward * Mathf.Clamp(input.y, -1f, 1f) * _speed * config.SpeedMultiplier *passiveMultiplier * dashMultiplier;
         Vector3 velocity = _rb.linearVelocity;
         Vector3 horizontal = new Vector3(velocity.x, 0f, velocity.z);
         if (Time.time >= _recoilEndTime)
@@ -387,7 +437,7 @@ public sealed class BoatController : NetworkBehaviour
             }
             else
             {
-                horizontal = Vector3.MoveTowards(horizontal, targetVelocity, _acceleration * config.AccelerationMultiplier * recovery * fixedDeltaTime);
+                horizontal = Vector3.MoveTowards(horizontal,targetVelocity,_acceleration* config.AccelerationMultiplier* passiveMultiplier* recovery* fixedDeltaTime);
             }
         }
         _rb.linearVelocity = new Vector3(horizontal.x, velocity.y, horizontal.z);

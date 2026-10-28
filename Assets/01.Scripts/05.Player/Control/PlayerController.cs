@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 using Lighthouse.Network.Connections.Net;
 using Lighthouse.Network.Session.Net;
 using Lighthouse.Network.Session.Rules;
+using Lighthouse.Network.Session.View;
 using Lighthouse.World.MapGeneration.Net;
 using Lighthouse.World.Query.Rules;
 
@@ -34,11 +35,17 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     [SerializeField, Min(0f)]
     private float _mouseSensitivity = 0.15f;
 
+    [SerializeField, Min(0f)]
+    private float _onFootTurnSpeed = 720f;
+
     [SerializeField]
     private bool _allowOfflineControl = true;
 
     [SerializeField]
     private bool _requireLocalWorldReady = true;
+
+    [SerializeField]
+    private BoatController _boatPrefab;
 
     [SyncVar]
     private BoatController _ownedBoat;
@@ -75,6 +82,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private CursorLockMode _savedCursorLockMode;
     private bool _savedCursorVisible;
 
+    private PlayerPassiveController _passiveController;
+
     public Transform Actor => transform;
 
     public bool IsDowned => _hfsm.IsDowned;
@@ -82,6 +91,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     public BoatController OwnedBoat => NetworkClient.active || NetworkServer.active ? _ownedBoat : _offlineOwnedBoat;
     public BoatController CurrentBoat => _boatController;
+    public BoatController BoatPrefab => _boatPrefab;
     public bool CanProcessBoatInput => CanProcessLocalInput;
     public bool CanSimulateLocalWorld =>
         isActiveAndEnabled
@@ -90,6 +100,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         && CanRunLocalWorld();
     public PlayerHFSM StateMachine => _hfsm;
 
+    public PlayerPassiveController PassiveController => _passiveController;
     private bool HasLocalControlAuthority
     {
         get
@@ -129,6 +140,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         CacheNetworkTransform();
         _hfsm = new PlayerHFSM(_runMultiplier);
         _networkActor = GetComponent<NetworkActor>();
+        _passiveController = GetComponent<PlayerPassiveController>();
 
         if (_animationDriver)
         {
@@ -231,7 +243,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
             SetDowned(true);
         }
 
-        if (!IsDowned && !_isRescuePromptOpen)
+        if (!IsDowned && !_isRescuePromptOpen && !SessionScreen.IsGameplayOverlayOpen)
         {
             Vector2 look = _lookAction != null ? _lookAction.ReadValue<Vector2>() : Vector2.zero;
             if (IsOnBoat)
@@ -253,6 +265,12 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         Vector2 input = _inputReader.MoveInput;
 
+        if (!IsOnBoat && _camera)
+        {
+            _camera.SetOnFootHeading(_heading);
+        }
+
+        // Body rotation must not change the camera-relative movement basis.
         Vector3 direction = Quaternion.Euler(0f, _heading, 0f) * new Vector3(input.x, 0f, input.y);
 
         _hfsm.SetInput(direction, _inputReader.RunHeld);
@@ -280,10 +298,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         MoveConfig config = MoveConfig.Combine(_hfsm.CurrentMoveConfig,_abilityRunner.MovementModifier);
 
-        bool jumpRequested = _jumpRequested;
+        bool jumpRequested = _jumpRequested && !SessionScreen.IsGameplayOverlayOpen;
         _jumpRequested = false;
-
-        Quaternion rotation = Quaternion.Euler(0f, _heading, 0f);
 
         if (IsOnBoat)
         {
@@ -291,12 +307,21 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
             return;
         }
 
+        Vector3 moveDirection = _hfsm.MoveDirection;
         if (!IsDowned)
         {
+            Quaternion rotation = _rb.rotation;
+            if (!config.InputLocked && moveDirection.sqrMagnitude > 0f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
+                rotation = Quaternion.RotateTowards(
+                    rotation, targetRotation, _onFootTurnSpeed * fixedDeltaTime);
+            }
+
             _motor.Face(rotation);
         }
 
-        _motor.Move(_hfsm.MoveDirection, config,fixedDeltaTime);
+        _motor.Move(moveDirection, config,fixedDeltaTime);
 
         if (jumpRequested && !IsDowned && !config.InputLocked)
         {
@@ -708,7 +733,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _fireRequested = false;
         _abilityRequested = false;
 
-        if (IsDowned || _isRescuePromptOpen
+        if (IsDowned || _isRescuePromptOpen || SessionScreen.IsGameplayOverlayOpen
             || Time.frameCount <= _rescuePromptClosedFrame)
         {
             return;
@@ -778,7 +803,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void HandleDashRequested()
     {
-        if (!CanProcessLocalInput || IsDowned || !IsOnBoat)
+        if (!CanProcessLocalInput || IsDowned || !IsOnBoat || SessionScreen.IsGameplayOverlayOpen)
         {
             return;
         }
@@ -799,7 +824,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void HandleJumpRequested()
     {
-        if (CanProcessLocalInput && !IsDowned && !IsOnBoat)
+        if (CanProcessLocalInput && !IsDowned && !IsOnBoat && !SessionScreen.IsGameplayOverlayOpen)
         {
             _jumpRequested = true;
         }

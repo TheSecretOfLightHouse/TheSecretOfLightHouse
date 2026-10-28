@@ -15,12 +15,23 @@ public sealed class BoatDurability : NetworkBehaviour
     [SyncVar]
     private bool _isWrecked;
 
+    [SyncVar]
+    private double _wreckTime;
+
     public float MaxDurability => _maxDurability;
     public float CurrentDurability => _currentDurability;
     public bool IsWrecked => _isWrecked;
+    public double WreckTime => _wreckTime;
 
     public event Action<float, float> DurabilityChanged;
     public event Action Wrecked;
+
+    private BoatShield _shield;
+
+    private void Awake()
+    {
+        _shield = GetComponent<BoatShield>();
+    }
 
     public override void OnStartServer()
     {
@@ -28,6 +39,7 @@ public sealed class BoatDurability : NetworkBehaviour
 
         _currentDurability = _maxDurability;
         _isWrecked = false;
+        _wreckTime = 0d;
     }
 
     public override void OnStartClient()
@@ -45,6 +57,11 @@ public sealed class BoatDurability : NetworkBehaviour
             return;
         }
 
+        if (_shield && _shield.TryAbsorbDamage())
+        {
+            return;
+        }
+
         float previousDurability = _currentDurability;
         _currentDurability = Mathf.Max(0f, _currentDurability - damage);
 
@@ -56,6 +73,7 @@ public sealed class BoatDurability : NetworkBehaviour
 
         if (_currentDurability <= 0f)
         {
+            _wreckTime = NetworkTime.time;
             _isWrecked = true;
             Debug.Log($"[{nameof(BoatDurability)}] {name} | Wrecked", this);
             Wrecked?.Invoke();
@@ -77,5 +95,8 @@ public sealed class BoatDurability : NetworkBehaviour
         }
 
         _currentDurability = Mathf.Min(_maxDurability, _currentDurability + amount);
+
+
+        Debug.Log($"[{nameof(BoatDurability)}] {name} | " +$"Durability: {_currentDurability} -> {_maxDurability}",this);
     }
 }

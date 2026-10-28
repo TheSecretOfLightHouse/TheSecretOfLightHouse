@@ -64,10 +64,51 @@ public sealed class PlayerInventoryModuleBinder : MonoBehaviour
         }
     }
 
-    [ContextMenu("Test/Deposit Searchlight Stone")]
-    private void TestDepositStone()
+    [ContextMenu("Test/Deposit Searchlight Ingredients")]
+    private void TestDepositIngredients()
     {
-        SendWorkbenchRequest(InteractionAction.Deposit, 101, 1, 1);
+        if (!_inventory || !_workbench || !NetworkClient.ready)
+        {
+            return;
+        }
+
+        StartCoroutine(DepositSearchlightIngredients());
+    }
+
+    private IEnumerator DepositSearchlightIngredients()
+    {
+        if (!_workbench.Catalog || !_workbench.Catalog.TryGetById(101, out Lighthouse.Workbench.Rules.ModuleRecipe recipe))
+        {
+            yield break;
+        }
+
+        InteractionRelay relay = _inventory.GetComponent<InteractionRelay>();
+        if (!relay)
+        {
+            yield break;
+        }
+
+        for (int i = 0; i < recipe.IngredientCount; i++)
+        {
+            double deadline = Time.realtimeSinceStartupAsDouble + 5.0;
+            while (relay && relay.IsAwaitingResult && Time.realtimeSinceStartupAsDouble < deadline)
+            {
+                yield return null;
+            }
+
+            if (!relay || !_workbench || !NetworkClient.ready || relay.IsAwaitingResult)
+            {
+                yield break;
+            }
+
+            int resourceId = recipe.GetIngredient(i).ResourceId;
+            int remaining = _workbench.GetRemaining(recipe.Id, resourceId);
+            if (remaining > 0 && !relay.TrySendToNetworkTarget(_workbench.netId,
+                InteractionAction.Deposit, recipe.Id, resourceId, remaining))
+            {
+                yield break;
+            }
+        }
     }
 
     [ContextMenu("Test/Craft Searchlight")]
@@ -78,7 +119,7 @@ public sealed class PlayerInventoryModuleBinder : MonoBehaviour
 
     private void SendWorkbenchRequest(InteractionAction action, int recipeId, int resourceId = 0, int amount = 0)
     {
-        if (!_inventory || !_workbench || _workbench.netId == 0)
+        if (!_inventory || !_workbench || _workbench.netId == 0 || !NetworkClient.ready)
         {
             return;
         }

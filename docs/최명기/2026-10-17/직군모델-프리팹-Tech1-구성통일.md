@@ -45,3 +45,12 @@
 
 ## 관련 원문·인수인계
 - [기존 픽업·생성기 연결](픽업-내용물-동기화.md)
+
+## 2026-10-25 공통 컴포넌트 최신화
+- 사용자 요청: 이름에1이 붙은 플레이어 프리팹의 공통 구성을 현재 Tech 1과 맞추고 누락 컴포넌트 추가.
+- MCP 확인: Play 꺼짐·컴파일 중 아님. Captain 1/Farm 1/Tanker 1에는 PlayerPassiveController, PlayerWreckRecovery, InteractionTarget, PlayerRescuePrompt가 공통 누락.
+- Unity PrefabUtility/CopySerialized/SerializedObject로 세 프리팹에4종 추가, 기존 공통 컴포넌트 설정 동기화·내부 객체 참조 대상별 재매핑. 카메라 피벗/앵커 로컬 변환 동기화. Animator 공통 설정만 맞추고 모델·Avatar·NetworkIdentity·직군별 패시브 참조 유지. Tech 1의 시험용 NavigatorPassive를 일괄 복제하지 않음.
+- 실제 검증: 저장 후 재조회에서 세 프리팹 공통 누락0, Missing Script0, Tech 1 내부 잘못된 참조0, 카메라 피벗 자기 참조 정상, 각 Avatar isValid/isHuman=true. assetId Captain1520491425/Farm1588987481/Tanker3114722876 유지.
+- Tech 1 SHA256 전후 동일: 96C02A1AD8083A8FE273C195595E543847E5BBD25073E803000138FD63B685E1. 기존 사용자 C#/Tech 1/Build Profile 변경 보존. YAML 직접 편집·씬 저장·커밋 없음.
+- 변경 파일: Assets/02.Prefabs/Player/Captain 1.prefab, Farm 1.prefab, Tanker 1.prefab 및 본 기록/담당자 pointer.
+- 남은 일: 세 프리팹 직군 패시브 슬롯은 미할당 유지. 채집가 GathererPassive20 연결·실제 스폰/입력/구조/M2 검증은 별도 후속. 이번 Play·다인 실행 미실행.
