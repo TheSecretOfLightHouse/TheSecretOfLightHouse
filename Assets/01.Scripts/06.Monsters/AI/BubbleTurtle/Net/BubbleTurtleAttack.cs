@@ -1,4 +1,5 @@
 using Lighthouse.Monsters.AI.Server;
+using Lighthouse.Monsters.AI.View;
 using Mirror;
 using UnityEngine;
 
@@ -26,6 +27,7 @@ namespace Lighthouse.Monsters.AI.Net
         private SeaMonsterSensor _sensor;
         private MonsterAttackRange _range;
         private Rigidbody _body;
+        private MonsterHitShake _hitShake;
         private NetworkIdentity _projectileIdentity;
         private BubbleProjectile _projectileTemplate;
         private MonsterBoatTarget _targetBoat;
@@ -58,6 +60,7 @@ namespace Lighthouse.Monsters.AI.Net
             _sensor = GetComponent<SeaMonsterSensor>();
             _range = GetComponent<MonsterAttackRange>();
             _body = GetComponent<Rigidbody>();
+            _hitShake = GetComponent<MonsterHitShake>();
 
             if (_projectilePrefab != null)
             {
@@ -183,9 +186,10 @@ namespace Lighthouse.Monsters.AI.Net
             // 호스트의 중복 생성을 막기 위해 애니메이션 콜백 대신 서버에서 한 번만 생성한다.
             _hasFired = true;
 
-            Vector3 direction = _target.transform.position - _firePoint.position;
+            Vector3 firePosition = _hitShake != null ? _hitShake.GetUnshakenPosition(_firePoint) : _firePoint.position;
+            Vector3 direction = _target.transform.position - firePosition;
             Quaternion rotation = direction.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(direction, Vector3.up) : transform.rotation;
-            GameObject projectile = Instantiate(_projectilePrefab, _firePoint.position, rotation);
+            GameObject projectile = Instantiate(_projectilePrefab, firePosition, rotation);
             BubbleProjectile movement = projectile.GetComponent<BubbleProjectile>();
             if (movement == null || !movement.Initialize(_targetBoat, netIdentity, _monster.Profile.AttackDamage))
             {

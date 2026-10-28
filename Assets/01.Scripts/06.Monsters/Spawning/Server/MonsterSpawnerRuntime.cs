@@ -12,6 +12,7 @@ namespace Lighthouse.Monsters.Spawning.Server
         private readonly MonsterSpawnShape[] _shapes;
         private readonly Quaternion[] _rotations;
         private readonly List<MonsterBase> _owned;
+        private readonly Dictionary<MonsterBase, double> _deathRemovalTimes = new Dictionary<MonsterBase, double>();
         private readonly MonsterRespawnSchedule _respawns;
         private readonly bool _canRespawn;
         private readonly float _respawnDelay;
@@ -69,7 +70,11 @@ namespace Lighthouse.Monsters.Spawning.Server
             // External destruction must not permanently consume a population slot.
             for (int i = _owned.Count - 1; i >= 0; i--)
             {
-                if (_owned[i] == null || _owned[i].IsDead)
+                if (_owned[i] == null)
+                {
+                    RemoveOwnedAt(i);
+                }
+                else if (_owned[i].IsDead && _deathRemovalTimes.TryGetValue(_owned[i], out double removalTime) && now >= removalTime)
                 {
                     RemoveOwnedAt(i);
                 }
@@ -165,6 +170,7 @@ namespace Lighthouse.Monsters.Spawning.Server
             }
 
             _owned.Clear();
+            _deathRemovalTimes.Clear();
             _respawns.Clear();
             _pendingCount = 0;
         }
@@ -172,9 +178,15 @@ namespace Lighthouse.Monsters.Spawning.Server
         private void HandleMonsterDied(MonsterBase monster)
         {
             int index = _owned.IndexOf(monster);
-            if (index >= 0)
+            if (index >= 0 && !_deathRemovalTimes.ContainsKey(monster))
             {
-                RemoveOwnedAt(index);
+                if (_canRespawn)
+                {
+                    _respawns.Schedule(Time.timeAsDouble, _respawnDelay);
+                }
+                var view = monster.GetComponent<MonsterDeathView>();
+                float duration = view != null ? view.Duration : 0f;
+                _deathRemovalTimes.Add(monster, Time.timeAsDouble + duration);
             }
         }
 
@@ -182,12 +194,13 @@ namespace Lighthouse.Monsters.Spawning.Server
         {
             MonsterBase monster = _owned[index];
             _owned.RemoveAt(index);
+            bool deathScheduled = monster != null && _deathRemovalTimes.Remove(monster);
             if (monster != null)
             {
                 monster.Died -= HandleMonsterDied;
             }
 
-            if (_canRespawn)
+            if (_canRespawn && !deathScheduled)
             {
                 _respawns.Schedule(Time.timeAsDouble, _respawnDelay);
             }
