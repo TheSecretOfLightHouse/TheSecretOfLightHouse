@@ -55,3 +55,10 @@
 - 배 프리팹4개는 UnityYAMLMerge로 모두 종료코드0 병합. 로컬→결과의 추가/삭제 행이 원본→원격과 정확히 같음을 비교했다. YAML 수작업 편집 없음.
 - 검증: 원본136개 누락0(BoatShipBody는 WaterBody로 대응), 내용 차이는 이름 변경 코드1개·선언 충돌 코드1개·프리팹4개뿐이며 나머지130개 로컬 내용 보존. 런타임 C#에서 이전 BuoyantObject/BoatShipBody 참조 검색 결과0. 행 끝 빈필드 공백 제외 diff 검사 통과. 충돌 마커 없음, 충돌 인덱스는 해제하고 미스테이징 상태로 정리했다.
 - 남은 검증은 Unity 컴파일·프리팹 로드·실제 배 부력/쉴드/난파·M2이며 이전 사용자 요청대로 이번에도 미실행이다.
+
+## 2026-10-28 후속 Git 충돌 해결
+- feature/myeongki HEAD 20b7d09에서 origin/develop 65b0d64 병합 중 Island_Lighthouse.asset 한 파일의 미해결 인덱스를 확인했다.
+- 사용자가 해당 파일만 로컬 변경을 버리고 develop 버전으로 교체하도록 명시했다. `git checkout --theirs`와 해당 파일만 `git add`하여 해결했다. YAML 직접 편집 없이 develop의 반경33과 프리팹 참조를 인수했다.
+- 검증: `git ls-files -u` 출력 없음, 대상 파일과 MERGE_HEAD 간 diff 없음. 다른 기존 스테이징·빌드 프로필·미추적 파일은 유지했다.
+- 전체 cached diff 검사에서는 기존 MainGame.unity의 빈 직렬화 필드 행 끝 공백6개가 보고됐다. 수정하지 않았다.
+- 병합 커밋·푸시와 Unity 실행 검증은 수행하지 않았다. 병합은 충돌 해결 후 커밋 대기 상태다.
