@@ -72,7 +72,7 @@ namespace Lighthouse.Workbench.Editor
 
                 WorkbenchRecipeCard card = BuildRecipes(frame, out Text section);
                 Image progress = Picture("Progress", frame, "ws_panel_craft", 627f, 237f, 373f, 467f);
-                Image hero = Picture("BigIcon", progress.transform, null, 105f, 38f, 168f, 122f);
+                Image hero = Picture("BigIcon", progress.transform, null, 126f, 29f, 168f, 122f);
                 hero.preserveAspect = true;
                 Text title = Label("Title", progress.transform, "모듈", 24, 23f, 161f, 327f, 38f);
                 Text kind = Label("Kind", progress.transform, string.Empty, 14, 30f, 202f, 313f, 24f);
@@ -102,11 +102,18 @@ namespace Lighthouse.Workbench.Editor
                 withdraw.gameObject.SetActive(false);
 
                 Image shelf = Picture("Stock", frame, "ws_panel_shelf", 1023f, 273f, 305f, 397f);
-                Label("Title", shelf.transform, "선반", 24, 20f, 18f, 100f, 36f, TextAnchor.MiddleLeft);
+                Label("Title", shelf.transform, "선반", 24, 22f, 20.4f, 100f, 36f, TextAnchor.MiddleLeft);
                 // Not in the sketch, but six slots cannot show all eight modules without paging.
-                Button previous = MakeButton("PreviousPage", shelf.transform, "‹", "ws_button", 178f, 25f, 26f, 24f, 16);
-                Text page = Label("Page", shelf.transform, "1 / 1", 13, 206f, 25f, 44f, 24f);
-                Button next = MakeButton("NextPage", shelf.transform, "›", "ws_button", 252f, 25f, 26f, 24f, 16);
+                // Placed from the shelf's top-right corner as the user laid them out in JH04 (2026-10-27). The screen swaps
+                // in the OS font when it runs, which is wider than the editor's and draws "‹ ›" off centre, so the arrows
+                // use "〈 〉" and the page count may run past its box instead of being cut.
+                Button previous = MakeButton("PreviousPage", shelf.transform, "〈", "ws_button", 0f, 0f, 26f, 24f, 16);
+                PlaceFromTopRight(previous.transform, -138f, -25f);
+                Text page = Label("Page", shelf.transform, "1 / 1", 20, 0f, 0f, 44f, 24f);
+                page.horizontalOverflow = HorizontalWrapMode.Overflow;
+                PlaceFromTopRight(page.transform, -102.2f, -26.4f);
+                Button next = MakeButton("NextPage", shelf.transform, "〉", "ws_button", 0f, 0f, 26f, 24f, 16);
+                PlaceFromTopRight(next.transform, -50f, -25f);
                 WorkbenchItemSlot[] slots = BuildStoredSlots(shelf.transform);
                 Button take = MakeButton("Take", shelf.transform, "가져가기", "ws_button_outline_active", 24f, 274f, 104f, 42f, 17);
                 Button putBack = MakeButton("Return", shelf.transform, "되돌려놓기", "ws_button_outline", 153f, 274f, 128f, 42f, 17);
@@ -297,7 +304,8 @@ namespace Lighthouse.Workbench.Editor
             button.targetGraphic = cardImage;
             button.transition = Selectable.Transition.None;
             CanvasGroup group = cardImage.gameObject.AddComponent<CanvasGroup>();
-            Image icon = Picture("Icon", cardImage.transform, "ws_icon_frame", 9f, 4f, 66f, 53f);
+            Image icon = Picture("Icon", cardImage.transform, "ws_icon_frame", 18f, 6f, 66f, 53f);
+            icon.rectTransform.localScale = Vector3.one * 0.9f;
             icon.preserveAspect = true;
             Text name = Label("Name", cardImage.transform, string.Empty, 14, 0f, 0f, 84f, 20f);
             Text detail = Label("Detail", cardImage.transform, string.Empty, 12, 0f, 0f, 84f, 20f);
@@ -524,6 +532,14 @@ namespace Lighthouse.Workbench.Editor
             button.targetGraphic = hit;
             button.transition = Selectable.Transition.None;
             return button;
+        }
+
+        private static void PlaceFromTopRight(Transform item, float x, float y)
+        {
+            RectTransform rect = (RectTransform)item;
+            rect.anchorMin = rect.anchorMax = Vector2.one;
+            rect.anchoredPosition = new Vector2(x, y);
+            rect.localScale = Vector3.one * 1.1f;
         }
 
         // A button sized by its row layout, its caption filling it and its key just under its bottom edge.
