@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: CourtyardPondWater
+  m_Shader: {fileID: 4800000, guid: fa99ba76d745dfa408515771dba48508, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _Caustics:
+        m_Texture: {fileID: 2800000, guid: f8022cf0786ead147bf6ce858a69e448, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 2800000, guid: bd6f803a7aa2a134693d786c0b77bdaa, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Absorption: 0.12
+    - _Base_Opacity: 0.96
+    - _Caustic_Scale: 0.14
+    - _Caustic_Strength: 0.24
+    - _Clarity: 0.85
+    - _Deep_Falloff: 8
+    - _Deep_Height: 0.4
+    - _Depth_Fade: 0.35
+    - _Far_Smooth: 0.65
+    - _Lagoon_Reach: 11
+    - _Path_Tint: 0.35
+    - _Reflection_Strength: 0.3
+    - _Refraction: 0.002
+    - _Refraction_Falloff: 0.02
+    - _Refraction_Strength: 0.003
+    - _Ripple_Strength: 0.1
+    - _Shallow_Caustic: 0.07
+    - _Shallows_Opacity: 0.14
+    - _Sky_Light: 0
+    - _Smoothness: 0.85
+    - _Sparkle_Strength: 0.55
+    - _Very_Deep_Height: 1.6
+    m_Colors:
+    - _Deep_Color: {r: 0.06, g: 0.33, b: 0.3, a: 0.9}
+    - _Shallow_Color: {r: 0.18, g: 0.62, b: 0.54, a: 0.75}
+    - _Very_Deep_Color: {r: 0.008, g: 0.17, b: 0.23, a: 1}
+    - _Zone_Radii: {r: 200, g: 360, b: 490, a: 60}
+    - _Zone_Sky: {r: 1, g: 1, b: 1, a: 0}
+    - _Zone_Tint0: {r: 1, g: 1, b: 1, a: 1}
+    - _Zone_Tint1: {r: 1, g: 1, b: 1, a: 1}
+    - _Zone_Tint2: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
