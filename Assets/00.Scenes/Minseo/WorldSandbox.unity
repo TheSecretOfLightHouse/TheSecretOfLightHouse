@@ -151,20 +151,28 @@ MonoBehaviour:
   m_GameObject: {fileID: 91789089}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc0f99697f6f43c4cb23457520e6aea9, type: 3}
+  m_Script: {fileID: 11500000, guid: 1aafff1b5e63eb849ad57b0e0ed80c20, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _isSimulating: 1
-  _pool: 0
-  _tuning:
-    _strength: 2
-    _referenceDepth: 1
-    _maxDepth: 2
+  _profile:
+    _buoyancyRatio: 2
+    _restoreStrength: 0
+    _diveRatio: 0.9
+    _surfaceFollow: 1
+    _submergedFollow: 0.3
+    _plateThickness: 0
+    _depthCapScale: 3
     _verticalDrag: 5
     _horizontalDrag: 0.3
     _angularDrag: 0.3
-  _slamThreshold: 3
-  _slamCooldown: 0.5
+    _heaveFollow: 1
+    _heaveBaselineSeconds: 4
+  _pool: 0
+  _divisions: {x: 2, y: 2, z: 2}
+  _manualPoints: []
+  _depthTolerance: 0.1
+  _warnInterval: 2
 --- !u!114 &91789091
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -182,7 +190,7 @@ MonoBehaviour:
   _mass: 500
   _centerOfMassOffset: {x: 0, y: -0.3, z: 0}
   _rightingStrength: 1
-  _sailArea: 4
+  _hullExposure: 1
   _buoyancyPoints:
   - {x: -0.4, y: -0.5, z: -0.4}
   - {x: 0.4, y: -0.5, z: -0.4}
@@ -757,10 +765,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _body: {fileID: 0}
   _offlineShipId: 1
-  _mass: 500
   _centerOfMassOffset: {x: 0, y: -0.3, z: 0}
   _rightingStrength: 1
-  _sailArea: 4
+  _hullExposure: 1
   _buoyancyPoints:
   - {x: -0.4, y: -0.5, z: -0.4}
   - {x: 0.4, y: -0.5, z: -0.4}
@@ -790,20 +797,28 @@ MonoBehaviour:
   m_GameObject: {fileID: 415789533}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc0f99697f6f43c4cb23457520e6aea9, type: 3}
+  m_Script: {fileID: 11500000, guid: 1aafff1b5e63eb849ad57b0e0ed80c20, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _isSimulating: 1
-  _pool: 0
-  _tuning:
-    _strength: 2
-    _referenceDepth: 1
-    _maxDepth: 2
+  _profile:
+    _buoyancyRatio: 2
+    _restoreStrength: 0
+    _diveRatio: 0.9
+    _surfaceFollow: 1
+    _submergedFollow: 0.3
+    _plateThickness: 0
+    _depthCapScale: 3
     _verticalDrag: 5
     _horizontalDrag: 0.3
     _angularDrag: 0.3
-  _slamThreshold: 3
-  _slamCooldown: 0.5
+    _heaveFollow: 1
+    _heaveBaselineSeconds: 4
+  _pool: 0
+  _divisions: {x: 2, y: 2, z: 2}
+  _manualPoints: []
+  _depthTolerance: 0.1
+  _warnInterval: 2
 --- !u!54 &415789537
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2357,10 +2372,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _networkManager: {fileID: 2057673050}
   _boatPrefab: {fileID: 3100090438404496623, guid: b30e1fbdd842f4d46a8535e5b5da4674, type: 3}
-  _spawnOffset: {x: 1.5, y: -0.2, z: 0}
+  _boatSpawnPoints: []
   _landLayers:
     serializedVersion: 2
     m_Bits: 1
+  _playerRecoveryPoint: {fileID: 0}
+  _moduleWorkbench: {fileID: 0}
+  _moduleHandler: {fileID: 0}
 --- !u!114 &2057673048
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2458,6 +2476,7 @@ MonoBehaviour:
   _startPlayerCount: 4
   _loadTimeoutSeconds: 60
   _shutdownDelaySeconds: 0.5
+  _requireStartGate: 0
 --- !u!4 &2057673051
 Transform:
   m_ObjectHideFlags: 0
