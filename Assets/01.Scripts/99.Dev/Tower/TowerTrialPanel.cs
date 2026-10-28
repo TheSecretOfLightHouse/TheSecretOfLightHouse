@@ -1,4 +1,3 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Collections.Generic;
 using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
@@ -682,4 +681,3 @@ namespace Lighthouse.Dev.Tower
         }
     }
 }
-#endif
