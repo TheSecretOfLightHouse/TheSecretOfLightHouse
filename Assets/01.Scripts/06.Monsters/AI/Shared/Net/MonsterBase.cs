@@ -1,5 +1,6 @@
 using System;
 using Lighthouse.Monsters.AI.Rules;
+using Lighthouse.Monsters.AI.View;
 using Lighthouse.Monsters.Spawning.Server;
 using Mirror;
 using Unity.Behavior;
@@ -134,6 +135,10 @@ namespace Lighthouse.Monsters.AI.Net
             }
 
             _currentHealth = Mathf.Max(0f, _currentHealth - damage);
+            if (GetComponent<MonsterHitFeedback>() != null || GetComponent<MonsterHitShake>() != null)
+            {
+                RpcPlayHitFeedback();
+            }
 
             if (_currentHealth <= 0f)
             {
@@ -145,6 +150,19 @@ namespace Lighthouse.Monsters.AI.Net
             }
 
             return true;
+        }
+
+        [ClientRpc]
+        private void RpcPlayHitFeedback()
+        {
+            if (TryGetComponent(out MonsterHitFeedback feedback))
+            {
+                feedback.PlayHit();
+            }
+            if (TryGetComponent(out MonsterHitShake shake))
+            {
+                shake.PlayHit();
+            }
         }
 
         [Server]
