@@ -803,7 +803,9 @@ MonoBehaviour:
   _mouseSensitivity: 0.15
   _onFootTurnSpeed: 720
   _allowOfflineControl: 1
+  _requireLocalWorldReady: 1
   _boatPrefab: {fileID: 574665130920709553, guid: 3ab134b47e46cc047b6bc4867af5c04c, type: 3}
+  _wreckBuoyancy: {fileID: 0}
 --- !u!136 &1477268973471061571
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -934,8 +936,16 @@ MonoBehaviour:
   _minPitch: -10
   _maxPitch: 70
   _cameraPivot: {fileID: 5064427949976649859}
+  _boatCameraOffset: {x: 0, y: 0.2, z: 0}
   _boatLookReturnDelay: 3
   _boatLookReturnSpeed: 120
+  _lookSmoothTime: 0.08
+  _obstacleMask:
+    serializedVersion: 2
+    m_Bits: 123
+  _collisionRadius: 0.2
+  _collisionPadding: 0.05
+  _hideCharacterDistance: 0.8
 --- !u!114 &3550833700779683074
 MonoBehaviour:
   m_ObjectHideFlags: 0

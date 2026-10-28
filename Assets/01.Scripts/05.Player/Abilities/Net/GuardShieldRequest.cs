@@ -53,6 +53,8 @@ namespace Lighthouse.Player.Abilities.Net
             if (!isActiveAndEnabled || !isClient || !isOwned || !NetworkClient.ready
                 || IsAwaitingResult || !target || target.netId == 0
                 || !_ability || !_runner || _runner.CurrentAbility != _ability
+                || !GuardShieldAbility.IsAboardOwnedBoat(_player)
+                || !GuardShieldAbility.IsAboardOwnedBoat(target)
                 || _nextRequestId == uint.MaxValue)
             {
                 return false;
@@ -111,6 +113,11 @@ namespace Lighthouse.Player.Abilities.Net
                 return GuardShieldResult.InvalidCaster;
             }
 
+            if (!GuardShieldAbility.IsAboardOwnedBoat(_player))
+            {
+                return GuardShieldResult.InvalidCaster;
+            }
+
             if (!WorldServices.TryGet<IGameClock>(out IGameClock clock) || clock.DayIndex < 1)
             {
                 return GuardShieldResult.ClockUnavailable;
@@ -118,7 +125,7 @@ namespace Lighthouse.Player.Abilities.Net
 
             if (!NetworkServer.spawned.TryGetValue(targetNetId, out NetworkIdentity identity)
                 || !identity || !identity.TryGetComponent(out PlayerController target)
-                || !target.isActiveAndEnabled || target.IsDowned)
+                || !GuardShieldAbility.IsAboardOwnedBoat(target))
             {
                 return GuardShieldResult.InvalidTarget;
             }

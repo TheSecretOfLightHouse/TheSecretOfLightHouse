@@ -1850,8 +1850,10 @@ MonoBehaviour:
   _camera: {fileID: 6826778313546907108}
   _runMultiplier: 1.5
   _mouseSensitivity: 0.15
+  _onFootTurnSpeed: 720
   _allowOfflineControl: 1
   _boatPrefab: {fileID: 8528022499122927033, guid: 235038b1b4101af4db1c1b66d9b92d27, type: 3}
+  _wreckBuoyancy: {fileID: 0}
 --- !u!136 &676716863915785658
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1984,6 +1986,13 @@ MonoBehaviour:
   _cameraPivot: {fileID: 6887307254566173932}
   _boatLookReturnDelay: 3
   _boatLookReturnSpeed: 120
+  _lookSmoothTime: 0.08
+  _obstacleMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  _collisionRadius: 0.2
+  _collisionPadding: 0.05
+  _hideCharacterDistance: 0.8
 --- !u!114 &1507273452294839473
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2308,9 +2317,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _lineMaterial: {fileID: 2100000, guid: 64994b6392409dc448888aa7e68f1f7b, type: 2}
-  _lineWidth: 1.5
-  _heightOffset: 0.5
-  _pointSpacing: 5
+  _lineWidth: 0.65
+  _destinationRadius: 2
+  _destinationWidth: 0.35
+  _heightOffset: 0.35
+  _pointSpacing: 2
   _refreshInterval: 0.1
   _lineColor: {r: 0.2, g: 1, b: 0.85, a: 1}
 --- !u!1 &6356418899839384460
