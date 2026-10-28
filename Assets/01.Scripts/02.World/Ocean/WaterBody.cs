@@ -8,13 +8,10 @@ namespace Lighthouse.World.Ocean
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Rigidbody))]
-    public sealed class BoatShipBody : MonoBehaviour, IShipBody
+    public sealed class WaterBody : MonoBehaviour, IShipBody
     {
-        private const float MinMass = 0.01f;
-
         [SerializeField] private Rigidbody _body;
         [SerializeField] private uint _offlineShipId = 1;
-        [SerializeField, Min(MinMass)] private float _mass = 500f;
         [SerializeField] private Vector3 _centerOfMassOffset = new Vector3(0f, -0.3f, 0f);
         [SerializeField, Min(0f)] private float _rightingStrength = 1f;
         [SerializeField, Min(0f)] private float _hullExposure = 1f;
@@ -49,8 +46,6 @@ namespace Lighthouse.World.Ocean
 
         public IReadOnlyList<Vector3> BuoyancyPoints => _buoyancyPoints;
 
-        public float Mass => _mass;
-
         public Vector3 CenterOfMassOffset => _centerOfMassOffset;
 
         public float HullExposure => _hullExposure;
@@ -62,22 +57,20 @@ namespace Lighthouse.World.Ocean
             Rigidbody body = Body;
             if (body == null || _buoyancyPoints == null || _buoyancyPoints.Length == 0)
             {
-                Debug.LogError($"[{nameof(BoatShipBody)}] Rigidbody and buoyancy points are required.", this);
+                Debug.LogError($"[{nameof(WaterBody)}] Rigidbody and buoyancy points are required.", this);
                 enabled = false;
                 return;
             }
 
             TryGetComponent(out _identity);
-            body.mass = _mass;
             body.centerOfMass = _centerOfMassOffset;
-            body.useGravity = true;
 
             if (!TryGetComponent(out WaveDriftBody _))
             {
                 gameObject.AddComponent<WaveDriftBody>();
             }
 
-            if (TryGetComponent(out BuoyantObject _) && !TryGetComponent(out WaveSlamSource _))
+            if (TryGetComponent(out BuoyancyObject _) && !TryGetComponent(out WaveSlamSource _))
             {
                 gameObject.AddComponent<WaveSlamSource>();
             }

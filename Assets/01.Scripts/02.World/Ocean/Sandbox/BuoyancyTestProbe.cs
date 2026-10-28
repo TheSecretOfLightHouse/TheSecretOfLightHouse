@@ -16,7 +16,7 @@ namespace Lighthouse.World.Ocean.Sandbox
         private long _windowStartBytes;
         private bool _isWindowOpen;
 
-        public void Track(BuoyantObject target, float expectedFraction)
+        public void Track(BuoyancyObject target, float expectedFraction)
         {
             if (target != null && target.TryGetComponent(out Rigidbody body))
             {
@@ -87,7 +87,7 @@ namespace Lighthouse.World.Ocean.Sandbox
 
         private sealed class Entry
         {
-            private readonly BuoyantObject _target;
+            private readonly BuoyancyObject _target;
             private readonly Rigidbody _body;
             private readonly float _expected;
 
@@ -99,7 +99,7 @@ namespace Lighthouse.World.Ocean.Sandbox
             private float _maxY;
             private float _maxTilt;
 
-            public Entry(BuoyantObject target, Rigidbody body, float expected)
+            public Entry(BuoyancyObject target, Rigidbody body, float expected)
             {
                 _target = target;
                 _body = body;

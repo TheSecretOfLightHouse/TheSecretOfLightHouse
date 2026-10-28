@@ -2,7 +2,7 @@
 
 경로: docs/handover/강민서/2026-10-28/BC4-4a-부력교체-시작-인수인계.md
 작성일: 2026-10-28 (같은 날 시작용 문서를 마무리 상태로 갱신)
-브랜치: feature/minseo / 기준 HEAD 7c48d7a2 (4a 변경은 모두 미커밋)
+브랜치: feature/minseo / 4a 커밋 완료: 코드·프리팹 `e0ea7f17`, 문서 `cf38f31f` (push 안 함)
 담당 파트: 강민서 World (Ocean). 플레이어(Boat 프리팹·`BoatController`·`PlayerCamera`)와 Monsters는 읽기 전용이며 수정은 수정 전에 알린다
 수신자: BC4 4a 잔여와 4b를 이어서 진행할 다음 세션
 
@@ -29,10 +29,10 @@
 
 | 항목 | 어디까지 했나 | 막힌 지점 |
 |---|---|---|
-| 폭풍벽 `Impulse`가 이동에 반영되는지 | Calm이라 힘 0, 코드만 연결 | 폭풍벽 활성 조건(날씨·위치) 확인 필요 |
-| 부력비 0.6(침몰) 확인 | 미실행 | 없음 |
-| 도크 판정을 통한 정상 탑승·하선 | `_isOccupied`를 리플렉션으로 켜 탑승 상태만 재현 | 도크에 붙은 배 시작 위치가 필요(`MainGame` 시작 배는 도크 밖) |
-| 항해(속도) 중 검증 | W 키 입력을 보냈으나 속력 0.58 m/s 이하 | 입력이 안 먹은 원인 미확인(포커스·입력 경로 추정) |
+| ~~폭풍벽 `Impulse`~~ | **완료(2026-10-28 후속)**: 벽 안 배가 4초에 31 m 안쪽으로 밀림 | 결과 문서 "4a 잔여 검증" 절 |
+| ~~부력비 0.6~~ | **완료**: -0.49 m/s 침몰, 이론값 일치 | 같은 절 |
+| 도크 판정을 통한 정상 탑승·하선 | 탑승→하선→재탑승 부력 유지는 확인(리플렉션). 도크 구역 판정은 `WorldSessionGame`에 `DockZone`이 없어 못 함 | `MainGame`/도크가 있는 씬 필요 |
+| ~~항해(속도) 중 검증~~ | **완료**: `PlayerInputReader.MoveInput` 비공개 setter 주입으로 8 m/s 항해 재현(포커스 문제 우회), Storm에서 안정 | 같은 절 |
 | Maelstrom, 섬 해안 파도 구간 침수, 4인 | 미실행 | 없음 / 4인은 M2 필요 |
 | `WaveSlam` 임계(3) 재측정 | 판 0.2·`HeaveFollow` 0.85 기준으로 안 함 | 4b에서 질량 1과 함께 |
 | 플레이어 담당 알림(아래 6장) | 알림 1(프리팹 편집 동의)만 완료 | 사용자가 보낸다 |
@@ -40,8 +40,8 @@
 
 ## 4. 현재 저장소 상태
 
-- 커밋한 것: BC1 1~2단계 `478f4b75`, `5cf99cf1`, `7c48d7a2`(+문서 `6c3ccfbf`). push 안 함.
-- 커밋하지 않은 변경(이번 4a, 커밋 대상): `Ocean/` 코드 — `BoatShipBody`, `BuoyancyBody`, `BuoyantObject`, `Net/BoatBuoyancyAuthority`, `Rules/BuoyancyForceApplier`, `Rules/BuoyancyProfile`, `WaveDriftBody`, 신규 `WaveSlamSource`·`View/WaveTiltVisual`·`View/WaveCameraGuard`(각 `.meta`), 삭제 `ExternalForceApplier`(+`.meta`); 프리팹 5개 `Assets/02.Prefabs/Player/{Boat,captainBoat,Cube,gardenBoat,TankerBoat}.prefab`; 문서 — 4a 결과·이 인수인계·설계 원문·BC1 2단계 결과(폭풍 후속 절)·담당자 pointer·`docs/WORK_POINTER.md`.
+- 커밋한 것: BC1 1~2단계 `478f4b75`, `5cf99cf1`, `7c48d7a2`(+문서 `6c3ccfbf`), **BC4 4a 코드·프리팹 `e0ea7f17`, 문서 `cf38f31f`**. push 안 함.
+- 4a 변경 목록(위 두 커밋에 포함됨, 확인용): `Ocean/` 코드 — `BoatShipBody`, `BuoyancyBody`, `BuoyantObject`, `Net/BoatBuoyancyAuthority`, `Rules/BuoyancyForceApplier`, `Rules/BuoyancyProfile`, `WaveDriftBody`, 신규 `WaveSlamSource`·`View/WaveTiltVisual`·`View/WaveCameraGuard`(각 `.meta`), 삭제 `ExternalForceApplier`(+`.meta`); 프리팹 5개 `Assets/02.Prefabs/Player/{Boat,captainBoat,Cube,gardenBoat,TankerBoat}.prefab`; 문서 — 4a 결과·이 인수인계·설계 원문·BC1 2단계 결과(폭풍 후속 절)·담당자 pointer·`docs/WORK_POINTER.md`.
 - 4a와 무관한 미커밋 변경(커밋에 넣지 않는다): `Ocean/Rules/WaveModel.cs`(`InverseIterations` 6, 이전 파도 정합 작업), `Clock/*`, `Island_*.asset`, `Island_Lighthouse_V12.prefab.meta`, `Lighthouse.EditorTools.asmdef`, `Mirror/Editor/NetworkInformationPreview.cs`, `QualitySettings.asset`, 에셋·씬 미추적 다수. 확인은 `git status`.
 - 수정한 씬: 없음(저장한 씬 없음). `WorldSandbox`가 열려 있다. 백업 씬 `Assets/00.Scenes/Minseo/WorldSandbox_BeforeBC4Verify_20261028.unity`(미추적, 커밋하지 않는다)에 이전 `BuoyancyTest` 오브젝트 상태가 들어 있다.
 - 신규 ScriptableObject: 없음.
@@ -65,9 +65,9 @@
 ## 7. 다음 세션의 첫 행동
 
 1. 위 근거 문서를 읽고 `git branch --show-current`, `git status --short`, `git log --oneline -5`로 상태를 확인한다. 4a 변경이 이미 커밋되었는지 먼저 본다.
-2. 4a 커밋이 아직이면 [guided-commit](../../../../.claude/skills/guided-commit/SKILL.md)으로 준비한다. 제안: `feat` 코드·프리팹 한 커밋과 `docs` 한 커밋. 커밋 메시지에 Claude 공동 저자 줄을 넣지 않는다(사용자 요청).
+2. 4a는 이미 커밋됐다(`e0ea7f17`, `cf38f31f`). 이후 변경은 새 커밋으로 만든다. 커밋 메시지에 Claude 공동 저자 줄을 넣지 않는다(사용자 요청).
 3. 에디터 상태를 `editor_status`로 확인한다. 사용자가 "직접 확인"이라고 하면 `WorldSessionGame` Play → 탑승 상태 → Storm → 실제 `Main Camera` 캡처까지 직접 진행한다(절차는 결과 문서 "플레이어 탑승 상태 재현"과 사용자 메모리 `feedback_direct_check_means_play_to_scene`). `MainGame`은 최신 물이 없어 쓰지 않는다.
-4. 4a 잔여를 순서대로 진행한다: ① 폭풍벽 `Impulse`(폭풍벽이 켜지는 조건 확인 후 이동량 측정) ② 부력비 0.6 침몰 확인 ③ 항해 중 측정(W 입력이 안 먹는 원인 조사부터) ④ 도크 판정 탑승 ⑤ `BuoyancyChecks`에 `HeaveFollow` 케이스 추가.
+4. 4a 잔여 중 ①②③⑤(Impulse·부력비 0.6·항해·`BuoyancyHeaveChecks`)는 2026-10-28 후속에서 끝냈다. 남은 것은 ④ 도크 판정 탑승(도크 있는 씬 필요)과 새 파일·문서 커밋이다. Play 시험 요령(소유자 있는 스폰, `GameClock.Resync`+`Stop`으로 폭풍벽 고정, `MoveInput` 주입, 일시정지 재개)은 결과 문서 "4a 잔여 검증" 절에 있다.
 5. 4a를 닫으면 사용자에게 알림 2를 상기시키고, 병합 확인 뒤 4b를 시작한다(질량 1 전환, `BoatShipBody`→`WaterBody` 이름 변경은 에디터에서, 표류·`Impulse` 계수와 Slam 임계 재측정, 미사용 코드 `ShipStabilizer`·`BuoyancyTuning`·`BuoyancyForceSolver`·`BuoyancySampleSession` 정리, `BuoyancyBody` 껍데기 삭제).
 
 ## 8. 주의

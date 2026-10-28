@@ -20,9 +20,21 @@ namespace Lighthouse.World.Ocean.Sandbox
             isAllPassed &= CheckShoreFade(profile);
             isAllPassed &= CheckSmoothing(profile);
             isAllPassed &= CheckInvalidInput(profile);
+            isAllPassed &= CheckReferenceMass(profile);
 
             Object.DestroyImmediate(profile);
             return isAllPassed;
+        }
+
+        private static bool CheckReferenceMass(WaveDriftProfile profile)
+        {
+            Vector3 force = new Vector3(250f, 0f, 0f);
+            Vector3 byProfile = WaveDriftModel.ComputeTarget(profile, Vector3.up, force, profile.ReferenceMass, Far);
+            Vector3 byLegacy = Target(profile, Vector3.up, force, Far);
+
+            bool isPassed = Near(profile.ReferenceMass, Mass) && Near(byProfile.x, byLegacy.x);
+            WaveCheckLog.Report("Drift.ReferenceMass", isPassed, $"ref={profile.ReferenceMass}, profile={byProfile}, legacy={byLegacy}");
+            return isPassed;
         }
 
         private static bool CheckZeroInput(WaveDriftProfile profile)
