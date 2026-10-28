@@ -5460,14 +5460,14 @@ MonoBehaviour:
   _mass: 500
   _centerOfMassOffset: {x: 0, y: -0.3, z: 0}
   _rightingStrength: 1
-  _sailArea: 4
+  _hullExposure: 1
   _buoyancyPoints:
-  - {x: -0.4, y: -0.5, z: -0.4}
-  - {x: 0.4, y: -0.5, z: -0.4}
-  - {x: -0.4, y: -0.5, z: 0}
-  - {x: 0.4, y: -0.5, z: 0}
-  - {x: -0.4, y: -0.5, z: 0.4}
-  - {x: 0.4, y: -0.5, z: 0.4}
+  - {x: -0.4, y: 0.07, z: -0.4}
+  - {x: 0.4, y: 0.07, z: -0.4}
+  - {x: -0.4, y: 0.07, z: 0}
+  - {x: 0.4, y: 0.07, z: 0}
+  - {x: -0.4, y: 0.07, z: 0.4}
+  - {x: 0.4, y: 0.07, z: 0.4}
 --- !u!114 &7207239144229722118
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5481,16 +5481,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _isSimulating: 1
-  _pool: 0
-  _tuning:
-    _strength: 2
-    _referenceDepth: 1
-    _maxDepth: 2
-    _verticalDrag: 5
+  _profile:
+    _buoyancyRatio: 2
+    _restoreStrength: 0
+    _diveRatio: 0.9
+    _surfaceFollow: 0
+    _submergedFollow: 0.3
+    _plateThickness: 0.2
+    _depthCapScale: 10
+    _verticalDrag: 8
     _horizontalDrag: 0.3
     _angularDrag: 0.3
-  _slamThreshold: 3
-  _slamCooldown: 0.5
+    _heaveFollow: 0.85
+    _heaveBaselineSeconds: 5
+  _pool: 0
+  _divisions: {x: 2, y: 2, z: 2}
+  _manualPoints: []
+  _depthTolerance: 0.1
+  _warnInterval: 2
 --- !u!114 &205898469250071086
 MonoBehaviour:
   m_ObjectHideFlags: 0

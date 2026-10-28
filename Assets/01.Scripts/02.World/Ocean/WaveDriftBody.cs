@@ -111,6 +111,19 @@ namespace Lighthouse.World.Ocean
                 dt);
 
             ApplyStep(_driftVelocity * dt);
+            ApplyImpulseForce(provider);
+        }
+
+        private void ApplyImpulseForce(IForceFieldProvider provider)
+        {
+            Vector3 force = provider.AccumulateForce(
+                ForceFieldRoute.Impulse,
+                _body.worldCenterOfMass,
+                _body.linearVelocity,
+                _ship.HullExposure,
+                _host.CurrentTime);
+
+            _body.AddForce(force);
         }
 
         private bool TryResolveServices(out IForceFieldProvider provider)
