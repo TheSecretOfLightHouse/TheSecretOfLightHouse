@@ -16,7 +16,7 @@ namespace Lighthouse.World.Ocean
         [SerializeField, Min(MinMass)] private float _mass = 500f;
         [SerializeField] private Vector3 _centerOfMassOffset = new Vector3(0f, -0.3f, 0f);
         [SerializeField, Min(0f)] private float _rightingStrength = 1f;
-        [SerializeField, Min(0f)] private float _sailArea = 4f;
+        [SerializeField, Min(0f)] private float _hullExposure = 1f;
 
         [SerializeField]
         private Vector3[] _buoyancyPoints =
@@ -52,7 +52,7 @@ namespace Lighthouse.World.Ocean
 
         public Vector3 CenterOfMassOffset => _centerOfMassOffset;
 
-        public float SailArea => _sailArea;
+        public float HullExposure => _hullExposure;
 
         public float RightingStrength => _rightingStrength;
 
@@ -70,6 +70,11 @@ namespace Lighthouse.World.Ocean
             body.mass = _mass;
             body.centerOfMass = _centerOfMassOffset;
             body.useGravity = true;
+
+            if (!TryGetComponent(out WaveDriftBody _))
+            {
+                gameObject.AddComponent<WaveDriftBody>();
+            }
         }
     }
 }

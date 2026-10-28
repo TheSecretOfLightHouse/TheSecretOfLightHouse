@@ -9,6 +9,7 @@ namespace Lighthouse.World.Clock.View
     public sealed class DayNightSunView : MonoBehaviour
     {
         private const float HalfRotation = 180f;
+        private static readonly int SkyNightBlendId = Shader.PropertyToID("_SkyNightBlend");
 
         [SerializeField] private GameClock _gameClock;
         [SerializeField] private Light _sun;
@@ -18,6 +19,12 @@ namespace Lighthouse.World.Clock.View
         private Quaternion _initialRotation;
         private float _initialIntensity;
         private bool _hasInitialState;
+        private float _initialSkyNightBlend;
+
+        private void OnEnable()
+        {
+            _initialSkyNightBlend = Shader.GetGlobalFloat(SkyNightBlendId);
+        }
 
         private void Awake()
         {
@@ -74,15 +81,21 @@ namespace Lighthouse.World.Clock.View
 
             float elevation = Mathf.Sin(angle * Mathf.Deg2Rad);
             float daylight = Mathf.SmoothStep(
-                0f, 1f, Mathf.Clamp01(elevation / _config.HorizonBlend));
+                0f, 1f, Mathf.InverseLerp(-_config.HorizonBlend, _config.HorizonBlend, elevation));
+            // Keep twilight on both sides of the horizon instead of finishing at sunset.
+            float twilightElevation = Mathf.Sin(_config.SkyTwilightElevation * Mathf.Deg2Rad);
+            float skyDaylight = Mathf.SmoothStep(
+                0f, 1f, Mathf.InverseLerp(-twilightElevation, twilightElevation, elevation));
 
             _sun.transform.rotation = Quaternion.Euler(angle, _config.Azimuth, 0f);
             _sun.intensity = Mathf.Lerp(
                 _config.NightIntensity, _config.DayIntensity, daylight);
+            Shader.SetGlobalFloat(SkyNightBlendId, 1f - skyDaylight);
         }
 
         private void OnDisable()
         {
+            Shader.SetGlobalFloat(SkyNightBlendId, _initialSkyNightBlend);
             if (_sun != null && _hasInitialState)
             {
                 _sun.transform.rotation = _initialRotation;

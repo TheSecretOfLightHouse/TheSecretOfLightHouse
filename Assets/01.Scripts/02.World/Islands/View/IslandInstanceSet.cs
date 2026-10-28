@@ -8,6 +8,12 @@ namespace Lighthouse.World.Islands.View
     [DisallowMultipleComponent]
     public class IslandInstanceSet : MonoBehaviour, IIslandRootSource
     {
+        [SerializeField] private Material _coastalShelfMaterial;
+        [SerializeField] private Material _coastalRockMaterial;
+        [SerializeField, Min(0f)] private float _coastalShelfWidth = 7f;
+        [SerializeField, Min(0f)] private float _lagoonRadiusScale = 0.55f;
+        [SerializeField, Min(0f)] private float _lagoonMinReach = 4f;
+
         private readonly List<short> _indices = new List<short>();
         private readonly List<GameObject> _instances = new List<GameObject>();
 
@@ -51,6 +57,14 @@ namespace Lighthouse.World.Islands.View
             _indices.Add(plan.Index);
             _instances.Add(instance);
             instance.name = $"Island_{plan.Index}_{plan.Archetype.name}_v{plan.VariantIndex}";
+
+            if (_coastalShelfMaterial != null && _coastalShelfWidth > 0f)
+            {
+                if (!CoastalShelfView.Create(instance, _coastalShelfMaterial, _coastalShelfWidth, _coastalRockMaterial, _lagoonRadiusScale, _lagoonMinReach))
+                {
+                    Debug.LogWarning($"[{nameof(IslandInstanceSet)}] Coastal shelf could not be built for {instance.name}.");
+                }
+            }
         }
 
         public void Clear()

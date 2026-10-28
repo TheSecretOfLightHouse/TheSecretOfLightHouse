@@ -13,6 +13,8 @@ namespace Lighthouse.World.Ocean.Rules
             _forceCoefficient = forceCoefficient;
         }
 
+        public ForceFieldRoute Route => ForceFieldRoute.Drift;
+
         public bool TryGetBounds(out Rect bounds)
         {
             bounds = default;
@@ -24,7 +26,7 @@ namespace Lighthouse.World.Ocean.Rules
             return _source != null;
         }
 
-        public Vector3 ForceAt(Vector3 worldPos, Vector3 velocity, float sailArea, double time)
+        public Vector3 ForceAt(Vector3 worldPos, Vector3 velocity, float hullExposure, double time)
         {
             if (_source == null)
             {
@@ -34,7 +36,7 @@ namespace Lighthouse.World.Ocean.Rules
             Vector2 wind = _source.GetWind(time);
             Vector3 relative = new Vector3(wind.x - velocity.x, 0f, wind.y - velocity.z);
 
-            return relative * (relative.magnitude * _forceCoefficient * sailArea);
+            return relative * (relative.magnitude * _forceCoefficient * hullExposure);
         }
     }
 }

@@ -13,14 +13,18 @@ MonoBehaviour:
   m_Name: Weather_Calm
   m_EditorClassIdentifier: 
   _levels:
-  - Amplitude: 0.5
-    Steepness: 0.2
-  - Amplitude: 0.25
-    Steepness: 0.15
-  - Amplitude: 0.12
+  - Amplitude: 0.45
     Steepness: 0.1
-  - Amplitude: 0.05
-    Steepness: 0.05
+  - Amplitude: 0.25
+    Steepness: 0.08
+  - Amplitude: 0.12
+    Steepness: 0.06
+  - Amplitude: 0.06
+    Steepness: 0.04
+  - Amplitude: 0.03
+    Steepness: 0.03
+  - Amplitude: 0.01
+    Steepness: 0.02
   _wind: {x: 2, y: 0}
   _fogDensity: 0.1
   _rainRate: 0

@@ -13,7 +13,7 @@ namespace Lighthouse.World.Ocean.Sandbox
             bool isAllPassed = CheckDirectionAndScale();
 
             isAllPassed &= CheckRelativeVelocity();
-            isAllPassed &= CheckNoSail();
+            isAllPassed &= CheckNoExposure();
             isAllPassed &= CheckMissingSource();
 
             return isAllPassed;
@@ -48,14 +48,14 @@ namespace Lighthouse.World.Ocean.Sandbox
             return isPassed;
         }
 
-        private static bool CheckNoSail()
+        private static bool CheckNoExposure()
         {
             var field = new WindField(new FixedWind(new Vector2(10f, 5f)), Coefficient);
 
             Vector3 force = field.ForceAt(Vector3.zero, Vector3.zero, 0f, 0d);
 
             bool isPassed = IsNear(force, Vector3.zero);
-            WaveCheckLog.Report("WindNoSail", isPassed, $"force={force}");
+            WaveCheckLog.Report("WindNoExposure", isPassed, $"force={force}");
             return isPassed;
         }
 

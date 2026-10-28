@@ -28,6 +28,15 @@ namespace Lighthouse.World.Ocean.View
         private readonly Vector4[] _modifierB = new Vector4[WaveModifierModel.MaxModifiers];
         private readonly Vector4[] _modifierC = new Vector4[WaveModifierModel.MaxModifiers];
 
+        private readonly Vector4[] _coastProfiles = new Vector4[CoastWaveRegistry.Capacity];
+        private readonly Vector4[] _coastLagoons = new Vector4[CoastWaveRegistry.Capacity];
+        private readonly Vector4[] _coasts = new Vector4[CoastWaveRegistry.Capacity];
+        private readonly Vector4[] _coastEdges = new Vector4[CoastWaveRegistry.Capacity * CoastWaveRegistry.Segments];
+        private int _coastVersion = -1;
+        private static readonly int CoastBoundsId = Shader.PropertyToID("_OceanCoastBounds");
+        private static readonly int CoastEdgesId = Shader.PropertyToID("_OceanCoastEdges");
+        private static readonly int CoastLagoonId = Shader.PropertyToID("_OceanCoastLagoon");
+        private static readonly int CoastEnabledId = Shader.PropertyToID("_OceanCoastEnabled");
         private IClock _clock;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -46,6 +55,7 @@ namespace Lighthouse.World.Ocean.View
             }
 
             _active = this;
+            _coastVersion = -1;
         }
 
         private void Start()
@@ -64,6 +74,19 @@ namespace Lighthouse.World.Ocean.View
                 return;
             }
 
+            if (_coastVersion != CoastWaveRegistry.Version)
+            {
+                CoastWaveRegistry.Bounds.CopyTo(_coasts);
+                CoastWaveRegistry.Profiles.CopyTo(_coastProfiles);
+                CoastWaveRegistry.Lagoons.CopyTo(_coastLagoons);
+                Shader.SetGlobalVectorArray(CoastLagoonId, _coastLagoons);
+                CoastWaveRegistry.Edges.CopyTo(_coastEdges);
+                Shader.SetGlobalVectorArray(CoastBoundsId, _coasts);
+                Shader.SetGlobalVectorArray("_OceanCoastProfiles", _coastProfiles);
+                Shader.SetGlobalVectorArray(CoastEdgesId, _coastEdges);
+                _coastVersion = CoastWaveRegistry.Version;
+            }
+            Shader.SetGlobalFloat(CoastEnabledId, 1f);
             _host.RefreshModifiers();
 
             var waves = _host.Inputs.Waves;
@@ -103,6 +126,7 @@ namespace Lighthouse.World.Ocean.View
                 return;
             }
 
+            Shader.SetGlobalFloat(CoastEnabledId, 0f);
             Shader.SetGlobalFloat(WaveCountId, 0f);
             Shader.SetGlobalFloat(ModifierCountId, 0f);
             _active = null;

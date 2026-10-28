@@ -1,0 +1,129 @@
+#pragma kernel Prepare
+#pragma kernel Flow
+#pragma kernel Integrate
+#pragma kernel Shift
+#include "Include/OceanGerstner.hlsl"
+
+Texture2D<float4> _Read;
+Texture2D<float4> _Background;
+Texture2D<float4> _Domain;
+Texture2D<float4> _Obstacles;
+SamplerState sampler_Read;
+RWTexture2D<float4> _Write;
+RWTexture2D<float4> _BackgroundWrite;
+RWTexture2D<float4> _DomainWrite;
+int _Resolution;
+int2 _Shift;
+float _CellSize;
+float _Step;
+float2 _Origin;
+
+int2 Safe(int2 p) { return clamp(p,0,_Resolution-1); }
+float4 State(int2 p) { return _Read[Safe(p)]; }
+float4 Domain(int2 p) { return _Domain[Safe(p)]; }
+float4 Background(int2 p) { return _Background[Safe(p)]; }
+
+float _StaticContactFoam;
+float _WaveEnergy;
+
+[numthreads(8,8,1)]
+void Shift(uint3 id : SV_DispatchThreadID)
+{
+    int2 source = int2(id.xy) + _Shift;
+    _Write[id.xy] = all(source>=0) && all(source<_Resolution) ? _Read[source] : 0;
+}
+
+[numthreads(8,8,1)]
+void Prepare(uint3 id : SV_DispatchThreadID)
+{
+    float2 p = _Origin + (id.xy+0.5)*_CellSize;
+    float3 position,normal;
+    float4 coast;
+    OceanGerstnerField_float(float3(p.x,0,p.y),position,normal,coast);
+    float2 velocity = 0;
+    for (int i=0;i<min((int)_OceanWaveCount,OCEAN_MAX_WAVES);i++)
+    {
+        float k = OCEAN_TWO_PI/max(0.1,_OceanWaveA[i].z);
+        float phase = k*(dot(_OceanWaveA[i].xy,p)-_OceanWaveA[i].w*_OceanTime);
+        velocity += _OceanWaveA[i].xy*_OceanWaveB[i].x*k*_OceanWaveA[i].w*sin(phase);
+    }
+    float depth = 1;
+    float4 obstacle = _Obstacles[id.xy];
+    if(coast.w>0)
+    {
+        depth = clamp(0.15+max(0,coast.z)*lerp(0.5,0.07,smoothstep(1,5,coast.w)),0.15,1);
+        float fetch=max(7,coast.w);
+        float blend = smoothstep(fetch*2.2,fetch*5,max(0,coast.z));
+        velocity = lerp(-coast.xy*position.y*sqrt(9.81/depth),velocity,blend);
+        if(coast.z<0) obstacle = float4(1,0,0,0);
+    }
+    _BackgroundWrite[id.xy] = float4(position.y,velocity,depth);
+    _DomainWrite[id.xy] = float4(step(0.45,obstacle.x),obstacle.yz,depth);
+}
+
+[numthreads(8,8,1)]
+void Flow(uint3 id : SV_DispatchThreadID)
+{
+    int2 p = int2(id.xy);
+    float4 s = State(p);
+    float4 d = Domain(p);
+    int2 right = p+int2(1,0), top=p+int2(0,1);
+    float4 dr=Domain(right),dt=Domain(top);
+    float2 incident = float2((Background(p).y+Background(right).y)*0.5,
+        (Background(p).z+Background(top).z)*0.5);
+    float2 flow = s.yz - 9.81*_Step/_CellSize*float2(State(right).x-s.x,State(top).x-s.x);
+    flow *= exp(-0.45*_Step);
+    if(d.x>0.5 || dr.x>0.5) flow.x = (d.x>0.5?d.y:dr.y)-incident.x;
+    if(d.x>0.5 || dt.x>0.5) flow.y = (d.x>0.5?d.z:dt.z)-incident.y;
+    _Write[p] = float4(s.x,clamp(flow,-2.5,2.5),s.w);
+}
+
+float Impact(int2 p,int2 offset,float2 normal)
+{
+    float4 wall=Domain(p+offset);
+    float2 relative = Background(p).yz - wall.yz;
+    return wall.x*max(0,dot(relative,normal)-0.035);
+}
+
+// Walls that are not moving (rocks, piers, a moored hull) keep a lapping foam ring.
+float StaticWall(int2 p)
+{
+    float4 wall=Domain(p);
+    return wall.x*step(dot(wall.yz,wall.yz),0.0025);
+}
+
+float StaticContactFoam(int2 p)
+{
+    float near1=max(max(StaticWall(p+int2(1,0)),StaticWall(p-int2(1,0))),max(StaticWall(p+int2(0,1)),StaticWall(p-int2(0,1))));
+    float near2=max(max(StaticWall(p+int2(2,0)),StaticWall(p-int2(2,0))),max(StaticWall(p+int2(0,2)),StaticWall(p-int2(0,2))));
+    float lap=saturate(0.5+Background(p).x*6);
+    return _StaticContactFoam*max(near1,near2*0.5)*lap*(0.4+0.6*saturate(_WaveEnergy*5));
+}
+
+[numthreads(8,8,1)]
+void Integrate(uint3 id : SV_DispatchThreadID)
+{
+    int2 p=int2(id.xy);
+    float4 d=Domain(p);
+    if(d.x>0.5) { _Write[p]=0; return; }
+    float4 s=State(p);
+    float rightDepth = (d.w+Domain(p+int2(1,0)).w)*0.5;
+    float leftDepth = (d.w+Domain(p-int2(1,0)).w)*0.5;
+    float topDepth = (d.w+Domain(p+int2(0,1)).w)*0.5;
+    float bottomDepth = (d.w+Domain(p-int2(0,1)).w)*0.5;
+    float divergence = (rightDepth*s.y-leftDepth*State(p-int2(1,0)).y
+        +topDepth*s.z-bottomDepth*State(p-int2(0,1)).z)/_CellSize;
+    float height = s.x - _Step*divergence;
+    float edge = min(min(p.x,p.y),min(_Resolution-1-p.x,_Resolution-1-p.y));
+    float sponge = exp(-_Step*(0.5+12*(1-smoothstep(0,12,edge))));
+    float2 velocity = Background(p).yz + (s.yz+float2(State(p-int2(1,0)).y,State(p-int2(0,1)).z))*0.5;
+    float2 uv = (p+0.5-velocity*_Step/_CellSize)/_Resolution;
+    float foam = _Read.SampleLevel(sampler_Read,uv,0).w*exp(-_Step*1.6);
+    if(Domain(int2(uv*_Resolution)).x>0.5) foam=0;
+    float impact = Impact(p,int2(1,0),float2(1,0))+Impact(p,int2(-1,0),float2(-1,0))
+        +Impact(p,int2(0,1),float2(0,1))+Impact(p,int2(0,-1),float2(0,-1));
+    float breaking = max(0,abs(divergence)-0.25)*0.2;
+    float surf = saturate((Background(p).x-0.012)*40)*(1-smoothstep(0.3,0.65,d.w));
+    foam = saturate(foam + _Step*(impact*5+breaking+surf*1.8+StaticContactFoam(p)*3));
+    _Write[p] = float4(clamp(height,-0.14,0.14)*sponge,s.yz*sponge,foam*sponge);
+}

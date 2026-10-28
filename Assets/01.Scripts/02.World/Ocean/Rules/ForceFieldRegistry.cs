@@ -5,7 +5,7 @@ namespace Lighthouse.World.Ocean.Rules
 {
     public class ForceFieldRegistry : IForceFieldProvider
     {
-        private const float DefaultSailArea = 1f;
+        private const float DefaultHullExposure = 1f;
 
         private readonly List<IForceField> _staticFields = new List<IForceField>();
         private readonly List<IForceField> _dynamicFields = new List<IForceField>();
@@ -32,35 +32,56 @@ namespace Lighthouse.World.Ocean.Rules
 
         public Vector3 AccumulateForce(Vector3 worldPos, double time)
         {
-            return AccumulateForce(worldPos, Vector3.zero, DefaultSailArea, time);
+            return AccumulateForce(worldPos, Vector3.zero, DefaultHullExposure, time);
         }
 
-        public Vector3 AccumulateForce(Vector3 worldPos, Vector3 velocity, float sailArea, double time)
+        public Vector3 AccumulateForce(Vector3 worldPos, Vector3 velocity, float hullExposure, double time)
+        {
+            return Accumulate(false, default, worldPos, velocity, hullExposure, time);
+        }
+
+        public Vector3 AccumulateForce(ForceFieldRoute route, Vector3 worldPos, Vector3 velocity, float hullExposure, double time)
+        {
+            return Accumulate(true, route, worldPos, velocity, hullExposure, time);
+        }
+
+        private Vector3 Accumulate(bool isFiltered, ForceFieldRoute route, Vector3 worldPos, Vector3 velocity, float hullExposure, double time)
         {
             Vector3 total = Vector3.zero;
 
             for (int i = 0; i < _staticFields.Count; i++)
             {
                 IForceField field = _staticFields[i];
+                if (isFiltered && field.Route != route)
+                {
+                    continue;
+                }
+
                 if (field.TryGetBounds(out Rect bounds) && !bounds.Contains(new Vector2(worldPos.x, worldPos.z)))
                 {
                     continue;
                 }
 
-                total += GetForce(field, worldPos, velocity, sailArea, time);
+                total += GetForce(field, worldPos, velocity, hullExposure, time);
             }
 
             for (int i = 0; i < _dynamicFields.Count; i++)
             {
-                total += GetForce(_dynamicFields[i], worldPos, velocity, sailArea, time);
+                IForceField field = _dynamicFields[i];
+                if (isFiltered && field.Route != route)
+                {
+                    continue;
+                }
+
+                total += GetForce(field, worldPos, velocity, hullExposure, time);
             }
 
             return total;
         }
 
-        private static Vector3 GetForce(IForceField field, Vector3 worldPos, Vector3 velocity, float sailArea, double time)
+        private static Vector3 GetForce(IForceField field, Vector3 worldPos, Vector3 velocity, float hullExposure, double time)
         {
-            return field.IsInfluencing(worldPos) ? field.ForceAt(worldPos, velocity, sailArea, time) : Vector3.zero;
+            return field.IsInfluencing(worldPos) ? field.ForceAt(worldPos, velocity, hullExposure, time) : Vector3.zero;
         }
     }
 }
