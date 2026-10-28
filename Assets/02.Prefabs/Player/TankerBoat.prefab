@@ -5366,6 +5366,7 @@ GameObject:
   - component: {fileID: 8132895764735247106}
   - component: {fileID: 7004586370675877701}
   - component: {fileID: 3031473167745091470}
+  - component: {fileID: 4013735233189057191}
   m_Layer: 0
   m_Name: TankerBoat
   m_TagString: Untagged
@@ -5454,7 +5455,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sceneId: 0
-  _assetId: 0
+  _assetId: 1018287347
   serverOnly: 0
   visibility: 0
   hasSpawned: 0
@@ -5574,7 +5575,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _body: {fileID: 0}
   _offlineShipId: 1
-  _mass: 500
   _centerOfMassOffset: {x: 0, y: -0.3, z: 0}
   _rightingStrength: 1
   _hullExposure: 1
@@ -5812,19 +5812,8 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  _obstacleLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  _probeCenter: {x: 0, y: 0.5, z: 0}
-  _probeHalfExtents: {x: 1.7, y: 0.6, z: 1.5}
-  _scanInterval: 0.1
-  _cautionTime: 5
-  _dangerTime: 2.5
-  _minimumDistance: 15
-  _maximumDistance: 120
-  _clearDelay: 0.3
-  _stationarySpeed: 0.5
-  _directionThreshold: 0.2
+  _detectionDistance: 40
+  _dangerDistance: 10
 --- !u!114 &2937379760518622447
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5840,9 +5829,8 @@ MonoBehaviour:
   _soundEnabled: 1
   _volume: 0.15
   _beepInterval: 0.6
-  _cautionVignetteOpacity: 0.25
-  _dangerVignetteOpacity: 0.5
-  _vignettePulseFrequency: 1
+  _pulseFrequency: 1
+  _indicatorSize: 760
 --- !u!114 &8132895764735247106
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5906,6 +5894,30 @@ MonoBehaviour:
   _grantPulseScale: 0.8
   _breakPulseScale: 1.25
   _pulseLifetime: 3
+--- !u!114 &4013735233189057191
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3365015020148450286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c37b773b91146a4d980ce8e0b8efb06, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _effectPrefab: {fileID: 5001030518475604775, guid: 5f63cec88d728c54ebc9214da5ace6b2, type: 3}
+  _effectOffset: {x: 0, y: 0, z: 0}
+  _effectScale: 1.5
+  _useWaterSurface: 1
+  _waterSurfaceOffset: 0.04
+  _minimumSpeed: 0.35
+  _fullStrengthSpeed: 8
+  _cooldown: 0.18
+  _contactAllowance: 2
 --- !u!1 &4864892154558682899
 GameObject:
   m_ObjectHideFlags: 0
