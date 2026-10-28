@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7a2175af4f8bb34ab7979b801ba9ccc, type: 3}
+  m_Name: SeaEnvironment_Middle
+  m_EditorClassIdentifier: 
+  _zone: 2
+  _day:
+    _zenith: {r: 0.18, g: 0.38, b: 0.78, a: 1}
+    _horizon: {r: 0.64, g: 0.52, b: 0.8, a: 1}
+    _nebulaColor: {r: 0.36078432, g: 0.38431373, b: 0.5803922, a: 1}
+    _starStrength: 0
+    _nebulaStrength: 0.09
+    _lightScale: 0.82
+    _cloudCoverage: 0.5
+  _night:
+    _zenith: {r: 0.003, g: 0.004, b: 0.02, a: 1}
+    _horizon: {r: 0.03, g: 0.018, b: 0.055, a: 1}
+    _nebulaColor: {r: 0.2, g: 0.18, b: 0.4, a: 1}
+    _starStrength: 0.9
+    _nebulaStrength: 0.05
+    _lightScale: 0.85
+    _cloudCoverage: 0.2

@@ -1,0 +1,28 @@
+#pragma kernel Compare
+#pragma kernel Displace
+#include "Assets/07.Materials/World/Shaders/Include/OceanGerstner.hlsl"
+StructuredBuffer<float4> _Points;
+RWStructuredBuffer<float4> _Results;
+int _PointCount;
+[numthreads(64, 1, 1)]
+void Compare(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)_PointCount) { return; }
+    float4 sample = _Points[id.x];
+    float height = sample.z;
+    float3 normal = float3(0, 1, 0);
+    OceanCoastAt(sample.xy, _OceanTime, sample.w, height, normal);
+    _Results[id.x] = float4(height, normal);
+}
+
+
+[numthreads(64, 1, 1)]
+void Displace(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)_PointCount) { return; }
+    float4 sample = _Points[id.x];
+    float3 position;
+    float3 normal;
+    OceanGerstner_float(float3(sample.x, 0, sample.y), position, normal);
+    _Results[id.x] = float4(position, normal.y);
+}

@@ -41,7 +41,7 @@ namespace Lighthouse.Monsters.AI.Server
 
         protected override void OnEnd()
         {
-            if (_attack != null)
+            if (_attack != null && _attack.IsAttacking)
             {
                 _attack.Cancel();
             }

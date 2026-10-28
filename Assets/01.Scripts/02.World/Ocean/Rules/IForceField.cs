@@ -4,10 +4,12 @@ namespace Lighthouse.World.Ocean.Rules
 {
     public interface IForceField
     {
+        ForceFieldRoute Route { get; }
+
         bool TryGetBounds(out Rect bounds);
 
         bool IsInfluencing(Vector3 worldPos);
 
-        Vector3 ForceAt(Vector3 worldPos, Vector3 velocity, float sailArea, double time);
+        Vector3 ForceAt(Vector3 worldPos, Vector3 velocity, float hullExposure, double time);
     }
 }

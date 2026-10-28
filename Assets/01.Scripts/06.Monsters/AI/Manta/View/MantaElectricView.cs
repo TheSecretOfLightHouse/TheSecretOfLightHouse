@@ -1,7 +1,9 @@
-using Lighthouse.Monsters.AI.Server;
+using System.Collections.Generic;
 using Lighthouse.Monsters.AI.Rules;
+using Lighthouse.Monsters.AI.Server;
 using Mirror;
 using UnityEngine;
+using UnityEngine.VFX;
 
 namespace Lighthouse.Monsters.AI.View
 {
@@ -9,81 +11,193 @@ namespace Lighthouse.Monsters.AI.View
     [RequireComponent(typeof(MantaElectricAttack))]
     public sealed class MantaElectricView : MonoBehaviour
     {
-        private static readonly int ActivityId = Shader.PropertyToID("_Activity");
-        private static readonly int EffectTimeId = Shader.PropertyToID("_EffectTime");
-        [SerializeField] private Material _lineMaterial;
-        [SerializeField] private Color _warningColor = new Color(1f, 0.65f, 0.1f, 0.5f);
-        [SerializeField] private Color _electricColor = new Color(0.15f, 0.8f, 1f, 0.8f);
+        private sealed class CastView
+        {
+            public readonly SortedDictionary<uint, MantaTrailPoint> Pending = new SortedDictionary<uint, MantaTrailPoint>();
+            public MantaElectricTrailEmitter Emitter;
+            public uint LastSequence;
+            public double LastCreatedAt;
+            public float SparkRemainder;
+        }
+
+        [SerializeField] private MantaElectricTrailEmitter _trailPrefab;
+        [SerializeField] private VisualEffect[] _bodyElectricEffects;
+        [Tooltip("공격 중 꼬리에서 초당 생성할 스파크 개수.")]
+        [SerializeField, Min(0f)] private float _sparksPerSecond = 140f;
+        private readonly Dictionary<uint, CastView> _casts = new Dictionary<uint, CastView>();
+        private readonly List<uint> _finished = new List<uint>();
         private MantaElectricAttack _attack;
-        private LineRenderer _area;
-        private MaterialPropertyBlock _properties;
+        private bool _bodyEffectsPlaying;
 
         private void Awake()
         {
             _attack = GetComponent<MantaElectricAttack>();
-            _area = CreateLine("ElectricArea");
-            _properties = new MaterialPropertyBlock();
+            SetBodyEffects(false, true);
+        }
+
+        private void OnEnable()
+        {
+            _attack.TrailPointAdded += OnTrailPointAdded;
+            _attack.TrailCleared += ClearAll;
         }
 
         private void LateUpdate()
         {
-            bool visible = _attack.isClient && _attack.isActiveAndEnabled && _lineMaterial != null
-                && (_attack.ElectricPoints.Count >= 2
-                    || (_attack.ElectricPoints.Count == 1 && _attack.Phase == MantaAttackPhase.Laying))
-                && NetworkTime.time < _attack.ExpiresAt;
-            _area.enabled = visible;
-            if (!visible)
+            SetBodyEffects(_attack.isClient && _attack.isActiveAndEnabled
+                && _attack.Phase == MantaAttackPhase.Laying);
+            if (!_attack.isClient || !_attack.isActiveAndEnabled || _trailPrefab == null
+                || _attack.ActiveLifetime <= 0f)
             {
                 return;
             }
-            bool active = NetworkTime.time >= _attack.DischargeAt;
-            Color color = active ? _electricColor : _warningColor;
-            _area.startColor = _area.endColor = color;
-            _area.widthMultiplier = _attack.ActiveLineWidth;
-            _properties.SetFloat(ActivityId, active ? 1f : 0f);
-            _properties.SetFloat(EffectTimeId, (float)(NetworkTime.time % 4096d));
-            _area.SetPropertyBlock(_properties);
-            int count = _attack.ElectricPoints.Count;
-            bool laying = _attack.Phase == MantaAttackPhase.Laying;
-            _area.positionCount = count + (laying ? 1 : 0);
-            for (int index = 0; index < count; index++)
+
+            // 늦은 접속이나 재활성화 시 이미 동기화된 경로도 복원한다.
+            IReadOnlyList<MantaTrailPoint> points = _attack.ElectricPoints;
+            for (int index = 0; index < points.Count; index++)
             {
-                Vector3 point = _attack.ElectricPoints[index];
-                _area.SetPosition(index, point);
+                ReceivePoint(points[index]);
             }
-            if (laying)
+
+            double now = NetworkTime.time;
+            _finished.Clear();
+            foreach (KeyValuePair<uint, CastView> entry in _casts)
             {
-                Vector3 tail = _attack.TailPosition;
-                tail.y = _attack.ElectricPoints[count - 1].y;
-                _area.SetPosition(count, tail);
+                CastView cast = entry.Value;
+                while (cast.Pending.Count > 0)
+                {
+                    MantaTrailPoint point = FirstPending(cast.Pending);
+                    if (point.CreatedAt > now)
+                    {
+                        break;
+                    }
+                    cast.Pending.Remove(point.Sequence);
+                    if (cast.Emitter == null)
+                    {
+                        cast.Emitter = Instantiate(_trailPrefab, transform);
+                        cast.Emitter.BeginTimedTrail(point.Position, point.CreatedAt, now, _attack.ActiveLifetime);
+                    }
+                    else
+                    {
+                        cast.Emitter.AppendTimedPosition(point.Position, point.CreatedAt, now, _attack.ActiveLifetime);
+                    }
+                    cast.LastSequence = point.Sequence;
+                    cast.LastCreatedAt = point.CreatedAt;
+                }
+
+                if (entry.Key == _attack.LayingCastId && cast.Emitter != null)
+                {
+                    cast.SparkRemainder += Mathf.Max(0f, _sparksPerSecond) * Time.deltaTime;
+                    int count = Mathf.Min(32, Mathf.FloorToInt(cast.SparkRemainder));
+                    if (count > 0)
+                    {
+                        cast.SparkRemainder = Mathf.Min(1f, cast.SparkRemainder - count);
+                        cast.Emitter.EmitSparks(_attack.TailPosition, count);
+                    }
+                }
+
+                if (cast.Pending.Count == 0 && entry.Key != _attack.LayingCastId
+                    && cast.LastSequence != 0 && now >= cast.LastCreatedAt + _attack.ActiveLifetime)
+                {
+                    _finished.Add(entry.Key);
+                }
+            }
+            for (int index = 0; index < _finished.Count; index++)
+            {
+                RemoveCast(_finished[index]);
+            }
+        }
+
+        private void OnTrailPointAdded(int index, MantaTrailPoint point)
+        {
+            if (_attack.isClient)
+            {
+                ReceivePoint(point);
+            }
+        }
+
+        private void ReceivePoint(MantaTrailPoint point)
+        {
+            if (!_casts.TryGetValue(point.CastId, out CastView cast))
+            {
+                cast = new CastView();
+                _casts.Add(point.CastId, cast);
+            }
+            if (point.Sequence > cast.LastSequence)
+            {
+                cast.Pending[point.Sequence] = point;
+            }
+        }
+
+        private static MantaTrailPoint FirstPending(SortedDictionary<uint, MantaTrailPoint> pending)
+        {
+            using (SortedDictionary<uint, MantaTrailPoint>.Enumerator iterator = pending.GetEnumerator())
+            {
+                iterator.MoveNext();
+                return iterator.Current.Value;
             }
         }
 
         private void OnDisable()
         {
-            if (_area != null)
+            SetBodyEffects(false, true);
+            _attack.TrailPointAdded -= OnTrailPointAdded;
+            _attack.TrailCleared -= ClearAll;
+            ClearAll();
+        }
+
+        private void SetBodyEffects(bool playing, bool force = false)
+        {
+            if (!force && _bodyEffectsPlaying == playing)
             {
-                _area.enabled = false;
+                return;
+            }
+
+            _bodyEffectsPlaying = playing;
+            if (_bodyElectricEffects == null)
+            {
+                return;
+            }
+
+            foreach (VisualEffect effect in _bodyElectricEffects)
+            {
+                if (effect == null)
+                {
+                    continue;
+                }
+
+                if (playing)
+                {
+                    effect.Play();
+                }
+                else
+                {
+                    effect.Stop();
+                }
             }
         }
 
-        private LineRenderer CreateLine(string objectName)
+        private void ClearAll()
         {
-            var child = new GameObject(objectName);
-            child.transform.SetParent(transform, false);
-            var line = child.AddComponent<LineRenderer>();
-            line.sharedMaterial = _lineMaterial;
-            line.useWorldSpace = true;
-            line.textureMode = LineTextureMode.Tile;
-            line.alignment = LineAlignment.TransformZ;
-            child.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-            line.startWidth = line.endWidth = 1f;
-            line.numCornerVertices = 3;
-            line.numCapVertices = 3;
-            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            line.receiveShadows = false;
-            line.enabled = false;
-            return line;
+            foreach (CastView cast in _casts.Values)
+            {
+                if (cast.Emitter != null)
+                {
+                    cast.Emitter.ClearTrail();
+                    Destroy(cast.Emitter.gameObject);
+                }
+            }
+            _casts.Clear();
+        }
+
+        private void RemoveCast(uint id)
+        {
+            CastView cast = _casts[id];
+            if (cast.Emitter != null)
+            {
+                cast.Emitter.ClearTrail();
+                Destroy(cast.Emitter.gameObject);
+            }
+            _casts.Remove(id);
         }
     }
 }

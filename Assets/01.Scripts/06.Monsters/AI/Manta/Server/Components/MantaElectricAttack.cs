@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Lighthouse.Monsters.AI.Net;
 using Lighthouse.Monsters.AI.Rules;
@@ -19,33 +20,29 @@ namespace Lighthouse.Monsters.AI.Server
         [SerializeField, Min(0.01f)] private float _minimumLead = 4f;
         [SerializeField] private float _fallbackWaterHeight;
         [SerializeField, Min(0.01f)] private float _timeoutSeconds = 20f;
-        [Header("전기 예고·피해")]
-        [Tooltip("꼬리로 전깃줄 설치를 마친 뒤 피해가 시작되기까지의 시간(초).")]
-        [SerializeField, Min(0f)] private float _preparationSeconds = 0.7f;
-        [Tooltip("예고를 제외한 실제 전기 영역의 유지 시간(초).")]
+        [Header("전기 궤적·피해")]
+        [Tooltip("각 전기 궤적 지점이 생성된 뒤 유지되는 시간(초).")]
         [SerializeField, Min(0.01f)] private float _electricDuration = 3f;
         [Tooltip("전기 영역 하나가 같은 배에 한 번 주는 피해. MonsterProfile의 공격력과 별도로 사용한다.")]
         [SerializeField, Min(0.01f)] private float _electricDamage = 20f;
         [SerializeField, Min(0.01f)] private float _lineLength = 8f;
         [SerializeField, Min(0.01f)] private float _lineWidth = 0.6f;
-        [SerializeField, Min(0f)] private float _zigzagWidth = 0.7f;
-        [SerializeField, Range(3, 32)] private int _linePointCount = 13;
-        [SerializeField, Min(0f)] private float _surfaceOffset = 0.15f;
         [Header("꼬리 전깃줄 설치")]
         [Tooltip("가로 방향에서 배 전방으로 기울이는 각도. 0도는 가로, 90도는 전방이다.")]
         [SerializeField, Range(0f, 90f)] private float _layingForwardAngle = 30f;
         [SerializeField, Min(0.01f)] private float _layingSpeed = 10f;
-        [Tooltip("설치 후 추적으로 전환할 때의 초당 회전 각도.")]
-        [SerializeField, Min(0.01f)] private float _chaseTurnSpeed = 120f;
-        [SerializeField, Min(0.01f)] private float _postAttackAcceleration = 10f;
+        [Tooltip("설치 경로 중간이 직선에서 휘어지는 거리의 최소·최대값이다.")]
+        [SerializeField] private Vector2 _curveOffsetRange = new Vector2(0.8f, 2f);
+        [Tooltip("전기 경로의 기준이 되는 꼬리 뼈. 지정하지 않으면 로컬 오프셋을 사용한다.")]
+        [SerializeField] private Transform _tailBone;
         [SerializeField] private Vector3 _tailLocalOffset = new Vector3(0f, 0f, -2.7f);
 
         [SyncVar] private MantaAttackPhase _phase;       
-        [SyncVar] private double _dischargeAt;
-        [SyncVar] private double _expiresAt;
+        [SyncVar] private float _activeLifetime;
         [SyncVar] private float _activeLineWidth;
-        private readonly SyncList<Vector3> _electricPoints = new SyncList<Vector3>();
-        private readonly HashSet<MonsterBoatTarget> _hitTargets = new HashSet<MonsterBoatTarget>();
+        [SyncVar] private uint _layingCastId;
+        private readonly SyncList<MantaTrailPoint> _electricPoints = new SyncList<MantaTrailPoint>();
+        private readonly Dictionary<uint, HashSet<MonsterBoatTarget>> _castHits = new Dictionary<uint, HashSet<MonsterBoatTarget>>();
         private readonly Dictionary<MonsterBoatTarget, Vector3> _previousBoats = new Dictionary<MonsterBoatTarget, Vector3>(8);
         private readonly List<MonsterBoatTarget> _boats = new List<MonsterBoatTarget>(8);
         private SeaMonster _monster;
@@ -59,18 +56,36 @@ namespace Lighthouse.Monsters.AI.Server
         private Vector3 _targetVelocity;
         private float _elapsed;
         private bool _ownsMovement;
+        private Vector3 _sweepStart;
         private Vector3 _sweepEnd;
-        private Vector3 _sweepDirection;
+        private Vector3 _sweepSide;
+        private float _sweepProgress;
+        private float _sweepCurveOffset;
+        private bool _reverseSweep;
         private Vector3 _lastTail;
-        private float _trailDistance;
-        private float _nextTrailDistance;
+        private uint _nextCastId;
+        private uint _currentCastId;
+        private uint _nextPointSequence;
+        private bool _hasTrailState;
 
         public MantaAttackPhase Phase => _phase;        
-        public double DischargeAt => _dischargeAt;
-        public double ExpiresAt => _expiresAt;
+        public float ActiveLifetime => _activeLifetime;
+        public uint LayingCastId => _layingCastId;
+        public event Action<int, MantaTrailPoint> TrailPointAdded
+        {
+            add => _pointAdded += value;
+            remove => _pointAdded -= value;
+        }
+        public event Action TrailCleared
+        {
+            add => _electricPoints.OnClear += value;
+            remove => _electricPoints.OnClear -= value;
+        }
+        private event Action<int, MantaTrailPoint> _pointAdded;
+
         public float ActiveLineWidth => _activeLineWidth;
-        public IReadOnlyList<Vector3> ElectricPoints => _electricPoints;
-        public Vector3 TailPosition => transform.TransformPoint(_tailLocalOffset);
+        public IReadOnlyList<MantaTrailPoint> ElectricPoints => _electricPoints;
+        public Vector3 TailPosition => _tailBone != null ? _tailBone.position : transform.TransformPoint(_tailLocalOffset);
         public bool IsAttacking => _ownsMovement;
         public bool HasCompleted { get; private set; }       
         public bool CanAct => isServer && isActiveAndEnabled && _monster != null
@@ -81,6 +96,7 @@ namespace Lighthouse.Monsters.AI.Server
 
         private void Awake()
         {
+            _electricPoints.OnChange += OnTrailPointChanged;
             _monster = GetComponent<SeaMonster>();
             _motion = GetComponent<MonsterMotion>();
             _sensor = GetComponent<SeaMonsterSensor>();
@@ -99,6 +115,18 @@ namespace Lighthouse.Monsters.AI.Server
                 StopAttack(false);
 
                 return;
+            }
+
+            double now = NetworkTime.time;
+            PruneExpiredPoints(now);
+            if (_electricPoints.Count > 0)
+            {
+                SampleBoats(true);
+                ApplyElectricDamage(now);
+            }
+            else
+            {
+                _previousBoats.Clear();
             }
 
             if (!_ownsMovement)
@@ -155,9 +183,15 @@ namespace Lighthouse.Monsters.AI.Server
                 float angle = _layingForwardAngle * Mathf.Deg2Rad;
                 Vector3 layingDirection = Vector3.Cross(Vector3.up, forward) * Mathf.Cos(angle)
                     + forward * Mathf.Sin(angle);
+                if (_reverseSweep)
+                {
+                    layingDirection = -layingDirection;
+                }
+                Vector3 side = Vector3.Cross(Vector3.up, layingDirection);
+                Vector3 initialDirection = layingDirection * _lineLength + side * (4f * _sweepCurveOffset);
                 Vector3 start = center - layingDirection * (_lineLength * 0.5f);
-                Vector3 tailOffset = Quaternion.LookRotation(layingDirection, Vector3.up)
-                    * Vector3.Scale(_tailLocalOffset, transform.lossyScale);
+                Vector3 tailOffset = Quaternion.LookRotation(initialDirection, Vector3.up)
+                    * Vector3.Scale(GetTailLocalPosition(), transform.lossyScale);
 
                 tailOffset.y = 0f;
                 start -= tailOffset;
@@ -165,69 +199,43 @@ namespace Lighthouse.Monsters.AI.Server
 
                 if (MoveTowards(start, _interceptSpeed))
                 {
-                    _sweepDirection = layingDirection;
+                    _sweepStart = _body.position;
                     _sweepEnd = start + layingDirection * _lineLength;
-                    _body.rotation = Quaternion.LookRotation(_sweepDirection, Vector3.up);
+                    _sweepSide = side;
+                    _sweepProgress = 0f;
+                    Vector3 tangent = MantaElectricRules.SweepTangent(
+                        _sweepStart, _sweepEnd, _sweepSide, _sweepCurveOffset, 0f);
+                    if (tangent.sqrMagnitude < 0.0001f)
+                    {
+                        tangent = initialDirection;
+                    }
                     _activeLineWidth = _lineWidth;
-                    _dischargeAt = double.MaxValue;
-                    _expiresAt = double.MaxValue;
-                    _trailDistance = 0f;
-                    _nextTrailDistance = _lineLength / (_linePointCount - 1);
+                    _activeLifetime = _electricDuration;
                     _lastTail = GetTailPosition();
-                    _electricPoints.Add(_lastTail);
+                    _currentCastId = ++_nextCastId;
+                    _layingCastId = _currentCastId;
+                    _nextPointSequence = 0;
+                    _hasTrailState = true;
+                    _castHits.Add(_currentCastId, new HashSet<MonsterBoatTarget>());
+                    AddTrailPoint(_lastTail, now);
+                    _body.MoveRotation(Quaternion.LookRotation(tangent, Vector3.up));
                     SetPhase(MantaAttackPhase.Laying);
+                    SampleBoats(true);
+                    ApplyElectricDamage(now);
                 }
             }
             else if (_phase == MantaAttackPhase.Laying)
             {
-                RecordTailTrail();
-
-                if (MoveTowards(_sweepEnd, _layingSpeed, Mathf.Min(_alignmentRadius, 0.05f), true))
+                RecordTailTrail(now);
+                ApplyElectricDamage(now);
+                if (!_ownsMovement)
                 {
-                    Vector3 tail = GetTailPosition();
-
-                    if ((_electricPoints[_electricPoints.Count - 1] - tail).sqrMagnitude > 0.0001f)
-                    {
-                        _electricPoints.Add(tail);
-                    }
-
-                    _dischargeAt = NetworkTime.time + _preparationSeconds;
-                    _expiresAt = _dischargeAt + _electricDuration;
-                    SetPhase(MantaAttackPhase.Preparing);
-                    ContinueAfterLaying(false);
-                }
-            }
-            else if (_phase == MantaAttackPhase.Preparing)
-            {
-                ContinueAfterLaying(false);
-
-                if (NetworkTime.time >= _expiresAt)
-                {
-                    StopAttack(true);
-
                     return;
                 }
-
-                if (NetworkTime.time >= _dischargeAt)
+                if (AdvanceSweep())
                 {
-                    SetPhase(MantaAttackPhase.Discharging);
-                    SampleBoats(false);
-                    ApplyElectricDamage();
+                    FinishLaying();
                 }
-            }
-            else if (_phase == MantaAttackPhase.Discharging)
-            {
-                ContinueAfterLaying(true);
-
-                if (NetworkTime.time >= _expiresAt)
-                {
-                    StopAttack(true);
-
-                    return;
-                }
-
-                SampleBoats(true);
-                ApplyElectricDamage();
             }
         }
 
@@ -260,12 +268,12 @@ namespace Lighthouse.Monsters.AI.Server
                 return false;
             }
 
+            _reverseSweep = UnityEngine.Random.value < 0.5f;
+            float curve = UnityEngine.Random.Range(_curveOffsetRange.x, _curveOffsetRange.y);
+            _sweepCurveOffset = UnityEngine.Random.value < 0.5f ? -curve : curve;
             _previousTargetPosition = target.transform.position;
             _targetVelocity = _targetBody != null ? _targetBody.linearVelocity : Vector3.zero;
             _elapsed = 0f;
-            _hitTargets.Clear();
-            _previousBoats.Clear();
-            _electricPoints.Clear();            
             HasCompleted = false;
             _ownsMovement = true;
             _motion.SetMovementLocked(true);
@@ -282,52 +290,88 @@ namespace Lighthouse.Monsters.AI.Server
             StopAttack(false);
         }
 
-        private Vector3 GetTailPosition()
+        private Vector3 GetTailLocalPosition()
         {
-            Vector3 tail = _body.position + _body.rotation * Vector3.Scale(_tailLocalOffset, transform.lossyScale);
-
-            if (TryWaterHeight(tail, out float water))
-            {
-                tail.y = water + _surfaceOffset;
-            }
-
-            return tail;
+            return _tailBone != null ? transform.InverseTransformPoint(_tailBone.position) : _tailLocalOffset;
         }
 
-        private void RecordTailTrail()
+        private Vector3 GetTailPosition()
+        {
+            return _body.position + _body.rotation * Vector3.Scale(GetTailLocalPosition(), transform.lossyScale);
+        }
+
+        private void RecordTailTrail(double now)
         {
             Vector3 tail = GetTailPosition();
             float distance = Vector3.Distance(_lastTail, tail);
-            float spacing = _lineLength / (_linePointCount - 1);
-
-            // 물리 갱신 주기가 달라도 설치되는 선의 밀도가 일정하도록 이동 거리 기준으로 좌표를 기록한다.
-            while (distance > 0f && _nextTrailDistance <= _trailDistance + distance && _electricPoints.Count < _linePointCount)
+            if (distance <= 0.0001f)
             {
-                float fraction = (_nextTrailDistance - _trailDistance) / distance;
-                Vector3 point = Vector3.Lerp(_lastTail, tail, fraction);
-                Vector3 side = Vector3.Cross(Vector3.up, _sweepDirection);
-                point += side * (Mathf.Sin(_electricPoints.Count * 2.399963f) * _zigzagWidth);
-                _electricPoints.Add(point);
-                _nextTrailDistance += spacing;
+                return;
             }
 
-            _trailDistance += distance;
+            // 정지 후 다시 움직일 때 정지 시간 전체에 걸쳐 이동한 것처럼 보간하지 않는다.
+            MantaTrailPoint previous = _electricPoints[_electricPoints.Count - 1];
+            double stepStart = now - Time.fixedDeltaTime;
+            if (previous.CastId == _currentCastId && now - previous.CreatedAt > Time.fixedDeltaTime * 1.5d)
+            {
+                AddTrailPoint(previous.Position, stepStart);
+            }
+
+            // 이동 중인 끝부분도 즉시 판정되도록 물리 갱신마다 꼬리 위치와 생성 시각을 기록한다.
+            AddTrailPoint(tail, now);
             _lastTail = tail;
+        }
+
+        private void AddTrailPoint(Vector3 position, double createdAt)
+        {
+            _electricPoints.Add(new MantaTrailPoint(_currentCastId, position, createdAt, ++_nextPointSequence));
+        }
+
+        private void OnTrailPointChanged(SyncList<MantaTrailPoint>.Operation operation, int index, MantaTrailPoint point)
+        {
+            if (operation == SyncList<MantaTrailPoint>.Operation.OP_ADD)
+            {
+                _pointAdded?.Invoke(index, point);
+            }
+        }
+
+        private void PruneExpiredPoints(double now)
+        {
+            double cutoff = now - _activeLifetime;
+            while (_electricPoints.Count > 0)
+            {
+                MantaTrailPoint first = _electricPoints[0];
+                if (first.CreatedAt > cutoff)
+                {
+                    break;
+                }
+                bool hasNext = _electricPoints.Count > 1 && _electricPoints[1].CastId == first.CastId;
+                if (hasNext && _electricPoints[1].CreatedAt > cutoff)
+                {
+                    break;
+                }
+                if (!hasNext && _ownsMovement && _phase == MantaAttackPhase.Laying && first.CastId == _currentCastId)
+                {
+                    break;
+                }
+                _electricPoints.RemoveAt(0);
+                if (!hasNext)
+                {
+                    _castHits.Remove(first.CastId);
+                }
+            }
         }
 
         private void SampleBoats(bool retainPrevious)
         {
             _boats.Clear();
             IReadOnlyList<MonsterBoatTarget> targets = MonsterBoatTarget.Targets;
-
             for (int index = 0; index < targets.Count; index++)
             {
                 MonsterBoatTarget boat = targets[index];
-
                 if (boat != null && boat.IsEligible)
                 {
                     _boats.Add(boat);
-
                     if (!retainPrevious || !_previousBoats.ContainsKey(boat))
                     {
                         _previousBoats[boat] = boat.transform.position;
@@ -336,123 +380,135 @@ namespace Lighthouse.Monsters.AI.Server
             }
         }
 
-        private void ApplyElectricDamage()
+        private void ApplyElectricDamage(double now)
         {
-            // 피해 콜백에서 배가 난파되어 등록 목록에서 빠질 수 있으므로 미리 복사한 목록을 순회한다.
-            for (int index = 0; index < _boats.Count && _ownsMovement; index++)
+            double cutoff = now - _activeLifetime;
+            for (int index = 0; index < _boats.Count; index++)
             {
                 MonsterBoatTarget boat = _boats[index];
-
-                if (boat == null || !boat.IsEligible || _hitTargets.Contains(boat))
+                if (boat == null || !boat.IsEligible || !_previousBoats.TryGetValue(boat, out Vector3 previous))
                 {
                     continue;
                 }
-
                 Vector3 current = boat.transform.position;
-                Vector3 previous = _previousBoats[boat];
-                _previousBoats[boat] = current;
                 float radius = _activeLineWidth * 0.5f + boat.HitRadius;
-
-                for (int point = 1; point < _electricPoints.Count; point++)
+                for (int point = 0; point < _electricPoints.Count; point++)
                 {
-                    if (MantaElectricRules.Intersects(previous, current, _electricPoints[point - 1], _electricPoints[point], radius))
+                    MantaTrailPoint end = _electricPoints[point];
+                    if (!_castHits.TryGetValue(end.CastId, out HashSet<MonsterBoatTarget> hits) || hits.Contains(boat))
                     {
-                        _hitTargets.Add(boat);
+                        continue;
+                    }
+                    Vector3 startPosition = end.Position;
+                    Vector3 endPosition = end.Position;
+                    bool live = end.CreatedAt > cutoff;
+                    if (point > 0 && _electricPoints[point - 1].CastId == end.CastId)
+                    {
+                        live = MantaElectricRules.TryClipLiveSegment(_electricPoints[point - 1], end, cutoff,
+                            out startPosition, out endPosition);
+                    }
+                    if (live && MantaElectricRules.Intersects(previous, current, startPosition, endPosition, radius))
+                    {
+                        hits.Add(boat);
                         boat.TryApplyDamage(_electricDamage);
-                        
-                        break;
+                        if (!boat.IsEligible || !isActiveAndEnabled)
+                        {
+                            break;
+                        }
                     }
                 }
+                _previousBoats[boat] = current;
             }
         }
 
-        private void ContinueAfterLaying(bool chase)
+        private void FinishLaying()
         {
-            Vector3 direction = _sweepDirection;
-            float speed = _layingSpeed;
-
-            if (chase && HasValidTarget())
-            {
-                direction = _target.transform.position - _body.position;
-                direction.y = 0f;
-                speed = direction.magnitude <= _motion.ChaseStoppingDistance ? 0f : _monster.Profile.ChaseSpeed;
-                _monster.TrySetBehaviorState(MonsterState.Chase);
-            }
-
-            if (direction.sqrMagnitude > 0.001f)
-            {
-                Quaternion rotation = Quaternion.RotateTowards(_body.rotation,
-                    Quaternion.LookRotation(direction, Vector3.up), _chaseTurnSpeed * Time.fixedDeltaTime);
-                _body.MoveRotation(rotation);
-                direction = rotation * Vector3.forward;
-            }
-
-            Vector3 velocity = _body.linearVelocity;
-            Vector3 horizontal = new Vector3(velocity.x, 0f, velocity.z);
-            horizontal = Vector3.MoveTowards(horizontal, direction.normalized * speed,
-                _postAttackAcceleration * Time.fixedDeltaTime);
-            _body.linearVelocity = new Vector3(horizontal.x, velocity.y, horizontal.z);
+            _ownsMovement = false;
+            HasCompleted = true;
+            _target = null;
+            _targetBody = null;
+            _motion.SetMovementLocked(false);
+            _layingCastId = 0;
+            SetPhase(MantaAttackPhase.Idle);
         }
 
-        private bool MoveTowards(Vector3 destination, float speed, float arrivalRadius = -1f, bool passThrough = false)
+        private bool AdvanceSweep()
+        {
+            Vector3 waypoint = MantaElectricRules.SweepPoint(
+                _sweepStart, _sweepEnd, _sweepSide, _sweepCurveOffset, _sweepProgress);
+            Vector3 lag = waypoint - _body.position;
+            lag.y = 0f;
+            float step = _layingSpeed * Time.fixedDeltaTime;
+            if (lag.magnitude <= Mathf.Max(0.05f, step * 1.5f) && _sweepProgress < 1f)
+            {
+                Vector3 tangent = MantaElectricRules.SweepTangent(
+                    _sweepStart, _sweepEnd, _sweepSide, _sweepCurveOffset, _sweepProgress);
+                _sweepProgress = Mathf.Min(1f, _sweepProgress + step / Mathf.Max(0.01f, tangent.magnitude));
+                waypoint = MantaElectricRules.SweepPoint(
+                    _sweepStart, _sweepEnd, _sweepSide, _sweepCurveOffset, _sweepProgress);
+            }
+            Vector3 offset = waypoint - _body.position;
+            offset.y = 0f;
+            float distance = offset.magnitude;
+            if (_sweepProgress >= 1f && distance <= Mathf.Min(_alignmentRadius, 0.05f))
+            {
+                return true;
+            }
+            if (distance > 0.0001f)
+            {
+                Vector3 horizontal = offset.normalized * Mathf.Min(_layingSpeed, distance / Time.fixedDeltaTime);
+                _body.linearVelocity = new Vector3(horizontal.x, _body.linearVelocity.y, horizontal.z);
+                _body.MoveRotation(Quaternion.LookRotation(offset, Vector3.up));
+            }
+            return false;
+        }
+
+        private bool MoveTowards(Vector3 destination, float speed)
         {
             Vector3 offset = destination - _body.position;
             offset.y = 0f;
             float distance = offset.magnitude;
-
-            if (distance <= (arrivalRadius >= 0f ? arrivalRadius : _alignmentRadius)
-                || (passThrough && Vector3.Dot(offset, _sweepDirection) <= 0f))
+            if (distance <= _alignmentRadius)
             {
-                if (!passThrough)
-                {
-                    _body.linearVelocity = new Vector3(0f, _body.linearVelocity.y, 0f);
-                }
-
+                _body.linearVelocity = new Vector3(0f, _body.linearVelocity.y, 0f);
                 return true;
             }
-
-            Vector3 horizontal = offset.normalized * (passThrough ? speed : Mathf.Min(speed, distance / Time.fixedDeltaTime));
+            Vector3 horizontal = offset.normalized * Mathf.Min(speed, distance / Time.fixedDeltaTime);
             _body.linearVelocity = new Vector3(horizontal.x, _body.linearVelocity.y, horizontal.z);
-
             if (offset.sqrMagnitude > 0.001f)
             {
                 _body.MoveRotation(Quaternion.LookRotation(offset, Vector3.up));
             }
-
             return false;
         }
 
         private void StopAttack(bool completed)
         {
-            if (!_ownsMovement)
-            {
-                return;
-            }
-
+            bool ownedMovement = _ownsMovement;
             _ownsMovement = false;
-            HasCompleted = completed;           
-
+            HasCompleted = completed;
             _target = null;
             _targetBody = null;
             _previousBoats.Clear();
-            _hitTargets.Clear();
+            _castHits.Clear();
             _boats.Clear();
-
-            if (_motion != null)
+            if (ownedMovement && _motion != null)
             {
                 _motion.SetMovementLocked(false);
                 _motion.Stop();
             }
-
-            if (_body != null && !_body.isKinematic)
+            if (ownedMovement && _body != null && !_body.isKinematic)
             {
                 _body.linearVelocity = Vector3.zero;
             }
-
             if (isServer)
             {
-                _electricPoints.Clear();
-                _expiresAt = 0d;
+                if (_hasTrailState || _electricPoints.Count > 0)
+                {
+                    _electricPoints.Clear();
+                    _hasTrailState = false;
+                }
+                _layingCastId = 0;
                 SetPhase(MantaAttackPhase.Idle);
             }
         }
@@ -484,12 +540,13 @@ namespace Lighthouse.Monsters.AI.Server
         private bool HasValidSettings()
         {
             return Positive(_interceptSpeed) && Positive(_alignmentRadius)
-                && NonNegative(_preparationSeconds) && Positive(_electricDuration) && Positive(_electricDamage)
-                && Positive(_lineLength) && Positive(_lineWidth) && NonNegative(_zigzagWidth)
-                && NonNegative(_predictionSeconds) && Positive(_minimumLead) && NonNegative(_surfaceOffset)
-                && Positive(_timeoutSeconds) && _linePointCount >= 3 && _linePointCount <= 32
+                && Positive(_electricDuration) && Positive(_electricDamage)
+                && Positive(_lineLength) && Positive(_lineWidth)
+                && NonNegative(_predictionSeconds) && Positive(_minimumLead)
+                && Positive(_timeoutSeconds)
                 && Positive(_layingSpeed) && MonsterMotion.IsFinite(_tailLocalOffset)
-                && Positive(_chaseTurnSpeed) && Positive(_postAttackAcceleration)
+                && NonNegative(_curveOffsetRange.x) && NonNegative(_curveOffsetRange.y)
+                && _curveOffsetRange.y >= _curveOffsetRange.x
                 && NonNegative(_layingForwardAngle) && _layingForwardAngle <= 90f;
         }
 
@@ -505,7 +562,7 @@ namespace Lighthouse.Monsters.AI.Server
 
         private void OnDrawGizmosSelected()
         {
-            Vector3 tail = transform.TransformPoint(_tailLocalOffset);
+            Vector3 tail = _tailBone != null ? _tailBone.position : transform.TransformPoint(_tailLocalOffset);
 
             Gizmos.color = Color.cyan;
             Gizmos.DrawWireSphere(tail, 0.15f);

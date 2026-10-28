@@ -13,14 +13,18 @@ MonoBehaviour:
   m_Name: Weather_Rain
   m_EditorClassIdentifier: 
   _levels:
-  - Amplitude: 1.4
-    Steepness: 0.3
-  - Amplitude: 0.8
-    Steepness: 0.22
+  - Amplitude: 1.2
+    Steepness: 0.16
+  - Amplitude: 0.85
+    Steepness: 0.15
   - Amplitude: 0.4
     Steepness: 0.14
-  - Amplitude: 0.15
+  - Amplitude: 0.2
+    Steepness: 0.1
+  - Amplitude: 0.07
     Steepness: 0.07
+  - Amplitude: 0.03
+    Steepness: 0.04
   _wind: {x: 8, y: 1}
   _fogDensity: 0.5
   _rainRate: 0.6

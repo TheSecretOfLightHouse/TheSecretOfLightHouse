@@ -13,6 +13,8 @@ public sealed class PlayerPassiveController : NetworkBehaviour
     private bool _isBound;
     private bool _isJobAbilityEnabled = true;
 
+    public bool IsJobAbilityEnabled => _isJobAbilityEnabled;
+
     private void Awake()
     {
         _player = GetComponent<PlayerController>();
@@ -20,7 +22,7 @@ public sealed class PlayerPassiveController : NetworkBehaviour
 
     private void OnEnable()
     {
-        if (isServer)
+        if (isServer || isOwned)
         {
             Bind();
         }
@@ -35,6 +37,22 @@ public sealed class PlayerPassiveController : NetworkBehaviour
     {
         base.OnStartServer();
         Bind();
+    }
+
+    public override void OnStartAuthority()
+    {
+        base.OnStartAuthority();
+        Bind();
+    }
+
+    public override void OnStopAuthority()
+    {
+        if (!isServer)
+        {
+            Unbind();
+        }
+
+        base.OnStopAuthority();
     }
 
     public override void OnStopServer()
@@ -68,6 +86,58 @@ public sealed class PlayerPassiveController : NetworkBehaviour
         }
 
         return 1f;
+    }
+
+    [Server]
+    public float GetRepairAmountMultiplier(BoatController boat)
+    {
+        if (!isActiveAndEnabled || !_isBound
+            || !_isJobAbilityEnabled || !_passiveComponent
+            || !_passiveComponent.isActiveAndEnabled)
+        {
+            return 1f;
+        }
+
+        if (_passive is IBoatRepairModifier modifier)
+        {
+            return modifier.GetRepairAmountMultiplier(boat);
+        }
+
+        return 1f;
+    }
+
+    public float GetBoatSpeedMultiplier(BoatController boat)
+    {
+        if (!isActiveAndEnabled || !_isBound
+            || !_isJobAbilityEnabled || !_passiveComponent
+            || !_passiveComponent.isActiveAndEnabled)
+        {
+            return 1f;
+        }
+
+        if (_passive is IBoatSpeedModifier modifier)
+        {
+            return modifier.GetBoatSpeedMultiplier(boat);
+        }
+
+        return 1f;
+    }
+
+    public int GetStackCapacity()
+    {
+        if (!isActiveAndEnabled || !_isBound
+            || !_isJobAbilityEnabled || !_passiveComponent
+            || !_passiveComponent.isActiveAndEnabled)
+        {
+            return InventoryData.StackCapacity;
+        }
+
+        if (_passive is IInventoryStackModifier modifier)
+        {
+            return modifier.GetStackCapacity();
+        }
+
+        return InventoryData.StackCapacity;
     }
 
     private void Bind()

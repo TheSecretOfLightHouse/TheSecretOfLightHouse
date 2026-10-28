@@ -37,8 +37,8 @@ namespace Lighthouse.Player.Recovery.View
 
             // OS dynamic-font materials belong to the current process, not a saved scene asset.
             _runtimeFont = Font.CreateDynamicFontFromOSFont(
-                new[] { "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR" },
-                24);
+                new[] { "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Arial" },
+                32);
 
             UnityEngine.UI.Text[] labels =
                 _panel.GetComponentsInChildren<UnityEngine.UI.Text>(true);

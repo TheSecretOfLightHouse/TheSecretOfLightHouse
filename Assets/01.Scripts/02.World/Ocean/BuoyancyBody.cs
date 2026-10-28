@@ -13,123 +13,135 @@ namespace Lighthouse.World.Ocean
         [SerializeField] private float _slamCooldown = 0.5f;
 
         private readonly SlamReporter _slam = new SlamReporter();
-        private readonly ExternalForceApplier _externalForce = new ExternalForceApplier();
+        private readonly ExternalForceApplier _externalForce =
+            new ExternalForceApplier();
+
         private ShipStabilizer _stabilizer;
         private WaterSamplerHost _host;
         private IShipBody _ship;
-        private SamplerTicket _ticket;
-        private Vector3[] _localPoints;
-        private Vector3[] _worldPoints;
-        private bool _isAllocated;
+        private BuoyancySampleSession _samples;
 
         public bool IsSimulating
         {
             get { return _isSimulating; }
-            set { _isSimulating = value; }
+            set
+            {
+                if (_isSimulating == value)
+                {
+                    return;
+                }
+
+                _isSimulating = value;
+
+                if (_samples != null)
+                {
+                    _samples.Invalidate();
+                }
+
+                _slam.Reset();
+            }
         }
 
         private void Awake()
         {
-            if (!TryGetComponent(out _ship) || _ship.Body == null || _ship.BuoyancyPoints.Count == 0)
+            if (!TryGetComponent(out _ship)
+                || _ship.Body == null
+                || _ship.BuoyancyPoints == null
+                || _ship.BuoyancyPoints.Count == 0)
             {
-                Debug.LogError($"[{nameof(BuoyancyBody)}] IShipBody with a Rigidbody and buoyancy points is required.");
+                Debug.LogError(
+                    $"[{nameof(BuoyancyBody)}] IShipBody with a Rigidbody and buoyancy points is required.");
+
                 enabled = false;
                 return;
             }
 
-            int count = _ship.BuoyancyPoints.Count;
-            _localPoints = new Vector3[count];
-            _worldPoints = new Vector3[count];
-
-            for (int i = 0; i < count; i++)
-            {
-                _localPoints[i] = _ship.BuoyancyPoints[i];
-            }
+            _samples = new BuoyancySampleSession(
+                _ship.Body,
+                _ship.BuoyancyPoints);
 
             _stabilizer = new ShipStabilizer(_tuning);
         }
 
         private void OnEnable()
         {
-            if (!WorldServices.TryGet(out _host) || !_host.TryAllocate(_pool, _localPoints.Length, out _ticket))
+            if (_samples == null
+                || !WorldServices.TryGet(out _host)
+                || !_samples.TryOpen(_host, _pool, this))
             {
-                Debug.LogError($"[{nameof(BuoyancyBody)}] WaterSamplerHost is missing or has no free sample slots.");
-                enabled = false;
-                return;
-            }
+                Debug.LogError(
+                    $"[{nameof(BuoyancyBody)}] Active WaterSamplerHost and free sample slots are required.");
 
-            _isAllocated = true;
-            _host.RegisterSource(this);
+                enabled = false;
+            }
         }
 
         private void OnDisable()
         {
-            if (!_isAllocated)
+            if (_samples != null)
             {
-                return;
+                _samples.Close();
             }
 
-            _host.UnregisterSource(this);
-            _host.Release(in _ticket);
-            _isAllocated = false;
+            _host = null;
             _slam.Reset();
         }
 
         private void FixedUpdate()
         {
-            if (!_isAllocated)
+            if (_samples == null)
             {
                 return;
             }
 
-            if (!_isSimulating)
+            if (!_isSimulating
+                || _ship.Body == null
+                || _ship.Body.isKinematic)
+            {
+                _samples.Invalidate();
+                _slam.Reset();
+                return;
+            }
+
+            if (!_samples.TryGetSamples(
+                    out var worldPoints,
+                    out var waterHeights))
             {
                 _slam.Reset();
                 return;
             }
 
-            Rigidbody body = _ship.Body;
             float gravity = Physics.gravity.magnitude;
-            float perPointMass = _ship.Mass / _localPoints.Length;
-            float depthSum = 0f;
-            int submergedCount = 0;
 
-            for (int i = 0; i < _worldPoints.Length; i++)
+            if (!BuoyancyForceSolver.TryApply(
+                    _ship.Body,
+                    _ship.Mass,
+                    gravity,
+                    _tuning,
+                    worldPoints,
+                    waterHeights,
+                    out float meanDepth,
+                    out float submergedFraction))
             {
-                Vector3 point = _worldPoints[i];
-                float depth = _host.GetHeight(in _ticket, i) - point.y;
-                if (depth <= 0f)
-                {
-                    continue;
-                }
-
-                float submerged = Mathf.Min(depth, _tuning.MaxDepth);
-                Vector3 force = Vector3.up * _tuning.GetUpwardForce(submerged, perPointMass, gravity)
-                    + _tuning.GetDragForce(body.GetPointVelocity(point), perPointMass);
-
-                body.AddForceAtPosition(force, point);
-                depthSum += submerged;
-                submergedCount++;
+                _slam.Reset();
+                return;
             }
 
-            _stabilizer.Apply(_ship, gravity, submergedCount / (float)_worldPoints.Length);
-            ReportSlam(depthSum / _worldPoints.Length);
+            _stabilizer.Apply(
+                _ship,
+                gravity,
+                submergedFraction);
+
+            ReportSlam(meanDepth);
             _externalForce.Apply(_ship, _host.CurrentTime);
         }
 
         public void SubmitPoints()
         {
-            if (!_isSimulating)
+            if (_samples != null)
             {
-                return;
-            }
-
-            Transform bodyTransform = _ship.Body.transform;
-
-            for (int i = 0; i < _localPoints.Length; i++)
-            {
-                _worldPoints[i] = bodyTransform.TransformPoint(_localPoints[i]);
-                _host.SetPoint(in _ticket, i, _worldPoints[i]);
+                _samples.SubmitPoints(
+                    isActiveAndEnabled && _isSimulating);
             }
         }
 
@@ -137,7 +149,13 @@ namespace Lighthouse.World.Ocean
         {
             _slam.Threshold = _slamThreshold;
             _slam.Cooldown = _slamCooldown;
-            _slam.Track(meanDepth, Time.fixedDeltaTime, _host.CurrentTime, _ship.Body.worldCenterOfMass, _ship.ShipId);
+
+            _slam.Track(
+                meanDepth,
+                Time.fixedDeltaTime,
+                _host.CurrentTime,
+                _ship.Body.worldCenterOfMass,
+                _ship.ShipId);
         }
     }
 }

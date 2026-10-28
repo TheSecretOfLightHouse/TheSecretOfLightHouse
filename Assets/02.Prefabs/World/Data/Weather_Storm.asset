@@ -13,14 +13,18 @@ MonoBehaviour:
   m_Name: Weather_Storm
   m_EditorClassIdentifier: 
   _levels:
-  - Amplitude: 2.5
-    Steepness: 0.33
-  - Amplitude: 1.2
-    Steepness: 0.24
-  - Amplitude: 0.5
-    Steepness: 0.1
-  - Amplitude: 0.2
-    Steepness: 0.03
+  - Amplitude: 1
+    Steepness: 0.14
+  - Amplitude: 1
+    Steepness: 0.17
+  - Amplitude: 1.1
+    Steepness: 0.17
+  - Amplitude: 0.8
+    Steepness: 0.13
+  - Amplitude: 0.4
+    Steepness: 0.09
+  - Amplitude: 0.1
+    Steepness: 0.06
   _wind: {x: 15, y: 2}
   _fogDensity: 0.8
   _rainRate: 1

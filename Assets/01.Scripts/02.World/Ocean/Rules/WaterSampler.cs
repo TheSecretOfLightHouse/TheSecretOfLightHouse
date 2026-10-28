@@ -14,11 +14,18 @@ namespace Lighthouse.World.Ocean.Rules
         private NativeArray<float> _heights;
         private NativeArray<WaveParams> _waves;
         private NativeArray<WaveModifierData> _modifiers;
+        private NativeArray<Vector4> _coasts;
+        private NativeArray<Vector4> _edges;
+        private NativeArray<Vector4> _profiles;
+        private int _coastVersion = -1;
         private JobHandle _handle;
         private bool _isDisposed;
 
         public WaterSampler(int shipCapacity, int driftCapacity)
         {
+            _profiles = new NativeArray<Vector4>(CoastWaveRegistry.Capacity, Allocator.Persistent);
+            _coasts = new NativeArray<Vector4>(CoastWaveRegistry.Capacity, Allocator.Persistent);
+            _edges = new NativeArray<Vector4>(CoastWaveRegistry.Capacity * CoastWaveRegistry.Segments, Allocator.Persistent);
             _slots = new SamplerSlotAllocator(shipCapacity, driftCapacity);
             _points = new NativeArray<Vector3>(_slots.Capacity, Allocator.Persistent);
             _heights = new NativeArray<float>(_slots.Capacity, Allocator.Persistent);
@@ -102,9 +109,26 @@ namespace Lighthouse.World.Ocean.Rules
                 _modifiers[i] = modifiers[i];
             }
 
+            if (_coastVersion != CoastWaveRegistry.Version)
+            {
+                for (int i = 0; i < _coasts.Length; i++)
+                {
+                    _coasts[i] = CoastWaveRegistry.Bounds[i];
+                    _profiles[i] = CoastWaveRegistry.Profiles[i];
+                }
+                for (int i = 0; i < _edges.Length; i++)
+                {
+                    _edges[i] = CoastWaveRegistry.Edges[i];
+                }
+                _coastVersion = CoastWaveRegistry.Version;
+            }
+
             var job = new WaterSampleJob
             {
                 Points = _points,
+                Coasts = _coasts,
+                CoastEdges = _edges,
+                CoastProfiles = _profiles,
                 Waves = _waves,
                 Modifiers = _modifiers,
                 Heights = _heights,
@@ -140,6 +164,9 @@ namespace Lighthouse.World.Ocean.Rules
 
             _handle.Complete();
             _isDisposed = true;
+            _coasts.Dispose();
+            _edges.Dispose();
+            _profiles.Dispose();
 
             if (_points.IsCreated)
             {

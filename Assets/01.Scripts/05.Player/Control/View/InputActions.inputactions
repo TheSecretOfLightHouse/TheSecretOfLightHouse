@@ -10,7 +10,7 @@
                     "name": "Inventory",
                     "type": "Button",
                     "id": "6786dd91-f5fc-42f4-bf32-20cc3c83f144",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -74,6 +74,15 @@
                     "type": "Button",
                     "id": "d53b2354-6944-48aa-8631-280566657027",
                     "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Ability",
+                    "type": "Button",
+                    "id": "37466a28-8c8e-488c-935c-f95be5d4ae19",
+                    "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -220,6 +229,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "Fire",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8fd0555f-501d-4fea-90b6-dd2574c4822d",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Ability",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

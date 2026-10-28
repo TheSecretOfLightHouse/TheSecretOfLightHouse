@@ -62,6 +62,7 @@ namespace Lighthouse.World.Ocean.Sandbox
             float expected = WaveModel.HeightAt(
                 _host.Inputs.Waves,
                 _host.Inputs.Modifiers,
+                CoastWaveRegistry.Bounds, CoastWaveRegistry.Edges, CoastWaveRegistry.Profiles,
                 _submittedPosition.x,
                 _submittedPosition.z,
                 (float)_host.CurrentTime);
