@@ -10,39 +10,26 @@ namespace Lighthouse.Player.Boat.View
         [SerializeField] private bool _soundEnabled = true;
         [SerializeField, Range(0f, 1f)] private float _volume = 0.15f;
         [SerializeField, Min(0.1f)] private float _beepInterval = 0.6f;
-        [SerializeField, Range(0f, 1f)] private float _cautionVignetteOpacity = 0.25f;
-        [SerializeField, Range(0f, 1f)] private float _dangerVignetteOpacity = 0.5f;
-        [SerializeField, Min(0f)] private float _vignettePulseFrequency = 1f;
-
-        private static readonly string[] CautionMessages =
-        {
-            "△ 주의 · 왼쪽 충돌 위험", "△ 주의 · 전방 충돌 위험", "△ 주의 · 오른쪽 충돌 위험"
-        };
-        private static readonly string[] DangerMessages =
-        {
-            "! 위험 · 왼쪽 충돌 임박", "! 위험 · 전방 충돌 임박", "! 위험 · 오른쪽 충돌 임박"
-        };
+        [SerializeField, Min(0f)] private float _pulseFrequency = 1f;
+        [SerializeField, Min(100f)] private float _indicatorSize = 760f;
 
         private ObstacleAlarmModule _alarm;
         private GameObject _canvasRoot;
-        private UnityEngine.UI.Image _background;
-        private UnityEngine.UI.Text _label;
-        private Font _font;
+        private UnityEngine.UI.RawImage _arc;
+        private Texture2D _arcTexture;
+        private Camera _camera;
         private AudioSource _audio;
         private AudioClip _beep;
         private float _nextBeepTime;
-        private UnityEngine.UI.RawImage _vignette;
-        private Texture2D _vignetteTexture;
 
         private void Awake()
         {
             _alarm = GetComponent<ObstacleAlarmModule>();
         }
 
-        private void Update()
+        private void LateUpdate()
         {
-            bool visible = _alarm.IsMonitoring && _alarm.WarningLevel > 0;
-            if (!visible)
+            if (!_alarm.IsMonitoring || _alarm.WarningLevel == 0)
             {
                 Hide();
                 return;
@@ -52,15 +39,26 @@ namespace Lighthouse.Player.Boat.View
             {
                 CreateHud();
             }
+            if (!_camera || !_camera.isActiveAndEnabled)
+            {
+                _camera = Camera.main;
+            }
 
             _canvasRoot.SetActive(true);
+            Transform reference = _camera ? _camera.transform : transform;
+            Vector3 forward = Vector3.ProjectOnPlane(reference.forward, Vector3.up);
+            if (forward.sqrMagnitude < 0.0001f)
+            {
+                forward = Vector3.ProjectOnPlane(reference.up, Vector3.up);
+            }
+            forward.Normalize();
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            Vector3 offset = _alarm.WarningPoint - transform.position;
+            float angle = Mathf.Atan2(Vector3.Dot(offset, right), Vector3.Dot(offset, forward)) * Mathf.Rad2Deg;
+            _arc.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -angle);
             bool danger = _alarm.WarningLevel == 2;
-            float pulse = danger ? 0.85f + 0.15f * Mathf.Sin(Time.unscaledTime * Mathf.PI * 2f * _vignettePulseFrequency) : 1f;
-            _vignette.color = danger
-                ? new Color(1f, 0.08f, 0.04f, _dangerVignetteOpacity * pulse)
-                : new Color(1f, 0.7f, 0.05f, _cautionVignetteOpacity);
-            _background.color = danger ? new Color(0.65f, 0.05f, 0.04f, 0.92f) : new Color(0.35f, 0.25f, 0.02f, 0.92f);
-            _label.text = danger ? DangerMessages[_alarm.WarningDirection + 1] : CautionMessages[_alarm.WarningDirection + 1];
+            float pulse = danger ? 0.85f + 0.15f * Mathf.Sin(Time.unscaledTime * Mathf.PI * 2f * _pulseFrequency) : 1f;
+            _arc.color = danger ? new Color(1f, 0.15f, 0.04f, pulse) : new Color(1f, 0.7f, 0.08f, 0.9f);
             if (danger && _soundEnabled && Time.unscaledTime >= _nextBeepTime)
             {
                 _audio.PlayOneShot(_beep, _volume);
@@ -79,17 +77,13 @@ namespace Lighthouse.Player.Boat.View
 
         private void OnDestroy()
         {
-            if (_vignetteTexture)
+            if (_arcTexture)
             {
-                Destroy(_vignetteTexture);
+                Destroy(_arcTexture);
             }
             if (_canvasRoot)
             {
                 Destroy(_canvasRoot);
-            }
-            if (_font)
-            {
-                Destroy(_font);
             }
             if (_beep)
             {
@@ -128,32 +122,8 @@ namespace Lighthouse.Player.Boat.View
             UnityEngine.UI.CanvasScaler scaler = _canvasRoot.GetComponent<UnityEngine.UI.CanvasScaler>();
             scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920f, 1080f);
-            CreateVignette();
-
-            var panel = new GameObject("Warning", typeof(RectTransform), typeof(UnityEngine.UI.Image));
-            panel.transform.SetParent(_canvasRoot.transform, false);
-            RectTransform rect = (RectTransform)panel.transform;
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
-            rect.pivot = new Vector2(0.5f, 1f);
-            rect.anchoredPosition = new Vector2(0f, -100f);
-            rect.sizeDelta = new Vector2(500f, 64f);
-            _background = panel.GetComponent<UnityEngine.UI.Image>();
-            _background.raycastTarget = false;
-
-            var text = new GameObject("Message", typeof(RectTransform), typeof(UnityEngine.UI.Text));
-            text.transform.SetParent(panel.transform, false);
-            RectTransform textRect = (RectTransform)text.transform;
-            textRect.anchorMin = Vector2.zero;
-            textRect.anchorMax = Vector2.one;
-            textRect.offsetMin = textRect.offsetMax = Vector2.zero;
-            _font = Font.CreateDynamicFontFromOSFont(new[] { "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Arial" }, 28);
-            _label = text.GetComponent<UnityEngine.UI.Text>();
-            _label.font = _font;
-            _label.fontSize = 28;
-            _label.alignment = TextAnchor.MiddleCenter;
-            _label.color = Color.white;
-            _label.raycastTarget = false;
-
+            scaler.matchWidthOrHeight = 0.5f;
+            CreateArc();
             _audio = _canvasRoot.AddComponent<AudioSource>();
             _audio.playOnAwake = false;
             _audio.spatialBlend = 0f;
@@ -167,37 +137,39 @@ namespace Lighthouse.Player.Boat.View
             _beep.SetData(samples, 0);
         }
 
-        private void CreateVignette()
+        private void CreateArc()
         {
-            const int Size = 128;
-            _vignetteTexture = new Texture2D(Size, Size, TextureFormat.RGBA32, false);
-            _vignetteTexture.name = "ObstacleAlarmVignette";
-            _vignetteTexture.wrapMode = TextureWrapMode.Clamp;
-            _vignetteTexture.filterMode = FilterMode.Bilinear;
+            const int Size = 512;
+            _arcTexture = new Texture2D(Size, Size, TextureFormat.RGBA32, false);
+            _arcTexture.name = "ObstacleAlarmDirectionalArc";
+            _arcTexture.wrapMode = TextureWrapMode.Clamp;
+            _arcTexture.filterMode = FilterMode.Bilinear;
             var pixels = new Color32[Size * Size];
             for (int y = 0; y < Size; y++)
             {
                 for (int x = 0; x < Size; x++)
                 {
-                    float horizontal = Mathf.Abs(2f * x / (Size - 1) - 1f);
-                    float vertical = Mathf.Abs(2f * y / (Size - 1) - 1f);
-                    float edge = 1f - (1f - Mathf.Pow(horizontal, 4f)) * (1f - Mathf.Pow(vertical, 4f));
-                    byte alpha = (byte)(255f * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.15f, 1f, edge)));
+                    float horizontal = 2f * x / (Size - 1) - 1f;
+                    float vertical = 2f * y / (Size - 1) - 1f;
+                    float angle = Mathf.Abs(Mathf.Atan2(horizontal, vertical));
+                    float taper = Mathf.SmoothStep(0f, 1f, 1f - angle / 0.65f);
+                    float radius = Mathf.Sqrt(horizontal * horizontal + vertical * vertical);
+                    float delta = Mathf.Abs(radius - 0.83f);
+                    float core = Mathf.Exp(-Mathf.Pow(delta / Mathf.Max(0.001f, 0.009f * taper), 2f));
+                    float glow = 0.35f * Mathf.Exp(-Mathf.Pow(delta / 0.045f, 2f));
+                    byte alpha = (byte)(255f * Mathf.Clamp01((core + glow) * taper));
                     pixels[y * Size + x] = new Color32(255, 255, 255, alpha);
                 }
             }
-            _vignetteTexture.SetPixels32(pixels);
-            _vignetteTexture.Apply(false, true);
-
-            var overlay = new GameObject("Vignette", typeof(RectTransform), typeof(UnityEngine.UI.RawImage));
+            _arcTexture.SetPixels32(pixels);
+            _arcTexture.Apply(false, true);
+            var overlay = new GameObject("DirectionalArc", typeof(RectTransform), typeof(UnityEngine.UI.RawImage));
             overlay.transform.SetParent(_canvasRoot.transform, false);
-            RectTransform rect = (RectTransform)overlay.transform;
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = rect.offsetMax = Vector2.zero;
-            _vignette = overlay.GetComponent<UnityEngine.UI.RawImage>();
-            _vignette.texture = _vignetteTexture;
-            _vignette.raycastTarget = false;
+            _arc = overlay.GetComponent<UnityEngine.UI.RawImage>();
+            _arc.rectTransform.anchorMin = _arc.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            _arc.rectTransform.sizeDelta = Vector2.one * _indicatorSize;
+            _arc.texture = _arcTexture;
+            _arc.raycastTarget = false;
         }
     }
 }

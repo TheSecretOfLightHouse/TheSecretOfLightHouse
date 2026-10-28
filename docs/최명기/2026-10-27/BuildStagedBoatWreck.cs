@@ -102,7 +102,7 @@ public static class BuildStagedBoatWreck
             Offset = new Vector3(0f, -0.09f, 0.025f), Rotation = new Vector3(32f, 0f, -4f) };
         front.Cuts.Add(p => Seam(p) - 0.105f);
         regions.Add(front);
-        var back = new Region { Name = "Stern", Release = 0.015f, Sink = 2.65f, SinkDuration = 3.1f,
+        var back = new Region { Name = "Stern", Release = 0.015f, Sink = 2f, SinkDuration = 2.8f,
             Offset = new Vector3(0f, -0.015f, 0.01f), Rotation = new Vector3(-12f, 0f, 5f) };
         back.Cuts.Add(p => -Seam(p) - 0.095f);
         regions.Add(back);
@@ -116,7 +116,7 @@ public static class BuildStagedBoatWreck
                 float direction = side == 0 ? -1f : side == 2 ? 1f : 0.3f;
                 var region = new Region { Name = "BrokenPlanking_" + side + "_" + row,
                     Release = 0.015f,
-                    Sink = 3.4f + side * 0.35f + row * 0.25f, SinkDuration = 2.4f,
+                    Sink = 2f, SinkDuration = 2.8f,
                     Offset = new Vector3(direction * 0.035f, -0.08f, 0.045f + row * 0.02f),
                     Rotation = new Vector3(18f + side * 6f, direction * 5f, direction * 8f) };
                 region.Cuts.Add(p => Seam(p) + 0.095f);

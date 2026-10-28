@@ -88,7 +88,6 @@ public sealed class PlayerPassiveController : NetworkBehaviour
         return 1f;
     }
 
-    [Server]
     public float GetRepairAmountMultiplier(BoatController boat)
     {
         if (!isActiveAndEnabled || !_isBound
