@@ -11,20 +11,26 @@ using UnityEngine.UI;
 namespace Lighthouse.Mafia.Voting.View
 {
     // Secret vote UI (2026-10-22 sketch): an in-game button that shows the own votes left, the vote screen with one card
-    // per other player, and the confirm box asked before a vote is spent. The server decides every vote; this screen
-    // only asks. The mafia cannot vote but sees the same screen with a pretend count that is never sent, so the
-    // screen does not give the role away (win-vote-decisions 1).
+    // per other player, and the confirm asked before a vote is spent. The confirm stays on the picked card (2026-10-28
+    // user decision): the ballot about to go blinks and a red line says it never comes back. The server decides every
+    // vote; this screen only asks. The mafia cannot vote but sees the same screen with a pretend count that is never
+    // sent, so the screen does not give the role away (win-vote-decisions 1).
     [DisallowMultipleComponent]
     public sealed class VotingScreen : MonoBehaviour
     {
         private const float RosterRefreshSeconds = 1f;
+        private const float BallotBlinkSeconds = 0.25f;
         private const string Highlight = "#F6C64A";
+        private const string Warning = "#EB7361";
+        private const string Muted = "#A89E8C";
 
         [Tooltip("Found in the scene when empty. Mirror keeps scene network objects inactive until they spawn.")]
         [SerializeField]
         private VotingNetworkController _voting;
         [SerializeField]
         private Key _openKey = Key.V;
+        [SerializeField]
+        private float _fadeInSeconds = 0.12f;
 
         [Header("In-game button")]
         [SerializeField]
@@ -57,18 +63,6 @@ namespace Lighthouse.Mafia.Voting.View
         [SerializeField]
         private Color _rejectColor = new Color(0.92f, 0.45f, 0.38f);
 
-        [Header("Confirm box")]
-        [SerializeField]
-        private GameObject _confirm;
-        [SerializeField]
-        private Text _confirmTarget;
-        [SerializeField]
-        private Text _confirmCount;
-        [SerializeField]
-        private Button _confirmButton;
-        [SerializeField]
-        private Button _cancelButton;
-
         [Header("Font")]
         [SerializeField]
         private bool _useOsFont = true;
@@ -76,6 +70,8 @@ namespace Lighthouse.Mafia.Voting.View
         private string[] _osFontNames = { "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Arial" };
 
         private readonly List<uint> _candidates = new List<uint>();
+        private CanvasGroup _windowGroup;
+        private float _openedAt;
         private NetworkIdentity _player;
         private PlayerInput _playerInput;
         private uint _ownActorId;
@@ -83,6 +79,9 @@ namespace Lighthouse.Mafia.Voting.View
         private bool _isOpen;
         private bool _isPending;
         private uint _pendingTarget;
+        private float _pendingAt;
+        // Built once per pick so the card text is not rebuilt every frame.
+        private string _pendingPrompt;
         private uint _requestedTarget;
         private bool _hasSavedCursor;
         private CursorLockMode _savedLockMode;
@@ -109,11 +108,14 @@ namespace Lighthouse.Mafia.Voting.View
                 _cards[i].Bind(i + 1, HandleCardClicked);
             }
 
+            // Added here so a prefab built before the fade-in keeps working without a rebuild.
+            if (!_window.TryGetComponent(out _windowGroup))
+            {
+                _windowGroup = _window.AddComponent<CanvasGroup>();
+            }
+
             _hudButton.onClick.AddListener(Open);
-            _confirmButton.onClick.AddListener(HandleConfirmClicked);
-            _cancelButton.onClick.AddListener(CloseConfirm);
             _window.SetActive(false);
-            _confirm.SetActive(false);
             _hud.SetActive(false);
         }
 
@@ -162,6 +164,7 @@ namespace Lighthouse.Mafia.Voting.View
             }
 
             Refresh();
+            FadeIn();
             HandleKeys();
         }
 
@@ -186,8 +189,9 @@ namespace Lighthouse.Mafia.Voting.View
 
             _isOpen = true;
             SessionScreen.SetGameplayOverlayOpen(this, true);
+            _openedAt = Time.unscaledTime;
+            _windowGroup.alpha = 0f;
             _window.SetActive(true);
-            _confirm.SetActive(false);
             _pendingTarget = 0;
             SetNotice(string.Empty, _noticeColor);
             LockPlayer(true);
@@ -206,7 +210,6 @@ namespace Lighthouse.Mafia.Voting.View
             _pendingTarget = 0;
             SessionScreen.SetGameplayOverlayOpen(this, false);
             _window.SetActive(false);
-            _confirm.SetActive(false);
             LockPlayer(false);
         }
 
@@ -231,20 +234,22 @@ namespace Lighthouse.Mafia.Voting.View
 
             if (_pendingTarget != 0)
             {
-                if (keyboard.escapeKey.wasPressedThisFrame)
+                if (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame)
+                {
+                    HandleConfirmClicked();
+                }
+                else if (keyboard.escapeKey.wasPressedThisFrame)
                 {
                     CloseConfirm();
                 }
-
-                return;
             }
-
-            if (keyboard.escapeKey.wasPressedThisFrame || keyboard[_openKey].wasPressedThisFrame)
+            else if (keyboard.escapeKey.wasPressedThisFrame || keyboard[_openKey].wasPressedThisFrame)
             {
                 Close();
                 return;
             }
 
+            // While a pick waits, the same number confirms it and another number moves it, like a click.
             for (int i = 0; i < _cards.Length && i < 9; i++)
             {
                 if (keyboard[Key.Digit1 + i].wasPressedThisFrame && _cards[i].gameObject.activeSelf)
@@ -279,14 +284,17 @@ namespace Lighthouse.Mafia.Voting.View
             }
 
             int used = VoteService.MaxVoteCount - remaining;
+            // The ballot the pick would spend flips between used and left, starting on used.
+            bool isBlinkUsed = ((int)((Time.unscaledTime - _pendingAt) / BallotBlinkSeconds) & 1) == 0;
 
             for (int i = 0; i < _ballots.Length; i++)
             {
-                _ballots[i].sprite = i < used ? _ballotUsed : _ballotLeft;
+                bool isUsed = i < used || (i == used && _pendingTarget != 0 && isBlinkUsed);
+                _ballots[i].sprite = isUsed ? _ballotUsed : _ballotLeft;
             }
 
             _remaining.text = $"<color={Highlight}>{remaining}</color> / {VoteService.MaxVoteCount}";
-            bool canPick = !isLocked && !_isPending && _pendingTarget == 0;
+            bool canPick = !isLocked && !_isPending;
 
             for (int i = 0; i < _cards.Length; i++)
             {
@@ -296,8 +304,20 @@ namespace Lighthouse.Mafia.Voting.View
                 if (hasCandidate)
                 {
                     uint actorId = _candidates[i];
-                    _cards[i].Show(actorId, GetDisplayName(actorId), actorId == current, canPick);
+                    bool isPicked = actorId == _pendingTarget;
+                    _cards[i].Show(actorId, GetDisplayName(actorId), actorId == current, canPick,
+                        _pendingTarget != 0 && !isPicked, isPicked ? _pendingPrompt : null);
                 }
+            }
+        }
+
+        private void FadeIn()
+        {
+            if (_isOpen && _windowGroup.alpha < 1f)
+            {
+                _windowGroup.alpha = _fadeInSeconds > 0f
+                    ? Mathf.Clamp01((Time.unscaledTime - _openedAt) / _fadeInSeconds)
+                    : 1f;
             }
         }
 
@@ -308,8 +328,13 @@ namespace Lighthouse.Mafia.Voting.View
             uint current = isMafia ? _fakeTarget : vote.TargetActorId;
             int remaining = isMafia ? _fakeRemaining : vote.RemainingVoteCount;
 
-            // Re-picking the current target is free and needs no box; an empty count only says so.
-            if (card.ActorId == current)
+            // A second click on the waiting card confirms it.
+            if (card.ActorId == _pendingTarget)
+            {
+                HandleConfirmClicked();
+            }
+            // Re-picking the current target is free and needs no confirm; an empty count only says so.
+            else if (card.ActorId == current)
             {
                 SetNotice("이미 지목하고 있는 선원입니다.", _noticeColor);
             }
@@ -321,9 +346,10 @@ namespace Lighthouse.Mafia.Voting.View
             {
                 SetNotice(string.Empty, _noticeColor);
                 _pendingTarget = card.ActorId;
-                _confirmTarget.text = $"<color={Highlight}>{GetDisplayName(card.ActorId)}</color>님을\n지목하시겠습니까?";
-                _confirmCount.text = $"남은 기회 {remaining}회 → <color={Highlight}>{remaining - 1}회</color>";
-                _confirm.SetActive(true);
+                _pendingAt = Time.unscaledTime;
+                _pendingPrompt = $"남은 기회 {remaining}회 → <color={Highlight}>{remaining - 1}회</color>\n"
+                    + $"<size=17><color={Warning}>기회 회복 및 투표 철회 불가</color></size>\n"
+                    + $"<size=15><color={Muted}>Enter·다시 클릭 확정  /  ESC 취소</color></size>";
             }
         }
 
@@ -355,10 +381,10 @@ namespace Lighthouse.Mafia.Voting.View
         private void CloseConfirm()
         {
             _pendingTarget = 0;
-            _confirm.SetActive(false);
+            _pendingPrompt = null;
         }
 
-        // The server has the last word: a refused vote closes the box and says why.
+        // The server has the last word: a refused vote drops the waiting pick and says why.
         private void HandleVoteResponded(VoteResponse response)
         {
             if (response.Result == VoteChangeResult.StateRetrieved)
