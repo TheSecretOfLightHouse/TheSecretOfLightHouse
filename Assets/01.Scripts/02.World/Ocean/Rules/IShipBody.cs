@@ -8,7 +8,6 @@ namespace Lighthouse.World.Ocean.Rules
         uint ShipId { get; }
         Rigidbody Body { get; }
         IReadOnlyList<Vector3> BuoyancyPoints { get; }
-        float Mass { get; }
         Vector3 CenterOfMassOffset { get; }
         float HullExposure { get; }
         float RightingStrength { get; }

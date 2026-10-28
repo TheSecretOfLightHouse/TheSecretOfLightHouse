@@ -26,7 +26,7 @@ namespace Lighthouse.World.Ocean.Sandbox
         [SerializeField, Min(1f)] private float _spacing = 4f;
         [SerializeField] private float _dropHeight = 1.5f;
 
-        private readonly List<BuoyantObject> _spawned = new List<BuoyantObject>();
+        private readonly List<BuoyancyObject> _spawned = new List<BuoyancyObject>();
 
         private bool _isCycled;
 
@@ -58,7 +58,7 @@ namespace Lighthouse.World.Ocean.Sandbox
                         (row - 1) * _spacing);
 
                     float ratio = Ratios[column];
-                    BuoyantObject spawned = Create(Shapes[row], ratio, position);
+                    BuoyancyObject spawned = Create(Shapes[row], ratio, position);
 
                     _spawned.Add(spawned);
 
@@ -110,7 +110,7 @@ namespace Lighthouse.World.Ocean.Sandbox
             _probe = probe;
         }
 
-        private BuoyantObject Create(PrimitiveType shape, float ratio, Vector3 position)
+        private BuoyancyObject Create(PrimitiveType shape, float ratio, Vector3 position)
         {
             GameObject instance = GameObject.CreatePrimitive(shape);
 
@@ -122,7 +122,7 @@ namespace Lighthouse.World.Ocean.Sandbox
             Rigidbody body = instance.AddComponent<Rigidbody>();
             body.mass = _mass;
 
-            BuoyantObject buoyant = instance.AddComponent<BuoyantObject>();
+            BuoyancyObject buoyant = instance.AddComponent<BuoyancyObject>();
 
             buoyant.Configure(
                 new BuoyancyProfile(

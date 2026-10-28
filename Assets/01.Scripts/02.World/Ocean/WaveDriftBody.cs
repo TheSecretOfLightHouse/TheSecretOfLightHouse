@@ -101,7 +101,7 @@ namespace Lighthouse.World.Ocean
                 _profile,
                 normal,
                 force,
-                _ship.Mass,
+                _profile.ReferenceMass,
                 _shoreDistance);
 
             _driftVelocity = WaveDriftModel.Advance(
@@ -123,7 +123,7 @@ namespace Lighthouse.World.Ocean
                 _ship.HullExposure,
                 _host.CurrentTime);
 
-            _body.AddForce(force);
+            _body.AddForce(force / _profile.ReferenceMass, ForceMode.Acceleration);
         }
 
         private bool TryResolveServices(out IForceFieldProvider provider)
