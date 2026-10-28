@@ -32,6 +32,7 @@ namespace Lighthouse.World.Ocean.Sandbox
             isPassed &= CheckFollow();
             isPassed &= CheckInvalid();
             isPassed &= CheckGrid();
+            isPassed &= BuoyancyHeaveChecks.RunAll();
 
             return isPassed;
         }
