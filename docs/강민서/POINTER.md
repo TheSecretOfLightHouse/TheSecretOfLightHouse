@@ -1,9 +1,11 @@
 # 강민서 작업 pointer
 갱신일: 2026-10-28
 
+**BC4 4b 1~2단계(2026-10-28, 최신):** `origin/develop` 병합 후 `BuoyantObject`→`BuoyancyObject` 참조 정리. 질량 500 덮어쓰기·중력 강제 제거(프리팹 5개 `useGravity` true로 이동), 외력은 `WaveDriftProfile.ReferenceMass`(가안 500)로 나눠 4a 수치 유지(`Impulse`는 `Acceleration` 모드). `BoatShipBody`→`WaterBody` 에디터 이름 변경(GUID 유지), `ShipStabilizer`·`BuoyancyTuning`·`BuoyancyForceSolver`·`IShipBody.Mass` 삭제(`BuoyancySampleSession`은 사용 중이라 유지). 재컴파일 오류 0, 순수 검증 3종 true, 프리팹 5개 `WaterBody` 연결·Missing 0. **Play 없이 진행: 질량 1 실제 거동·`WaveSlam` 임계·`WorldSandbox` 씬 배 인스턴스 중력 미검증. `BuoyancyBody` 껍데기 삭제는 `WorldSandbox` 씬 2곳이 참조해 보류(씬 교체와 알림 3 필요).** [결과](2026-10-28/BC4-4b-1단계-기준질량-전환-결과.md)
+
 **BC4 4a 잔여 검증(2026-10-28, 최신):** AI가 `WorldSessionGame` 1인 Play로 실행. 폭풍벽 `Impulse`(벽 안 배 4초 만에 31 m 안쪽으로, 대조 배 정지), 부력비 0.6 침몰(-0.49 m/s, 이론값 일치), 8 m/s 항해 Storm(수면 대비 -0.25~-0.19, 기울기 0.14° 이하, 침수 0%), 벽 띠 통과 불가(되밀림 -3.4 m/s), 탑승→하선→재탑승 부력 유지 확인. `Sandbox/BuoyancyHeaveChecks` 3종 추가(`BuoyancyChecks.RunAll()` true, 컴파일 오류 0). **도크 판정 탑승(씬에 `DockZone` 없음)·Maelstrom·해안 파도·체감 멀미·4인 미검증, 폭풍 전환 직후 한 번 나온 벽 부근 침수 27%는 원인 미확정, 새 파일·결과 절 미커밋.** 남은 일: 플레이어 담당 알림 2·부력점/`WaveCameraGuard` 안내(사용자), 4b. [결과 절](2026-10-28/BC4-4a-1단계-코드-교체-결과.md#4a-잔여-검증-2026-10-28-ai-작성실행-worldsessiongame-에디터-1인)
 
-**등대·작업장 참고 섬 추가(2026-10-28, 최신):** LagoonReference 기존 네 섬 보존, (34,0,0)에 독립 Terrain·Jungle 식생·Pirates 작업장/부두·첨탑+하단 메시 등대 추가. 사용자 후속으로 내부 전반 흐릿한 잔디층·식생 보정, 등대 하단4.04m로 확장·첨탑과 육각 정렬·받침 Terrain 확대, 첨탑82% 축소. Player4 scale1/Boat2 scale3 원본 일치, 기존2,180 Transform 변경0, 저장/재열기 Missing Script·불량재질0. **참고 완전일치·Play 보행/접안·4인/GPU 미검증.** [기록·최종 화면](2026-10-28/LighthouseReference-등대작업장-섬제작.md).
+**등대·작업장 참고 섬 추가(2026-10-28, 최신):** LagoonReference 기존 네 섬 보존, (34,0,0)에 독립 Terrain·Jungle 식생·Pirates 작업장/부두·첨탑+하단 메시 등대 추가. 사용자 후속: 내부 흐릿한 잔디·식생114개/22종 보강, 몸통 밑폭2.56m·일정경사/육각 정렬, 축소 첨탑+원형 전망대·난간, 계단 양옆 바위12/고사리6·광장 돌길16/생활소품과 큰 수관·유목 군락 추가. 새 마감그룹68개 저장/재열기 확인. Player4 scale1/Boat2 scale3 원본 일치, 기존2,180 Transform 변경0, 저장/재열기 Missing Script·불량재질0. **참고 완전일치·Play 보행/접안·4인/GPU 미검증.** [기록·최종 화면](2026-10-28/LighthouseReference-등대작업장-섬제작.md).
 
 **라군 보행 보정·안쪽 원형 정리(2026-10-28, 최신):** 잔돌·결정·내측 바위 이동과 부두+0.12m, 안쪽 물 공간 약5×4.3m 타원 축소·열린 수로 연결 곡선 보정. 표시Terrain2049/holes2048·독립 충돌Terrain129, 섬 크기/Player1/Boat3 유지. 빠른 시험 목표접지 왕복80/80·원본 수치 부두4/4 도착. **빠른 왕복은 공중 표본 다수(접지105/324), 기본 속도 전체 왕복은 미통과. 마지막 입구 국소 보정 후 Play·4인·바다는 미검증.** 임시 설정 복원·씬 저장/재열기·최종 전체/상면/근접 확인. [기록·제한·최종 화면](2026-10-28/LagoonReference-보행보정과-안쪽원형정리.md).
 
