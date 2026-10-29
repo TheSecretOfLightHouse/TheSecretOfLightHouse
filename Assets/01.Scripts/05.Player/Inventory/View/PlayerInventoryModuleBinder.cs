@@ -1,6 +1,7 @@
 using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Workbench.Net;
+using Lighthouse.World.Islands.Net;
 using Mirror;
 using System.Collections;
 using UnityEngine;
@@ -11,9 +12,13 @@ public sealed class PlayerInventoryModuleBinder : MonoBehaviour
     [SerializeField]
     private WorkbenchNet _workbench;
 
+    [SerializeField]
+    private MainIslandFacilitiesBuilder _facilities;
+
     private Coroutine _bindRoutine;
     private NetworkIdentity _boundPlayer;
     private PlayerInventory _inventory;
+    private WorkbenchNet _boundWorkbench;
 
     private void OnEnable()
     {
@@ -35,6 +40,7 @@ public sealed class PlayerInventoryModuleBinder : MonoBehaviour
 
         _inventory = null; 
         _boundPlayer = null;
+        _boundWorkbench = null;
     }
 
     private IEnumerator BindLocalInventory()
@@ -42,6 +48,7 @@ public sealed class PlayerInventoryModuleBinder : MonoBehaviour
         while (true)
         {
             NetworkIdentity localPlayer = NetworkClient.localPlayer;
+            WorkbenchNet workbench = _facilities ? _facilities.Workbench : _workbench;
 
             if (localPlayer != _boundPlayer)
             {
@@ -52,12 +59,23 @@ public sealed class PlayerInventoryModuleBinder : MonoBehaviour
 
                 _boundPlayer = localPlayer;
                 _inventory = null;
+                _boundWorkbench = null;
 
                 if (localPlayer && localPlayer.TryGetComponent(out PlayerInventory inventory))
                 {
                     _inventory = inventory;
-                    _inventory.BindModuleSource(_workbench);
                 }
+            }
+
+            if (_inventory && !ReferenceEquals(workbench, _boundWorkbench))
+            {
+                _inventory.BindModuleSource(workbench);
+                _boundWorkbench = workbench;
+            }
+
+            if (_facilities)
+            {
+                _workbench = workbench;
             }
 
             yield return null;
