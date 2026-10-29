@@ -68,7 +68,8 @@ namespace Lighthouse.Monsters.AI.Server
             {
                 return Status.Running;
             }
-            return _trackingAttack.HasSucceeded ? Status.Success : Status.Failure;
+            return _trackingAttack.HasSucceeded || _trackingAttack.WasInterrupted
+                ? Status.Success : Status.Failure;
         }
     }
 }

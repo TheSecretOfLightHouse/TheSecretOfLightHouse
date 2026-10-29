@@ -640,6 +640,7 @@ MonoBehaviour:
   _speed: 18
   _acceleration: 9
   _timeout: 10
+  _biteContactTime: 0.63
   _retreatDistance: 15
   _retreatSpeed: 15
   _retreatTimeout: 15
@@ -675,6 +676,7 @@ MonoBehaviour:
   _animator: {fileID: 2417491521181515817}
   _transitionDuration: 0.1
   _attackOpeningDuration: 0.4
+  _biteClip: {fileID: -623603649343465320, guid: 1844382b1ba43b84aac0c08bb43ab607, type: 3}
   _turnRateForFullBlend: 60
   _turnBlendResponse: 0.2
   _turnSampleResetDistance: 10
