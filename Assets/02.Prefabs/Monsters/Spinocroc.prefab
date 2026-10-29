@@ -2117,7 +2117,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: EyeGlow_Left
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5484832152569385267, guid: 83e408ca77b7e76429b24ba7a87960ea, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -2239,7 +2240,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: EyeGlow_Right
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5484832152569385267, guid: 83e408ca77b7e76429b24ba7a87960ea, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
