@@ -3,6 +3,7 @@ using Lighthouse.Mafia.Voting.Net;
 using Lighthouse.Mafia.Voting.Rules;
 using Lighthouse.Network.Connections.Net;
 using Lighthouse.Network.Session.View;
+using Lighthouse.Player.Abilities.Net;
 using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -11,9 +12,9 @@ using UnityEngine.UI;
 namespace Lighthouse.Mafia.Voting.View
 {
     // Secret vote UI (2026-10-22 sketch): an in-game button that shows the own votes left, the vote screen with one card
-    // per other player, and the confirm box asked before a vote is spent. The server decides every vote; this screen
-    // only asks. The mafia cannot vote but sees the same screen with a pretend count that is never sent, so the
-    // screen does not give the role away (win-vote-decisions 1).
+    // per other player, and the confirm box asked before a vote is spent (2026-10-29: the box again, not text on the
+    // card). The server decides every vote; this screen only asks. The mafia cannot vote but sees the same screen with
+    // a pretend count that is never sent, so the screen does not give the role away (win-vote-decisions 1).
     [DisallowMultipleComponent]
     public sealed class VotingScreen : MonoBehaviour
     {
@@ -25,6 +26,8 @@ namespace Lighthouse.Mafia.Voting.View
         private VotingNetworkController _voting;
         [SerializeField]
         private Key _openKey = Key.V;
+        [SerializeField]
+        private float _fadeInSeconds = 0.12f;
 
         [Header("In-game button")]
         [SerializeField]
@@ -57,6 +60,17 @@ namespace Lighthouse.Mafia.Voting.View
         [SerializeField]
         private Color _rejectColor = new Color(0.92f, 0.45f, 0.38f);
 
+        // The job shows through the player prefab each job spawns as (2026-10-27), so every client already knows it.
+        [Header("Job portraits")]
+        [SerializeField]
+        private Sprite _navigatorPortrait;
+        [SerializeField]
+        private Sprite _mechanicPortrait;
+        [SerializeField]
+        private Sprite _guardPortrait;
+        [SerializeField]
+        private Sprite _gathererPortrait;
+
         [Header("Confirm box")]
         [SerializeField]
         private GameObject _confirm;
@@ -76,6 +90,10 @@ namespace Lighthouse.Mafia.Voting.View
         private string[] _osFontNames = { "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Arial" };
 
         private readonly List<uint> _candidates = new List<uint>();
+        // Every spawned player but this one, filled with the candidates; names and jobs are read from here.
+        private readonly Dictionary<uint, NetworkActor> _actors = new Dictionary<uint, NetworkActor>();
+        private CanvasGroup _windowGroup;
+        private float _openedAt;
         private NetworkIdentity _player;
         private PlayerInput _playerInput;
         private uint _ownActorId;
@@ -107,6 +125,12 @@ namespace Lighthouse.Mafia.Voting.View
             for (int i = 0; i < _cards.Length; i++)
             {
                 _cards[i].Bind(i + 1, HandleCardClicked);
+            }
+
+            // Added here so a prefab built before the fade-in keeps working without a rebuild.
+            if (!_window.TryGetComponent(out _windowGroup))
+            {
+                _windowGroup = _window.AddComponent<CanvasGroup>();
             }
 
             _hudButton.onClick.AddListener(Open);
@@ -162,6 +186,7 @@ namespace Lighthouse.Mafia.Voting.View
             }
 
             Refresh();
+            FadeIn();
             HandleKeys();
         }
 
@@ -186,6 +211,8 @@ namespace Lighthouse.Mafia.Voting.View
 
             _isOpen = true;
             SessionScreen.SetGameplayOverlayOpen(this, true);
+            _openedAt = Time.unscaledTime;
+            _windowGroup.alpha = 0f;
             _window.SetActive(true);
             _confirm.SetActive(false);
             _pendingTarget = 0;
@@ -231,7 +258,11 @@ namespace Lighthouse.Mafia.Voting.View
 
             if (_pendingTarget != 0)
             {
-                if (keyboard.escapeKey.wasPressedThisFrame)
+                if (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame)
+                {
+                    HandleConfirmClicked();
+                }
+                else if (keyboard.escapeKey.wasPressedThisFrame)
                 {
                     CloseConfirm();
                 }
@@ -296,8 +327,18 @@ namespace Lighthouse.Mafia.Voting.View
                 if (hasCandidate)
                 {
                     uint actorId = _candidates[i];
-                    _cards[i].Show(actorId, GetDisplayName(actorId), actorId == current, canPick);
+                    _cards[i].Show(actorId, GetDisplayName(actorId), GetPortrait(actorId), actorId == current, canPick);
                 }
+            }
+        }
+
+        private void FadeIn()
+        {
+            if (_isOpen && _windowGroup.alpha < 1f)
+            {
+                _windowGroup.alpha = _fadeInSeconds > 0f
+                    ? Mathf.Clamp01((Time.unscaledTime - _openedAt) / _fadeInSeconds)
+                    : 1f;
             }
         }
 
@@ -403,6 +444,7 @@ namespace Lighthouse.Mafia.Voting.View
         {
             _nextRosterAt = Time.unscaledTime + RosterRefreshSeconds;
             _candidates.Clear();
+            _actors.Clear();
 
             foreach (NetworkIdentity identity in NetworkClient.spawned.Values)
             {
@@ -410,6 +452,7 @@ namespace Lighthouse.Mafia.Voting.View
                     && actor.ActorId != 0 && actor.ActorId != _ownActorId && !_candidates.Contains(actor.ActorId))
                 {
                     _candidates.Add(actor.ActorId);
+                    _actors[actor.ActorId] = actor;
                 }
             }
 
@@ -440,10 +483,27 @@ namespace Lighthouse.Mafia.Voting.View
             _notice.color = color;
         }
 
-        // Stand-in name until the player side has nicknames (2026-10-15).
-        private static string GetDisplayName(uint actorId)
+        // The lobby nickname the server carried over; the same fallback as the lobby if the player is not seen yet.
+        private string GetDisplayName(uint actorId)
         {
-            return $"플레이어 {actorId:00}";
+            return _actors.TryGetValue(actorId, out NetworkActor actor) && actor
+                ? actor.DisplayName
+                : $"플레이어 {actorId}";
+        }
+
+        // Each job prefab carries its own active ability request (Captain/Tech/Tanker/Farm 1), so that names the job.
+        private Sprite GetPortrait(uint actorId)
+        {
+            if (!_actors.TryGetValue(actorId, out NetworkActor actor) || !actor)
+            {
+                return null;
+            }
+
+            return actor.TryGetComponent(out NavigatorRouteRequest _) ? _navigatorPortrait
+                : actor.TryGetComponent(out EmergencyRepairRequest _) ? _mechanicPortrait
+                : actor.TryGetComponent(out GuardShieldRequest _) ? _guardPortrait
+                : actor.TryGetComponent(out GatheringFeverRequest _) ? _gathererPortrait
+                : null;
         }
 
         // Same stand-in input lock as the lighthouse screens until the player side has one.

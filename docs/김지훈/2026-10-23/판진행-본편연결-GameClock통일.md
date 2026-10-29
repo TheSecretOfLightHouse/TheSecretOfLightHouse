@@ -98,3 +98,22 @@
 - 예외 0. 로그가 긴 것은 개발 빌드가 로그마다 호출 경로를 남기기 때문이다.
 - 빠진 연결: 등대 판이 끝나도 세션이 끝나지 않는다. 1판은 참가자가 나갈 때 `ParticipantLeft`로 끝났다. `SessionEndReason`에는 승패로 끝난 경우가 없다. 최종 승패 확정은 최명기 MK06, 종료 통지와 결과 화면은 김지훈 JH07 범위다.
 - 정식 빌드에서는 `TowerTrialRound`(촉수 대역)가 빠지므로, 박태욱 몬스터 공격(TW04)이 연결되기 전까지 최후 전투에 피해가 들어오지 않는다.
+  - 근거(코드 검색): `TowerMatchNet.ApplyDamage`를 부르는 곳은 두 곳뿐이다.
+    - `TowerTrialRound` 대역 공격(개발 빌드 전용)
+    - 박태욱 `BossTestEnvironment`(`06.Monsters/Boss/Net`, `#if` 없음)
+  - `BossTestEnvironment.BeginBattle`을 부르는 곳도 `TowerTrialRound`뿐이다. 이 보스는 어느 `.unity` 씬에도 배치돼 있지 않고, `MainGame`의 `TowerTrialRound._tentacleBoss`도 비어 있다.
+  - 영향: 개발 빌드(4인 시험 2판 `LighthouseDestroyed`)는 대역이 피해를 준다. 정식 빌드에서는 소환 뒤 등대 HP가 줄지 않아 마피아의 "등대 파괴" 승리가 불가능하고, 시민의 수리 100%만 남는다.
+  - 해결 방향(박태욱 영역, 미요청): 괴물 쪽이 `TowerMatchNet.FinalBattleStarted`와 투표의 `SummonApproved`(공격력)를 직접 받아 공격을 시작하게 하고, 그 괴물을 `MainGame`에 배치한다. 그러면 `TowerTrialRound`의 대역은 개발용으로만 남는다.
+
+## MainGame 몬스터·암초 실행 확인 (같은 날 이어서, Unity MCP 재연결 후)
+
+- 조건: 브랜치 HEAD `0ca8462`(PR #89 병합 + 최명기 배 생성 연결 포함). `Main.exe` 빌드가 7777을 쓰고 있어 에디터는 플레이 중에만 포트 7778·시작 인원 1·`MainGame` 투표 자동 초기화 끔으로 설정했다(저장 안 함). `MainOffline` → `StartHost` → 준비 → `Match 1 started`.
+- 결과(M0, 호스트 1명):
+  - 몬스터: `WorldMonsterSpawnHost.RegisteredCount` 4, 배치 4개 각 1/1 → 잠시 뒤 배치 7개·몬스터 7마리(BlueShark 2, BlueMarline 3, Angler 1, BubbleTurtle 1). 위치는 중앙에서 약 130~380m, 수면 높이(y −0.4~0.3). 렌더러 켜짐, 카메라 컬링 마스크 −1(전체), 원거리 1000m, 안개 꺼짐.
+  - 암초: `ReefWorld`(`ReefInstanceSet`) 14개(Middle 6, Outer 8), 중앙에서 약 220~460m. 렌더러 모두 켜짐.
+  - 근접 렌더링(임시 카메라, 대상 앞 약 20m): BlueShark 2마리, 암초가 정상으로 보였다. Angler는 작고 대부분 물에 잠겨 잘 보이지 않는다.
+  - 콘솔 경고·오류 0.
+- 결론: **생성 오류가 아니다. 생성·렌더링은 정상이고 시작 섬에서 멀어서 안 보인다.** 지난 세션의 추정을 실행으로 확인했다. 플레이어 시작 지점 카메라 기준 가장 가까운 몬스터는 약 184m, 암초는 약 220m다. 이제 배(`Boat [actor=1]`)가 생기므로 배로 나가면 볼 수 있다(배 조작으로 직접 보러 가는 것은 미실행).
+- 별도 발견(World, 강민서 영역, 수정 안 함): `IslandWorld` 아래 렌더러 약 1,500개의 재질이 `Hidden/InternalErrorShader`다(`V8_Tree_9`·`V8_Tree_13` 등 나무·식물 재질). 주로 LOD·비활성 렌더러로 보이며, 화면에는 모래 섬 일부가 분홍색으로 보였다. 강민서에게 전달할 내용이다.
+  - 원인(파일 확인): 재질이 참조하는 셰이더 GUID `5aee23263024cdf42a24ad956be999f6`(재질 14개, `V8_Tree_*`·`PolygonNature_Plants_01_*`)와 `048d3f2f56dab16409b54890aa2f700f`(재질 4개, V7 잎)가 프로젝트에 없다(`AssetDatabase.GUIDToAssetPath` 빈 값). 재질 속성(`_Tree_Wave`·`_Leaves_Wave`·`_Big_Wind_Speed`·`_Leaves_Noise_Texture`)으로 보아 나무·잎 바람 셰이더이며, 이 속성을 정의한 셰이더는 프로젝트(SVN 체크아웃 포함)에 없다. SVN 업데이트로 해결되는지 확인하지 않았다(svn 명령줄 도구 없음).
+- 미실행: 배를 타고 몬스터에 접근·교전, 원격 클라이언트 화면(몬스터 동기화), 정식 빌드.

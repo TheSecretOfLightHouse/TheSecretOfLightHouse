@@ -1,4 +1,3 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using Lighthouse.Modules.Server;
 using Lighthouse.Network.Session.Net;
 using Lighthouse.World.Clock.Rules;
@@ -132,4 +131,3 @@ namespace Lighthouse.Dev.Modules
         }
     }
 }
-#endif

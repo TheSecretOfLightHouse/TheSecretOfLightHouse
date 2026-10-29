@@ -17,6 +17,10 @@ namespace Lighthouse.Mafia.Voting.Editor
         private const float CardWidth = 290f;
         private const float CardHeight = 400f;
         private const float CardGap = 21f;
+        // The job picture fills the card above the name; the check draws over it.
+        private const float PortraitSize = 200f;
+        // The bust stands on the frame's bottom edge so its flat cut hides under the border.
+        private const float BustScale = 0.92f;
         private static readonly Color Cream = new Color(0.98f, 0.92f, 0.79f);
         private static readonly Color Muted = new Color(0.66f, 0.62f, 0.55f);
         private static readonly Color Dark = new Color(0.12f, 0.09f, 0.05f);
@@ -106,15 +110,16 @@ namespace Lighthouse.Mafia.Voting.Editor
             Debug.Log($"[{nameof(VotingScreenSketchSetup)}] Vote screen connected. Save the scene to keep it.");
         }
 
-        // The sketch's own in-game button, kept at the lower right away from the interaction prompt.
+        // The sketch's own in-game button at the lower right. Its bottom lines up with the role/boat panel at the lower
+        // left (InGameHudSetup: 1080 - 893 x 1920/1672 = about 55).
         private static void BuildHud(Transform root, SerializedObject serialized)
         {
             Image panel = Picture("Hud", root, Folder, "vt_hud_panel", 0f, 0f, 258f, 108f);
             RectTransform rect = panel.rectTransform;
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(1f, 0f);
-            rect.anchoredPosition = new Vector2(-28f, 28f);
-            // The sketch is drawn small; at 1920x1080 it reads at about 1.4 times.
-            rect.localScale = new Vector3(1.4f, 1.4f, 1f);
+            rect.anchoredPosition = new Vector2(-28f, 55f);
+            // The sketch is drawn small; at 1920x1080 it reads at 1.2 times next to the in-game HUD.
+            rect.localScale = new Vector3(1.2f, 1.2f, 1f);
             panel.raycastTarget = true;
             Button button = panel.gameObject.AddComponent<Button>();
             button.targetGraphic = panel;
@@ -178,12 +183,31 @@ namespace Lighthouse.Mafia.Voting.Editor
             Set(serialized, "_remaining", remaining);
             SetArray(serialized, "_cards", cards);
             Set(serialized, "_notice", notice);
+            Set(serialized, "_navigatorPortrait", Load(Folder, "vt_job_navigator"));
+            Set(serialized, "_mechanicPortrait", Load(Folder, "vt_job_mechanic"));
+            Set(serialized, "_guardPortrait", Load(Folder, "vt_job_guard"));
+            Set(serialized, "_gathererPortrait", Load(Folder, "vt_job_gatherer"));
             window.gameObject.SetActive(false);
         }
 
         private static VoteCandidateCard BuildCard(Transform parent, int index, float x, float y)
         {
             Image frame = Picture($"Card{index + 1}", parent, Folder, "vt_card", x, y, CardWidth, CardHeight);
+            Image portraitFrame = Picture("PortraitFrame", frame.transform, Folder, "vt_portrait_frame",
+                (CardWidth - PortraitSize) * 0.5f, 22f, PortraitSize, PortraitSize);
+            // The mask is the frame's inside, so the bust never covers the border.
+            Image portraitMask = Picture("PortraitMask", portraitFrame.transform, Folder, "vt_portrait_mask",
+                0f, 0f, PortraitSize, PortraitSize);
+            portraitMask.gameObject.AddComponent<Mask>().showMaskGraphic = false;
+            Image portrait = Picture("Portrait", portraitMask.transform, Folder, "vt_job_mechanic",
+                0f, 0f, PortraitSize * BustScale, PortraitSize * BustScale);
+            RectTransform bust = portrait.rectTransform;
+            bust.anchorMin = bust.anchorMax = bust.pivot = new Vector2(0.5f, 0f);
+            bust.anchoredPosition = Vector2.zero;
+            portrait.preserveAspect = true;
+            portrait.gameObject.SetActive(false);
+            // Mask treats any alpha above zero as inside, so the border is drawn again on top to keep its line clean.
+            Picture("PortraitBorder", portraitFrame.transform, Folder, "vt_portrait_border", 0f, 0f, PortraitSize, PortraitSize);
             Text name = Label("Name", frame.transform, string.Empty, 26, 0f, 228f, CardWidth, 40f);
             Image buttonImage = Picture("Button", frame.transform, Folder, "vt_button_vote", 40f, 278f, 210f, 55f);
             buttonImage.raycastTarget = true;
@@ -202,6 +226,7 @@ namespace Lighthouse.Mafia.Voting.Editor
             SerializedObject serialized = new SerializedObject(card);
             Set(serialized, "_frame", frame);
             Set(serialized, "_name", name);
+            Set(serialized, "_portrait", portrait);
             Set(serialized, "_button", button);
             Set(serialized, "_buttonImage", buttonImage);
             Set(serialized, "_badge", number);
@@ -214,7 +239,8 @@ namespace Lighthouse.Mafia.Voting.Editor
             return card;
         }
 
-        // Sits over the vote screen: board, sailor peeking over its corner, live question and the two buttons.
+        // Sits over the vote screen: board, live question and the two buttons. The sketch's sailor in the lower-left
+        // corner is left out (2026-10-29); the cards show the job pictures instead.
         private static void BuildConfirm(Transform root, SerializedObject serialized)
         {
             RectTransform confirm = Rect("Confirm", root, 0f, 0f, 0f, 0f);
@@ -237,8 +263,6 @@ namespace Lighthouse.Mafia.Voting.Editor
 
             Button cancel = SwapButton("Cancel", board.transform, "vt_button_cancel", "vt_button_cancel_hover", 104f, 300f, 199f, 67f);
             Button accept = SwapButton("Accept", board.transform, "vt_button_confirm", "vt_button_confirm_hover", 339f, 301f, 195f, 65f);
-            Image sailor = Picture("Sailor", board.transform, Folder, "vt_sailor", -118f, 290f, 174f, 164f);
-            sailor.preserveAspect = true;
 
             Set(serialized, "_confirm", confirm.gameObject);
             Set(serialized, "_confirmTarget", target);
@@ -274,9 +298,11 @@ namespace Lighthouse.Mafia.Voting.Editor
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
                 importer.alphaIsTransparency = true;
-                importer.mipmapEnabled = false;
+                // Mipmaps keep the drawn-in lettering readable when a small window shrinks these large pictures.
+                importer.mipmapEnabled = true;
+                importer.mipmapFilter = TextureImporterMipFilter.KaiserFilter;
                 importer.textureCompression = TextureImporterCompression.Uncompressed;
-                importer.filterMode = FilterMode.Bilinear;
+                importer.filterMode = FilterMode.Trilinear;
                 importer.wrapMode = TextureWrapMode.Clamp;
                 importer.maxTextureSize = 2048;
                 importer.spriteBorder = file == "vt_window_board" ? new Vector4(60f, 60f, 60f, 60f)

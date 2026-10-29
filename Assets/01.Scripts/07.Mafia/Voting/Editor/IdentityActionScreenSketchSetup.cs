@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace Lighthouse.Mafia.Voting.Editor
 {
     // Builds the mafia's identity check and summon UI from the 2026-10-23 sketch. The confirm and notice boxes reuse the
-    // vote confirm box (board, sailor, cancel button) so both read as one family; the accept button is the vote one
+    // vote confirm box (board, cancel button) so both read as one family; the accept button is the vote one
     // with its wording erased, and the label is live text. Kept beside the vote builder to share its editor assembly.
     public static class IdentityActionScreenSketchSetup
     {
@@ -17,6 +17,8 @@ namespace Lighthouse.Mafia.Voting.Editor
         private const string VoteFolder = "Assets/03.Images/VotingUiSketch/";
         private const float ButtonWidth = 300f;
         private const float ButtonHeight = 78f;
+        // The check and summon buttons are drawn at 0.9 times the sketch, kept to the group's right edge.
+        private const float ButtonScale = 0.9f;
         private static readonly Color Cream = new Color(0.98f, 0.92f, 0.79f);
         private static readonly Color Muted = new Color(0.66f, 0.62f, 0.55f);
         private static readonly Color Gold = new Color(0.96f, 0.78f, 0.29f);
@@ -108,18 +110,22 @@ namespace Lighthouse.Mafia.Voting.Editor
             Debug.Log($"[{nameof(IdentityActionScreenSketchSetup)}] Identity action screen connected. Save the scene to keep it.");
         }
 
-        // Stacked over the vote button at the lower right (that button is 258x108 at 1.4 times, 28 from the corner).
+        // Stacked over the vote button at the lower right (that button is 258x108 at 1.2 times, 55 from the bottom).
         private static void BuildButtons(Transform root, SerializedObject serialized)
         {
-            RectTransform group = Rect("Buttons", root, 0f, 0f, ButtonWidth, 200f);
+            float width = ButtonWidth * ButtonScale;
+            float height = ButtonHeight * ButtonScale;
+            float x = ButtonWidth - width;
+            float summonY = 32f + height + 8f * ButtonScale;
+            RectTransform group = Rect("Buttons", root, 0f, 0f, ButtonWidth, summonY + height + 4f);
             group.anchorMin = group.anchorMax = group.pivot = new Vector2(1f, 0f);
             group.anchoredPosition = new Vector2(-28f, 196f);
 
             Text status = Label("Status", group, string.Empty, 18, 0f, 0f, ButtonWidth, 28f, TextAnchor.MiddleRight);
             status.supportRichText = true;
             status.horizontalOverflow = HorizontalWrapMode.Overflow;
-            Button check = SwapButton("Check", group, Folder, "id_check", "id_check_hover", 0f, 32f, ButtonWidth, ButtonHeight);
-            Button summon = SwapButton("Summon", group, Folder, "id_summon", "id_summon_hover", 0f, 118f, ButtonWidth, ButtonHeight);
+            Button check = SwapButton("Check", group, Folder, "id_check", "id_check_hover", x, 32f, width, height);
+            Button summon = SwapButton("Summon", group, Folder, "id_summon", "id_summon_hover", x, summonY, width, height);
 
             Set(serialized, "_hud", group.gameObject);
             Set(serialized, "_checkButton", check);
@@ -128,7 +134,7 @@ namespace Lighthouse.Mafia.Voting.Editor
             group.gameObject.SetActive(false);
         }
 
-        // Same board, sailor and button places as the vote confirm box.
+        // Same board and button places as the vote confirm box, without the sailor picture (removed 2026-10-29).
         private static void BuildConfirm(Transform root, SerializedObject serialized)
         {
             Image board = Box("Confirm", root, 640f, 420f, out RectTransform confirm);
@@ -143,7 +149,6 @@ namespace Lighthouse.Mafia.Voting.Editor
             Button cancel = SwapButton("Cancel", board.transform, VoteFolder, "vt_button_cancel", "vt_button_cancel_hover", 104f, 300f, 199f, 67f);
             Button accept = SwapButton("Accept", board.transform, Folder, "id_button_accept", "id_button_accept_hover", 339f, 301f, 195f, 65f);
             Text acceptLabel = ButtonLabel(accept.transform, 195f, 65f);
-            Sailor(board.transform);
 
             Set(serialized, "_confirm", confirm.gameObject);
             Set(serialized, "_confirmTitle", title);
@@ -165,7 +170,6 @@ namespace Lighthouse.Mafia.Voting.Editor
             Button close = SwapButton("Close", board.transform, Folder, "id_button_accept", "id_button_accept_hover", 222f, 252f, 195f, 65f);
             Text closeLabel = ButtonLabel(close.transform, 195f, 65f);
             closeLabel.text = "확인";
-            Sailor(board.transform);
 
             Set(serialized, "_notice", notice.gameObject);
             Set(serialized, "_noticeTitle", title);
@@ -186,12 +190,6 @@ namespace Lighthouse.Mafia.Voting.Editor
             rect.anchoredPosition = Vector2.zero;
             board.raycastTarget = true;
             return board;
-        }
-
-        private static void Sailor(Transform board)
-        {
-            Image sailor = Picture("Sailor", board, VoteFolder, "vt_sailor", -118f, 290f, 174f, 164f);
-            sailor.preserveAspect = true;
         }
 
         private static Text ButtonLabel(Transform button, float width, float height)
@@ -229,9 +227,11 @@ namespace Lighthouse.Mafia.Voting.Editor
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
                 importer.alphaIsTransparency = true;
-                importer.mipmapEnabled = false;
+                // Mipmaps keep the drawn-in lettering readable when a small window shrinks these large pictures.
+                importer.mipmapEnabled = true;
+                importer.mipmapFilter = TextureImporterMipFilter.KaiserFilter;
                 importer.textureCompression = TextureImporterCompression.Uncompressed;
-                importer.filterMode = FilterMode.Bilinear;
+                importer.filterMode = FilterMode.Trilinear;
                 importer.wrapMode = TextureWrapMode.Clamp;
                 importer.maxTextureSize = 2048;
                 importer.spriteBorder = Vector4.zero;

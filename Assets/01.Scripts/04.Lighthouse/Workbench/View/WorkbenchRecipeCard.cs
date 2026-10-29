@@ -44,6 +44,7 @@ namespace Lighthouse.Workbench.View
         private Action<ModuleRecipe> _clicked;
 
         public ModuleRecipe Recipe => _recipe;
+        public RectTransform BadgeRect => (RectTransform)_badge.transform;
 
         private void Awake()
         {

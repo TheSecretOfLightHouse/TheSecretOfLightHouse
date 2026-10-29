@@ -1,4 +1,3 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using UnityEngine;
 
 namespace Lighthouse.Dev
@@ -68,4 +67,3 @@ namespace Lighthouse.Dev
         }
     }
 }
-#endif

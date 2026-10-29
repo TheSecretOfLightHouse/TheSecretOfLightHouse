@@ -27,6 +27,11 @@ namespace Lighthouse.Workbench.View
         private Action<int> _actionClicked;
         private int _actionId;
 
+        public RectTransform IconRect => _icon.rectTransform;
+        public RectTransform CountRect => _count.rectTransform;
+        // The id given to SetAction (a stored cell's recipe id), 0 when cleared.
+        public int ActionId => _actionId;
+
         private void Awake()
         {
             if (_actionButton)
@@ -45,6 +50,19 @@ namespace Lighthouse.Workbench.View
             if (_name)
             {
                 _name.text = label;
+            }
+        }
+
+        // An empty frame waiting for an icon that is still flying in. The action id stays, so the cell can be found.
+        public void ShowAwaiting()
+        {
+            _icon.enabled = false;
+            _label.text = string.Empty;
+            _count.text = string.Empty;
+
+            if (_name)
+            {
+                _name.text = string.Empty;
             }
         }
 

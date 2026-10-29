@@ -117,8 +117,6 @@ namespace Lighthouse.World.Islands.Net
             }
 
             tower.BindWorkbench(workbench);
-            TowerView view = tower.GetComponent<TowerView>();
-            view.Bind(tower, _presentation.SlotVisuals, _presentation.CompleteVisual);
 
             InteractionTarget workbenchTarget = workbench.GetComponent<InteractionTarget>();
             InteractionTarget towerTarget = tower.GetComponent<InteractionTarget>();

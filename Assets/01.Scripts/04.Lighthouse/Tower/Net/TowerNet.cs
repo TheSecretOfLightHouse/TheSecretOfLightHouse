@@ -56,6 +56,9 @@ namespace Lighthouse.Tower.Net
 
         // Raised on every machine when the slots change, and once on a client when the initial state arrives.
         public event Action Changed;
+        // Raised on every machine when one slot fills, so effects know which floor it was. The initial state on a
+        // joining client does not raise it, so a late joiner does not replay old installs.
+        public event Action<int> SlotInstalled;
         // Server-only. (actorId, slot, moduleId) for logs, history and tests.
         public event Action<uint, int, uint> ModuleInstalled;
 
@@ -113,6 +116,31 @@ namespace Lighthouse.Tower.Net
             return _layout && _layout.IsFloorOpen(floor, _installed);
         }
 
+        public bool IsFloorComplete(int floor)
+        {
+            if (!_layout)
+            {
+                return false;
+            }
+
+            bool hasSlot = false;
+
+            for (int i = 0; i < _layout.SlotCount && i < _installed.Count; i++)
+            {
+                if (_layout[i].Floor == floor)
+                {
+                    hasSlot = true;
+
+                    if (!_installed[i])
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return hasSlot;
+        }
+
         // Slot an install of this recipe would fill right now, or -1. Same answer on every machine, so UI can show it.
         public int FindOpenSlot(int recipeId)
         {
@@ -160,8 +188,14 @@ namespace Lighthouse.Tower.Net
             return true;
         }
 
+        // OP_SET passes the old item, so the new one is read from the list itself.
         private void HandleInstalledChanged(SyncList<bool>.Operation operation, int index, bool value)
         {
+            if (operation == SyncList<bool>.Operation.OP_SET && IsInstalled(index))
+            {
+                SlotInstalled?.Invoke(index);
+            }
+
             Changed?.Invoke();
         }
     }
