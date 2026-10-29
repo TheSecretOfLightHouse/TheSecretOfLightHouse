@@ -29,6 +29,7 @@ namespace Lighthouse.World.Islands.Net
         [SerializeField] private FinalBattleHud[] _battleHuds = new FinalBattleHud[0];
         [SerializeField, Min(1f)] private float _bindingTimeoutSeconds = 30f;
 
+        [SerializeField] private MainIslandPlayerSpawns _playerSpawns;
 
         private MainIslandPresentation _presentation;
         private WorkbenchNet _spawnedWorkbench;
@@ -36,6 +37,7 @@ namespace Lighthouse.World.Islands.Net
         private bool _isBuilding;
         private bool _isBound;
         private float _deadline;
+        private int _seed;
 
         public bool IsBound => _isBound;
         public WorkbenchNet Workbench { get; private set; }
@@ -86,6 +88,7 @@ namespace Lighthouse.World.Islands.Net
                 throw new InvalidOperationException("Main island visuals do not match the tower layout.");
             }
 
+            _seed = info.Seed;
             _deadline = Time.realtimeSinceStartup + _bindingTimeoutSeconds;
             _isBuilding = true;
 
@@ -143,6 +146,10 @@ namespace Lighthouse.World.Islands.Net
                 }
             }
 
+            if (_playerSpawns)
+            {
+                _playerSpawns.Bind(_presentation.PlayerSpawnPoints, _presentation.BoatSpawnPoints, workbench, _modules, _seed);
+            }
 
             Workbench = workbench;
             Tower = tower;
@@ -158,6 +165,10 @@ namespace Lighthouse.World.Islands.Net
             Workbench = null;
             Tower = null;
             _presentation = null;
+            if (_playerSpawns)
+            {
+                _playerSpawns.ResetBindings();
+            }
 
             for (int i = 0; i < _towerScreens.Length; i++)
             {

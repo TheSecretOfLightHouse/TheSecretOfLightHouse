@@ -58,6 +58,44 @@ namespace Lighthouse.Player.Boat
             }
         }
 
+        public void BindMainIsland(Transform[] points, WorkbenchNet workbench, ModuleInteractionHandler modules, int seed)
+        {
+            if (points == null || points.Length != 4 || !workbench || !modules)
+            {
+                throw new System.InvalidOperationException("Main island boat configuration is incomplete.");
+            }
+
+            _boatSpawnPoints = (Transform[])points.Clone();
+            var random = new System.Random(seed);
+            for (int i = _boatSpawnPoints.Length - 1; i > 0; i--)
+            {
+                if (!_boatSpawnPoints[i])
+                {
+                    throw new System.InvalidOperationException("Boat spawn spot is missing.");
+                }
+
+                int next = random.Next(i + 1);
+                Transform swap = _boatSpawnPoints[i];
+                _boatSpawnPoints[i] = _boatSpawnPoints[next];
+                _boatSpawnPoints[next] = swap;
+            }
+
+            if (!_boatSpawnPoints[0])
+            {
+                throw new System.InvalidOperationException("Boat spawn spot is missing.");
+            }
+
+            _nextBoatSpawnIndex = 0;
+            _moduleWorkbench = workbench;
+            _moduleHandler = modules;
+            ResolveNetworkManager();
+            if (_networkManager)
+            {
+                _networkManager.ActorJoined -= HandleActorJoined;
+                _networkManager.ActorJoined += HandleActorJoined;
+            }
+        }
+
         private void HandleActorJoined(uint actorId, NetworkConnectionToClient connection)
         {
             if (!NetworkServer.active || connection == null || !connection.identity
