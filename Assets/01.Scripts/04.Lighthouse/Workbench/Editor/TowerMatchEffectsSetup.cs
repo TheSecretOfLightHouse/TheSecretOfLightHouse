@@ -125,6 +125,13 @@ namespace Lighthouse.Workbench.Editor
 
             // The notices go through the shared strip, so the scene needs one too.
             ScreenNoticeSetup.UseInOpenScene();
+
+            // The end fade sits under the result screen, which carries the outcome.
+            if (AssetDatabase.LoadAssetAtPath<GameObject>("Assets/02.Prefabs/UI/Tower/VictoryScreen.prefab"))
+            {
+                VictoryScreenSetup.UseInOpenScene();
+            }
+
             EditorSceneManager.MarkSceneDirty(scene);
             Selection.activeGameObject = effects.gameObject;
             Debug.Log($"[{nameof(TowerMatchEffectsSetup)}] Match effects connected. Save the scene to keep it.");
