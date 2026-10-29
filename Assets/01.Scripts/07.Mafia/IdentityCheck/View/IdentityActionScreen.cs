@@ -16,6 +16,7 @@ namespace Lighthouse.Mafia.IdentityCheck.View
     public sealed class IdentityActionScreen : MonoBehaviour
     {
         private const string Highlight = "#F6C64A";
+        private const float StateRefreshSeconds = 0.5f;
 
         private enum Action : byte
         {
@@ -88,6 +89,7 @@ namespace Lighthouse.Mafia.IdentityCheck.View
         private int _shownChecks = -1;
         private int _shownSummonSeconds = -1;
         private int _shownConfirmValue = -1;
+        private float _nextStateRefreshAt;
 
         private void Awake()
         {
@@ -137,6 +139,14 @@ namespace Lighthouse.Mafia.IdentityCheck.View
             }
 
             IdentityResponse state = _voting.OwnIdentityState;
+
+            // The server sends nothing when an unused summon right runs out, so ask until the state allows checking again.
+            if (state.HasSummonRight && !IsRightLive(in state) && Time.unscaledTime >= _nextStateRefreshAt)
+            {
+                _nextStateRefreshAt = Time.unscaledTime + StateRefreshSeconds;
+                _voting.RequestOwnIdentityState();
+            }
+
             _hud.SetActive(!_isOverlayOpen);
             RefreshButtons(in state);
 
@@ -167,9 +177,10 @@ namespace Lighthouse.Mafia.IdentityCheck.View
         private void RefreshButtons(in IdentityResponse state)
         {
             SetAvailable(_checkButton, state.CanCheck);
-            SetAvailable(_summonButton, state.CanSummon);
+            bool isRightLive = IsRightLive(in state);
+            SetAvailable(_summonButton, state.CanSummon && isRightLive);
             int checks = state.RemainingCheckCount;
-            int summonSeconds = state.HasSummonRight ? SecondsLeft(state.SummonExpiresAt) : -1;
+            int summonSeconds = isRightLive ? SecondsLeft(state.SummonExpiresAt) : -1;
 
             if (checks == _shownChecks && summonSeconds == _shownSummonSeconds)
             {
@@ -244,7 +255,7 @@ namespace Lighthouse.Mafia.IdentityCheck.View
                 return;
             }
 
-            if (!state.CanSummon)
+            if (!state.CanSummon || !IsRightLive(in state))
             {
                 ShowNotice("크툴루 소환", "소환 권리 시간이 지났습니다.");
                 return;
@@ -377,6 +388,11 @@ namespace Lighthouse.Mafia.IdentityCheck.View
                 default:
                     return "요청을 처리하지 못했습니다. 다시 시도해 주세요.";
             }
+        }
+
+        private static bool IsRightLive(in IdentityResponse state)
+        {
+            return state.HasSummonRight && NetworkTime.time < state.SummonExpiresAt;
         }
 
         private static int SecondsLeft(double endsAt)

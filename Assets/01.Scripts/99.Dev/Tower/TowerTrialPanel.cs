@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Mafia.IdentityCheck.Net;
+using Lighthouse.Mafia.IdentityCheck.Rules;
 using Lighthouse.Mafia.Voting.Net;
 using Lighthouse.Mafia.Voting.Rules;
 using Lighthouse.Network.Connections.Net;
@@ -596,7 +597,7 @@ namespace Lighthouse.Dev.Tower
                     break;
                 default:
                     _pendingVoteTarget = 0;
-                    _voteNotice = $"지목하지 못했다 ({response.Result}).";
+                    _voteNotice = "지목하지 못했다.";
                     break;
             }
         }
@@ -605,7 +606,22 @@ namespace Lighthouse.Dev.Tower
         {
             if (response.IsNewDecision)
             {
-                _lastIdentity = response.Result.ToString();
+                _lastIdentity = IdentityText(response.Result);
+            }
+        }
+
+        private static string IdentityText(IdentityActionResult result)
+        {
+            switch (result)
+            {
+                case IdentityActionResult.CheckSucceeded:
+                    return "확인 성공";
+                case IdentityActionResult.CheckFailed:
+                    return "확인 실패(무고한 시민 공개)";
+                case IdentityActionResult.SummonApproved:
+                    return "소환 승인";
+                default:
+                    return "요청 거절";
             }
         }
 
