@@ -101,6 +101,10 @@ namespace Lighthouse.World.Islands.Sandbox
                 && Throws<ArgumentOutOfRangeException>(() => new WalkBoundary(0f))
                 && Throws<ArgumentNullException>(() => boundary.Add(null));
 
+            Vector3 outside = boundary.FilterMove(new Vector3(10.2f, 0.7f, 0f), new Vector3(1f, 0f, 0.2f));
+            isPassed &= outside.x < 0f && Mathf.Abs(outside.z) < Tolerance
+                && NearVector(new Vector3(outside.x, 0f, outside.z), new Vector3(-Mathf.Sqrt(1.04f), 0f, 0f));
+
             boundary.Add(BuildDisc(new Vector2(15f, 0f), 0f));
             Vector3 overlap = boundary.FilterMove(edge, new Vector3(1f, 0f, 0f));
             isPassed &= NearVector(overlap, new Vector3(1f, 0f, 0f)) && boundary.MaskCount == 2;

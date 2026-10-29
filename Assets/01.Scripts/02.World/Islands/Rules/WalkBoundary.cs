@@ -61,6 +61,11 @@ namespace Lighthouse.World.Islands.Rules
             }
 
             var origin = new Vector2(position.x, position.z);
+            if (!IsWalkable(origin))
+            {
+                return PullBack(origin, move, direction);
+            }
+
             if (IsWalkable(origin + move.normalized * _lookahead))
             {
                 return direction;
@@ -81,6 +86,20 @@ namespace Lighthouse.World.Islands.Rules
 
             move -= inward * along;
             return new Vector3(move.x, direction.y, move.y);
+        }
+
+        // Sliding along a coarse mask edge leaves a small outward residue, so a step can land just outside the mask.
+        // Without this the walker keeps drifting out; far from every mask there is nothing to return to.
+        private Vector3 PullBack(Vector2 origin, Vector2 move, Vector3 direction)
+        {
+            Vector2 inward = GetInward(origin);
+            if (inward.sqrMagnitude < MinMoveSqr)
+            {
+                return direction;
+            }
+
+            Vector2 pulled = inward.normalized * move.magnitude;
+            return new Vector3(pulled.x, direction.y, pulled.y);
         }
 
         private bool IsWalkable(Vector2 point)
