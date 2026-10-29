@@ -36,8 +36,11 @@ namespace Lighthouse.Mafia.SeaSummoning.Server
             Vector3 local = Quaternion.Inverse(Quaternion.Euler(90f, yaw, 0f)) * (point - cameraPosition);
             float halfHeight = local.z * Mathf.Tan(settings.TopViewFieldOfView * Mathf.Deg2Rad * 0.5f);
             reason = "탑뷰 화면 범위 밖";
+            float outsideX = Mathf.Max(0f, Mathf.Abs(local.x) - halfHeight * aspect);
+            float outsideY = Mathf.Max(0f, Mathf.Abs(local.y) - halfHeight);
+            float panRadius = settings.CameraPanRadius;
             if (local.z <= 0f || !IsFinite(halfHeight) || !IsFinite(halfHeight * aspect)
-                || Mathf.Abs(local.y) > halfHeight || Mathf.Abs(local.x) > halfHeight * aspect)
+                || outsideX * outsideX + outsideY * outsideY > panRadius * panRadius)
             {
                 return false;
             }

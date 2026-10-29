@@ -11,6 +11,10 @@ namespace Lighthouse.Mafia.SeaSummoning.Rules
         [SerializeField, Min(1f)] private float _topViewHeight = 30f;
         [SerializeField, Min(0.01f)] private float _cameraTransitionSeconds = 0.6f;
         [SerializeField, Range(1f, 179f)] private float _topViewFieldOfView = 60f;
+        [SerializeField, Min(0f)] private float _cameraPanRadius = 12f;
+        [SerializeField, Min(0f)] private float _cameraPanSpeed = 10f;
+        [SerializeField, Range(0.01f, 0.25f)] private float _cameraEdgeFraction = 0.08f;
+        [SerializeField, Min(0.01f)] private float _cameraPanSmoothTime = 0.2f;
         [SerializeField] private MonsterCatalog _catalog;
         [SerializeField] private SeaSummonOption[] _options =
         {
@@ -24,6 +28,10 @@ namespace Lighthouse.Mafia.SeaSummoning.Rules
         public float TopViewHeight => _topViewHeight;
         public float CameraTransitionSeconds => _cameraTransitionSeconds;
         public float TopViewFieldOfView => _topViewFieldOfView;
+        public float CameraPanRadius => _cameraPanRadius;
+        public float CameraPanSpeed => _cameraPanSpeed;
+        public float CameraEdgeFraction => _cameraEdgeFraction;
+        public float CameraPanSmoothTime => _cameraPanSmoothTime;
         public MonsterCatalog Catalog => _catalog;
         public IReadOnlyList<SeaSummonOption> Options => _options;
 
@@ -49,9 +57,13 @@ namespace Lighthouse.Mafia.SeaSummoning.Rules
             if (_dailyLimit < 1 || float.IsNaN(_topViewHeight) || float.IsInfinity(_topViewHeight)
                 || _topViewHeight < 1f || float.IsNaN(_cameraTransitionSeconds)
                 || float.IsInfinity(_cameraTransitionSeconds) || _cameraTransitionSeconds <= 0f
-                || float.IsNaN(_topViewFieldOfView) || _topViewFieldOfView < 1f || _topViewFieldOfView > 179f)
+                || float.IsNaN(_topViewFieldOfView) || _topViewFieldOfView < 1f || _topViewFieldOfView > 179f
+                || float.IsNaN(_cameraPanRadius) || float.IsInfinity(_cameraPanRadius) || _cameraPanRadius < 0f
+                || float.IsNaN(_cameraPanSpeed) || float.IsInfinity(_cameraPanSpeed) || _cameraPanSpeed < 0f
+                || float.IsNaN(_cameraEdgeFraction) || _cameraEdgeFraction < 0.01f || _cameraEdgeFraction > 0.25f
+                || float.IsNaN(_cameraPanSmoothTime) || float.IsInfinity(_cameraPanSmoothTime) || _cameraPanSmoothTime <= 0f)
             {
-                error = "하루 횟수는 1 이상, 탑뷰 높이는 유한한 1 이상, 카메라 전환 시간은 유한한 양수여야 합니다.";
+                error = "소환 횟수 또는 탑뷰 카메라 설정이 유효하지 않습니다.";
                 return false;
             }
             if (_catalog == null)
