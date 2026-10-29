@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 6181790348115552081}
   - component: {fileID: 4486688080978044874}
   - component: {fileID: 4642807040107593748}
-  - component: {fileID: 2589966672941042164}
   - component: {fileID: 3790091501951660484}
   - component: {fileID: 4616271955834512637}
   - component: {fileID: 4510707530472674975}
@@ -88,21 +87,6 @@ MonoBehaviour:
   syncInterval: 0
   _layout: {fileID: 11400000, guid: aa136c545abe72946b769dd5908ac5fd, type: 2}
   _workbench: {fileID: 0}
---- !u!114 &2589966672941042164
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7226236849870676376}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ca35025d2e6a4bc41be2d22486e08905, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _tower: {fileID: 4642807040107593748}
-  _slotVisuals: []
-  _completeVisual: {fileID: 0}
 --- !u!114 &3790091501951660484
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -136,6 +120,7 @@ MonoBehaviour:
   syncInterval: 0
   _modules: {fileID: 0}
   _voting: {fileID: 0}
+  _lobbyReturnSeconds: 10
 --- !u!114 &4510707530472674975
 MonoBehaviour:
   m_ObjectHideFlags: 0
