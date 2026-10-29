@@ -1454,10 +1454,14 @@ MonoBehaviour:
   _runVolume: 0.65
   _actionVolume: 0.65
   _minimumStepInterval: 0.12
-  _boatMovementClip: {fileID: 8300000, guid: 59f9866d34fe3a94da3848785f07cde1, type: 3}
+  _boatMovementClip: {fileID: 8300000, guid: aa2740dd36427624fafc890c106817f2, type: 3}
   _boatMovementVolume: 0.3
   _boatMovementSpeedThreshold: 0.15
   _boatMovementFadeTime: 0.25
+  _swimMovementClip: {fileID: 8300000, guid: 96239329484db8b4d967e4eec7c05f60, type: 3}
+  _swimMovementVolume: 0.3
+  _swimMovementSpeedThreshold: 0.15
+  _swimMovementFadeTime: 0.25
   _waterEnterFraction: 0.25
   _waterExitFraction: 0.1
 --- !u!114 &2415168992369603088

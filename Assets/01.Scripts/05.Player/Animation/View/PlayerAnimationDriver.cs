@@ -61,6 +61,10 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float _boatMovementVolume = 0.3f;
     [SerializeField, Min(0.01f)] private float _boatMovementSpeedThreshold = 0.15f;
     [SerializeField, Min(0.01f)] private float _boatMovementFadeTime = 0.25f;
+    [SerializeField] private AudioClip _swimMovementClip;
+    [SerializeField, Range(0f, 1f)] private float _swimMovementVolume = 0.3f;
+    [SerializeField, Min(0.01f)] private float _swimMovementSpeedThreshold = 0.15f;
+    [SerializeField, Min(0.01f)] private float _swimMovementFadeTime = 0.25f;
 
     [SerializeField, Range(0f, 1f)]
     private float _waterEnterFraction = 0.25f;
@@ -85,6 +89,8 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
     private float _nextStepTime;
     private AudioSource _boatMovementAudio;
     private float _boatMovementGain;
+    private AudioSource _swimMovementAudio;
+    private float _swimMovementGain;
 
     private bool CanPlaySound => _controller && _controller.isActiveAndEnabled
         && !(NetworkServer.active && !NetworkClient.active)
@@ -135,6 +141,7 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
     private void OnDisable()
     {
         StopBoatMovementSound();
+        StopSwimMovementSound();
         _fallDuration = 0f;
         _isInWater = false;
         _hasAnimationState = false;
@@ -147,12 +154,13 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
     private void Update()
     {
         UpdateBoatMovementSound();
+        UpdateWater();
+        UpdateSwimMovementSound();
         if (!_animator || !_animator.runtimeAnimatorController)
         {
             return;
         }
 
-        UpdateWater();
         UpdateFalling();
         UpdateLocomotion();
 
@@ -253,6 +261,10 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
 
     private void PlayMotionSound(PlayerAnimationState state)
     {
+        if (state == PlayerAnimationState.OnBoat)
+        {
+            StopSwimMovementSound();
+        }
         if (state != PlayerAnimationState.OnBoat)
         {
             StopBoatMovementSound();
@@ -336,7 +348,8 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
     private void UpdateWater()
     {
         // Only the movement owner writes parameters; remote views consume NetworkAnimator.
-        if (_source == null || !_controller || !_controller.CanProcessBoatInput || !_buoyancy)
+        if (_source == null || !_controller || !_controller.CanProcessBoatInput || !_buoyancy
+            || !_animator || !_animator.runtimeAnimatorController)
         {
             return;
         }
@@ -344,7 +357,12 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
         bool canSwim = _source.Current != PlayerAnimationState.OnBoat;
         BuoyancyReading reading = _buoyancy.Reading;
         float threshold = _isInWater ? _waterExitFraction : _waterEnterFraction;
+        bool wasInWater = _isInWater;
         _isInWater = canSwim && reading.IsValid && reading.SubmergedFraction >= threshold;
+        if (!wasInWater && _isInWater)
+        {
+            PlaySound(SfxType.PlayerWaterEnter, _actionVolume);
+        }
 
         // The downed clip is the treading-water pose, so reuse it while the survivor floats.
         bool downedPose = _source.Current == PlayerAnimationState.Downed || _isInWater;
@@ -352,6 +370,60 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
         if (_animator.GetBool(IsDownedHash) != downedPose)
         {
             _animator.SetBool(IsDownedHash, downedPose);
+        }
+    }
+
+    private void UpdateSwimMovementSound()
+    {
+        if (!CanPlaySound || !_controller.CanProcessBoatInput || !_swimMovementClip
+            || !_isInWater || !_body || !_buoyancy || !_buoyancy.Reading.IsValid
+            || _source == null || _source.Current == PlayerAnimationState.OnBoat)
+        {
+            StopSwimMovementSound();
+            return;
+        }
+
+        Vector3 velocity = _body.linearVelocity;
+        bool moving = new Vector2(velocity.x, velocity.z).sqrMagnitude
+            >= _swimMovementSpeedThreshold * _swimMovementSpeedThreshold;
+        _swimMovementGain = Mathf.MoveTowards(_swimMovementGain, moving ? 1f : 0f,
+            Time.deltaTime / _swimMovementFadeTime);
+        if (_swimMovementGain <= 0f)
+        {
+            StopSwimMovementSound();
+            return;
+        }
+
+        if (!_swimMovementAudio)
+        {
+            // A sustained swim loop must not restart on every movement update or occupy one-shot voices.
+            var child = new GameObject("SwimMovementAudio");
+            child.transform.SetParent(transform, false);
+            _swimMovementAudio = child.AddComponent<AudioSource>();
+            _swimMovementAudio.playOnAwake = false;
+            _swimMovementAudio.loop = true;
+            _swimMovementAudio.spatialBlend = 0f;
+            _swimMovementAudio.dopplerLevel = 0f;
+            _swimMovementAudio.clip = _swimMovementClip;
+        }
+
+        EnsureSoundManager();
+        SoundManager manager = SoundManager.Instance;
+        float effectGain = manager ? (manager.IsMuted ? 0f : manager.MasterVolume * manager.EffectVolume) : 1f;
+        _swimMovementAudio.volume = _swimMovementVolume * _swimMovementGain * effectGain;
+        if (!_swimMovementAudio.isPlaying)
+        {
+            _swimMovementAudio.Play();
+        }
+    }
+
+    private void StopSwimMovementSound()
+    {
+        _swimMovementGain = 0f;
+        if (_swimMovementAudio)
+        {
+            _swimMovementAudio.Stop();
+            _swimMovementAudio.volume = 0f;
         }
     }
 
