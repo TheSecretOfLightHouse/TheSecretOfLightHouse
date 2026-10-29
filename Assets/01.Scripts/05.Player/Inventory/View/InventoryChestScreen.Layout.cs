@@ -500,6 +500,7 @@ namespace Lighthouse.Player.Inventory.View
             UnityEngine.UI.Text text = MakeRect(name, parent, x, y, width, height).gameObject.AddComponent<UnityEngine.UI.Text>();
             text.text = value;
             text.font = _font;
+            text.fontStyle = FontStyle.Bold;
             text.fontSize = size;
             text.color = color;
             text.alignment = alignment;
