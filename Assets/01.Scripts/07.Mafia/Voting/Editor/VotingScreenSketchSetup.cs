@@ -170,6 +170,12 @@ namespace Lighthouse.Mafia.Voting.Editor
                 cards[i] = BuildCard(frame, i, startX + i * (CardWidth + CardGap), 213f);
             }
 
+            // Drawn over the greyed cards once the ritual locks the votes.
+            Image lockBand = Picture("LockBand", frame, Folder, null, 64f, 213f + (CardHeight - 84f) * 0.5f, 896f, 84f);
+            lockBand.color = new Color(Dark.r, Dark.g, Dark.b, 0.82f);
+            Label("Text", lockBand.transform, "점화 의식이 시작되어 투표가 잠겼습니다", 30, 0f, 0f, 896f, 84f);
+            lockBand.gameObject.SetActive(false);
+
             Picture("Divider", frame, Folder, "vt_divider", 64f, 640f, 874f, 36f);
             Picture("Rules", frame, Folder, "vt_rules", 250f, 698f, 504f, 55f);
             Picture("Sparkle", frame, Folder, "vt_sparkle", 892f, 720f, 46f, 47f);
@@ -183,6 +189,7 @@ namespace Lighthouse.Mafia.Voting.Editor
             Set(serialized, "_remaining", remaining);
             SetArray(serialized, "_cards", cards);
             Set(serialized, "_notice", notice);
+            Set(serialized, "_lockBand", lockBand.gameObject);
             Set(serialized, "_navigatorPortrait", Load(Folder, "vt_job_navigator"));
             Set(serialized, "_mechanicPortrait", Load(Folder, "vt_job_mechanic"));
             Set(serialized, "_guardPortrait", Load(Folder, "vt_job_guard"));
