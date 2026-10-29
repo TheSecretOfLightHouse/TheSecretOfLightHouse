@@ -81,3 +81,23 @@
 - 빌드: 처음 두 번은 "script class layout is incompatible"로 실패했다. 빌드 도중 develop 병합(부력·애니메이션)과 다른 세션의 `DayCycleHud` 수정이 들어와 에디터 컴파일이 소스보다 늦었기 때문이다. 다시 컴파일한 뒤 성공했다(15:46). 창 4개 다시 실행(로그 예외 0).
 - 사용자 요청: 최후 전투가 시작되면 날짜 UI를 끈다. `DayCycleHud`가 `TowerMatchNet`을 1초 간격으로 찾아(판과 함께 생성되므로 프리팹 연결 불가) `Phase == FinalBattle`이면 표시를 숨긴다. 최후 전투 띠와 상단 가운데 겹침도 이로써 사라진다. Unity 컴파일 error 0. 실제 최후 전투 진입 시 꺼지는지는 플레이 미확인.
 - `Builds/JH04` 일반 빌드 성공(15:58, 새 DLL에 날짜 판·최후 전투 숨김 코드 포함 확인). 기존 창 4개를 닫고 960×540 창 4개를 다시 실행했다(`Builds/JH04/log1~4.txt`). 4인 플레이 확인은 사용자가 진행.
+
+## 추가: 운반 모듈 카드를 상시 HUD로 대체 (2026-10-29)
+- 사용자 요청: 작업대를 닫아도 작업대 화면 아래의 운반 모듈 카드(아이콘+틀)를 그대로 띄우던 방식 대신, 왼쪽 배 내구도 패널 위의 상시 HUD 카드에 들고 있는 모듈을 표시한다. 작업대 화면 자체는 바꾸지 않는다.
+- `InGameHud`: 공용 작업대 `WorkbenchNet.OwnCarriedRecipe`와 `Catalog`를 매 프레임 읽어(작업대는 1초 간격으로 찾음) 카드 아이콘(`ModuleRecipe.Icon`)·이름(`DisplayName`)·용도 그림(`hud_label_for_lighthouse`/`hud_label_for_boat`, `IsBoatModule`로 선택)을 바꾼다. 운반 중이 아니면 카드 그룹(`Card`)을 숨긴다. 값이 바뀔 때만 갱신한다.
+- `InGameHudSetup`: 카드 조각을 `Card` 레이어로 묶고, 이름을 고정 그림(`hud_label_lens`) 대신 Text(22, 크림색)로 바꿔 연결했다. 프리팹 재빌드(날짜 UI 유지 확인).
+- `WorkbenchScreen.IsCarryCardShown`: 작업대 창이 열려 있을 때만 하단 운반 카드를 보인다(창 안 표시·연출은 그대로).
+- 남은 중복: `InventoryChestScreen.Hud`(최명기)의 `CarriedModuleHud`도 인벤토리를 닫으면 왼쪽 아래에 운반 모듈을 띄운다. 현재 `MK_MainGame`에만 있어 JH04TestScene에는 영향이 없지만, 같은 씬에 상시 HUD가 들어가면 겹친다. 정리는 최명기와 합의 필요.
+- 수정: 처음에는 `PlayerInventory.ModuleRecipeId`를 읽었는데 사용자 실행에서 카드가 뜨지 않았다. 인벤토리를 작업대에 묶는 `PlayerInventoryModuleBinder`가 `MKTestScene`·`MK_MainGame`에만 있어 다른 씬에서는 항상 0이었다. 그래서 작업대를 직접 읽게 바꿨다(`TowerScreen`과 같은 출처).
+- 검증: Unity 컴파일 error 0(중간에 다른 세션의 로비 복귀 작업 때문에 오류가 났다가 사라짐), `Build In-Game HUD Prefab` 성공, 프리팹에 새 참조 5개 연결 확인. 실제 플레이에서 모듈을 꺼내 카드 표시·내려놓으면 숨김, 빌드 재생성은 미실행.
+- 사용자 피드백 반영(같은 날): 카드가 옛 아이콘(`ModuleRecipe.Icon`)과 외곽선 때문에 뭉개진 글자를 쓰고, 틀이 아이콘에 꽉 끼었다.
+  - 아이콘: `InGameHud._recipeIcons`(작업대와 같은 `{Recipe, Icon}` 배열)를 두고, 빌더가 `WorkbenchScreenSketchSetup.FillRecipeIcons`(작업대 스케치 화면의 `ws_icon_*` 매핑, 체험판 레시피 포함 10개)로 채운다. 목록에 없으면 `recipe.Icon`.
+  - 글자: 작업대 라벨처럼 굵게·외곽선 없음(실행 시 맑은 고딕). 캡션 "들고 있는 모듈"(금색), 모듈 이름, 용도("등대 모듈"/"배 모듈", 작업대 배치 문구와 같은 표현)를 세 줄로 두고, 바다 위에서 읽히도록 뒤에 어두운 판을 깔았다. 그림 글자 `hud_label_for_*`·`hud_label_lens`는 더 쓰지 않는다.
+  - 틀: 78×76 → 98×96(시안 px), 아이콘 50×50 가운데.
+  - 검증: 컴파일 error 0, 프리팹 재빌드, 1920×1080·960×540 렌더링으로 렌즈·선체 안정기 카드를 눈으로 확인.
+
+
+## 커밋 분리 점검 (2026-10-29)
+- 최명기 영역의 InGameHud 변경은 사용자 포함 허용. 운반 모듈 카드와 작업대 하단 카드 표시 변경만 분리. 런타임 FindAnyObjectByType 사용은 코딩 컨벤션과 충돌하며 미해결로 남김. 인벤토리 카드 중복·실제 다인 운반 표시는 검증 대기.
+- 이번 실행: 현재 diff·에셋/meta 짝·포함/제외 범위 점검, Unity MCP 콘솔 오류 0건 확인. 기존 컴파일·빌드·렌더 기록과 구분하며 이번에는 빌드·다인 플레이를 실행하지 않음.
+- 씬·프리팹의 공백 경고는 Unity 직렬화 출력에 한정됨. YAML 직접 수정 없이 보존.

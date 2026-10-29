@@ -1075,11 +1075,11 @@ namespace Lighthouse.Workbench.View
             return rect;
         }
 
-        // With the screen closed the card stays only while a module is carried, where it was (2026-10-27). Another
-        // screen (the lighthouse one shows the carried module itself) hides it, as it would cover that screen.
+        // Only while the screen is open (2026-10-29): with it closed, the always-on HUD's card above the boat panel
+        // shows the carried module instead (InGameHud).
         private bool IsCarryCardShown()
         {
-            return _isOpen || _workbench.OwnCarriedRecipe != 0 && !SessionScreen.IsGameplayOverlayOpen;
+            return _isOpen;
         }
 
         private void RefreshCarryCard()

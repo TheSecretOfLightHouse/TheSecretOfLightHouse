@@ -14,6 +14,8 @@ namespace Lighthouse.Workbench.Editor
         private const string PrefabPath = "Assets/02.Prefabs/UI/Hud/InGameHud.prefab";
         // The small frame sprite's hollow (13..717 x 14..62 of 731x78), widened a little so track and fill tuck under it.
         private static readonly Rect FrameInset = new Rect(8f / 731f, 9f / 78f, 714f / 731f, 58f / 78f);
+        private static readonly Color CardTextPlate = new Color(0.10f, 0.075f, 0.045f, 0.78f);
+        private static readonly Color CardMuted = new Color(0.82f, 0.76f, 0.63f);
 
         [MenuItem("Lighthouse/UI/Build In-Game HUD Prefab")]
         public static void Build()
@@ -52,12 +54,20 @@ namespace Lighthouse.Workbench.Editor
                 Key(hud, "Inventory", "hud_key_tab", 50f, 1, "hud_label_inventory", 62f);
                 Key(hud, "Menu", "hud_key_esc", 47f, 2, "hud_label_menu", 42f);
 
-                // Carried item card, bottom left.
-                HudSketchLayout.Backing("CardBacking", hud, HudSketchLayout.CardBacking, corner, 60f, 653f, 62f, 60f);
-                HudSketchLayout.Picture("CardFrame", hud, "hud_card_frame", corner, 52f, 645f, 78f, 76f);
-                HudSketchLayout.Picture("CardIcon", hud, "hud_icon_lens", corner, 62f, 656f, 58f, 51f);
-                HudSketchLayout.Picture("CardName", hud, "hud_label_lens", corner, 144f, 648f, 56f, 33f);
-                HudSketchLayout.Picture("CardUse", hud, "hud_label_for_lighthouse", corner, 144f, 682f, 60f, 24f);
+                // Carried module card, bottom left above the boat panel, shown only while a module is carried. Icon,
+                // name and use are the carried module's (InGameHud), with the workbench screen's icons and its plain
+                // bold text (no outline, which smeared the small Korean glyphs); a plate behind the text keeps it
+                // readable over the sea. The frame leaves room around the icon.
+                RectTransform card = HudSketchLayout.Layer("Card", hud);
+                HudSketchLayout.Backing("CardTextPlate", card, CardTextPlate, corner, 128f, 642f, 196f, 76f);
+                HudSketchLayout.Backing("CardBacking", card, HudSketchLayout.CardBacking, corner, 58f, 643f, 74f, 74f);
+                HudSketchLayout.Picture("CardFrame", card, "hud_card_frame", corner, 46f, 632f, 98f, 96f).preserveAspect = false;
+                Image cardIcon = HudSketchLayout.Rect("CardIcon", card, corner, 70f, 655f, 50f, 50f).gameObject.AddComponent<Image>();
+                cardIcon.preserveAspect = true;
+                cardIcon.raycastTarget = false;
+                CardText("CardCaption", card, "들고 있는 모듈", 14f, HudSketchLayout.Gold, 154f, 646f, 22f);
+                Text cardName = CardText("CardName", card, "모듈", 19f, HudSketchLayout.Cream, 154f, 668f, 26f);
+                Text cardUse = CardText("CardUse", card, "등대 모듈", 14f, CardMuted, 154f, 694f, 20f);
 
                 // Role and boat panel, bottom left. A little wider than the mockup, with every piece kept clear of
                 // the panel's thick rounded rim (the mockup's spacing let the icons touch it).
@@ -74,6 +84,12 @@ namespace Lighthouse.Workbench.Editor
                 InGameHud view = root.AddComponent<InGameHud>();
                 SerializedObject serialized = new SerializedObject(view);
                 Set(serialized, "_root", hud.gameObject);
+                Set(serialized, "_card", card.gameObject);
+                Set(serialized, "_cardIcon", cardIcon);
+                Set(serialized, "_cardName", cardName);
+                Set(serialized, "_cardUse", cardUse);
+                WorkbenchScreenSketchSetup.FillRecipeIcons(serialized.FindProperty("_recipeIcons"));
+                card.gameObject.SetActive(false);
                 Set(serialized, "_boatFill", boatFill);
                 Set(serialized, "_boatText", boatText);
                 serialized.ApplyModifiedPropertiesWithoutUndo();
@@ -136,6 +152,14 @@ namespace Lighthouse.Workbench.Editor
             Vector2 anchor = HudSketchLayout.TopRight;
             HudSketchLayout.Picture(name + "Key", parent, keySprite, anchor, columnX + (columnWidth - width) * 0.5f, y, width, 36f * size);
             HudSketchLayout.Picture(name + "Label", parent, labelSprite, anchor, labelX, y + 6f * size, labelWidth * size, 24f * size);
+        }
+
+        // The workbench screen's label look: bold, no outline, one line.
+        private static Text CardText(string name, Transform parent, string caption, float size, Color color, float x, float y, float height)
+        {
+            Text text = HudSketchLayout.Label(name, parent, caption, size, color, HudSketchLayout.BottomLeft, x, y, 164f, height, TextAnchor.MiddleLeft);
+            Object.DestroyImmediate(text.GetComponent<Outline>());
+            return text;
         }
 
         private static void Set(SerializedObject serialized, string name, Object value)
