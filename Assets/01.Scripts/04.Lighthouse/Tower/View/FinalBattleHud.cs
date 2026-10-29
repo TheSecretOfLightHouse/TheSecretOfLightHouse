@@ -5,8 +5,8 @@ using UnityEngine.UI;
 
 namespace Lighthouse.Tower.View
 {
-    // Top-of-screen HUD for the final battle (2026-10-23 sketch): repair on the left, the lighthouse's health on the
-    // right. Shown only while the phase is FinalBattle. The match values are SyncVars without hooks, so it reads them
+    // Top-of-screen HUD for the final battle (2026-10-29 in-game HUD mockup): repair on the left, the lighthouse's
+    // health on the right. Shown only while the phase is FinalBattle. The match values are SyncVars without hooks, so it reads them
     // every frame and rebuilds text only when a shown number changes. Bars ease toward the synced value. The strip
     // drops in from above when the battle starts; a hit shakes the health bar, flashes it red and floats the damage
     // (UI effects 2026-10-26, no camera shake since the camera is the Player part's).
@@ -32,6 +32,9 @@ namespace Lighthouse.Tower.View
         [Tooltip("Floats up next to the health on a hit. Hits close together add up.")]
         [SerializeField]
         private Text _damageText;
+        [Tooltip("The current health in \"current / max\", as in the mockup. The max keeps the text colour.")]
+        [SerializeField]
+        private Color _healthNumberColor = new Color(0.98f, 0.73f, 0.15f);
         [SerializeField]
         private Color _healthHitColor = new Color(1f, 0.25f, 0.2f);
         [SerializeField, Min(0f)]
@@ -61,6 +64,7 @@ namespace Lighthouse.Tower.View
         private string[] _osFontNames = { "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Arial" };
 
         private Color _healthColor;
+        private string _healthNumberHex;
         private float _flashTimer;
         private float _dropTimer;
         private float _shakeTimer;
@@ -85,6 +89,7 @@ namespace Lighthouse.Tower.View
             }
 
             _healthColor = _healthFill ? _healthFill.color : Color.white;
+            _healthNumberHex = ColorUtility.ToHtmlStringRGB(_healthNumberColor);
             _hud = (RectTransform)_root.transform;
             _hudPosition = _hud.anchoredPosition;
 
@@ -225,7 +230,7 @@ namespace Lighthouse.Tower.View
 
             if (_healthText)
             {
-                _healthText.text = $"{health} / {maxHealth}";
+                _healthText.text = $"<color=#{_healthNumberHex}>{health}</color> / {maxHealth}";
             }
         }
 
