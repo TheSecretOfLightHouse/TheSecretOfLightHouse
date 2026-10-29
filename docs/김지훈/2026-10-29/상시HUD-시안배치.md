@@ -101,3 +101,10 @@
 - 최명기 영역의 InGameHud 변경은 사용자 포함 허용. 운반 모듈 카드와 작업대 하단 카드 표시 변경만 분리. 런타임 FindAnyObjectByType 사용은 코딩 컨벤션과 충돌하며 미해결로 남김. 인벤토리 카드 중복·실제 다인 운반 표시는 검증 대기.
 - 이번 실행: 현재 diff·에셋/meta 짝·포함/제외 범위 점검, Unity MCP 콘솔 오류 0건 확인. 기존 컴파일·빌드·렌더 기록과 구분하며 이번에는 빌드·다인 플레이를 실행하지 않음.
 - 씬·프리팹의 공백 경고는 Unity 직렬화 출력에 한정됨. YAML 직접 수정 없이 보존.
+
+## 추가: 운반 모듈 카드를 최명기 인벤토리 카드 모양으로 교체 (2026-10-29)
+- 사용자 요청: 상시 HUD의 운반 모듈 카드를 최명기 인벤토리 카드(`InventoryChestScreen.Hud.cs`의 `CarriedModuleHud`) UI로 바꾸고 항해사·배 내구도 패널 위 자리에 둔다.
+- 1차 시도(되돌림): 상시 HUD 카드를 지우고 최명기 파일의 카드 위치값을 바꿨다. JH04TestScene에는 인벤토리 화면이 없어 카드가 아예 뜨지 않았고, 다른 담당 코드를 사전 확인 없이 고쳤다. 사용자 지시로 세 코드 파일 모두 되돌렸다(최명기 파일 무변경).
+- 최종: 최명기 카드는 그림 파일 대신 코드로 그린 틀(`InventoryFrameGraphic`, 채움 0.10/0.075/0.045/0.9, 크림 테두리)과 작업대 아이콘(`ws_icon_*`, 상시 HUD `_recipeIcons`와 같은 스프라이트)을 쓴다. 그래서 이 컴포넌트·색·크기(230×76, 아이콘 58, "운반 중" 금색 16, 이름 크림 17 자동 크기)를 그대로 가져와 `InGameHudSetup`에서 조립했다. 위치는 캔버스 좌하단 기준 (53, 244). 용도 줄은 없앴다(`_cardUse` 미연결, 런타임은 null이면 건너뜀). 데이터는 기존대로 `InGameHud`가 작업대 `OwnCarriedRecipe`를 읽으므로 JH04TestScene에서도 뜬다.
+- 변경: `Workbench/Editor/InGameHudSetup.cs`, `02.Prefabs/UI/Hud/InGameHud.prefab`(메뉴 재빌드). 런타임 코드·최명기 파일·씬 무변경.
+- 검증: `dotnet build Lighthouse.Workbench.Editor` 오류 0, Unity 컴파일 후 `Build In-Game HUD Prefab` 성공(콘솔 error 0), 프리팹에 `InventoryFrameGraphic`·DayCycle 유지 확인. 미리보기 씬에서 탐조등 카드를 강제 표시해 1920×1080 렌더링으로 패널 위 배치를 눈으로 확인했다. 실제 플레이(꺼내기→표시→내려놓기 숨김)·빌드 재생성은 미실행.
