@@ -33,6 +33,10 @@ namespace Lighthouse.Mafia.SeaSummoning.View
                 return;
             }
             _wasSelecting = true;
+            if (_viewCamera == null)
+            {
+                _viewCamera = Camera.main;
+            }
             _hasHover = false;
             if (IsSelectionBlocked)
             {

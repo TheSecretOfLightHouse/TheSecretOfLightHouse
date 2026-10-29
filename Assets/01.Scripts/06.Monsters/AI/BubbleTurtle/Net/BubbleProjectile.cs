@@ -14,6 +14,9 @@ namespace Lighthouse.Monsters.AI.Net
         [SerializeField, Min(0.01f), Tooltip("초당 이동 거리")] private float _moveSpeed = 5f;
         [SerializeField, Min(0f), Tooltip("초당 최대 회전각")] private float _turnSpeed = 45f;
         [SerializeField] private LayerMask _collisionMask = ~0;
+        [SerializeField] private ParticleSystem _visualEffect;
+
+        [SyncVar] private double _visualStartedAt;
 
         private readonly Collider[] _overlaps = new Collider[CollisionBufferSize];
         private readonly RaycastHit[] _hits = new RaycastHit[CollisionBufferSize];
@@ -37,6 +40,32 @@ namespace Lighthouse.Monsters.AI.Net
         private void Awake()
         {
             _collider = GetComponent<SphereCollider>();
+        }
+
+        public override void OnStartClient()
+        {
+            base.OnStartClient();
+            SynchronizeVisual(_visualEffect, _visualStartedAt);
+        }
+
+        public static void SynchronizeVisual(ParticleSystem effect, double startedAt)
+        {
+            if (effect == null)
+            {
+                return;
+            }
+
+            ParticleSystem[] systems = effect.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < systems.Length; i++)
+            {
+                systems[i].Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+                systems[i].useAutoRandomSeed = false;
+                systems[i].randomSeed = (uint)(i + 1);
+            }
+
+            float elapsed = (float)System.Math.Max(0d, NetworkTime.time - startedAt);
+            effect.Simulate(elapsed, true, true, true);
+            effect.Play(true);
         }
 
         private void FixedUpdate()
@@ -85,7 +114,7 @@ namespace Lighthouse.Monsters.AI.Net
         }
 
         [Server]
-        public bool Initialize(MonsterBoatTarget target, NetworkIdentity source, float damage)
+        public bool Initialize(MonsterBoatTarget target, NetworkIdentity source, float damage, double visualStartedAt = 0d)
         {
             if (_isInitialized || target == null || !target.IsEligible || source == null
                 || !IsFinite(damage) || damage < 0f
@@ -98,6 +127,7 @@ namespace Lighthouse.Monsters.AI.Net
             _target = target;
             _source = source;
             _damage = damage;
+            _visualStartedAt = visualStartedAt > 0d ? visualStartedAt : NetworkTime.time;
             Collider[] sourceColliders = source.GetComponentsInChildren<Collider>(true);
             for (int i = 0; i < sourceColliders.Length; i++)
             {

@@ -17,6 +17,7 @@ namespace Lighthouse.Monsters.AI.Net
         [SerializeField] private Animation _attackFx;
         [SerializeField] private Transform _fxBubble;
         [SerializeField] private Transform _firePoint;
+        [SerializeField] private ParticleSystem _chargeBubbleEffect;
         [SerializeField, Min(0f)] private float _fxReleaseTime = 2.4791667f;
 
         [SyncVar] private bool _isSwimming;
@@ -110,6 +111,7 @@ namespace Lighthouse.Monsters.AI.Net
                 if (visible)
                 {
                     _attackFx.Play();
+                    BubbleProjectile.SynchronizeVisual(_chargeBubbleEffect, _attack.AttackStartedAt);
                 }
             }
 
