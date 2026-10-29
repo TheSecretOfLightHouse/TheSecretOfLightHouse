@@ -96,7 +96,7 @@ namespace Lighthouse.Workbench.Editor
                 returnText.fontSize = 22;
                 returnText.color = Faded;
                 returnText.alignment = TextAnchor.MiddleCenter;
-                returnText.text = "10초 후 선원 대기실로 돌아갑니다";
+                returnText.text = "확인을 누르면 선원 대기실로 돌아갑니다";
                 returnText.raycastTarget = false;
                 returnText.horizontalOverflow = HorizontalWrapMode.Overflow;
 
