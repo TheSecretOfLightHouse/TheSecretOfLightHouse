@@ -79,6 +79,8 @@ public sealed class BoatController : NetworkBehaviour
     private bool IsNetworkActive => NetworkClient.active || NetworkServer.active;
     public bool IsOccupied => _isOccupied;
     public bool IsWrecked => _durability && _durability.IsWrecked;
+    public float HorizontalSpeed => _rb
+        ? new Vector2(_rb.linearVelocity.x, _rb.linearVelocity.z).magnitude : 0f;
     public Transform BoardingAnchor => _boardingAnchor ? _boardingAnchor : transform;
     public event Action<PlayerController> CannonFired;
 

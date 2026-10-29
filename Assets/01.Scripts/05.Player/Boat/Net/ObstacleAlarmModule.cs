@@ -1,5 +1,5 @@
 using Lighthouse.Monsters.AI.Net;
-using Lighthouse.World.Ocean.View;
+using Lighthouse.World.Reefs.View;
 using UnityEngine;
 
 namespace Lighthouse.Player.Boat.Net
@@ -117,11 +117,27 @@ namespace Lighthouse.Player.Boat.Net
                 return true;
             }
 
-            // Islands may have a NetworkIdentity; exclude items rather than all networked terrain.
-            return !candidate.isTrigger && !candidate.attachedRigidbody
-                && !candidate.GetComponentInParent<OceanShaderBridge>()
-                && !candidate.GetComponentInParent<ResourcePickup>()
-                && !candidate.GetComponentInParent<HarvestTarget>();
+            if (candidate.isTrigger)
+            {
+                return false;
+            }
+
+            ReefInstanceSet reefs = candidate.GetComponentInParent<ReefInstanceSet>();
+            if (!reefs)
+            {
+                return false;
+            }
+
+            // Only registered reef instances qualify; the container may have unrelated children.
+            for (int i = 0; i < reefs.Count; i++)
+            {
+                if (reefs.TryGetTransform(i, out Transform reef) && candidate.transform.IsChildOf(reef))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void ClearWarning()

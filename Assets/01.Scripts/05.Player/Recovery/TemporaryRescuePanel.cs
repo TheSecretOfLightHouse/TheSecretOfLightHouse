@@ -46,6 +46,7 @@ namespace Lighthouse.Player.Recovery.View
             for (int i = 0; i < labels.Length; i++)
             {
                 labels[i].font = _runtimeFont;
+                labels[i].fontStyle = FontStyle.Bold;
             }
         }
 

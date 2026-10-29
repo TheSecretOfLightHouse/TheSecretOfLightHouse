@@ -63,6 +63,7 @@ public sealed class NavigatorRouteSelectionPanel : MonoBehaviour
                     UnityEngine.UI.Text>(true))
             {
                 label.font = _runtimeFont;
+                label.fontStyle = FontStyle.Bold;
             }
         }
 

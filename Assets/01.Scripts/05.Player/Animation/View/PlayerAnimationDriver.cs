@@ -1,6 +1,8 @@
 using Lighthouse.World.Ocean;
 using Lighthouse.World.Ocean.Rules;
 using UnityEngine;
+using Lighthouse.Systems.Audio;
+using Mirror;
 
 [RequireComponent(typeof(Animator))]
 public sealed class PlayerAnimationDriver : MonoBehaviour
@@ -50,6 +52,16 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
     [SerializeField, Min(0.1f)]
     private float _maximumLocomotionRate = 1.5f;
 
+    [SerializeField] private SoundManager _soundManagerPrefab;
+    [SerializeField, Range(0f, 1f)] private float _walkVolume = 0.5f;
+    [SerializeField, Range(0f, 1f)] private float _runVolume = 0.65f;
+    [SerializeField, Range(0f, 1f)] private float _actionVolume = 0.65f;
+    [SerializeField, Min(0.01f)] private float _minimumStepInterval = 0.12f;
+    [SerializeField] private AudioClip _boatMovementClip;
+    [SerializeField, Range(0f, 1f)] private float _boatMovementVolume = 0.3f;
+    [SerializeField, Min(0.01f)] private float _boatMovementSpeedThreshold = 0.15f;
+    [SerializeField, Min(0.01f)] private float _boatMovementFadeTime = 0.25f;
+
     [SerializeField, Range(0f, 1f)]
     private float _waterEnterFraction = 0.25f;
 
@@ -67,6 +79,18 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
     private IPlayerAnimationSource _source;
     private bool _stateSubscribed;
     private bool _actionSubscribed;
+    private PlayerAnimationState _previousAnimationState;
+    private BoatController _boardedBoat;
+    private bool _hasAnimationState;
+    private float _nextStepTime;
+    private AudioSource _boatMovementAudio;
+    private float _boatMovementGain;
+
+    private bool CanPlaySound => _controller && _controller.isActiveAndEnabled
+        && !(NetworkServer.active && !NetworkClient.active)
+        && (!NetworkClient.active || _controller.isClient)
+        && (!_controller.isLocalPlayer || _controller.CanProcessBoatInput)
+        && (NetworkClient.active || _controller.CanProcessBoatInput);
 
     private void Awake()
     {
@@ -88,6 +112,8 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
 
         _animator = GetComponent<Animator>();
         _source = source;
+        _hasAnimationState = false;
+        _boardedBoat = null;
 
         if (isActiveAndEnabled)
         {
@@ -101,16 +127,26 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
         SubscribeActions();
     }
 
+    private void Start()
+    {
+        EnsureSoundManager();
+    }
+
     private void OnDisable()
     {
+        StopBoatMovementSound();
         _fallDuration = 0f;
         _isInWater = false;
+        _hasAnimationState = false;
+        _boardedBoat = null;
+        _nextStepTime = 0f;
         UnsubscribeState();
         UnsubscribeActions();
     }
 
     private void Update()
     {
+        UpdateBoatMovementSound();
         if (!_animator || !_animator.runtimeAnimatorController)
         {
             return;
@@ -140,6 +176,161 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
     {
         UnsubscribeState();
         UnsubscribeActions();
+    }
+
+    public void PlayFootstep(AnimationEvent animationEvent)
+    {
+        if (!CanPlaySound || !_animator || !_animator.runtimeAnimatorController
+            || Time.time < _nextStepTime || _animator.GetFloat(SpeedHash) <= 0f
+            || _animator.GetBool(IsJumpingHash) || _animator.GetBool(IsFallingHash)
+            || _animator.GetBool(IsDownedHash) || _animator.GetBool(IsOnBoatHash))
+        {
+            return;
+        }
+        if (animationEvent.isFiredByAnimator && animationEvent.animatorClipInfo.weight < 0.5f)
+        {
+            return;
+        }
+
+        bool running;
+        if (_controller.CanProcessBoatInput)
+        {
+            if (_source == null || (_source.Current != PlayerAnimationState.Walk
+                && _source.Current != PlayerAnimationState.Run) || !_body
+                || (_motor && _motor.IsOffGround))
+            {
+                return;
+            }
+            Vector3 velocity = _body.linearVelocity;
+            if (new Vector2(velocity.x, velocity.z).sqrMagnitude <= _stopSpeedThreshold * _stopSpeedThreshold)
+            {
+                return;
+            }
+            running = _source.Current == PlayerAnimationState.Run;
+        }
+        else
+        {
+            // Remote views use NetworkAnimator; their local HFSM does not simulate movement.
+            running = animationEvent.intParameter == 1;
+        }
+
+        if (PlaySound(running ? SfxType.PlayerRun : SfxType.PlayerWalk,
+            running ? _runVolume : _walkVolume))
+        {
+            _nextStepTime = Time.time + _minimumStepInterval;
+        }
+    }
+
+    public void PlayRemoteJumpSound()
+    {
+        // The owner already plays on the HFSM transition; only remote animation consumes this event.
+        if (CanPlaySound && !_controller.CanProcessBoatInput
+            && _animator && _animator.GetBool(IsJumpingHash)
+            && !_animator.GetBool(IsDownedHash) && !_animator.GetBool(IsOnBoatHash))
+        {
+            PlaySound(SfxType.PlayerJump, _actionVolume);
+        }
+    }
+
+    private bool PlaySound(SfxType type, float volume)
+    {
+        if (!CanPlaySound)
+        {
+            return false;
+        }
+        EnsureSoundManager();
+        return SoundManager.Instance && SoundManager.Instance.PlaySfxAt(type, transform.position, volume);
+    }
+
+    private void EnsureSoundManager()
+    {
+        if (!(NetworkServer.active && !NetworkClient.active)
+            && !SoundManager.Instance && _soundManagerPrefab)
+        {
+            Instantiate(_soundManagerPrefab);
+        }
+    }
+
+    private void PlayMotionSound(PlayerAnimationState state)
+    {
+        if (state != PlayerAnimationState.OnBoat)
+        {
+            StopBoatMovementSound();
+        }
+        bool changed = _hasAnimationState && _previousAnimationState != state;
+        if (changed)
+        {
+            if (state == PlayerAnimationState.Jump && _controller && _controller.CanProcessBoatInput)
+            {
+                PlaySound(SfxType.PlayerJump, _actionVolume);
+            }
+            else if (state == PlayerAnimationState.OnBoat)
+            {
+                PlaySound(SfxType.PlayerBoard, _actionVolume);
+            }
+            else if (_previousAnimationState == PlayerAnimationState.OnBoat
+                && state != PlayerAnimationState.Downed && _boardedBoat && !_boardedBoat.IsWrecked)
+            {
+                PlaySound(SfxType.PlayerDisembark, _actionVolume);
+            }
+        }
+
+        _boardedBoat = state == PlayerAnimationState.OnBoat && _controller ? _controller.CurrentBoat : null;
+        _previousAnimationState = state;
+        _hasAnimationState = true;
+    }
+
+    private void UpdateBoatMovementSound()
+    {
+        BoatController boat = _controller ? _controller.CurrentBoat : null;
+        if (!CanPlaySound || !_controller.CanProcessBoatInput || !_boatMovementClip
+            || _source == null || _source.Current != PlayerAnimationState.OnBoat
+            || !boat || !boat.IsOccupied || boat.IsWrecked)
+        {
+            StopBoatMovementSound();
+            return;
+        }
+
+        bool moving = boat.HorizontalSpeed >= _boatMovementSpeedThreshold;
+        _boatMovementGain = Mathf.MoveTowards(_boatMovementGain, moving ? 1f : 0f,
+            Time.deltaTime / _boatMovementFadeTime);
+        if (_boatMovementGain <= 0f)
+        {
+            StopBoatMovementSound();
+            return;
+        }
+
+        if (!_boatMovementAudio)
+        {
+            // Keep the rider's stereo loop separate from pooled one-shot effects.
+            var child = new GameObject("BoatMovementAudio");
+            child.transform.SetParent(transform, false);
+            _boatMovementAudio = child.AddComponent<AudioSource>();
+            _boatMovementAudio.playOnAwake = false;
+            _boatMovementAudio.loop = true;
+            _boatMovementAudio.spatialBlend = 0f;
+            _boatMovementAudio.dopplerLevel = 0f;
+            _boatMovementAudio.clip = _boatMovementClip;
+        }
+
+        EnsureSoundManager();
+        SoundManager manager = SoundManager.Instance;
+        float effectGain = manager ? (manager.IsMuted ? 0f : manager.MasterVolume * manager.EffectVolume) : 1f;
+        _boatMovementAudio.volume = _boatMovementVolume * _boatMovementGain * effectGain;
+        if (!_boatMovementAudio.isPlaying)
+        {
+            _boatMovementAudio.Play();
+        }
+    }
+
+    private void StopBoatMovementSound()
+    {
+        _boatMovementGain = 0f;
+        if (_boatMovementAudio)
+        {
+            _boatMovementAudio.Stop();
+            _boatMovementAudio.volume = 0f;
+        }
     }
 
     private void UpdateWater()
@@ -282,6 +473,7 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
 
     private void HandleChanged(PlayerAnimationState state)
     {
+        PlayMotionSound(state);
         if (!_animator || !_animator.runtimeAnimatorController)
         {
             return;

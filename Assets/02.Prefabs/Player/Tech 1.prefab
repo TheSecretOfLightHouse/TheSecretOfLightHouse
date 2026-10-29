@@ -1449,6 +1449,15 @@ MonoBehaviour:
   _walkBlendSpeed: 0.5
   _minimumLocomotionRate: 0.65
   _maximumLocomotionRate: 1.5
+  _soundManagerPrefab: {fileID: 6939255676364778467, guid: 291f5116af82d294792d1145de158327, type: 3}
+  _walkVolume: 0.5
+  _runVolume: 0.65
+  _actionVolume: 0.65
+  _minimumStepInterval: 0.12
+  _boatMovementClip: {fileID: 8300000, guid: 59f9866d34fe3a94da3848785f07cde1, type: 3}
+  _boatMovementVolume: 0.3
+  _boatMovementSpeedThreshold: 0.15
+  _boatMovementFadeTime: 0.25
   _waterEnterFraction: 0.25
   _waterExitFraction: 0.1
 --- !u!114 &2415168992369603088
@@ -1512,6 +1521,9 @@ MonoBehaviour:
     m_Bits: 4294967295
   _relay: {fileID: 0}
   _actionEvents: {fileID: 2978310632326848306}
+  _impactPrefab: {fileID: 3384508783347067857, guid: 2744e3c6e54425945bf57279dc1c9766, type: 3}
+  _impactScale: 0.35
+  _impactCleanupDelay: 3
 --- !u!114 &7947746884868856300
 MonoBehaviour:
   m_ObjectHideFlags: 0

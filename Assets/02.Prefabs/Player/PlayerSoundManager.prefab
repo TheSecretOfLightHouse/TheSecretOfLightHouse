@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1764094824233040907
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3352842469030208150}
+  - component: {fileID: 6939255676364778467}
+  m_Layer: 0
+  m_Name: PlayerSoundManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3352842469030208150
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1764094824233040907}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6939255676364778467
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1764094824233040907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d939783e4e454293b9c1e9a9c959deea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _bgmClips: []
+  _sfxClips:
+  - _type: 2
+    _clip: {fileID: 8300000, guid: 502bf9fd08e0c3a43b3463ee146e30c1, type: 3}
+  - _type: 9
+    _clip: {fileID: 8300000, guid: 631ec28fbe067f141ac66f2bc0c449ea, type: 3}
+  - _type: 3
+    _clip: {fileID: 8300000, guid: bfb4f62af0dd8d1448445265b1fdc830, type: 3}
+  - _type: 10
+    _clip: {fileID: 8300000, guid: 1648a4eb6abf0b74e8149b70859f664b, type: 3}
+  - _type: 11
+    _clip: {fileID: 8300000, guid: be59e48c9ba7360408af03e008423777, type: 3}
+  - _type: 12
+    _clip: {fileID: 8300000, guid: 7d163d8df7056b9458283ac28e9a6c7d, type: 3}
+  - _type: 13
+    _clip: {fileID: 8300000, guid: d49f99f2086c59d42a526253486483a2, type: 3}
+  - _type: 1
+    _clip: {fileID: 8300000, guid: 3283aefaaa1f1ad49863767903aea924, type: 3}
+  _fadeTime: 0.7
+  _effectVoiceCount: 16
+  _minDistance: 2
+  _maxDistance: 40
+  _musicOutput: {fileID: 0}
+  _effectOutput: {fileID: 0}
+  _masterVolume: 1
+  _musicVolume: 0.7
+  _effectVolume: 1

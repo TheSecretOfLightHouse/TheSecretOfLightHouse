@@ -44,6 +44,7 @@ namespace Lighthouse.Player.Inventory.View
             foreach (Text text in _window.GetComponentsInChildren<Text>(true))
             {
                 text.font = _font;
+                text.fontStyle = FontStyle.Bold;
             }
             BuildTabbedLayout();
             BuildCarriedModuleHud();

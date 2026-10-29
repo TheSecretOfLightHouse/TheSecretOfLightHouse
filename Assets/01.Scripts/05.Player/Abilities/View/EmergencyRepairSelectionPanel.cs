@@ -61,6 +61,7 @@ public sealed class EmergencyRepairSelectionPanel : MonoBehaviour
                 _panelRoot.GetComponentsInChildren<UnityEngine.UI.Text>(true))
             {
                 label.font = _runtimeFont;
+                label.fontStyle = FontStyle.Bold;
             }
         }
 
