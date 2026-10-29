@@ -75,7 +75,7 @@ namespace Lighthouse.Monsters.AI.Net
                 return;
             }
 
-            if (_target == null || !_target.IsEligible
+            if (_target == null || !_target.IsEligible || _target.IsInSafeZone
                 || !HasValidSettings || !MonsterMotion.IsFinite(transform.position)
                 || !MonsterMotion.IsFinite(_target.transform.position))
             {
@@ -116,7 +116,7 @@ namespace Lighthouse.Monsters.AI.Net
         [Server]
         public bool Initialize(MonsterBoatTarget target, NetworkIdentity source, float damage, double visualStartedAt = 0d)
         {
-            if (_isInitialized || target == null || !target.IsEligible || source == null
+            if (_isInitialized || target == null || !target.IsEligible || target.IsInSafeZone || source == null
                 || !IsFinite(damage) || damage < 0f
                 || !HasValidSettings || !MonsterMotion.IsFinite(transform.position)
                 || !MonsterMotion.IsFinite(target.transform.position))
@@ -209,7 +209,7 @@ namespace Lighthouse.Monsters.AI.Net
                     for (int i = 0; i < targets.Count; i++)
                     {
                         MonsterBoatTarget target = targets[i];
-                        if (target != null && target.IsEligible
+                        if (target != null && target.IsEligible && !target.IsInSafeZone
                             && collision.transform.IsChildOf(target.transform))
                         {
                             target.TryApplyDamage(_damage);

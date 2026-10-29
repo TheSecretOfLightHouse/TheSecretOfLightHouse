@@ -77,7 +77,8 @@ namespace Lighthouse.Monsters.AI.Server
             for (int i = 0; i < Targets.Count; i++)
             {
                 MonsterBoatTarget candidate = Targets[i];
-                if (candidate == null || !candidate.IsEligible || candidate.gameObject == gameObject)
+                if (candidate == null || !candidate.IsEligible || candidate.IsInSafeZone
+                    || candidate.gameObject == gameObject)
                 {
                     continue;
                 }
@@ -105,7 +106,7 @@ namespace Lighthouse.Monsters.AI.Server
                 MonsterBoatTarget candidate = Targets[i];
                 if (candidate != null && candidate.gameObject == target)
                 {
-                    return candidate.IsEligible
+                    return candidate.IsEligible && !candidate.IsInSafeZone
                         && GetPlanarDistanceSquared(candidate.transform.position) <= maxDistance * maxDistance;
                 }
             }

@@ -69,7 +69,11 @@ namespace Lighthouse.Monsters.AI.Server
             {
                 if (_isBiteHolding)
                 {
-                    if (!CanAct)
+                    if (_target != null && _target.IsInSafeZone)
+                    {
+                        CancelProtectedTarget();
+                    }
+                    else if (!CanAct)
                     {
                         FinishAttack(false);
                     }
@@ -188,6 +192,11 @@ namespace Lighthouse.Monsters.AI.Server
 
         private void StepAttack(float deltaTime)
         {
+            if (_target != null && _target.IsInSafeZone)
+            {
+                CancelProtectedTarget();
+                return;
+            }
             if (!CanAct || !HasValidTarget() || _monster.Profile == null
                 || !IsPositive(_monster.Profile.AttackDamage))
             {
@@ -266,6 +275,15 @@ namespace Lighthouse.Monsters.AI.Server
             }
         }
 
+        private void CancelProtectedTarget()
+        {
+            FinishAttack(false);
+            if (_animation != null)
+            {
+                _animation.CancelBite();
+            }
+        }
+
         private void TryStartBite(Vector3 offset, float deltaTime)
         {
             Vector3 targetPosition = _target.transform.position;
@@ -316,7 +334,7 @@ namespace Lighthouse.Monsters.AI.Server
 
         private bool HasValidTarget()
         {
-            if (_target == null || !_target.IsEligible
+            if (_target == null || !_target.IsEligible || _target.IsInSafeZone
                 || !MonsterMotion.IsFinite(_target.transform.position))
             {
                 return false;
