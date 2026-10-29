@@ -117,10 +117,12 @@ public sealed class BoatCannon : NetworkBehaviour
         }
 
         float reloadDurationMultiplier = 1f;
+        float towerDamageMultiplier = 1f;
 
         if (owner.TryGetComponent(out PlayerPassiveController passiveController))
         {
             reloadDurationMultiplier = passiveController.GetReloadDurationMultiplier(_boat);
+            towerDamageMultiplier = passiveController.GetTowerCannonDamageMultiplier();
         }
 
 
@@ -130,7 +132,7 @@ public sealed class BoatCannon : NetworkBehaviour
 
         Cannonball projectile = Instantiate(_projectilePrefab, _muzzle.position, _muzzle.rotation);
 
-        projectile.Initialize(GetLaunchVelocity(), _damage, _boatColliders, owner.GetComponentsInChildren<Collider>(true));
+        projectile.Initialize(GetLaunchVelocity(), _damage * towerDamageMultiplier, _boatColliders, owner.GetComponentsInChildren<Collider>(true));
 
         NetworkServer.Spawn(projectile.gameObject);
         RpcPlayFireEffects();

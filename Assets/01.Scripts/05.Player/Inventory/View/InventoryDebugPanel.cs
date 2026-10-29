@@ -69,7 +69,7 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
 
     private void OnGUI()
     {
-        if (!isLocalPlayer || !_showPanel || _chestView)
+        if (!isLocalPlayer || !_showPanel || _chestView || !_inventory || !_inventory.CanUseInventory)
         {
             return;
         }
@@ -131,7 +131,7 @@ public sealed class InventoryDebugPanel : NetworkBehaviour
 
     public void OnInventory(InputValue value)
     {
-        if (!isLocalPlayer || !isActiveAndEnabled || !value.isPressed)
+        if (!isLocalPlayer || !isActiveAndEnabled || !value.isPressed || !_inventory || !_inventory.CanUseInventory)
         {
             return;
         }

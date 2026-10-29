@@ -102,7 +102,8 @@ public sealed class BoatRepair : NetworkBehaviour
             return false;
         }
 
-        if (player.IsDowned || !player.IsOnBoat || player.CurrentBoat != _boat || !_boat.IsOccupied)
+        if (player.IsDowned || !player.IsOnBoat || player.CurrentBoat != _boat || !_boat.IsOccupied
+            || (player.PassiveController && !player.PassiveController.IsJobAbilityEnabled))
         {
             return false;
         }

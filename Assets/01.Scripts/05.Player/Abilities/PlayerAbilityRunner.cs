@@ -10,6 +10,7 @@ public sealed class PlayerAbilityRunner : MonoBehaviour, IPlayerAbilitySource
 
     private PlayerController _player;
     private IPlayerAbility _activeAbility;
+    private PlayerPassiveController _passives;
 
     public bool IsExecuting => IsAvailable(_activeAbility);
     public PlayerAbility JobAbility => _jobAbility;
@@ -23,6 +24,7 @@ public sealed class PlayerAbilityRunner : MonoBehaviour, IPlayerAbilitySource
     private void Awake()
     {
         _player = GetComponent<PlayerController>();
+        _passives = GetComponent<PlayerPassiveController>();
     }
 
     private void OnEnable()
@@ -48,7 +50,8 @@ public sealed class PlayerAbilityRunner : MonoBehaviour, IPlayerAbilitySource
 
     public bool TryExecute(IPlayerAbility ability, IPlayerAbilityContext context)
     {
-        if (!IsAvailable(ability) ||context == null ||!isActiveAndEnabled ||IsExecuting ||context.IsDowned)
+        if (!IsAvailable(ability) ||context == null ||!isActiveAndEnabled ||IsExecuting ||context.IsDowned
+            || (_passives && !_passives.IsJobAbilityEnabled))
         {
             return false;
         }
@@ -81,6 +84,12 @@ public sealed class PlayerAbilityRunner : MonoBehaviour, IPlayerAbilitySource
 
     public void Tick(float deltaTime)
     {
+        if (_passives && !_passives.IsJobAbilityEnabled)
+        {
+            Cancel();
+            return;
+        }
+
         if (!IsExecuting)
         {
             _activeAbility = null;

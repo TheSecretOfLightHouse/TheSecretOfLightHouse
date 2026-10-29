@@ -74,7 +74,8 @@ public sealed class PlayerHarvestProbe : MonoBehaviour
 
     private void HandleHarvestRequested(PlayerController player)
     {
-        if (!player || !player.isActiveAndEnabled || player.IsDowned || player.IsOnBoat)
+        if (!player || !player.isActiveAndEnabled || player.IsDowned || player.IsOnBoat
+            || (player.PassiveController && !player.PassiveController.IsJobAbilityEnabled))
         {
             return;
         }
