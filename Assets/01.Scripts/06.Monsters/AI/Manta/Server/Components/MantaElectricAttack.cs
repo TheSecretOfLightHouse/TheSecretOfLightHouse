@@ -120,6 +120,12 @@ namespace Lighthouse.Monsters.AI.Server
                 return;
             }
 
+            if (_ownsMovement && _target != null && _target.IsInSafeZone)
+            {
+                StopAttack(false);
+                return;
+            }
+
             double now = NetworkTime.time;
             PruneExpiredPoints(now);
             if (_electricPoints.Count > 0)
@@ -377,13 +383,17 @@ namespace Lighthouse.Monsters.AI.Server
             for (int index = 0; index < targets.Count; index++)
             {
                 MonsterBoatTarget boat = targets[index];
-                if (boat != null && boat.IsEligible)
+                if (boat != null && boat.IsEligible && !boat.IsInSafeZone)
                 {
                     _boats.Add(boat);
                     if (!retainPrevious || !_previousBoats.ContainsKey(boat))
                     {
                         _previousBoats[boat] = boat.transform.position;
                     }
+                }
+                else if (boat != null)
+                {
+                    _previousBoats.Remove(boat);
                 }
             }
         }
@@ -394,7 +404,8 @@ namespace Lighthouse.Monsters.AI.Server
             for (int index = 0; index < _boats.Count; index++)
             {
                 MonsterBoatTarget boat = _boats[index];
-                if (boat == null || !boat.IsEligible || !_previousBoats.TryGetValue(boat, out Vector3 previous))
+                if (boat == null || !boat.IsEligible || boat.IsInSafeZone
+                    || !_previousBoats.TryGetValue(boat, out Vector3 previous))
                 {
                     continue;
                 }

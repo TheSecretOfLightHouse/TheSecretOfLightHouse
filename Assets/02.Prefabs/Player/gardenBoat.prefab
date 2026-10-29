@@ -375,6 +375,7 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   _maxDurability: 100
+  _reefCollisionVolume: 0.65
 --- !u!114 &5497806931807247899
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -725,7 +726,7 @@ MonoBehaviour:
   _flash: {fileID: 457712380957631499}
   _smoke: {fileID: 0}
   _audio: {fileID: 4238663816116103618}
-  _fireClip: {fileID: 8300000, guid: 3283aefaaa1f1ad49863767903aea924, type: 3}
+  _fireClip: {fileID: 8300000, guid: c6e04ea44f135fa4f94c190bfc2e5db7, type: 3}
   _volume: 0.65
   _barrelVisual: {fileID: 0}
   _barrelDistance: 0.08

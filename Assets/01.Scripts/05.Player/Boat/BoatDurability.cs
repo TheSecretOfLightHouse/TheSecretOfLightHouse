@@ -1,6 +1,7 @@
 using System;
 using Mirror;
 using UnityEngine;
+using Lighthouse.Systems.Audio;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(NetworkIdentity))]
@@ -8,6 +9,9 @@ public sealed class BoatDurability : NetworkBehaviour
 {
     [SerializeField, Min(1f)]
     private float _maxDurability = 100f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float _reefCollisionVolume = 0.65f;
 
     [SyncVar(hook = nameof(OnDurabilityChanged))]
     private float _currentDurability;
@@ -57,6 +61,11 @@ public sealed class BoatDurability : NetworkBehaviour
             return;
         }
 
+        if (damageType == BoatDamageType.Reef)
+        {
+            RpcPlayReefCollisionSound();
+        }
+
         if (_shield && _shield.TryAbsorbDamage())
         {
             return;
@@ -79,6 +88,15 @@ public sealed class BoatDurability : NetworkBehaviour
             Wrecked?.Invoke();
         }
 
+    }
+
+    [ClientRpc]
+    private void RpcPlayReefCollisionSound()
+    {
+        if (SoundManager.Instance)
+        {
+            SoundManager.Instance.PlaySfxAt(SfxType.ReefCollision, transform.position, _reefCollisionVolume);
+        }
     }
 
     private void OnDurabilityChanged(float oldValue, float newValue)

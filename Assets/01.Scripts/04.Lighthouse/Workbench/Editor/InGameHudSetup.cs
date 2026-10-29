@@ -1,3 +1,4 @@
+using Lighthouse.Player.Inventory.View;
 using Lighthouse.UI.Hud;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -14,6 +15,11 @@ namespace Lighthouse.Workbench.Editor
         private const string PrefabPath = "Assets/02.Prefabs/UI/Hud/InGameHud.prefab";
         // The small frame sprite's hollow (13..717 x 14..62 of 731x78), widened a little so track and fill tuck under it.
         private static readonly Rect FrameInset = new Rect(8f / 731f, 9f / 78f, 714f / 731f, 58f / 78f);
+        // The inventory's carried card (InventoryChestScreen.Hud) size and fill, its left bottom over the boat panel
+        // (mockup frame 46,728 → 53,244 on the 1920x1080 canvas; the panel top is near 227).
+        private static readonly Vector2 CardSize = new Vector2(230f, 76f);
+        private static readonly Vector2 CardPosition = new Vector2(53f, 244f);
+        private static readonly Color CardFill = new Color(0.10f, 0.075f, 0.045f, 0.9f);
 
         [MenuItem("Lighthouse/UI/Build In-Game HUD Prefab")]
         public static void Build()
@@ -52,12 +58,25 @@ namespace Lighthouse.Workbench.Editor
                 Key(hud, "Inventory", "hud_key_tab", 50f, 1, "hud_label_inventory", 62f);
                 Key(hud, "Menu", "hud_key_esc", 47f, 2, "hud_label_menu", 42f);
 
-                // Carried item card, bottom left.
-                HudSketchLayout.Backing("CardBacking", hud, HudSketchLayout.CardBacking, corner, 60f, 653f, 62f, 60f);
-                HudSketchLayout.Picture("CardFrame", hud, "hud_card_frame", corner, 52f, 645f, 78f, 76f);
-                HudSketchLayout.Picture("CardIcon", hud, "hud_icon_lens", corner, 62f, 656f, 58f, 51f);
-                HudSketchLayout.Picture("CardName", hud, "hud_label_lens", corner, 144f, 648f, 56f, 33f);
-                HudSketchLayout.Picture("CardUse", hud, "hud_label_for_lighthouse", corner, 144f, 682f, 60f, 24f);
+                // Carried module card, bottom left above the boat panel, shown only while a module is carried. Same look
+                // as the inventory's carried card (InventoryChestScreen.Hud: its drawn frame, colours, sizes and the
+                // workbench screen's icons), placed in canvas units over the panel. Name only, no use line.
+                RectTransform card = CardRect("Card", hud, 0f, 0f, CardSize.x, CardSize.y);
+                card.anchorMin = card.anchorMax = card.pivot = Vector2.zero;
+                card.anchoredPosition = CardPosition;
+                InventoryFrameGraphic cardFrame = CardRect("CardFrame", card, 0f, 0f, CardSize.x, CardSize.y).gameObject.AddComponent<InventoryFrameGraphic>();
+                cardFrame.color = CardFill;
+                cardFrame.Configure(HudSketchLayout.Cream);
+                cardFrame.raycastTarget = false;
+                Image cardIcon = CardRect("CardIcon", card, 10f, 9f, 58f, 58f).gameObject.AddComponent<Image>();
+                cardIcon.preserveAspect = true;
+                cardIcon.raycastTarget = false;
+                CardText("CardCaption", card, "운반 중", 16, HudSketchLayout.Gold, 10f);
+                Text cardName = CardText("CardName", card, "모듈", 17, HudSketchLayout.Cream, 36f);
+                cardName.resizeTextForBestFit = true;
+                cardName.resizeTextMinSize = 12;
+                cardName.resizeTextMaxSize = 17;
+                Text cardUse = null;
 
                 // Role and boat panel, bottom left. A little wider than the mockup, with every piece kept clear of
                 // the panel's thick rounded rim (the mockup's spacing let the icons touch it).
@@ -74,6 +93,12 @@ namespace Lighthouse.Workbench.Editor
                 InGameHud view = root.AddComponent<InGameHud>();
                 SerializedObject serialized = new SerializedObject(view);
                 Set(serialized, "_root", hud.gameObject);
+                Set(serialized, "_card", card.gameObject);
+                Set(serialized, "_cardIcon", cardIcon);
+                Set(serialized, "_cardName", cardName);
+                Set(serialized, "_cardUse", cardUse);
+                WorkbenchScreenSketchSetup.FillRecipeIcons(serialized.FindProperty("_recipeIcons"));
+                card.gameObject.SetActive(false);
                 Set(serialized, "_boatFill", boatFill);
                 Set(serialized, "_boatText", boatText);
                 serialized.ApplyModifiedPropertiesWithoutUndo();
@@ -136,6 +161,31 @@ namespace Lighthouse.Workbench.Editor
             Vector2 anchor = HudSketchLayout.TopRight;
             HudSketchLayout.Picture(name + "Key", parent, keySprite, anchor, columnX + (columnWidth - width) * 0.5f, y, width, 36f * size);
             HudSketchLayout.Picture(name + "Label", parent, labelSprite, anchor, labelX, y + 6f * size, labelWidth * size, 24f * size);
+        }
+
+        // A card child placed from the card's top left in canvas units, as the inventory card lays out its pieces.
+        private static RectTransform CardRect(string name, Transform parent, float x, float y, float width, float height)
+        {
+            RectTransform rect = new GameObject(name, typeof(RectTransform)).GetComponent<RectTransform>();
+            rect.SetParent(parent, false);
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = new Vector2(x, -y);
+            rect.sizeDelta = new Vector2(width, height);
+            return rect;
+        }
+
+        // The inventory card's text: bold, no outline, right of the icon.
+        private static Text CardText(string name, Transform parent, string caption, int size, Color color, float y)
+        {
+            Text text = CardRect(name, parent, 82f, y, 135f, size == 16 ? 25f : 27f).gameObject.AddComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontStyle = FontStyle.Bold;
+            text.fontSize = size;
+            text.color = color;
+            text.alignment = TextAnchor.MiddleLeft;
+            text.text = caption;
+            text.raycastTarget = false;
+            return text;
         }
 
         private static void Set(SerializedObject serialized, string name, Object value)

@@ -17,6 +17,8 @@ namespace Lighthouse.Mafia.IdentityCheck.View
     {
         private const string Highlight = "#F6C64A";
         private const float StateRefreshSeconds = 0.5f;
+        // A request whose answer never comes must not keep both buttons dead.
+        private const float ResponseWaitSeconds = 5f;
 
         private enum Action : byte
         {
@@ -90,6 +92,10 @@ namespace Lighthouse.Mafia.IdentityCheck.View
         private int _shownSummonSeconds = -1;
         private int _shownConfirmValue = -1;
         private float _nextStateRefreshAt;
+        private float _awaitedUntil;
+        // The state cannot tell a finished summon from other blocks, so the answer to the summon is remembered.
+        private bool _hasSummoned;
+        private bool _shownSummoned;
 
         private void Awake()
         {
@@ -134,11 +140,17 @@ namespace Lighthouse.Mafia.IdentityCheck.View
             {
                 CloseOverlay();
                 _awaitedAction = Action.None;
+                _hasSummoned = false;
                 _hud.SetActive(false);
                 return;
             }
 
             IdentityResponse state = _voting.OwnIdentityState;
+
+            if (_awaitedAction != Action.None && Time.unscaledTime >= _awaitedUntil)
+            {
+                _awaitedAction = Action.None;
+            }
 
             // The server sends nothing when an unused summon right runs out, so ask until the state allows checking again.
             if (state.HasSummonRight && !IsRightLive(in state) && Time.unscaledTime >= _nextStateRefreshAt)
@@ -182,13 +194,21 @@ namespace Lighthouse.Mafia.IdentityCheck.View
             int checks = state.RemainingCheckCount;
             int summonSeconds = isRightLive ? SecondsLeft(state.SummonExpiresAt) : -1;
 
-            if (checks == _shownChecks && summonSeconds == _shownSummonSeconds)
+            if (checks == _shownChecks && summonSeconds == _shownSummonSeconds && _hasSummoned == _shownSummoned)
             {
                 return;
             }
 
             _shownChecks = checks;
             _shownSummonSeconds = summonSeconds;
+            _shownSummoned = _hasSummoned;
+
+            if (_hasSummoned)
+            {
+                _status.text = $"<color={Highlight}>크툴루 소환 완료</color>";
+                return;
+            }
+
             _status.text = summonSeconds >= 0
                 ? $"소환 가능 <color={Highlight}>{summonSeconds}초</color>  ·  정체 확인 {checks}회 남음"
                 : $"정체 확인 <color={Highlight}>{checks}회</color> 남음";
@@ -255,9 +275,16 @@ namespace Lighthouse.Mafia.IdentityCheck.View
                 return;
             }
 
-            if (!state.CanSummon || !IsRightLive(in state))
+            if (!IsRightLive(in state))
             {
                 ShowNotice("크툴루 소환", "소환 권리 시간이 지났습니다.");
+                return;
+            }
+
+            // The right still runs but something else blocks it, such as being downed.
+            if (!state.CanSummon)
+            {
+                ShowNotice("크툴루 소환", "지금은 소환할 수 없습니다.");
                 return;
             }
 
@@ -281,6 +308,7 @@ namespace Lighthouse.Mafia.IdentityCheck.View
             }
 
             _awaitedAction = action;
+            _awaitedUntil = Time.unscaledTime + ResponseWaitSeconds;
 
             if (action == Action.Check)
             {
@@ -295,13 +323,30 @@ namespace Lighthouse.Mafia.IdentityCheck.View
         // State updates also arrive as responses; only the answer to this screen's own request opens the notice.
         private void HandleIdentityResponded(IdentityResponse response)
         {
+            if (response.Result == IdentityActionResult.SummonApproved
+                || response.Result == IdentityActionResult.AlreadySummoned)
+            {
+                _hasSummoned = true;
+            }
+
             if (_awaitedAction == Action.None || response.Result == IdentityActionResult.StateRetrieved)
             {
                 return;
             }
 
             _awaitedAction = Action.None;
-            ShowNotice(NoticeTitle(response.Result), NoticeMessage(response.Result));
+
+            // A failure is announced to everyone by the reveal banner, and a success or a summon by the summon cue,
+            // which never takes input: a box here would spend the right's seconds on closing it.
+            if (response.Result == IdentityActionResult.CheckFailed
+                || response.Result == IdentityActionResult.CheckSucceeded
+                || response.Result == IdentityActionResult.SummonApproved)
+            {
+                return;
+            }
+
+            // Only refusals are left here.
+            ShowNotice("요청 거절", NoticeMessage(response.Result));
         }
 
         private void ShowNotice(string title, string message)
@@ -345,31 +390,10 @@ namespace Lighthouse.Mafia.IdentityCheck.View
             LockPlayer(false);
         }
 
-        private static string NoticeTitle(IdentityActionResult result)
-        {
-            switch (result)
-            {
-                case IdentityActionResult.CheckSucceeded:
-                    return "정체 확인 성공";
-                case IdentityActionResult.CheckFailed:
-                    return "정체 확인 실패";
-                case IdentityActionResult.SummonApproved:
-                    return "크툴루 소환";
-                default:
-                    return "요청 거절";
-            }
-        }
-
         private static string NoticeMessage(IdentityActionResult result)
         {
             switch (result)
             {
-                case IdentityActionResult.CheckSucceeded:
-                    return "10초 안에 크툴루를 소환할 수 있습니다.";
-                case IdentityActionResult.CheckFailed:
-                    return "무고한 시민 한 명의 정체가 모두에게 공개되었습니다.";
-                case IdentityActionResult.SummonApproved:
-                    return "크툴루가 깨어났습니다. 최후 전투가 시작됩니다.";
                 case IdentityActionResult.NoChecksRemaining:
                     return "남은 정체 확인 기회가 없습니다.";
                 case IdentityActionResult.SummonWindowActive:

@@ -19,8 +19,8 @@ namespace Lighthouse.Tower.Net
     //   (win/vote decisions 6), and the deadline ends the hidden phase when the last day's night is over (K02, user
     //   decision 2026-10-23). The ritual stops the deadline and the final battle removes it (R09).
     //   The ritual counts the votes here; a summon the voting side approves starts the final battle, which reveals
-    //   the mafia and shuts their hands. The end closes the voting and, with the session flow, sends everyone back to
-    //   the lobby after the result has been up for a while.
+    //   the mafia and shuts their hands. The end closes the voting and, with the session flow, marks the match
+    //   finished so the first player to confirm the result takes everyone back to the lobby.
     // Voting starts on its own (VotingNetworkController, initialize on match start) and the damage comes from the
     // monster side; neither is done here.
     [DisallowMultipleComponent]
@@ -32,9 +32,6 @@ namespace Lighthouse.Tower.Net
         [Tooltip("Optional. Without it nobody can vote, so the ritual counts no votes and no summon is approved.")]
         [SerializeField]
         private VotingNetworkController _voting;
-        [Tooltip("Seconds the result stays up before everyone goes back to the lobby. Session flow only.")]
-        [SerializeField, Min(0f)]
-        private float _lobbyReturnSeconds = 10f;
 
         [SyncVar]
         private bool _isStarted;
@@ -47,9 +44,6 @@ namespace Lighthouse.Tower.Net
         // Public once the summon reveals the mafia or the match ends.
         [SyncVar]
         private uint _revealedMafiaId;
-        // NetworkTime of the return to the lobby after the end; 0 = none (single-scene mode or still playing).
-        [SyncVar]
-        private double _lobbyReturnAt;
 
         // Server-only.
         private readonly List<uint> _citizens = new List<uint>();
@@ -64,7 +58,6 @@ namespace Lighthouse.Tower.Net
         public int DeadlineDays => _deadlineDays;
         public bool IsDeadlineStopped => _isDeadlineStopped;
         public uint RevealedMafiaId => _revealedMafiaId;
-        public double LobbyReturnAt => _lobbyReturnAt;
 
         public void BindServices(ModuleInteractionHandler modules, VotingNetworkController voting)
         {
@@ -75,21 +68,6 @@ namespace Lighthouse.Tower.Net
         private void Awake()
         {
             _match = GetComponent<TowerMatchNet>();
-        }
-
-        private void Update()
-        {
-            if (!isServer || _lobbyReturnAt <= 0d || NetworkTime.time < _lobbyReturnAt)
-            {
-                return;
-            }
-
-            _lobbyReturnAt = 0d;
-
-            if (_manager)
-            {
-                _manager.ReturnToLobby();
-            }
         }
 
         public override void OnStartServer()
@@ -343,10 +321,10 @@ namespace Lighthouse.Tower.Net
                 _voting.EndGame();
             }
 
-            // Either side's win sends the same members back to the lobby after the result (2026-10-29).
-            if (_manager && _manager.IsSessionFlowEnabled)
+            // Either side's win sends the same members back to the lobby once someone confirms the result (2026-10-29).
+            if (_manager)
             {
-                _lobbyReturnAt = NetworkTime.time + _lobbyReturnSeconds;
+                _manager.FinishMatch();
             }
         }
     }

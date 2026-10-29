@@ -22,6 +22,7 @@ namespace Lighthouse.Network.Session.View
 
         private static SessionScreen _current;
         private static readonly HashSet<Object> GameplayOverlays = new HashSet<Object>();
+        private static readonly HashSet<Object> LeaveControls = new HashSet<Object>();
         private static int _overlayClosedFrame = -1;
 
         [SerializeField]
@@ -32,6 +33,7 @@ namespace Lighthouse.Network.Session.View
         private SessionLobbyView _lobby;
         [SerializeField]
         private SessionLoadingView _loading;
+        [Tooltip("Fallback leave control for game scenes without a SessionLeaveButton (the in-game HUD's Esc hint).")]
         [SerializeField]
         private GameObject _gameMenu;
         [SerializeField]
@@ -146,6 +148,14 @@ namespace Lighthouse.Network.Session.View
                         RestoreCursor();
                     }
 
+                    // An open overlay owns Escape, so the hint steps aside with it.
+                    bool showGameMenu = LeaveControls.Count == 0 && !IsGameplayOverlayOpen;
+
+                    if (_gameMenu.activeSelf != showGameMenu)
+                    {
+                        _gameMenu.SetActive(showGameMenu);
+                    }
+
                     break;
             }
 
@@ -178,6 +188,28 @@ namespace Lighthouse.Network.Session.View
 
         /// <summary>True while a gameplay overlay is open or closed this frame, so another overlay does not open on the same key press.</summary>
         public static bool IsGameplayOverlayOpen => GameplayOverlays.Count > 0 || _overlayClosedFrame == Time.frameCount;
+
+        /// <summary>Registers a leave control shown elsewhere, which hides this screen's fallback button.</summary>
+        public static void SetLeaveControlShown(Object owner, bool isShown)
+        {
+            if (isShown && owner)
+            {
+                LeaveControls.Add(owner);
+            }
+            else
+            {
+                LeaveControls.Remove(owner);
+            }
+        }
+
+        /// <summary>Opens the leave-match dialog during a match, as Escape does.</summary>
+        public static void RequestLeaveMatch()
+        {
+            if (_current && _current._mode == Mode.InGame && !IsGameplayOverlayOpen)
+            {
+                _current.ShowLeaveMatch();
+            }
+        }
 
         private static Mode ResolveMode(LighthouseNetworkManager manager)
         {
@@ -223,7 +255,7 @@ namespace Lighthouse.Network.Session.View
             _title.gameObject.SetActive(mode == Mode.Title);
             _lobby.gameObject.SetActive(mode == Mode.Lobby);
             _loading.gameObject.SetActive(mode == Mode.Loading || mode == Mode.Closing);
-            _gameMenu.SetActive(mode == Mode.InGame);
+            _gameMenu.SetActive(mode == Mode.InGame && LeaveControls.Count == 0 && !IsGameplayOverlayOpen);
 
             if (mode == Mode.InGame)
             {
@@ -318,6 +350,18 @@ namespace Lighthouse.Network.Session.View
                 return;
             }
 
+            // A match result kept over the lobby (VictoryScreen) holds Escape too. Game scene overlays can be destroyed
+            // without closing, so dead entries are dropped first; this runs only on the key press.
+            if (mode == Mode.Lobby)
+            {
+                GameplayOverlays.RemoveWhere(IsDestroyedOverlay);
+
+                if (GameplayOverlays.Count > 0)
+                {
+                    return;
+                }
+            }
+
             if (_dialog.IsOpen)
             {
                 _dialog.Hide();
@@ -334,6 +378,11 @@ namespace Lighthouse.Network.Session.View
             {
                 ShowLeaveMatch();
             }
+        }
+
+        private static bool IsDestroyedOverlay(Object owner)
+        {
+            return !owner;
         }
 
         private void HandleJoin()
@@ -473,6 +522,7 @@ namespace Lighthouse.Network.Session.View
         private static void ResetStatics()
         {
             _current = null;
+            LeaveControls.Clear();
         }
     }
 }

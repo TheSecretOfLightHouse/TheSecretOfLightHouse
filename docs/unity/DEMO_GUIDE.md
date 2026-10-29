@@ -53,6 +53,7 @@ Assets/ThirdParty/1조 Unity Asset/_Demo/<사람>/<주제>/   ← 데모. 이 �
 | `_Demo/Jihun/NatureBiomesArchipelago/` | PolygonNatureBiomes 메인 군도 맵(Terrain 방식, 에셋 물·볼륨·하늘 그대로). 중앙 등대 섬(등대·작업대·집결지·선착장) + 내해·중간·외해 자원 섬(일반·숲·광맥·모래·수정) + 특수 섬 3종, 낮·밤 2씬. `TheLightHouse/Demo/NatureBiomesArchipelago/Build Day Scene`·`Build Night Scene` | 2026-10-24 컴파일·빌더 실행·낮 씬 Play Mode 스모크(오류 0) 확인. 본편 시스템 미연결. SVN 미커밋 |
 | `_Demo/Jihun/NatureMixArchipelago/` | NatureBiomesArchipelago의 다른 버전. 정글(PNB `Demo_Day`) 메인 + Synty 전 팩(Pirates·Nature·Generic·ParticleFX·Vikings·Adventure·Western) 보조 혼합: 배 건조대·채굴 캠프·이끼 유적·외해 고사목/안개 등. 배치 150° 회전. `TheLightHouse/Demo/NatureMixArchipelago/Build Scene` | 2026-10-24 정글 메인으로 재작성. 컴파일·빌더 실행 미확인. SVN 미커밋 |
 | `_Demo/Jihun/LighthouseFloors/` | 기획 제안(확정 아님): JH04 등대 3층. 나무·철·수정 → 작업대 → 층별 장착, 검은 녹·빼돌리기, 속삭임·촉수 소환(일차−의심 수), 탐조등 공개 고발, 촉수 쟁탈 최후 전투. CrewMultiplayer 씬 복사 + `TheLightHouse/Demo/LighthouseFloors/Build From CrewMultiplayer Scene` | 2026-10-19 Unity 컴파일 확인, 빌더 산출물(씬·프리팹) 생성 확인. 플레이 미확인. SVN 미커밋 |
+| `_Demo/Jihun/GhostShipLedger/` | 기획 제안(확정 아님): 유령선 힌트 = 선원 전체 자원 총량 장부. 시민은 총량 4줄+무작위 두 이름의 사라진 자원 합, 마피아는 진짜 총량+먼저 본 선원 목록+덧칠 1회(대가: 붉은 등불). GatherLoop 씬 복사 + Ghost Fog Night + `TheLightHouse/Demo/GhostShipLedger/Build Scene` | 2026-10-29 Unity 컴파일·빌더 실행·코드 호출 스모크(장부·덧칠) 확인. 키 입력·육안 미확인. SVN 미커밋 |
 
 ## 폐기 목록
 더 이상 쓰지 않아 SVN에서 지운 데모다. 다시 필요하면 `마지막 리비전`에서 복원한다.

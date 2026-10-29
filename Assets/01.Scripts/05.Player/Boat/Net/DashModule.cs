@@ -1,5 +1,6 @@
 using Mirror;
 using UnityEngine;
+using Lighthouse.Systems.Audio;
 
 [DisallowMultipleComponent]
 public sealed class DashModule : BoatModule
@@ -12,6 +13,9 @@ public sealed class DashModule : BoatModule
 
     [SerializeField, Min(0.01f)]
     private float _cooldown = 5f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float _soundVolume = 0.65f;
 
     [SyncVar]
     private double _nextDashTime;
@@ -73,7 +77,17 @@ public sealed class DashModule : BoatModule
         double now = NetworkTime.time;
         _dashEndTime = now + _duration;
         _nextDashTime = now + _cooldown;
+        RpcPlayDashSound();
 
         Debug.Log($"[{nameof(DashModule)}] Dash approved by server.", this);
+    }
+
+    [ClientRpc]
+    private void RpcPlayDashSound()
+    {
+        if (SoundManager.Instance)
+        {
+            SoundManager.Instance.PlaySfxAt(SfxType.BoatDash, transform.position, _soundVolume);
+        }
     }
 }
