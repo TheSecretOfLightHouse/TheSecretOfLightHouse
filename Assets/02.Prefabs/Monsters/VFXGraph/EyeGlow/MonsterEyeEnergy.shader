@@ -28,7 +28,8 @@ Shader "Lighthouse/Monster Eye Energy"
                 float halo=pow(saturate(1.0-r),2.0);
                 float pulse=0.94+0.06*sin(_Time.y*2.5);
                 float intensity=saturate(core+halo*0.75)*pulse;
-                float3 color=lerp(i.color.rgb*2.2, float3(2.2,3.4,4.0), core*0.7);
+                float peak=max(i.color.r,max(i.color.g,i.color.b));
+                float3 color=lerp(i.color.rgb*2.2, (i.color.rgb+peak*0.65)*2.4, core*0.7);
                 return half4(color, i.color.a*intensity);
             }
             ENDHLSL
