@@ -60,6 +60,8 @@ namespace Lighthouse.Network.Session.Net
         private readonly List<uint> _roster = new List<uint>(MaxPlayers);
         private readonly HashSet<int> _pendingGameSpawns = new HashSet<int>();
         private readonly HashSet<uint> _joinedActors = new HashSet<uint>();
+        // Lobby nicknames by actor, kept from loading until the game players spawn with them.
+        private readonly Dictionary<uint, string> _nicknames = new Dictionary<uint, string>(MaxPlayers);
         private readonly List<NetworkConnectionToClient> _rejectedConnections = new List<NetworkConnectionToClient>(MaxPlayers);
         private readonly HashSet<NetworkConnectionToClient> _leaveRequested = new HashSet<NetworkConnectionToClient>();
         private readonly List<IMatchStartGate> _startGates = new List<IMatchStartGate>();
@@ -590,12 +592,19 @@ namespace Lighthouse.Network.Session.Net
             _roster.Clear();
             _joinedActors.Clear();
             _pendingGameSpawns.Clear();
+            _nicknames.Clear();
 
             foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
             {
                 if (_connections.TryGetActorId(conn, out uint actorId))
                 {
                     _roster.Add(actorId);
+
+                    // Read before the lobby player below is destroyed; the game player gets it at spawn.
+                    if (conn.identity && conn.identity.TryGetComponent(out LobbyPlayer lobbyPlayer) && lobbyPlayer.HasNickname)
+                    {
+                        _nicknames[actorId] = lobbyPlayer.DisplayName;
+                    }
                 }
 
                 // Remove lobby players explicitly so every client sees localPlayer == null and re-adds after loading.
@@ -764,7 +773,13 @@ namespace Lighthouse.Network.Session.Net
                 : Instantiate(selectedPrefab);
 
             player.name = $"{selectedPrefab.name} [actor={actorId} connId={conn.connectionId}]";
-            player.GetComponent<NetworkActor>().AssignActorId(actorId);
+            NetworkActor actor = player.GetComponent<NetworkActor>();
+            actor.AssignActorId(actorId);
+
+            if (_nicknames.TryGetValue(actorId, out string nickname))
+            {
+                actor.AssignDisplayName(nickname);
+            }
 
             if (!NetworkServer.AddPlayerForConnection(conn, player))
             {
@@ -812,6 +827,7 @@ namespace Lighthouse.Network.Session.Net
             _roster.Clear();
             _joinedActors.Clear();
             _pendingGameSpawns.Clear();
+            _nicknames.Clear();
             _rejectedConnections.Clear();
             _leaveRequested.Clear();
             ClearStartGates();

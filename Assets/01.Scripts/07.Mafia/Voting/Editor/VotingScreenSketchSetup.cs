@@ -8,8 +8,7 @@ using UnityEngine.UI;
 namespace Lighthouse.Mafia.Voting.Editor
 {
     // Builds the secret vote UI from the 2026-10-22 sketches: the vote screen on its board (positions are its pixels at
-    // 1024x852) and the in-game button. The confirm is a text on the picked card (2026-10-28), not a box of its own.
-    // Fixed wording stays in the sprites; names and counts are live text.
+    // 1024x852), the confirm box and the in-game button. Fixed wording stays in the sprites; names and counts are live text.
     public static class VotingScreenSketchSetup
     {
         private const string PrefabPath = "Assets/02.Prefabs/UI/Voting/VotingScreen_Sketch.prefab";
@@ -18,6 +17,10 @@ namespace Lighthouse.Mafia.Voting.Editor
         private const float CardWidth = 290f;
         private const float CardHeight = 400f;
         private const float CardGap = 21f;
+        // The job picture fills the card above the name; the check draws over it.
+        private const float PortraitSize = 200f;
+        // The bust stands on the frame's bottom edge so its flat cut hides under the border.
+        private const float BustScale = 0.92f;
         private static readonly Color Cream = new Color(0.98f, 0.92f, 0.79f);
         private static readonly Color Muted = new Color(0.66f, 0.62f, 0.55f);
         private static readonly Color Dark = new Color(0.12f, 0.09f, 0.05f);
@@ -53,6 +56,7 @@ namespace Lighthouse.Mafia.Voting.Editor
                 SerializedObject serialized = new SerializedObject(screen);
                 BuildHud(root.transform, serialized);
                 BuildWindow(root.transform, serialized);
+                BuildConfirm(root.transform, serialized);
                 serialized.ApplyModifiedPropertiesWithoutUndo();
 
                 System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(PrefabPath));
@@ -178,12 +182,31 @@ namespace Lighthouse.Mafia.Voting.Editor
             Set(serialized, "_remaining", remaining);
             SetArray(serialized, "_cards", cards);
             Set(serialized, "_notice", notice);
+            Set(serialized, "_navigatorPortrait", Load(Folder, "vt_job_navigator"));
+            Set(serialized, "_mechanicPortrait", Load(Folder, "vt_job_mechanic"));
+            Set(serialized, "_guardPortrait", Load(Folder, "vt_job_guard"));
+            Set(serialized, "_gathererPortrait", Load(Folder, "vt_job_gatherer"));
             window.gameObject.SetActive(false);
         }
 
         private static VoteCandidateCard BuildCard(Transform parent, int index, float x, float y)
         {
             Image frame = Picture($"Card{index + 1}", parent, Folder, "vt_card", x, y, CardWidth, CardHeight);
+            Image portraitFrame = Picture("PortraitFrame", frame.transform, Folder, "vt_portrait_frame",
+                (CardWidth - PortraitSize) * 0.5f, 22f, PortraitSize, PortraitSize);
+            // The mask is the frame's inside, so the bust never covers the border.
+            Image portraitMask = Picture("PortraitMask", portraitFrame.transform, Folder, "vt_portrait_mask",
+                0f, 0f, PortraitSize, PortraitSize);
+            portraitMask.gameObject.AddComponent<Mask>().showMaskGraphic = false;
+            Image portrait = Picture("Portrait", portraitMask.transform, Folder, "vt_job_mechanic",
+                0f, 0f, PortraitSize * BustScale, PortraitSize * BustScale);
+            RectTransform bust = portrait.rectTransform;
+            bust.anchorMin = bust.anchorMax = bust.pivot = new Vector2(0.5f, 0f);
+            bust.anchoredPosition = Vector2.zero;
+            portrait.preserveAspect = true;
+            portrait.gameObject.SetActive(false);
+            // Mask treats any alpha above zero as inside, so the border is drawn again on top to keep its line clean.
+            Picture("PortraitBorder", portraitFrame.transform, Folder, "vt_portrait_border", 0f, 0f, PortraitSize, PortraitSize);
             Text name = Label("Name", frame.transform, string.Empty, 26, 0f, 228f, CardWidth, 40f);
             Image buttonImage = Picture("Button", frame.transform, Folder, "vt_button_vote", 40f, 278f, 210f, 55f);
             buttonImage.raycastTarget = true;
@@ -197,24 +220,70 @@ namespace Lighthouse.Mafia.Voting.Editor
             Image badge = Picture("Badge", frame.transform, Folder, "vt_badge", 120f, 342f, 50f, 45f);
             Text number = Label("Number", badge.transform, string.Empty, 22, 0f, 0f, 50f, 45f);
             Image check = Picture("Check", frame.transform, Folder, "vt_check", 226f, 16f, 58f, 59f);
-            Text prompt = Label("Prompt", frame.transform, string.Empty, 21, 14f, 84f, CardWidth - 28f, 130f);
-            prompt.supportRichText = true;
 
             VoteCandidateCard card = frame.gameObject.AddComponent<VoteCandidateCard>();
             SerializedObject serialized = new SerializedObject(card);
             Set(serialized, "_frame", frame);
             Set(serialized, "_name", name);
+            Set(serialized, "_portrait", portrait);
             Set(serialized, "_button", button);
             Set(serialized, "_buttonImage", buttonImage);
             Set(serialized, "_badge", number);
             Set(serialized, "_check", check.gameObject);
-            Set(serialized, "_prompt", prompt);
             Set(serialized, "_normalFrame", Load(Folder, "vt_card"));
             Set(serialized, "_selectedFrame", Load(Folder, "vt_card_selected"));
             Set(serialized, "_voteButton", Load(Folder, "vt_button_vote"));
             Set(serialized, "_currentButton", Load(Folder, "vt_button_current"));
             serialized.ApplyModifiedPropertiesWithoutUndo();
             return card;
+        }
+
+        // Sits over the vote screen: board, live question and the two buttons. The sketch's sailor in the lower-left
+        // corner is left out (2026-10-29); the cards show the job pictures instead.
+        private static void BuildConfirm(Transform root, SerializedObject serialized)
+        {
+            RectTransform confirm = Rect("Confirm", root, 0f, 0f, 0f, 0f);
+            Stretch(confirm);
+            Image scrim = confirm.gameObject.AddComponent<Image>();
+            scrim.color = new Color(0f, 0f, 0f, 0.55f);
+            Image board = Picture("Board", confirm, Folder, "vt_board", 0f, 0f, 640f, 420f);
+            RectTransform boardRect = board.rectTransform;
+            boardRect.anchorMin = boardRect.anchorMax = boardRect.pivot = new Vector2(0.5f, 0.5f);
+            boardRect.anchoredPosition = Vector2.zero;
+            board.raycastTarget = true;
+
+            Picture("Title", board.transform, Folder, "vt_confirm_title", 259f, 34f, 121f, 35f);
+            Text target = Label("Target", board.transform, string.Empty, 30, 40f, 86f, 560f, 92f);
+            target.supportRichText = true;
+            Text count = Label("Count", board.transform, string.Empty, 24, 40f, 186f, 560f, 36f);
+            count.supportRichText = true;
+            Text warning = Label("Warning", board.transform, "기회 회복 및 투표 철회 불가", 17, 40f, 224f, 560f, 28f);
+            warning.color = Muted;
+
+            Button cancel = SwapButton("Cancel", board.transform, "vt_button_cancel", "vt_button_cancel_hover", 104f, 300f, 199f, 67f);
+            Button accept = SwapButton("Accept", board.transform, "vt_button_confirm", "vt_button_confirm_hover", 339f, 301f, 195f, 65f);
+
+            Set(serialized, "_confirm", confirm.gameObject);
+            Set(serialized, "_confirmTarget", target);
+            Set(serialized, "_confirmCount", count);
+            Set(serialized, "_confirmButton", accept);
+            Set(serialized, "_cancelButton", cancel);
+            confirm.gameObject.SetActive(false);
+        }
+
+        // The sketch draws a normal and a hover look for each button, so they swap sprites instead of tinting.
+        private static Button SwapButton(string name, Transform parent, string normal, string hover, float x, float y, float width, float height)
+        {
+            Image image = Picture(name, parent, Folder, normal, x, y, width, height);
+            image.raycastTarget = true;
+            Button button = image.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+            button.transition = Selectable.Transition.SpriteSwap;
+            SpriteState state = button.spriteState;
+            state.highlightedSprite = Load(Folder, hover);
+            state.pressedSprite = Load(Folder, hover);
+            button.spriteState = state;
+            return button;
         }
 
         // Card frames and the board stretch as 9-slices; the rest keep the sketch's size.

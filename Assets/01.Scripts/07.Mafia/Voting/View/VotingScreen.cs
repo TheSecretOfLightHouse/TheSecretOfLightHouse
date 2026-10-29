@@ -3,6 +3,7 @@ using Lighthouse.Mafia.Voting.Net;
 using Lighthouse.Mafia.Voting.Rules;
 using Lighthouse.Network.Connections.Net;
 using Lighthouse.Network.Session.View;
+using Lighthouse.Player.Abilities.Net;
 using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -11,18 +12,14 @@ using UnityEngine.UI;
 namespace Lighthouse.Mafia.Voting.View
 {
     // Secret vote UI (2026-10-22 sketch): an in-game button that shows the own votes left, the vote screen with one card
-    // per other player, and the confirm asked before a vote is spent. The confirm stays on the picked card (2026-10-28
-    // user decision): the ballot about to go blinks and a red line says it never comes back. The server decides every
-    // vote; this screen only asks. The mafia cannot vote but sees the same screen with a pretend count that is never
-    // sent, so the screen does not give the role away (win-vote-decisions 1).
+    // per other player, and the confirm box asked before a vote is spent (2026-10-29: the box again, not text on the
+    // card). The server decides every vote; this screen only asks. The mafia cannot vote but sees the same screen with
+    // a pretend count that is never sent, so the screen does not give the role away (win-vote-decisions 1).
     [DisallowMultipleComponent]
     public sealed class VotingScreen : MonoBehaviour
     {
         private const float RosterRefreshSeconds = 1f;
-        private const float BallotBlinkSeconds = 0.25f;
         private const string Highlight = "#F6C64A";
-        private const string Warning = "#EB7361";
-        private const string Muted = "#A89E8C";
 
         [Tooltip("Found in the scene when empty. Mirror keeps scene network objects inactive until they spawn.")]
         [SerializeField]
@@ -63,6 +60,29 @@ namespace Lighthouse.Mafia.Voting.View
         [SerializeField]
         private Color _rejectColor = new Color(0.92f, 0.45f, 0.38f);
 
+        // The job shows through the player prefab each job spawns as (2026-10-27), so every client already knows it.
+        [Header("Job portraits")]
+        [SerializeField]
+        private Sprite _navigatorPortrait;
+        [SerializeField]
+        private Sprite _mechanicPortrait;
+        [SerializeField]
+        private Sprite _guardPortrait;
+        [SerializeField]
+        private Sprite _gathererPortrait;
+
+        [Header("Confirm box")]
+        [SerializeField]
+        private GameObject _confirm;
+        [SerializeField]
+        private Text _confirmTarget;
+        [SerializeField]
+        private Text _confirmCount;
+        [SerializeField]
+        private Button _confirmButton;
+        [SerializeField]
+        private Button _cancelButton;
+
         [Header("Font")]
         [SerializeField]
         private bool _useOsFont = true;
@@ -70,6 +90,8 @@ namespace Lighthouse.Mafia.Voting.View
         private string[] _osFontNames = { "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Arial" };
 
         private readonly List<uint> _candidates = new List<uint>();
+        // Every spawned player but this one, filled with the candidates; names and jobs are read from here.
+        private readonly Dictionary<uint, NetworkActor> _actors = new Dictionary<uint, NetworkActor>();
         private CanvasGroup _windowGroup;
         private float _openedAt;
         private NetworkIdentity _player;
@@ -79,9 +101,6 @@ namespace Lighthouse.Mafia.Voting.View
         private bool _isOpen;
         private bool _isPending;
         private uint _pendingTarget;
-        private float _pendingAt;
-        // Built once per pick so the card text is not rebuilt every frame.
-        private string _pendingPrompt;
         private uint _requestedTarget;
         private bool _hasSavedCursor;
         private CursorLockMode _savedLockMode;
@@ -115,7 +134,10 @@ namespace Lighthouse.Mafia.Voting.View
             }
 
             _hudButton.onClick.AddListener(Open);
+            _confirmButton.onClick.AddListener(HandleConfirmClicked);
+            _cancelButton.onClick.AddListener(CloseConfirm);
             _window.SetActive(false);
+            _confirm.SetActive(false);
             _hud.SetActive(false);
         }
 
@@ -192,6 +214,7 @@ namespace Lighthouse.Mafia.Voting.View
             _openedAt = Time.unscaledTime;
             _windowGroup.alpha = 0f;
             _window.SetActive(true);
+            _confirm.SetActive(false);
             _pendingTarget = 0;
             SetNotice(string.Empty, _noticeColor);
             LockPlayer(true);
@@ -210,6 +233,7 @@ namespace Lighthouse.Mafia.Voting.View
             _pendingTarget = 0;
             SessionScreen.SetGameplayOverlayOpen(this, false);
             _window.SetActive(false);
+            _confirm.SetActive(false);
             LockPlayer(false);
         }
 
@@ -242,14 +266,16 @@ namespace Lighthouse.Mafia.Voting.View
                 {
                     CloseConfirm();
                 }
+
+                return;
             }
-            else if (keyboard.escapeKey.wasPressedThisFrame || keyboard[_openKey].wasPressedThisFrame)
+
+            if (keyboard.escapeKey.wasPressedThisFrame || keyboard[_openKey].wasPressedThisFrame)
             {
                 Close();
                 return;
             }
 
-            // While a pick waits, the same number confirms it and another number moves it, like a click.
             for (int i = 0; i < _cards.Length && i < 9; i++)
             {
                 if (keyboard[Key.Digit1 + i].wasPressedThisFrame && _cards[i].gameObject.activeSelf)
@@ -284,17 +310,14 @@ namespace Lighthouse.Mafia.Voting.View
             }
 
             int used = VoteService.MaxVoteCount - remaining;
-            // The ballot the pick would spend flips between used and left, starting on used.
-            bool isBlinkUsed = ((int)((Time.unscaledTime - _pendingAt) / BallotBlinkSeconds) & 1) == 0;
 
             for (int i = 0; i < _ballots.Length; i++)
             {
-                bool isUsed = i < used || (i == used && _pendingTarget != 0 && isBlinkUsed);
-                _ballots[i].sprite = isUsed ? _ballotUsed : _ballotLeft;
+                _ballots[i].sprite = i < used ? _ballotUsed : _ballotLeft;
             }
 
             _remaining.text = $"<color={Highlight}>{remaining}</color> / {VoteService.MaxVoteCount}";
-            bool canPick = !isLocked && !_isPending;
+            bool canPick = !isLocked && !_isPending && _pendingTarget == 0;
 
             for (int i = 0; i < _cards.Length; i++)
             {
@@ -304,9 +327,7 @@ namespace Lighthouse.Mafia.Voting.View
                 if (hasCandidate)
                 {
                     uint actorId = _candidates[i];
-                    bool isPicked = actorId == _pendingTarget;
-                    _cards[i].Show(actorId, GetDisplayName(actorId), actorId == current, canPick,
-                        _pendingTarget != 0 && !isPicked, isPicked ? _pendingPrompt : null);
+                    _cards[i].Show(actorId, GetDisplayName(actorId), GetPortrait(actorId), actorId == current, canPick);
                 }
             }
         }
@@ -328,13 +349,8 @@ namespace Lighthouse.Mafia.Voting.View
             uint current = isMafia ? _fakeTarget : vote.TargetActorId;
             int remaining = isMafia ? _fakeRemaining : vote.RemainingVoteCount;
 
-            // A second click on the waiting card confirms it.
-            if (card.ActorId == _pendingTarget)
-            {
-                HandleConfirmClicked();
-            }
-            // Re-picking the current target is free and needs no confirm; an empty count only says so.
-            else if (card.ActorId == current)
+            // Re-picking the current target is free and needs no box; an empty count only says so.
+            if (card.ActorId == current)
             {
                 SetNotice("이미 지목하고 있는 선원입니다.", _noticeColor);
             }
@@ -346,10 +362,9 @@ namespace Lighthouse.Mafia.Voting.View
             {
                 SetNotice(string.Empty, _noticeColor);
                 _pendingTarget = card.ActorId;
-                _pendingAt = Time.unscaledTime;
-                _pendingPrompt = $"남은 기회 {remaining}회 → <color={Highlight}>{remaining - 1}회</color>\n"
-                    + $"<size=17><color={Warning}>기회 회복 및 투표 철회 불가</color></size>\n"
-                    + $"<size=15><color={Muted}>Enter·다시 클릭 확정  /  ESC 취소</color></size>";
+                _confirmTarget.text = $"<color={Highlight}>{GetDisplayName(card.ActorId)}</color>님을\n지목하시겠습니까?";
+                _confirmCount.text = $"남은 기회 {remaining}회 → <color={Highlight}>{remaining - 1}회</color>";
+                _confirm.SetActive(true);
             }
         }
 
@@ -381,10 +396,10 @@ namespace Lighthouse.Mafia.Voting.View
         private void CloseConfirm()
         {
             _pendingTarget = 0;
-            _pendingPrompt = null;
+            _confirm.SetActive(false);
         }
 
-        // The server has the last word: a refused vote drops the waiting pick and says why.
+        // The server has the last word: a refused vote closes the box and says why.
         private void HandleVoteResponded(VoteResponse response)
         {
             if (response.Result == VoteChangeResult.StateRetrieved)
@@ -429,6 +444,7 @@ namespace Lighthouse.Mafia.Voting.View
         {
             _nextRosterAt = Time.unscaledTime + RosterRefreshSeconds;
             _candidates.Clear();
+            _actors.Clear();
 
             foreach (NetworkIdentity identity in NetworkClient.spawned.Values)
             {
@@ -436,6 +452,7 @@ namespace Lighthouse.Mafia.Voting.View
                     && actor.ActorId != 0 && actor.ActorId != _ownActorId && !_candidates.Contains(actor.ActorId))
                 {
                     _candidates.Add(actor.ActorId);
+                    _actors[actor.ActorId] = actor;
                 }
             }
 
@@ -466,10 +483,27 @@ namespace Lighthouse.Mafia.Voting.View
             _notice.color = color;
         }
 
-        // Stand-in name until the player side has nicknames (2026-10-15).
-        private static string GetDisplayName(uint actorId)
+        // The lobby nickname the server carried over; the same fallback as the lobby if the player is not seen yet.
+        private string GetDisplayName(uint actorId)
         {
-            return $"플레이어 {actorId:00}";
+            return _actors.TryGetValue(actorId, out NetworkActor actor) && actor
+                ? actor.DisplayName
+                : $"플레이어 {actorId}";
+        }
+
+        // Each job prefab carries its own active ability request (Captain/Tech/Tanker/Farm 1), so that names the job.
+        private Sprite GetPortrait(uint actorId)
+        {
+            if (!_actors.TryGetValue(actorId, out NetworkActor actor) || !actor)
+            {
+                return null;
+            }
+
+            return actor.TryGetComponent(out NavigatorRouteRequest _) ? _navigatorPortrait
+                : actor.TryGetComponent(out EmergencyRepairRequest _) ? _mechanicPortrait
+                : actor.TryGetComponent(out GuardShieldRequest _) ? _guardPortrait
+                : actor.TryGetComponent(out GatheringFeverRequest _) ? _gathererPortrait
+                : null;
         }
 
         // Same stand-in input lock as the lighthouse screens until the player side has one.
