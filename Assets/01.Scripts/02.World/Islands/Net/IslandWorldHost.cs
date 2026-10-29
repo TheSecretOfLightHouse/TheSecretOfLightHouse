@@ -21,7 +21,10 @@ namespace Lighthouse.World.Islands.Net
         private readonly List<string> _errors = new List<string>();
         private readonly List<HarvestSpot> _spots = new List<HarvestSpot>();
         private MapGenerationConfig _config;
+        private readonly List<List<SpotAssignment>> _assignments = new List<List<SpotAssignment>>();
+        private readonly Dictionary<int, int> _totals = new Dictionary<int, int>();
         private SeededRandom _random;
+        private bool _hasBudget;
         private int _nextIndex;
         private int _buildVersion;
         private bool _isBuilding;
@@ -74,6 +77,8 @@ namespace Lighthouse.World.Islands.Net
                 throw new ArgumentException("Map configuration, layout and seed are required.");
             }
 
+            PickupPrefabRegistrar.Register(config);
+
             _errors.Clear();
             if (!IslandSpawnPlanner.TryBuild(config, layout, _plans, _errors))
             {
@@ -98,6 +103,7 @@ namespace Lighthouse.World.Islands.Net
 
             _config = config;
             _random = new SeededRandom(info.Seed);
+            PlanDeposits();
             _nextIndex = 0;
             _isBuilding = true;
         }
@@ -139,6 +145,9 @@ namespace Lighthouse.World.Islands.Net
             _nextIndex = 0;
             _config = null;
             _random = null;
+            _assignments.Clear();
+            _totals.Clear();
+            _hasBudget = false;
             _plans.Clear();
             _errors.Clear();
             _spots.Clear();
@@ -149,7 +158,83 @@ namespace Lighthouse.World.Islands.Net
             }
         }
 
+        private void PlanDeposits()
+        {
+            _assignments.Clear();
+            _totals.Clear();
+            _hasBudget = false;
+
+            if (_config.DepositBudget == null)
+            {
+                return;
+            }
+
+            _config.DepositBudget.CollectTotals(_totals);
+            if (_totals.Count == 0)
+            {
+                return;
+            }
+
+            if (!WorldDepositPlanner.TryBuild(_config, _plans, _random, _totals, _assignments))
+            {
+                Cancel();
+                throw new InvalidOperationException("World deposit planning failed.");
+            }
+
+            _hasBudget = true;
+        }
+
         private void BindHarvestSpots(IslandSpawnPlan plan)
+        {
+            if (_hasBudget)
+            {
+                BindBudgetedSpots(plan);
+                return;
+            }
+
+            BindRandomSpots(plan);
+        }
+
+        private void BindBudgetedSpots(IslandSpawnPlan plan)
+        {
+            if (!_instances.TryGetSpots(plan.Index, _spots))
+            {
+                throw new InvalidOperationException(
+                    $"Island {plan.Index}: instance is missing.");
+            }
+
+            if (_spots.Count == 0)
+            {
+                return;
+            }
+
+            List<SpotAssignment> assignments = _assignments[_nextIndex];
+            if (assignments.Count != _spots.Count)
+            {
+                throw new InvalidOperationException(
+                    $"Island {plan.Index}: planned spots {assignments.Count} differ from instance spots {_spots.Count}.");
+            }
+
+            if (NetworkServer.active)
+            {
+                if (_harvestSession == null)
+                {
+                    throw new InvalidOperationException(
+                        "IslandHarvestSession is required on the server.");
+                }
+
+                _harvestSession.Register(plan, assignments, _spots);
+                return;
+            }
+
+            if (!HarvestSpotBinder.TryBind(plan.Index, _spots, assignments))
+            {
+                throw new InvalidOperationException(
+                    $"Island {plan.Index}: harvest spot binding failed.");
+            }
+        }
+
+        private void BindRandomSpots(IslandSpawnPlan plan)
         {
             if (!_instances.TryGetSpots(plan.Index, _spots))
             {

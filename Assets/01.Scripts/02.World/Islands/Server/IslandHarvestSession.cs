@@ -54,17 +54,7 @@ namespace Lighthouse.World.Islands.Server
             SeededRandom random,
             IReadOnlyList<HarvestSpot> spots)
         {
-            if (!isActiveAndEnabled || _registrar == null || _prefab == null)
-            {
-                throw new InvalidOperationException(
-                    "Island harvest session is unavailable.");
-            }
-
-            if (_islands.ContainsKey(plan.Index))
-            {
-                throw new InvalidOperationException(
-                    $"Island {plan.Index}: already registered in this session.");
-            }
+            EnsureRegistrable(plan);
 
             if (!HarvestIslandSetup.TryRegister(
                 _registrar, catalog, plan.Archetype, plan.Index, random, spots))
@@ -73,27 +63,25 @@ namespace Lighthouse.World.Islands.Server
                     $"Island {plan.Index}: harvest registration failed.");
             }
 
-            _islands.Add(plan.Index, null);
+            SpawnState(plan);
+        }
 
-            IslandStateNet island = Instantiate(
-                _prefab, plan.Position, Quaternion.identity);
+        [Server]
+        public void Register(
+            IslandSpawnPlan plan,
+            IReadOnlyList<SpotAssignment> assignments,
+            IReadOnlyList<HarvestSpot> spots)
+        {
+            EnsureRegistrable(plan);
 
-            _islands[plan.Index] = island;
-
-            if (!island.ServerInitialize(plan.Index))
+            if (!HarvestIslandSetup.TryRegister(
+                _registrar, plan.Index, spots, assignments))
             {
                 throw new InvalidOperationException(
-                    $"Island {plan.Index}: state initialization failed.");
+                    $"Island {plan.Index}: harvest registration failed.");
             }
 
-            NetworkServer.Spawn(island.gameObject);
-
-            if (island.netId == 0
-                || !NetworkServer.spawned.ContainsKey(island.netId))
-            {
-                throw new InvalidOperationException(
-                    $"Island {plan.Index}: state spawn failed.");
-            }
+            SpawnState(plan);
         }
 
         public void Release()
@@ -121,6 +109,46 @@ namespace Lighthouse.World.Islands.Server
 
             _islands.Clear();
             _registrar = null;
+        }
+
+        private void EnsureRegistrable(IslandSpawnPlan plan)
+        {
+            if (!isActiveAndEnabled || _registrar == null || _prefab == null)
+            {
+                throw new InvalidOperationException(
+                    "Island harvest session is unavailable.");
+            }
+
+            if (_islands.ContainsKey(plan.Index))
+            {
+                throw new InvalidOperationException(
+                    $"Island {plan.Index}: already registered in this session.");
+            }
+        }
+
+        private void SpawnState(IslandSpawnPlan plan)
+        {
+            _islands.Add(plan.Index, null);
+
+            IslandStateNet island = Instantiate(
+                _prefab, plan.Position, Quaternion.identity);
+
+            _islands[plan.Index] = island;
+
+            if (!island.ServerInitialize(plan.Index))
+            {
+                throw new InvalidOperationException(
+                    $"Island {plan.Index}: state initialization failed.");
+            }
+
+            NetworkServer.Spawn(island.gameObject);
+
+            if (island.netId == 0
+                || !NetworkServer.spawned.ContainsKey(island.netId))
+            {
+                throw new InvalidOperationException(
+                    $"Island {plan.Index}: state spawn failed.");
+            }
         }
     }
 }
