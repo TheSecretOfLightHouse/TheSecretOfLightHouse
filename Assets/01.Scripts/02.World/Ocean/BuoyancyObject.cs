@@ -116,6 +116,13 @@ namespace Lighthouse.World.Ocean
             }
 
             _reading = reading;
+
+            BuoyancySinkLimiter.TryLimit(
+                _body,
+                _profile,
+                worldPoints,
+                reading.ReferenceSurface,
+                reading.SubmergedFraction);
         }
 
         public void SubmitPoints()

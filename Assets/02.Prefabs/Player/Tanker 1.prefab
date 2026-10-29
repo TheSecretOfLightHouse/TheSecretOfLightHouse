@@ -624,6 +624,8 @@ GameObject:
   - component: {fileID: -6884351833928188102}
   - component: {fileID: -8967151870168469082}
   - component: {fileID: 5184860161969762111}
+  - component: {fileID: 4728224562222461628}
+  - component: {fileID: 5761082111756218022}
   m_Layer: 0
   m_Name: Tanker 1
   m_TagString: Untagged
@@ -805,7 +807,7 @@ MonoBehaviour:
   _allowOfflineControl: 1
   _requireLocalWorldReady: 1
   _boatPrefab: {fileID: 574665130920709553, guid: 3ab134b47e46cc047b6bc4867af5c04c, type: 3}
-  _wreckBuoyancy: {fileID: 0}
+  _wreckBuoyancy: {fileID: 4728224562222461628}
 --- !u!136 &1477268973471061571
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -920,6 +922,8 @@ MonoBehaviour:
   _walkBlendSpeed: 0.5
   _minimumLocomotionRate: 0.65
   _maximumLocomotionRate: 1.5
+  _waterEnterFraction: 0.25
+  _waterExitFraction: 0.1
 --- !u!114 &6568711687284579916
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1257,6 +1261,60 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+--- !u!114 &4728224562222461628
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2372725294234165099}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1aafff1b5e63eb849ad57b0e0ed80c20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _isSimulating: 1
+  _profile:
+    _buoyancyRatio: 2.3
+    _restoreStrength: 0
+    _diveRatio: 0.9
+    _surfaceFollow: 1
+    _submergedFollow: 0.3
+    _plateThickness: 0.3
+    _depthCapScale: 3
+    _verticalDrag: 10
+    _horizontalDrag: 1
+    _angularDrag: 0.3
+    _heaveFollow: 1
+    _heaveBaselineSeconds: 4
+    _maxSinkDepth: 0.27
+    _minSinkDepth: 0.19
+  _pool: 1
+  _divisions: {x: 2, y: 2, z: 2}
+  _manualPoints:
+  - {x: 0, y: 0.1, z: 0}
+  - {x: 0, y: 0.5, z: 0}
+  - {x: 0, y: 0.9, z: 0}
+  _depthTolerance: 0.1
+  _warnInterval: 2
+--- !u!114 &5761082111756218022
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2372725294234165099}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a87bac804e555444e8ae6ef4a6d77817, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _model: {fileID: 1032559343955213504}
+  _gate: {fileID: 4728224562222461628}
+  _gateMinFraction: 0.1
+  _tiltScale: 1
+  _maxTiltDegrees: 25
+  _followRate: 6
 --- !u!1 &2483886370184667518
 GameObject:
   m_ObjectHideFlags: 0
