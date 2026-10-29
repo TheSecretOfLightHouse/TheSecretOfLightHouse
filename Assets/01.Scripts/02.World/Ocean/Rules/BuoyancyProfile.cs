@@ -21,6 +21,8 @@ namespace Lighthouse.World.Ocean.Rules
         [SerializeField, Min(0f)] private float _angularDrag = 0.3f;
         [SerializeField, Range(0f, 1f)] private float _heaveFollow = 1f;
         [SerializeField, Min(0.5f)] private float _heaveBaselineSeconds = 4f;
+        [SerializeField, Min(0f)] private float _maxSinkDepth;
+        [SerializeField, Min(0f)] private float _minSinkDepth;
 
         public BuoyancyProfile()
         {
@@ -51,6 +53,14 @@ namespace Lighthouse.World.Ocean.Rules
         public float HeaveFollow => _heaveFollow;
 
         public float HeaveBaselineSeconds => _heaveBaselineSeconds;
+
+        public float MaxSinkDepth => _maxSinkDepth;
+
+        public float MinSinkDepth => _minSinkDepth;
+
+        public bool HasSinkLimit => _maxSinkDepth > 0f;
+
+        public bool HasFloatBand => _minSinkDepth > 0f && _minSinkDepth < _maxSinkDepth;
 
         public float ResolveRatio(bool hasTarget)
         {

@@ -1,3 +1,5 @@
+using Lighthouse.World.Ocean;
+using Lighthouse.World.Ocean.Rules;
 using UnityEngine;
 
 [RequireComponent(typeof(Animator))]
@@ -48,10 +50,18 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
     [SerializeField, Min(0.1f)]
     private float _maximumLocomotionRate = 1.5f;
 
+    [SerializeField, Range(0f, 1f)]
+    private float _waterEnterFraction = 0.25f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float _waterExitFraction = 0.1f;
+
     private Animator _animator;
     private PlayerController _controller;
     private PlayerMotor _motor;
     private Rigidbody _body;
+    private BuoyancyObject _buoyancy;
+    private bool _isInWater;
     private float _fallDuration;
     private int _lastStumbleSequence;
     private IPlayerAnimationSource _source;
@@ -64,6 +74,7 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
         _controller = GetComponentInParent<PlayerController>();
         _motor = GetComponentInParent<PlayerMotor>();
         _body = GetComponentInParent<Rigidbody>();
+        _buoyancy = GetComponentInParent<BuoyancyObject>();
 
         if (_actionEvents == null)
         {
@@ -93,6 +104,7 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
     private void OnDisable()
     {
         _fallDuration = 0f;
+        _isInWater = false;
         UnsubscribeState();
         UnsubscribeActions();
     }
@@ -104,6 +116,7 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
             return;
         }
 
+        UpdateWater();
         UpdateFalling();
         UpdateLocomotion();
 
@@ -129,10 +142,39 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
         UnsubscribeActions();
     }
 
+    private void UpdateWater()
+    {
+        // Only the movement owner writes parameters; remote views consume NetworkAnimator.
+        if (_source == null || !_controller || !_controller.CanProcessBoatInput || !_buoyancy)
+        {
+            return;
+        }
+
+        bool canSwim = _source.Current != PlayerAnimationState.OnBoat;
+        BuoyancyReading reading = _buoyancy.Reading;
+        float threshold = _isInWater ? _waterExitFraction : _waterEnterFraction;
+        _isInWater = canSwim && reading.IsValid && reading.SubmergedFraction >= threshold;
+
+        // The downed clip is the treading-water pose, so reuse it while the survivor floats.
+        bool downedPose = _source.Current == PlayerAnimationState.Downed || _isInWater;
+
+        if (_animator.GetBool(IsDownedHash) != downedPose)
+        {
+            _animator.SetBool(IsDownedHash, downedPose);
+        }
+    }
+
     private void UpdateFalling()
     {
         if (_source == null || !_controller || !_controller.CanProcessBoatInput || !_motor || !_body)
         {
+            return;
+        }
+
+        if (_isInWater)
+        {
+            _fallDuration = 0f;
+            _animator.SetBool(IsFallingHash, false);
             return;
         }
 
@@ -258,7 +300,7 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
             _animator.SetFloat(SpeedHash, speed);
         }
         _animator.SetBool(IsJumpingHash, state == PlayerAnimationState.Jump);
-        _animator.SetBool(IsDownedHash, state == PlayerAnimationState.Downed);
+        _animator.SetBool(IsDownedHash, state == PlayerAnimationState.Downed || _isInWater);
         _animator.SetBool(IsOnBoatHash, state == PlayerAnimationState.OnBoat);
 
         if (state == PlayerAnimationState.Downed || state == PlayerAnimationState.OnBoat)
