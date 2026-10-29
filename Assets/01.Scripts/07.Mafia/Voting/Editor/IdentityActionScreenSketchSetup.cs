@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace Lighthouse.Mafia.Voting.Editor
 {
     // Builds the mafia's identity check and summon UI from the 2026-10-23 sketch. The confirm and notice boxes reuse the
-    // vote confirm box (board, sailor, cancel button) so both read as one family; the accept button is the vote one
+    // vote confirm box (board, cancel button) so both read as one family; the accept button is the vote one
     // with its wording erased, and the label is live text. Kept beside the vote builder to share its editor assembly.
     public static class IdentityActionScreenSketchSetup
     {
@@ -17,7 +17,22 @@ namespace Lighthouse.Mafia.Voting.Editor
         private const string VoteFolder = "Assets/03.Images/VotingUiSketch/";
         private const float ButtonWidth = 300f;
         private const float ButtonHeight = 78f;
+        // The check and summon buttons are drawn at 0.9 times the sketch, kept to the group's right edge.
+        private const float ButtonScale = 0.9f;
+        // Summon right cue: the draining bar under the summon button, the glow around it and the line above the group.
+        private const float TimerGap = 6f;
+        private const float TimerHeight = 8f;
+        private const float GlowPadding = 18f;
+        private const float LineWidth = 560f;
+        private const float LineHeight = 44f;
+        // The reveal banner sketch is 861x306; it hangs under the day board (8 + 186 at the top centre).
+        private const float RevealWidth = 861f;
+        private const float RevealHeight = 306f;
+        private const float RevealScale = 0.72f;
+        private const float RevealTop = 200f;
+        private const float RevealBustScale = 0.95f;
         private static readonly Color Cream = new Color(0.98f, 0.92f, 0.79f);
+        private static readonly Color Sand = new Color(0.86f, 0.77f, 0.63f);
         private static readonly Color Muted = new Color(0.66f, 0.62f, 0.55f);
         private static readonly Color Gold = new Color(0.96f, 0.78f, 0.29f);
         private static readonly Color Dark = new Color(0.12f, 0.09f, 0.05f);
@@ -56,6 +71,7 @@ namespace Lighthouse.Mafia.Voting.Editor
                 BuildConfirm(root.transform, serialized);
                 BuildNotice(root.transform, serialized);
                 serialized.ApplyModifiedPropertiesWithoutUndo();
+                BuildRevealBanner(root.transform);
 
                 System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(PrefabPath));
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
@@ -108,27 +124,102 @@ namespace Lighthouse.Mafia.Voting.Editor
             Debug.Log($"[{nameof(IdentityActionScreenSketchSetup)}] Identity action screen connected. Save the scene to keep it.");
         }
 
-        // Stacked over the vote button at the lower right (that button is 258x108 at 1.4 times, 28 from the corner).
+        // Stacked over the vote button at the lower right (that button is 258x108 at 1.2 times, 55 from the bottom).
         private static void BuildButtons(Transform root, SerializedObject serialized)
         {
-            RectTransform group = Rect("Buttons", root, 0f, 0f, ButtonWidth, 200f);
+            float width = ButtonWidth * ButtonScale;
+            float height = ButtonHeight * ButtonScale;
+            float x = ButtonWidth - width;
+            float summonY = 32f + height + 8f * ButtonScale;
+            float timerY = summonY + height + TimerGap;
+            RectTransform group = Rect("Buttons", root, 0f, 0f, ButtonWidth, timerY + TimerHeight + 4f);
             group.anchorMin = group.anchorMax = group.pivot = new Vector2(1f, 0f);
             group.anchoredPosition = new Vector2(-28f, 196f);
 
             Text status = Label("Status", group, string.Empty, 18, 0f, 0f, ButtonWidth, 28f, TextAnchor.MiddleRight);
             status.supportRichText = true;
             status.horizontalOverflow = HorizontalWrapMode.Overflow;
-            Button check = SwapButton("Check", group, Folder, "id_check", "id_check_hover", 0f, 32f, ButtonWidth, ButtonHeight);
-            Button summon = SwapButton("Summon", group, Folder, "id_summon", "id_summon_hover", 0f, 118f, ButtonWidth, ButtonHeight);
+            Button check = SwapButton("Check", group, Folder, "id_check", "id_check_hover", x, 32f, width, height);
+            Button summon = SwapButton("Summon", group, Folder, "id_summon", "id_summon_hover", x, summonY, width, height);
 
             Set(serialized, "_hud", group.gameObject);
             Set(serialized, "_checkButton", check);
             Set(serialized, "_summonButton", summon);
             Set(serialized, "_status", status);
+            BuildSummonCue(root, group, summon, x, timerY, width);
             group.gameObject.SetActive(false);
         }
 
-        // Same board, sailor and button places as the vote confirm box.
+        // The summon right's cue: glow behind the summon button, a draining bar under it and the last seconds beside it
+        // live in the button group so they hide with it; the screen-edge flash and the line sit on the root.
+        private static void BuildSummonCue(Transform root, RectTransform group, Button summon, float x, float timerY,
+            float width)
+        {
+            RectTransform button = (RectTransform)summon.transform;
+            Vector2 size = button.sizeDelta;
+            Vector2 topLeft = new Vector2(button.anchoredPosition.x, -button.anchoredPosition.y);
+            CenterPivot(button);
+
+            RectTransform glowRect = Rect("SummonGlow", group, topLeft.x - GlowPadding, topLeft.y - GlowPadding,
+                size.x + GlowPadding * 2f, size.y + GlowPadding * 2f);
+            Image glow = glowRect.gameObject.AddComponent<Image>();
+            glow.raycastTarget = false;
+            glowRect.SetSiblingIndex(button.GetSiblingIndex());
+
+            RectTransform timer = Rect("SummonTimer", group, x, timerY, width, TimerHeight);
+            Image track = timer.gameObject.AddComponent<Image>();
+            track.color = new Color(0f, 0f, 0f, 0.5f);
+            track.raycastTarget = false;
+            RectTransform fillRect = Rect("Fill", timer, 0f, 0f, 0f, 0f);
+            Stretch(fillRect);
+            Image fill = fillRect.gameObject.AddComponent<Image>();
+            fill.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+            fill.type = Image.Type.Filled;
+            fill.fillMethod = Image.FillMethod.Horizontal;
+            fill.fillOrigin = (int)Image.OriginHorizontal.Left;
+            fill.raycastTarget = false;
+
+            Text seconds = Label("SummonSeconds", group, string.Empty, 44, x - 76f, topLeft.y, 64f, size.y,
+                TextAnchor.MiddleRight);
+            seconds.horizontalOverflow = HorizontalWrapMode.Overflow;
+
+            RectTransform holder = Rect("SummonCue", root, 0f, 0f, 0f, 0f);
+            Stretch(holder);
+            SummonRightCue cue = holder.gameObject.AddComponent<SummonRightCue>();
+            AudioSource audio = holder.gameObject.AddComponent<AudioSource>();
+            audio.playOnAwake = false;
+            audio.spatialBlend = 0f;
+
+            RectTransform vignetteRect = Rect("Vignette", holder, 0f, 0f, 0f, 0f);
+            Stretch(vignetteRect);
+            Image vignette = vignetteRect.gameObject.AddComponent<Image>();
+            vignette.raycastTarget = false;
+
+            // Right-aligned just above the button group so the eye lands on the summon button next.
+            RectTransform lineRect = Rect("Line", holder, 0f, 0f, LineWidth, LineHeight);
+            lineRect.anchorMin = lineRect.anchorMax = lineRect.pivot = new Vector2(1f, 0f);
+            lineRect.anchoredPosition = new Vector2(-28f, 196f + group.sizeDelta.y + 8f);
+            Image strip = lineRect.gameObject.AddComponent<Image>();
+            strip.color = new Color(0f, 0f, 0f, 0.6f);
+            strip.raycastTarget = false;
+            CanvasGroup line = Fade(lineRect);
+            Text lineText = Label("Text", lineRect, string.Empty, 24, 16f, 0f, LineWidth - 32f, LineHeight,
+                TextAnchor.MiddleRight);
+
+            SerializedObject serialized = new SerializedObject(cue);
+            Set(serialized, "_summonButton", button);
+            Set(serialized, "_glow", glow);
+            Set(serialized, "_timer", timer.gameObject);
+            Set(serialized, "_timerFill", fill);
+            Set(serialized, "_seconds", seconds);
+            Set(serialized, "_vignette", vignette);
+            Set(serialized, "_line", line);
+            Set(serialized, "_lineText", lineText);
+            Set(serialized, "_audio", audio);
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // Same board and button places as the vote confirm box, without the sailor picture (removed 2026-10-29).
         private static void BuildConfirm(Transform root, SerializedObject serialized)
         {
             Image board = Box("Confirm", root, 640f, 420f, out RectTransform confirm);
@@ -143,7 +234,6 @@ namespace Lighthouse.Mafia.Voting.Editor
             Button cancel = SwapButton("Cancel", board.transform, VoteFolder, "vt_button_cancel", "vt_button_cancel_hover", 104f, 300f, 199f, 67f);
             Button accept = SwapButton("Accept", board.transform, Folder, "id_button_accept", "id_button_accept_hover", 339f, 301f, 195f, 65f);
             Text acceptLabel = ButtonLabel(accept.transform, 195f, 65f);
-            Sailor(board.transform);
 
             Set(serialized, "_confirm", confirm.gameObject);
             Set(serialized, "_confirmTitle", title);
@@ -165,13 +255,103 @@ namespace Lighthouse.Mafia.Voting.Editor
             Button close = SwapButton("Close", board.transform, Folder, "id_button_accept", "id_button_accept_hover", 222f, 252f, 195f, 65f);
             Text closeLabel = ButtonLabel(close.transform, 195f, 65f);
             closeLabel.text = "확인";
-            Sailor(board.transform);
 
             Set(serialized, "_notice", notice.gameObject);
             Set(serialized, "_noticeTitle", title);
             Set(serialized, "_noticeMessage", message);
             Set(serialized, "_noticeButton", close);
             notice.gameObject.SetActive(false);
+        }
+
+        // The failed check banner from the 2026-10-29 sketch, laid out in the sketch's own pixels (861x306) and scaled
+        // down as one group under the day board at the top centre. Parts sit where they were cut from the sketch; the
+        // ones that pop or stamp get a centre pivot. Last child, so it draws over the boxes.
+        private static void BuildRevealBanner(Transform root)
+        {
+            RectTransform holder = Rect("RevealBanner", root, 0f, 0f, 0f, 0f);
+            Stretch(holder);
+            InnocentRevealBanner banner = holder.gameObject.AddComponent<InnocentRevealBanner>();
+            SerializedObject serialized = new SerializedObject(banner);
+
+            RectTransform group = Rect("Banner", holder, 0f, 0f, RevealWidth, RevealHeight);
+            group.anchorMin = group.anchorMax = group.pivot = new Vector2(0.5f, 1f);
+            group.anchoredPosition = new Vector2(0f, -RevealTop);
+            group.localScale = Vector3.one * RevealScale;
+            CanvasGroup groupFade = Fade(group);
+
+            Image strip = Picture("Strip", group, Folder, "ir_strip", 16f, 26f, 806f, 238f);
+            strip.type = Image.Type.Filled;
+            strip.fillMethod = Image.FillMethod.Horizontal;
+            strip.fillOrigin = (int)Image.OriginHorizontal.Left;
+
+            Image frame = Picture("Frame", group, Folder, "ir_frame", 52f, 32f, 231f, 229f);
+            CenterPivot(frame.rectTransform);
+            Image mask = Picture("PortraitMask", frame.transform, Folder, "ir_portrait_mask", 18f, 18f, 195f, 193f);
+            mask.gameObject.AddComponent<Mask>().showMaskGraphic = false;
+            Image portrait = Picture("Portrait", mask.transform, VoteFolder, "vt_job_mechanic", 0f, 0f,
+                195f * RevealBustScale, 195f * RevealBustScale);
+            RectTransform bust = portrait.rectTransform;
+            bust.anchorMin = bust.anchorMax = bust.pivot = new Vector2(0.5f, 0f);
+            bust.anchoredPosition = Vector2.zero;
+            portrait.preserveAspect = true;
+
+            Text title = Label("Title", group, "정체 확인 실패", 24, 312f, 82f, 320f, 34f, TextAnchor.MiddleLeft);
+            title.color = Sand;
+            Text name = Label("Name", group, string.Empty, 48, 308f, 114f, 300f, 70f, TextAnchor.MiddleLeft);
+            name.resizeTextForBestFit = true;
+            name.resizeTextMinSize = 30;
+            name.resizeTextMaxSize = 48;
+            name.verticalOverflow = VerticalWrapMode.Truncate;
+            Text message = Label("Message", group, "이 선원은 마피아가 아닙니다.", 26, 312f, 186f, 480f, 38f, TextAnchor.MiddleLeft);
+
+            Image badge = Picture("Badge", group, Folder, "ir_badge", 591f, 126f, 159f, 48f);
+            CenterPivot(badge.rectTransform);
+            Text badgeLabel = Label("Label", badge.transform, "무고한 시민", 25, 0f, 0f, 159f, 48f);
+            badgeLabel.color = Dark;
+            badgeLabel.GetComponent<Outline>().effectColor = Color.clear;
+
+            Image sparkleTop = Picture("SparkleTop", group, Folder, "ir_sparkle_top", 276f, 20f, 30f, 40f);
+            CenterPivot(sparkleTop.rectTransform);
+            Image sparkleBottom = Picture("SparkleBottom", group, Folder, "ir_sparkle_bottom", 274f, 214f, 32f, 50f);
+            CenterPivot(sparkleBottom.rectTransform);
+
+            Set(serialized, "_banner", group);
+            Set(serialized, "_bannerGroup", groupFade);
+            Set(serialized, "_frame", frame.rectTransform);
+            Set(serialized, "_frameGroup", Fade(frame.rectTransform));
+            Set(serialized, "_portrait", portrait);
+            Set(serialized, "_strip", strip);
+            Set(serialized, "_title", Fade(title.rectTransform));
+            Set(serialized, "_name", name);
+            Set(serialized, "_nameGroup", Fade(name.rectTransform));
+            Set(serialized, "_message", Fade(message.rectTransform));
+            Set(serialized, "_badge", badge.rectTransform);
+            Set(serialized, "_badgeGroup", Fade(badge.rectTransform));
+            SerializedProperty sparkles = serialized.FindProperty("_sparkles");
+            sparkles.arraySize = 2;
+            sparkles.GetArrayElementAtIndex(0).objectReferenceValue = sparkleTop.rectTransform;
+            sparkles.GetArrayElementAtIndex(1).objectReferenceValue = sparkleBottom.rectTransform;
+            Set(serialized, "_navigatorPortrait", Load(VoteFolder, "vt_job_navigator"));
+            Set(serialized, "_mechanicPortrait", Load(VoteFolder, "vt_job_mechanic"));
+            Set(serialized, "_guardPortrait", Load(VoteFolder, "vt_job_guard"));
+            Set(serialized, "_gathererPortrait", Load(VoteFolder, "vt_job_gatherer"));
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static CanvasGroup Fade(RectTransform rect)
+        {
+            CanvasGroup group = rect.gameObject.AddComponent<CanvasGroup>();
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            return group;
+        }
+
+        // Keeps the place drawn in the sketch while letting the part scale around its own centre.
+        private static void CenterPivot(RectTransform rect)
+        {
+            Vector2 size = rect.sizeDelta;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition += new Vector2(size.x * 0.5f, -size.y * 0.5f);
         }
 
         private static Image Box(string name, Transform root, float width, float height, out RectTransform box)
@@ -186,12 +366,6 @@ namespace Lighthouse.Mafia.Voting.Editor
             rect.anchoredPosition = Vector2.zero;
             board.raycastTarget = true;
             return board;
-        }
-
-        private static void Sailor(Transform board)
-        {
-            Image sailor = Picture("Sailor", board, VoteFolder, "vt_sailor", -118f, 290f, 174f, 164f);
-            sailor.preserveAspect = true;
         }
 
         private static Text ButtonLabel(Transform button, float width, float height)
@@ -229,9 +403,11 @@ namespace Lighthouse.Mafia.Voting.Editor
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
                 importer.alphaIsTransparency = true;
-                importer.mipmapEnabled = false;
+                // Mipmaps keep the drawn-in lettering readable when a small window shrinks these large pictures.
+                importer.mipmapEnabled = true;
+                importer.mipmapFilter = TextureImporterMipFilter.KaiserFilter;
                 importer.textureCompression = TextureImporterCompression.Uncompressed;
-                importer.filterMode = FilterMode.Bilinear;
+                importer.filterMode = FilterMode.Trilinear;
                 importer.wrapMode = TextureWrapMode.Clamp;
                 importer.maxTextureSize = 2048;
                 importer.spriteBorder = Vector4.zero;

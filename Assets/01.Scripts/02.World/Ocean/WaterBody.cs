@@ -80,11 +80,6 @@ namespace Lighthouse.World.Ocean
             {
                 gameObject.AddComponent<WaveTiltVisual>();
             }
-
-            if (!TryGetComponent(out WaveCameraGuard _))
-            {
-                gameObject.AddComponent<WaveCameraGuard>();
-            }
         }
     }
 }

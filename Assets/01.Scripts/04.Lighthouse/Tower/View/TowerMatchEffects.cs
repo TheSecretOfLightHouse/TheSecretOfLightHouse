@@ -12,7 +12,7 @@ namespace Lighthouse.Tower.View
 {
     // Screen-only effects for the lighthouse match (UI effects plan 2026-10-26): lines on the shared ScreenNotice strip
     // for installs, finished floors, the last part and finished modules; a centre title for full repair, ritual,
-    // summon, falling health and the end; the ritual countdown; and an edge flash standing in for camera shake (the
+    // summon and falling health; the end fade under the VictoryScreen; the ritual countdown; and an edge flash standing in for camera shake (the
     // camera is the Player part's). Who installed or crafted is never shown, since only the carrier knows they held a
     // module.
     // Installs and finished modules arrive as events on every machine. Phase and health are SyncVars without hooks and
@@ -313,17 +313,17 @@ namespace Lighthouse.Tower.View
             _shownHealth = health;
         }
 
+        // The result itself is the VictoryScreen's (2026-10-29); here only the notices stop, a title still on screen
+        // goes, and the screen darkens.
         private void ShowEnd(bool isAnimated)
         {
             ScreenNotice.Clear();
-            string text = _match.Outcome == TowerOutcome.CitizensWin ? "등대에 불이 켜졌다 — 탈출하라"
-                : _match.Outcome == TowerOutcome.MafiaWin ? "등대는 어둠에 잠겼다" : string.Empty;
-            ShowTitle(text, true);
+            _titleTimer = 0f;
+            SetAlpha(_title, 0f);
             _fadeTimer = isAnimated ? _fadeSeconds : 0f;
 
             if (!isAnimated)
             {
-                SetAlpha(_title, 1f);
                 SetImageAlpha(_fade, _fadeAlpha);
             }
 

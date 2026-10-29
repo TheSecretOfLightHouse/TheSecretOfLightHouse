@@ -7,7 +7,7 @@ namespace Lighthouse.World.Ocean.Rules
     {
         public const int MaxWaves = 8;
         public const float MaxTotalSteepness = 0.8f;
-        public const int InverseIterations = 3;
+        public const int InverseIterations = 6;
 
         private const float TwoPi = Mathf.PI * 2f;
         private const float DirectionTolerance = 0.01f;
@@ -35,7 +35,7 @@ namespace Lighthouse.World.Ocean.Rules
             {
                 energy += waves[i].Amplitude;
             }
-            return CoastWaveModel.Apply(coasts, edges, profiles, x, z, time, height, energy);
+            return CoastWaveModel.Apply(coasts, edges, profiles, x, z, time, height, energy, CoastWaveRegistry.Lagoons);
         }
 
         public static Vector3 NormalAt(

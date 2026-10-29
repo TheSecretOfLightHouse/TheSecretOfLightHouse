@@ -18,7 +18,6 @@ namespace Lighthouse.Player.Inventory.View
         [SerializeField] private InventoryChestSlot[] _moduleSlots;
         [SerializeField] private int[] _recipeIds;
         [SerializeField] private Sprite[] _recipeIcons;
-        [SerializeField] private Button _installButton;
         [SerializeField] private Button _closeButton;
         [SerializeField] private Text _message;
 
@@ -47,12 +46,12 @@ namespace Lighthouse.Player.Inventory.View
                 text.font = _font;
             }
             BuildTabbedLayout();
+            BuildCarriedModuleHud();
             _window.SetActive(false);
         }
 
         private void OnEnable()
         {
-            _installButton.onClick.AddListener(HandleInstallClicked);
             _closeButton.onClick.AddListener(Close);
         }
 
@@ -60,7 +59,7 @@ namespace Lighthouse.Player.Inventory.View
         {
             Close();
             BindPlayer(null);
-            _installButton.onClick.RemoveListener(HandleInstallClicked);
+            _carriedHud.gameObject.SetActive(false);
             _closeButton.onClick.RemoveListener(Close);
         }
 
@@ -79,6 +78,7 @@ namespace Lighthouse.Player.Inventory.View
             {
                 BindPlayer(NetworkClient.localPlayer);
             }
+            UpdateCarriedModuleHud();
             if (!_isOpen)
             {
                 return;
@@ -100,7 +100,6 @@ namespace Lighthouse.Player.Inventory.View
             {
                 RefreshModules();
             }
-            _installButton.interactable = CanInstall();
             UpdateShipPanels();
         }
 
@@ -116,6 +115,7 @@ namespace Lighthouse.Player.Inventory.View
                 return;
             }
             _isOpen = true;
+            _carriedHud.gameObject.SetActive(false);
             _openedFrame = Time.frameCount;
             _selectedModule = 0;
             _savedCursorLock = Cursor.lockState;
@@ -134,7 +134,7 @@ namespace Lighthouse.Player.Inventory.View
             RefreshModules();
             SelectTab(0);
             UpdateShipPanels(true);
-            _installButton.interactable = CanInstall();
+            RefreshModuleButtons();
         }
 
         public void Close()
@@ -303,6 +303,7 @@ namespace Lighthouse.Player.Inventory.View
             _isInstalling = false;
             _message.text = result.IsSuccess ? "배에 모듈을 장착했습니다." : $"장착 거절: {result.Code}";
             RefreshModules();
+            UpdateShipPanels(true);
         }
     }
 }

@@ -11,6 +11,10 @@ namespace Lighthouse.Mafia.SeaSummoning.View
         [SerializeField] private SeaSummonPermissionController _permission;
         [SerializeField, Min(0.1f)] private float _permissionTimeout = 5f;
         private InputAction _toggleAction;
+        private SeaSummonRadialMenu _radialMenu;
+        private Vector3 _panTarget;
+        private Vector3 _panOffset;
+        private Vector3 _panVelocity;
         private PlayerController _player;
         private PlayerInput _playerInput;
         private BoatController _boat;
@@ -37,11 +41,12 @@ namespace Lighthouse.Mafia.SeaSummoning.View
         public bool IsTopViewActive => _hasCameraControl && !_isReturning;
         public bool IsTransitioning => _hasCameraControl && _permission != null && _permission.Settings != null
             && Time.unscaledTime - _transitionStartedAt < _permission.Settings.CameraTransitionSeconds;
-        public string Status { get; private set; } = "Q: 탑뷰 진입 / 복귀";
+        public string Status { get; private set; } = "F: 탑뷰 진입 / 복귀";
 
         private void Awake()
         {
-            _toggleAction = new InputAction("SeaSummonTopView", InputActionType.Button, "<Keyboard>/q");
+            _radialMenu = GetComponent<SeaSummonRadialMenu>();
+            _toggleAction = new InputAction("SeaSummonTopView", InputActionType.Button, "<Keyboard>/f");
             _toggleAction.performed += HandleToggle;
         }
 
@@ -59,7 +64,7 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             if (_isAwaitingPermission && Time.unscaledTime - _requestedAt >= _permissionTimeout)
             {
                 _isAwaitingPermission = false;
-                Status = "서버 응답 시간 초과 — Q로 재시도";
+                Status = "서버 응답 시간 초과 — F로 재시도";
             }
             if (!_hasCameraControl)
             {
@@ -72,11 +77,16 @@ namespace Lighthouse.Mafia.SeaSummoning.View
                 return;
             }
 
+            if (!_isReturning && !IsTransitioning)
+            {
+                UpdatePan();
+            }
+
             float t = Mathf.Clamp01((Time.unscaledTime - _transitionStartedAt) / _permission.Settings.CameraTransitionSeconds);
             float blend = Mathf.SmoothStep(0f, 1f, t);
             Vector3 targetPosition = _isReturning
                 ? _savedParent.TransformPoint(_savedLocalPosition)
-                : _boat.transform.position + Vector3.up * _permission.Settings.TopViewHeight;
+                : _boat.transform.position + Vector3.up * _permission.Settings.TopViewHeight + _panOffset;
             Quaternion targetRotation = _isReturning
                 ? _savedParent.rotation * _savedLocalRotation : Quaternion.Euler(90f, _topYaw, 0f);
             _camera.SetPositionAndRotation(Vector3.Lerp(_transitionPosition, targetPosition, blend),
@@ -84,7 +94,7 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             if (_isReturning && t >= 1f)
             {
                 RestoreView();
-                Status = "Q: 탑뷰 진입 / 복귀";
+                Status = "F: 탑뷰 진입 / 복귀";
             }
         }
 
@@ -174,10 +184,35 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             _topYaw = _permission.OwnTopViewYaw;
+            _panTarget = Vector3.zero;
+            _panOffset = Vector3.zero;
+            _panVelocity = Vector3.zero;
             _hasCameraControl = true;
             _isReturning = false;
             StartTransition();
-            Status = "탑뷰 — 배 조종 중지 / Q로 복귀";
+            Status = "탑뷰 — 배 조종 중지 / F로 복귀";
+        }
+
+        private void UpdatePan()
+        {
+            var settings = _permission.Settings;
+            if (Mouse.current != null && (_radialMenu == null || !_radialMenu.IsOpen)
+                && Screen.width > 0 && Screen.height > 0)
+            {
+                Vector2 mouse = Mouse.current.position.ReadValue();
+                if (mouse.x >= 0f && mouse.x <= Screen.width && mouse.y >= 0f && mouse.y <= Screen.height)
+                {
+                    float edge = settings.CameraEdgeFraction;
+                    Vector2 normalized = new Vector2(mouse.x / Screen.width, mouse.y / Screen.height);
+                    float x = Mathf.Clamp01((normalized.x - (1f - edge)) / edge) - Mathf.Clamp01((edge - normalized.x) / edge);
+                    float y = Mathf.Clamp01((normalized.y - (1f - edge)) / edge) - Mathf.Clamp01((edge - normalized.y) / edge);
+                    Vector3 direction = Quaternion.Euler(0f, _topYaw, 0f) * Vector3.ClampMagnitude(new Vector3(x, 0f, y), 1f);
+                    _panTarget = Vector3.ClampMagnitude(_panTarget + direction * (settings.CameraPanSpeed * Time.unscaledDeltaTime), settings.CameraPanRadius);
+                }
+            }
+            _panOffset = Vector3.SmoothDamp(_panOffset, _panTarget, ref _panVelocity,
+                settings.CameraPanSmoothTime, Mathf.Infinity, Time.unscaledDeltaTime);
+            _panOffset = Vector3.ClampMagnitude(_panOffset, settings.CameraPanRadius);
         }
 
         private bool CanKeepView()

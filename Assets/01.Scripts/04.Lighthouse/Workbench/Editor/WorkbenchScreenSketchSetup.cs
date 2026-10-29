@@ -258,7 +258,6 @@ namespace Lighthouse.Workbench.Editor
             {
                 SerializedObject trial = new SerializedObject(panel);
                 Set(trial, "_workbenchScreen", sketch.gameObject);
-                trial.FindProperty("_isRackMode").boolValue = false;
                 trial.ApplyModifiedProperties();
             }
 
@@ -437,6 +436,13 @@ namespace Lighthouse.Workbench.Editor
 
         private static void SetRecipeIcons(SerializedObject serialized)
         {
+            FillRecipeIcons(serialized.FindProperty("_recipeIcons"));
+        }
+
+        // Shared with the in-game HUD's carried module card, so both show the same icon. The property is an array of
+        // { Recipe, Icon } like WorkbenchScreen's.
+        public static void FillRecipeIcons(SerializedProperty icons)
+        {
             var recipes = new List<ModuleRecipe>();
 
             foreach (string guid in AssetDatabase.FindAssets("t:ModuleRecipe"))
@@ -449,7 +455,6 @@ namespace Lighthouse.Workbench.Editor
                 }
             }
 
-            SerializedProperty icons = serialized.FindProperty("_recipeIcons");
             icons.arraySize = recipes.Count;
 
             for (int i = 0; i < recipes.Count; i++)

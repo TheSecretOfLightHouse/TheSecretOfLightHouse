@@ -18,6 +18,12 @@ public sealed class NavigatorRouteView : MonoBehaviour
     private float _lineWidth = 1.5f;
 
     [SerializeField, Min(0.1f)]
+    private float _destinationRadius = 2f;
+
+    [SerializeField, Min(0.05f)]
+    private float _destinationWidth = 0.35f;
+
+    [SerializeField, Min(0.1f)]
     private float _heightOffset = 0.5f;
 
     [SerializeField, Min(MinPointSpacing)]
@@ -37,6 +43,7 @@ public sealed class NavigatorRouteView : MonoBehaviour
     private NavigatorRouteRequest _request;
     private PlayerController _target;
     private LineRenderer _line;
+    private LineRenderer _destinationRing;
     private float _nextRefreshTime;
 
     private void Awake()
@@ -99,6 +106,11 @@ public sealed class NavigatorRouteView : MonoBehaviour
         {
             Destroy(_line.gameObject);
         }
+
+        if (_destinationRing)
+        {
+            Destroy(_destinationRing.gameObject);
+        }
     }
 
     public void ClearRoute()
@@ -110,6 +122,11 @@ public sealed class NavigatorRouteView : MonoBehaviour
         {
             _line.positionCount = 0;
             _line.enabled = false;
+        }
+
+        if (_destinationRing)
+        {
+            _destinationRing.enabled = false;
         }
     }
 
@@ -228,7 +245,26 @@ public sealed class NavigatorRouteView : MonoBehaviour
         _line.endColor = _lineColor;
         _line.shadowCastingMode = ShadowCastingMode.Off;
         _line.receiveShadows = false;
+        _line.textureMode = LineTextureMode.Tile;
+        _line.numCornerVertices = 6;
+        _line.numCapVertices = 6;
         _line.enabled = false;
+
+        var ringObject = new GameObject("NavigatorDestinationRing");
+        ringObject.transform.SetParent(transform, false);
+        _destinationRing = ringObject.AddComponent<LineRenderer>();
+        _destinationRing.useWorldSpace = true;
+        _destinationRing.loop = true;
+        _destinationRing.sharedMaterial = _lineMaterial;
+        _destinationRing.widthMultiplier = _destinationWidth;
+        _destinationRing.startColor = _lineColor;
+        _destinationRing.endColor = _lineColor;
+        _destinationRing.textureMode = LineTextureMode.Tile;
+        _destinationRing.numCornerVertices = 4;
+        _destinationRing.shadowCastingMode = ShadowCastingMode.Off;
+        _destinationRing.receiveShadows = false;
+        _destinationRing.positionCount = 48;
+        _destinationRing.enabled = false;
     }
 
     private void RefreshLine()
@@ -241,6 +277,7 @@ public sealed class NavigatorRouteView : MonoBehaviour
         if (!WorldServices.TryGet<IWorldQuery>(out IWorldQuery world))
         {
             _line.enabled = false;
+            _destinationRing.enabled = false;
             return;
         }
 
@@ -254,6 +291,7 @@ public sealed class NavigatorRouteView : MonoBehaviour
             if (!IsFinite(height))
             {
                 _line.enabled = false;
+                _destinationRing.enabled = false;
                 return;
             }
 
@@ -262,6 +300,27 @@ public sealed class NavigatorRouteView : MonoBehaviour
         }
 
         _line.enabled = true;
+
+        // Keep the marker on the accepted route endpoint, even if the target falls below water.
+        Vector3 center = _renderPoints[_renderPoints.Count - 1];
+        for (int i = 0; i < _destinationRing.positionCount; i++)
+        {
+            float angle = i * Mathf.PI * 2f / _destinationRing.positionCount;
+            Vector3 position = center + new Vector3(
+                Mathf.Cos(angle) * _destinationRadius, 0f,
+                Mathf.Sin(angle) * _destinationRadius);
+            float height = world.SampleWaterHeight(position);
+            if (!IsFinite(height))
+            {
+                _destinationRing.enabled = false;
+                return;
+            }
+
+            position.y = height + _heightOffset;
+            _destinationRing.SetPosition(i, position);
+        }
+
+        _destinationRing.enabled = true;
     }
 
     private static bool IsFinite(float value)

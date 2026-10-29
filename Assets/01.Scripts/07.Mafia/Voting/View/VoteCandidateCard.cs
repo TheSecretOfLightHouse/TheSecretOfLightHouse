@@ -10,7 +10,6 @@ namespace Lighthouse.Mafia.Voting.View
     {
         private const float PopSeconds = 0.2f;
         private const float PopScale = 1.06f;
-        private const float DimAlpha = 0.4f;
 
         [SerializeField]
         private Color _currentBadgeColor = new Color(0.965f, 0.776f, 0.29f);
@@ -18,6 +17,9 @@ namespace Lighthouse.Mafia.Voting.View
         private Image _frame;
         [SerializeField]
         private Text _name;
+        [Tooltip("The job picture. Hidden when the player's job is not known.")]
+        [SerializeField]
+        private Image _portrait;
         [SerializeField]
         private Button _button;
         [SerializeField]
@@ -26,9 +28,6 @@ namespace Lighthouse.Mafia.Voting.View
         private Text _badge;
         [SerializeField]
         private GameObject _check;
-        [Tooltip("The confirm text shown on the card while it waits for Enter or a second click.")]
-        [SerializeField]
-        private Text _prompt;
         [SerializeField]
         private Sprite _normalFrame;
         [SerializeField]
@@ -43,19 +42,12 @@ namespace Lighthouse.Mafia.Voting.View
         private bool _isCurrent;
         private float _popEndsAt;
         private Vector2 _restPosition;
-        private CanvasGroup _group;
 
         public uint ActorId { get; private set; }
 
         private void Awake()
         {
-            if (!TryGetComponent(out _group))
-            {
-                _group = gameObject.AddComponent<CanvasGroup>();
-            }
-
             _badgeColor = _badge.color;
-            _prompt.gameObject.SetActive(false);
             _button.onClick.AddListener(HandleClicked);
         }
 
@@ -92,8 +84,7 @@ namespace Lighthouse.Mafia.Voting.View
             _clicked = clicked;
         }
 
-        // A dimmed card is another player's card while one pick waits; the prompt only goes on the waiting card.
-        public void Show(uint actorId, string displayName, bool isCurrent, bool canPick, bool isDimmed, string prompt)
+        public void Show(uint actorId, string displayName, Sprite portrait, bool isCurrent, bool canPick)
         {
             // Pops only when this same player becomes the pick, not when the card first fills or changes player.
             if (isCurrent && !_isCurrent && actorId == ActorId)
@@ -114,17 +105,10 @@ namespace Lighthouse.Mafia.Voting.View
             _check.SetActive(isCurrent);
             _badge.color = isCurrent ? _currentBadgeColor : _badgeColor;
             _button.interactable = canPick;
-            _group.alpha = isDimmed ? DimAlpha : 1f;
-            bool hasPrompt = prompt != null;
 
-            if (_prompt.gameObject.activeSelf != hasPrompt)
+            if (_portrait)
             {
-                _prompt.gameObject.SetActive(hasPrompt);
-            }
-
-            if (hasPrompt)
-            {
-                _prompt.text = prompt;
+                ShowPortrait(portrait);
             }
         }
 
@@ -139,6 +123,26 @@ namespace Lighthouse.Mafia.Voting.View
         private void HandleClicked()
         {
             _clicked?.Invoke(this);
+        }
+
+        private void ShowPortrait(Sprite portrait)
+        {
+            bool hasPortrait = portrait;
+
+            if (_portrait.gameObject.activeSelf != hasPortrait)
+            {
+                _portrait.gameObject.SetActive(hasPortrait);
+            }
+
+            if (!hasPortrait)
+            {
+                return;
+            }
+
+            if (_portrait.sprite != portrait)
+            {
+                _portrait.sprite = portrait;
+            }
         }
 
         private void StopPop()

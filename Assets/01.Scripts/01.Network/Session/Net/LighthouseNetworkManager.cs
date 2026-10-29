@@ -31,7 +31,8 @@ namespace Lighthouse.Network.Session.Net
         private static SessionEndedMessage _lastSessionEnd;
         private static string _pendingOfflineScene;
 
-        // Session flow (JH07): lobby scene (Online Scene) -> all ready -> game scene -> all loaded -> in progress.
+        // Session flow (JH07): lobby scene (Online Scene) -> all ready -> game scene -> all loaded -> in progress
+        // -> a finished match (FinishMatch) returns to the lobby on the first player's confirm (ReturnToLobby).
         // Leaving the lobby prefab or game scene empty keeps the single-scene direct mode the existing test scenes use.
         [Header("Session")]
         [SerializeField]
@@ -58,12 +59,17 @@ namespace Lighthouse.Network.Session.Net
         private readonly ConnectionDirectory _connections = new ConnectionDirectory();
         private readonly MatchRoles _roles = new MatchRoles();
         private readonly List<uint> _roster = new List<uint>(MaxPlayers);
+        private readonly HashSet<int> _pendingGameSpawns = new HashSet<int>();
         private readonly HashSet<uint> _joinedActors = new HashSet<uint>();
+        // Lobby nicknames by actor, kept from loading until the game players spawn with them.
+        private readonly Dictionary<uint, string> _nicknames = new Dictionary<uint, string>(MaxPlayers);
         private readonly List<NetworkConnectionToClient> _rejectedConnections = new List<NetworkConnectionToClient>(MaxPlayers);
         private readonly HashSet<NetworkConnectionToClient> _leaveRequested = new HashSet<NetworkConnectionToClient>();
         private readonly List<IMatchStartGate> _startGates = new List<IMatchStartGate>();
 
         private MatchPhase _phase;
+        // The match was decided and the result is up: still InProgress, but leaving no longer ends it for everyone.
+        private bool _isMatchFinished;
         private uint _matchId;
         private uint _nextMatchId = 1;
         private double _loadDeadline;
@@ -104,6 +110,7 @@ namespace Lighthouse.Network.Session.Net
         public uint MatchId => _matchId;
         public bool CanChangeReady => _phase == MatchPhase.Lobby;
         public bool CanAcceptJoin => !IsSessionFlowEnabled || _phase == MatchPhase.Lobby;
+        public bool IsMatchFinished => _isMatchFinished;
 
         // Client-side view of the session. The end record outlives the manager instance so the offline scene can show why it ended.
         public SessionStateMessage ClientState { get; private set; }
@@ -203,6 +210,7 @@ namespace Lighthouse.Network.Session.Net
             base.OnStartServer();
             ResetServerSession();
             NetworkServer.ReplaceHandler<LeaveSessionMessage>(HandleLeaveRequest);
+            NetworkServer.ReplaceHandler<ReturnToLobbyMessage>(HandleReturnToLobbyRequest);
         }
 
         //public override void OnStartServer()
@@ -240,6 +248,17 @@ namespace Lighthouse.Network.Session.Net
 
         public override void OnServerAddPlayer(NetworkConnectionToClient conn)
         {
+            if ((!IsSessionFlowEnabled || _phase == MatchPhase.Loading)
+                && Lighthouse.World.Query.Rules.WorldServices.TryGet(out IGamePlayerSpawnSource source)
+                && !source.IsReady)
+            {
+                if (_pendingGameSpawns.Add(conn.connectionId))
+                {
+                    StartCoroutine(WaitForGameSpawn(conn));
+                }
+                return;
+            }
+
             if (!IsSessionFlowEnabled)
             {
                 SpawnGamePlayer(conn);
@@ -264,6 +283,42 @@ namespace Lighthouse.Network.Session.Net
                 conn.Disconnect();
             }
         }
+        private System.Collections.IEnumerator WaitForGameSpawn(NetworkConnectionToClient conn)
+        {
+            float deadline = Time.realtimeSinceStartup + _loadTimeoutSeconds;
+            try
+            {
+                while (NetworkServer.active && conn != null && conn.identity == null
+                    && NetworkServer.connections.TryGetValue(conn.connectionId, out NetworkConnectionToClient current)
+                    && current == conn)
+                {
+                    if (Lighthouse.World.Query.Rules.WorldServices.TryGet(out IGamePlayerSpawnSource source)
+                        && source.IsReady)
+                    {
+                        if (SpawnGamePlayer(conn))
+                        {
+                            BroadcastState();
+                            TryStartMatch();
+                        }
+                        yield break;
+                    }
+
+                    if (Time.realtimeSinceStartup > deadline)
+                    {
+                        Debug.LogError($"[{nameof(LighthouseNetworkManager)}] Main island spawn preparation timed out.");
+                        conn.Disconnect();
+                        yield break;
+                    }
+
+                    yield return null;
+                }
+            }
+            finally
+            {
+                _pendingGameSpawns.Remove(conn.connectionId);
+            }
+        }
+
         //public override void OnServerAddPlayer(NetworkConnectionToClient conn)
         //{
         //
@@ -320,6 +375,7 @@ namespace Lighthouse.Network.Session.Net
                 // The host's own connection only closes through LeaveSession or shutdown, never as a drop.
                 bool isHost = conn == NetworkServer.localConnection;
                 string cause = _phase == MatchPhase.Ended ? "disconnected after match end"
+                    : _isMatchFinished ? "left during the result"
                     : isLeaveRequested || isHost ? "left by request"
                     : "disconnected without leave request";
                 Debug.Log($"[{nameof(LighthouseNetworkManager)}] Actor {actorId} {cause}. connId={conn.connectionId} phase={_phase}");
@@ -334,7 +390,8 @@ namespace Lighthouse.Network.Session.Net
 
                 // 2026-10-13 decision: anyone leaving a started match, the host included, ends it for everyone.
                 // Leaving or dropping only changes the reason shown; the match ends either way.
-                if (IsSessionFlowEnabled && (_phase == MatchPhase.Loading || _phase == MatchPhase.InProgress))
+                // Once the match is decided only that player goes; the rest still return to the lobby (2026-10-29).
+                if (IsMatchInPlay)
                 {
                     SessionEndReason reason = isLeaveRequested || isHost
                         ? SessionEndReason.ParticipantLeft
@@ -449,6 +506,15 @@ namespace Lighthouse.Network.Session.Net
             StopClient();
         }
 
+        // Client-side. Confirming the result of a finished match; the server decides whether it still applies.
+        public void RequestReturnToLobby()
+        {
+            if (NetworkClient.isConnected && !_isClientLeaving)
+            {
+                NetworkClient.Send(new ReturnToLobbyMessage());
+            }
+        }
+
         // Features register from their game scene OnStartServer, which can run before or after players finish loading,
         // so the start is checked again both here and on every Changed.
         [Server]
@@ -477,6 +543,59 @@ namespace Lighthouse.Network.Session.Net
             return true;
         }
 
+        // Called by the game side when the match has a winner. Players who leave while the result is up only take
+        // themselves out, so the rest are not thrown to the first screen; the host leaving still closes the room.
+        [Server]
+        public void FinishMatch()
+        {
+            if (!IsSessionFlowEnabled || _phase != MatchPhase.InProgress || _isMatchFinished)
+            {
+                return;
+            }
+
+            _isMatchFinished = true;
+            Debug.Log($"[{nameof(LighthouseNetworkManager)}] Match {_matchId} finished. Waiting for a confirm. players={_connections.Count}");
+        }
+
+        // A finished match takes the same members back to the lobby scene (user decision 2026-10-29) as soon as one
+        // player confirms the result. The scene is shared, so everyone moves together; the result screen stays up on
+        // its own for those who have not confirmed yet (VictoryScreen).
+        // Game players are removed like the lobby players at loading, so every client re-adds after the scene change
+        // and gets a fresh lobby player: readiness starts cleared, and the actor id and nickname carry over.
+        [Server]
+        public bool ReturnToLobby()
+        {
+            if (!IsSessionFlowEnabled || _phase != MatchPhase.InProgress || !_isMatchFinished
+                || string.IsNullOrWhiteSpace(onlineScene))
+            {
+                return false;
+            }
+
+            foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+            {
+                // Notify before the player object is destroyed, as on a disconnect.
+                if (_connections.TryGetActorId(conn, out uint actorId) && _joinedActors.Remove(actorId))
+                {
+                    ActorLeft?.Invoke(actorId, conn);
+                }
+
+                NetworkServer.RemovePlayerForConnection(conn, RemovePlayerOptions.Destroy);
+            }
+
+            _phase = MatchPhase.Lobby;
+            _isMatchFinished = false;
+            _roles.Clear();
+            _roster.Clear();
+            _joinedActors.Clear();
+            _nicknames.Clear();
+            ClearStartGates();
+
+            Debug.Log($"[{nameof(LighthouseNetworkManager)}] Match {_matchId} returning to lobby. players={_connections.Count}");
+            BroadcastState();
+            ServerChangeScene(onlineScene);
+            return true;
+        }
+
         // Called by SessionJoinAuthenticator before Mirror sends the scene message, so the client stays on its first screen.
         // Sends are batched until the end of the frame; the client leaves on receipt and the delayed drop is the fallback.
         [Server]
@@ -501,9 +620,25 @@ namespace Lighthouse.Network.Session.Net
             Debug.Log($"[{nameof(LighthouseNetworkManager)}] Actor {actorId} requested to leave. connId={conn.connectionId} phase={_phase}");
 
             // End right away instead of waiting for the drop, so a slow disconnect cannot lose the reason.
-            if (IsSessionFlowEnabled && (_phase == MatchPhase.Loading || _phase == MatchPhase.InProgress))
+            if (IsMatchInPlay)
             {
                 EndMatch(SessionEndReason.ParticipantLeft, actorId);
+            }
+        }
+
+        // Repeated or late confirms (already back in the lobby, or the room is closing) are turned down by ReturnToLobby.
+        // A player on the way out is not the one to move everyone.
+        [Server]
+        private void HandleReturnToLobbyRequest(NetworkConnectionToClient conn, ReturnToLobbyMessage message)
+        {
+            if (!_connections.TryGetActorId(conn, out uint actorId) || _leaveRequested.Contains(conn))
+            {
+                return;
+            }
+
+            if (ReturnToLobby())
+            {
+                Debug.Log($"[{nameof(LighthouseNetworkManager)}] Actor {actorId} confirmed the result first.");
             }
         }
 
@@ -537,16 +672,25 @@ namespace Lighthouse.Network.Session.Net
         private void BeginLoading()
         {
             _phase = MatchPhase.Loading;
+            _isMatchFinished = false;
             _matchId = _nextMatchId++;
             _loadDeadline = Time.unscaledTimeAsDouble + _loadTimeoutSeconds;
             _roster.Clear();
             _joinedActors.Clear();
+            _pendingGameSpawns.Clear();
+            _nicknames.Clear();
 
             foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
             {
                 if (_connections.TryGetActorId(conn, out uint actorId))
                 {
                     _roster.Add(actorId);
+
+                    // Read before the lobby player below is destroyed; the game player gets it at spawn.
+                    if (conn.identity && conn.identity.TryGetComponent(out LobbyPlayer lobbyPlayer) && lobbyPlayer.HasNickname)
+                    {
+                        _nicknames[actorId] = lobbyPlayer.DisplayName;
+                    }
                 }
 
                 // Remove lobby players explicitly so every client sees localPlayer == null and re-adds after loading.
@@ -630,6 +774,10 @@ namespace Lighthouse.Network.Session.Net
             TryStartMatch();
         }
 
+        // A match being loaded or played, as opposed to one whose result is already up.
+        private bool IsMatchInPlay => IsSessionFlowEnabled
+            && (_phase == MatchPhase.Loading || (_phase == MatchPhase.InProgress && !_isMatchFinished));
+
         [Server]
         private void EndMatch(SessionEndReason reason, uint actorId)
         {
@@ -675,12 +823,6 @@ namespace Lighthouse.Network.Session.Net
         [Server]
         private bool SpawnGamePlayer(NetworkConnectionToClient conn)
         {
-            if (!playerPrefab.TryGetComponent(out NetworkActor _))
-            {
-                Debug.LogError($"[{nameof(LighthouseNetworkManager)}] Player prefab '{playerPrefab.name}' has no {nameof(NetworkActor)}. connId={conn.connectionId} was not given a player.");
-                return false;
-            }
-
             // Register is idempotent, so a lobby actor keeps its id in the game scene.
             uint actorId = _connections.Register(conn);
 
@@ -690,16 +832,51 @@ namespace Lighthouse.Network.Session.Net
                 return false;
             }
 
-            Transform startPos = GetStartPosition();
-            GameObject player = startPos != null
-                ? Instantiate(playerPrefab, startPos.position, startPos.rotation)
-                : Instantiate(playerPrefab);
+            GameObject selectedPrefab = playerPrefab;
+            Transform startPos;
+            Lighthouse.World.Query.Rules.WorldServices.TryGet(out IGamePlayerSpawnSource source);
+            if (source != null)
+            {
+                if (!source.TryReserve(actorId, out selectedPrefab, out startPos))
+                {
+                    Debug.LogError($"[{nameof(LighthouseNetworkManager)}] No free main island spawn for actor {actorId}.");
+                    return false;
+                }
+            }
+            else
+            {
+                startPos = GetStartPosition();
+            }
 
-            player.name = $"{playerPrefab.name} [actor={actorId} connId={conn.connectionId}]";
-            player.GetComponent<NetworkActor>().AssignActorId(actorId);
+            if (!selectedPrefab || !selectedPrefab.TryGetComponent(out NetworkActor _))
+            {
+                if (source != null)
+                {
+                    source.Release(actorId);
+                }
+                Debug.LogError($"[{nameof(LighthouseNetworkManager)}] Invalid player spawn prefab.");
+                return false;
+            }
+
+            GameObject player = startPos
+                ? Instantiate(selectedPrefab, startPos.position, startPos.rotation)
+                : Instantiate(selectedPrefab);
+
+            player.name = $"{selectedPrefab.name} [actor={actorId} connId={conn.connectionId}]";
+            NetworkActor actor = player.GetComponent<NetworkActor>();
+            actor.AssignActorId(actorId);
+
+            if (_nicknames.TryGetValue(actorId, out string nickname))
+            {
+                actor.AssignDisplayName(nickname);
+            }
 
             if (!NetworkServer.AddPlayerForConnection(conn, player))
             {
+                if (source != null)
+                {
+                    source.Release(actorId);
+                }
                 Destroy(player);
 
                 if (!IsSessionFlowEnabled)
@@ -739,10 +916,13 @@ namespace Lighthouse.Network.Session.Net
             _roles.Clear();
             _roster.Clear();
             _joinedActors.Clear();
+            _pendingGameSpawns.Clear();
+            _nicknames.Clear();
             _rejectedConnections.Clear();
             _leaveRequested.Clear();
             ClearStartGates();
             _phase = MatchPhase.Lobby;
+            _isMatchFinished = false;
             _matchId = 0;
         }
 
@@ -775,6 +955,13 @@ namespace Lighthouse.Network.Session.Net
         private void HandleSessionState(SessionStateMessage message)
         {
             ClientState = message;
+
+            // Back in the lobby after a finished match; the next match sends a new role.
+            if (message.Phase == MatchPhase.Lobby)
+            {
+                OwnRole = MatchRole.None;
+            }
+
             ClientStateChanged?.Invoke(message);
         }
 
