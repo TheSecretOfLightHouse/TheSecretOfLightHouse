@@ -70,7 +70,7 @@ namespace Lighthouse.Mafia.SeaSummoning.View
                     ? _permission.Settings.Options[hover].DisplayName + (_enabledSlots[hover] ? "\n\n클릭하여 소환"
                         : _permission.Settings.Options[hover].IsEnabled ? "\n\n오늘 횟수 소진" : "\n\n준비 중")
                     : "몬스터 선택\n\n칸을 클릭하면\n즉시 소환됩니다";
-                _footer.text = pending ? "서버 응답을 기다리는 중입니다" : GetQuotaText() + "\nX: 지점 다시 선택    ·    Q: 탑뷰 종료";
+                _footer.text = pending ? "서버 응답을 기다리는 중입니다" : GetQuotaText() + "\nX: 지점 다시 선택    ·    F: 탑뷰 종료";
             }
             if (Time.frameCount <= _openedFrame || pending || !Mouse.current.leftButton.wasPressedThisFrame)
             {
