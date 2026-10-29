@@ -1,7 +1,7 @@
 # develop 병합과 로컬 작업 보존
 작성자: 최명기
 작성일: 2026-10-28
-갱신일: 2026-10-28
+갱신일: 2026-10-29
 상태: 파일 병합 완료·Unity 실행 검증 미실행
 브랜치·기준 커밋: feature/myeongki, fae7bd89 → origin/develop 36d5fcff
 
@@ -62,3 +62,16 @@
 - 검증: `git ls-files -u` 출력 없음, 대상 파일과 MERGE_HEAD 간 diff 없음. 다른 기존 스테이징·빌드 프로필·미추적 파일은 유지했다.
 - 전체 cached diff 검사에서는 기존 MainGame.unity의 빈 직렬화 필드 행 끝 공백6개가 보고됐다. 수정하지 않았다.
 - 병합 커밋·푸시와 Unity 실행 검증은 수행하지 않았다. 병합은 충돌 해결 후 커밋 대기 상태다.
+
+
+## 2026-10-29 develop 병합과 Git 오류 해결
+- 최명기 사용자 확인 후 feature/myeongki의 0d3773bd에서 origin/develop fe787de3까지 fast-forward했다. 새 커밋·푸시 없음.
+- 시작 시 미해결 충돌은 없었다. 로컬 수정과 원격 변경이 겹쳐 GUI 병합이 거절된 상황으로 판단했다. 수정28개·미추적39개를 recovery-before-develop-2026-10-29 stash로 보존하고 apply했다. 복구 stash는 삭제하지 않았다.
+- 재적용 시 코드1개·씬/프리팹/설정10개 충돌. PlayerAnimationDriver는 원격의 수중 상태/낙하 억제와 로컬의 발소리·점프·승하선·배 이동 사운드를 함께 보존했다.
+- MonsterTestScene, Captain 1, Tanker 1, TankerBoat는 UnityYAMLMerge로 병합했다. Farm 1·Tech 1은 SmartMerge의 오른쪽 선택으로 원격의 유효한 _wreckBuoyancy 참조를 유지했다. 해당 두 파일은 충돌 보고 종료코드2였지만 출력 참조와 에디터 로드로 결과를 확인했다.
+- 원격 Boat/captainBoat/gardenBoat는 BoatMooring 컴포넌트 블록이 다른 객체 중간에 삽입되어 중복 키가 있었고 SmartMerge가 거절했다. 로컬 원본을 복원한 뒤 Unity PrefabUtility로 BoatMooring을 추가·저장하여 원격의 유일한 추가 기능을 반영했다. YAML 수작업 편집 없음.
+- Island_Lighthouse는 로컬의 임시 원본 참조 대신 원격 최신 MainIslandAppearance 프리팹 참조를 유지했다. World 신규 동작이나 규칙 변경 없음.
+- 사용자 요청으로 Unity CLI 현재 버전을 사용했다. Unity recompile 성공, compilationFailed=false·errors=[] 확인. 프리팹8개 로드 성공·Missing Script0, 배4종 BoatMooring 존재·캐릭터4종 wreckBuoyancy 유효 참조·등대 섬 MainIslandAppearance 참조 확인.
+- 원본 로컬67개 누락0, 미추적39개 내용 동일 확인. 병합 대상 외 기존 로컬 수정 내용은 유지했다. VFX2개 로컬 변경은 최신 develop과 같아 별도 diff가 없어졌다.
+- Git 미해결 인덱스와 충돌 마커를 최종 확인하고 스테이징을 원래처럼 해제했다. diff --check의 에셋 빈 직렬화 필드 행 끝 공백은 남겨 두었다.
+- 실제 Play·청감·다인 접속/M2 검증은 미실행이며 기존 작업의 남은 검증을 대체하지 않는다. 다음은 실제 플레이에서 수중 애니메이션·사운드·정박과 맵 진입 확인.
