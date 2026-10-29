@@ -48,10 +48,15 @@ namespace Lighthouse.World.Islands.View
                     $"Island {plan.Index} already exists.");
             }
 
+            // Unity Terrain ignores rotation. Keep terrain and its authored props in the same frame.
+            Quaternion rotation = plan.Prefab.GetComponentInChildren<Terrain>(true)
+                ? Quaternion.identity
+                : Quaternion.Euler(0f, plan.YawDegrees, 0f);
+
             GameObject instance = Instantiate(
                 plan.Prefab,
                 plan.Position,
-                Quaternion.Euler(0f, plan.YawDegrees, 0f),
+                rotation,
                 transform);
 
             _indices.Add(plan.Index);

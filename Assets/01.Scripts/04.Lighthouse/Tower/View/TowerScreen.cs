@@ -194,6 +194,35 @@ namespace Lighthouse.Tower.View
             BindLocalPlayer(null);
         }
 
+        public void Bind(TowerNet tower, InteractionTarget target)
+        {
+            Close();
+
+            if (isActiveAndEnabled && _tower)
+            {
+                _tower.Changed -= HandleChanged;
+                if (_tower.Workbench)
+                {
+                    _tower.Workbench.Changed -= HandleChanged;
+                }
+            }
+
+            _tower = tower;
+            _target = target;
+            _isInRange = false;
+            _isPending = false;
+            _prompt.SetActive(false);
+
+            if (isActiveAndEnabled && _tower)
+            {
+                _tower.Changed += HandleChanged;
+                if (_tower.Workbench)
+                {
+                    _tower.Workbench.Changed += HandleChanged;
+                }
+            }
+        }
+
         public void Open()
         {
             if (_isOpen || !_tower || !_tower.Layout || !_relay)

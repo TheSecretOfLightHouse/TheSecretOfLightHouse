@@ -18,7 +18,7 @@ float CoastWidth(float width, float4 profile, float2 p)
 
 float CoastPhase(float d,float time) { return max(0,d)*0.55+time*0.9; }
 
-float CoastHeight(float d, float width, float time, float height, float energy)
+float CoastHeight(float d, float width, float time, float height, float energy, float shoreLift)
 {
     d = max(0.0, d);
     float fetch=max(7,width);
@@ -29,10 +29,16 @@ float CoastHeight(float d, float width, float time, float height, float energy)
     // Increasing time moves a constant phase towards smaller shore distance.
     float phase=CoastPhase(d,time);
     float shore = amplitude * (0.7*sin(phase)-0.4*cos(phase*2)-0.22*sin(phase*3));
-    float result = lerp(shore, height, blend);
+    float runup = shoreLift * smoothstep(0, 0.6, d) * (1-smoothstep(2, 5, d));
+    float result = lerp(shore, height, blend) + runup;
     float safeDepth = 0.025 + 0.012 * d + 0.015 * max(0.0, d - width);
     float release = smoothstep(width * 1.3, width * 2.2, d);
     return lerp(max(result, -safeDepth), result, release);
+}
+
+float CoastHeight(float d, float width, float time, float height, float energy)
+{
+    return CoastHeight(d, width, time, height, energy, 0.0);
 }
 
 void OceanCoastFieldLagoonAt(float2 p, float time, float energy, inout float height, inout float3 normal, out float4 field, out float lagoonReach)
@@ -48,6 +54,7 @@ void OceanCoastFieldLagoonAt(float2 p, float time, float energy, inout float hei
     float width = 0.0;
     float2 gradient = 0.0;
     float nearestLagoon = 0.0;
+    float shoreLift = 0.0;
     [loop] for (int island = 0; island < OCEAN_COAST_CAPACITY; island++)
     {
         float4 area = _OceanCoastBounds[island];
@@ -71,6 +78,7 @@ void OceanCoastFieldLagoonAt(float2 p, float time, float energy, inout float hei
                 gradient = square > 0.000001 ? sign * offset * rsqrt(square) : normalize(float2(tangent.y, -tangent.x));
                 width = CoastWidth(area.w,_OceanCoastProfiles[island],p);
                 nearestLagoon = _OceanCoastLagoon[island].x;
+                shoreLift = _OceanCoastLagoon[island].y;
             }
         }
     }
@@ -81,14 +89,14 @@ void OceanCoastFieldLagoonAt(float2 p, float time, float energy, inout float hei
     field = float4(gradient, distance, width);
     lagoonReach = nearestLagoon;
     float stepSize = 0.01;
-    float alongDistance = (CoastHeight(distance + stepSize, width, time, height, energy)
-        - CoastHeight(distance - stepSize, width, time, height, energy)) / (2.0 * stepSize);
-    float alongHeight = (CoastHeight(distance, width, time, height + stepSize, energy)
-        - CoastHeight(distance, width, time, height - stepSize, energy)) / (2.0 * stepSize);
+    float alongDistance = (CoastHeight(distance + stepSize, width, time, height, energy, shoreLift)
+        - CoastHeight(distance - stepSize, width, time, height, energy, shoreLift)) / (2.0 * stepSize);
+    float alongHeight = (CoastHeight(distance, width, time, height + stepSize, energy, shoreLift)
+        - CoastHeight(distance, width, time, height - stepSize, energy, shoreLift)) / (2.0 * stepSize);
     float2 slope = -normal.xz / max(0.001, normal.y);
     slope = slope * alongHeight + gradient * alongDistance;
     normal = normalize(float3(-slope.x, 1.0, -slope.y));
-    height = CoastHeight(distance, width, time, height, energy);
+    height = CoastHeight(distance, width, time, height, energy, shoreLift);
 }
 void OceanCoastFieldAt(float2 p, float time, float energy, inout float height, inout float3 normal, out float4 field)
 {

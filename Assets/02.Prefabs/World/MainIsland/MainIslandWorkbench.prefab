@@ -1,0 +1,203 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3531418183311245208
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4211810006412378978}
+  - component: {fileID: 2051312564667430401}
+  m_Layer: 0
+  m_Name: WorkbenchRack
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4211810006412378978
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3531418183311245208}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 1, z: -0, w: 0}
+  m_LocalPosition: {x: 0, y: -0.5, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3005421308126870984}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2051312564667430401
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3531418183311245208}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8134cf8eb1b332543b8c91c796c5ca38, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _workbench: {fileID: 4452986888086141618}
+  _target: {fileID: 3029222912019642948}
+  _useKey: 20
+  _withdrawKey: 21
+  _material: {fileID: 2100000, guid: 547d3aa2ed8e240498443b1bb9132486, type: 2}
+  _styles:
+  - _resource: {fileID: 11400000, guid: a2fd54a3f56b7b84e9b17d601cfd9284, type: 2}
+    _shape: 0
+    _size: {x: 0.13, y: 0.035, z: 0.42}
+    _color: {r: 0.62, g: 0.42, b: 0.24, a: 1}
+  - _resource: {fileID: 11400000, guid: 8c7a2775b55dec340a1dfce8185c7fb5, type: 2}
+    _shape: 1
+    _size: {x: 0.05, y: 0.05, z: 0.44}
+    _color: {r: 0.32, g: 0.34, b: 0.38, a: 1}
+  - _resource: {fileID: 11400000, guid: fa31dd611901c164f8a45b569154efd6, type: 2}
+    _shape: 0
+    _size: {x: 0.15, y: 0.12, z: 0.15}
+    _color: {r: 0.55, g: 0.55, b: 0.53, a: 1}
+  - _resource: {fileID: 11400000, guid: 9ff0671df1fa4014793fa191e3e36bab, type: 2}
+    _shape: 1
+    _size: {x: 0.13, y: 0.13, z: 0.22}
+    _color: {r: 0.82, g: 0.74, b: 0.5, a: 1}
+  - _resource: {fileID: 11400000, guid: d08359d5654970348842cc01ffeb88bf, type: 2}
+    _shape: 0
+    _size: {x: 0.13, y: 0.2, z: 0.02}
+    _color: {r: 0.7, g: 0.9, b: 0.95, a: 1}
+  - _resource: {fileID: 11400000, guid: 36e7424a8f7dc8844a1df2dbe6997f06, type: 2}
+    _shape: 2
+    _size: {x: 0.12, y: 0.16, z: 0.12}
+    _color: {r: 0.62, g: 0.4, b: 0.9, a: 1}
+  _fallbackPieceSize: {x: 0.14, y: 0.14, z: 0.14}
+  _fallbackPieceColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
+  _frameColor: {r: 0.36, g: 0.26, b: 0.18, a: 1}
+  _slotColor: {r: 0.12, g: 0.1, b: 0.09, a: 1}
+  _theftColor: {r: 0.9, g: 0.15, b: 0.1, a: 1}
+  _signColor: {r: 0.16, g: 0.2, b: 0.28, a: 1}
+  _readySignColor: {r: 0.85, g: 0.65, b: 0.15, a: 1}
+  _moduleColor: {r: 0.45, g: 0.75, b: 0.85, a: 1}
+  _bayWidth: 1
+  _bayGap: 0.12
+  _depth: 0.5
+  _baseHeight: 0.12
+  _levelClearance: 0.14
+  _maxColumns: 5
+  _moduleSize: 0.22
+  _maxShownModules: 3
+  _reach: 1.4
+  _theftFlashSeconds: 4
+  _messageSeconds: 2.5
+  _osFontNames:
+  - Malgun Gothic
+  - "\uB9D1\uC740 \uACE0\uB515"
+  - Apple SD Gothic Neo
+  - Noto Sans CJK KR
+  - Arial
+  _signCharacterSize: 0.018
+  _promptCharacterSize: 0.014
+--- !u!1 &7658658930841495540
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3005421308126870984}
+  - component: {fileID: 4398907826673028750}
+  - component: {fileID: 3029222912019642948}
+  - component: {fileID: 4452986888086141618}
+  - component: {fileID: 3496339567473936257}
+  m_Layer: 0
+  m_Name: MainIslandWorkbench
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3005421308126870984
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7658658930841495540}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4211810006412378978}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4398907826673028750
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7658658930841495540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sceneId: 0
+  _assetId: 4092249291
+  serverOnly: 0
+  visibility: 0
+  hasSpawned: 0
+--- !u!114 &3029222912019642948
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7658658930841495540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ada3de8c79de565459f6cbb86fa5b96d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _defaultAction: 0
+  _supportedActions: 04020c031011
+  _range: 3
+  _serverRangeSlack: 1.5
+--- !u!114 &4452986888086141618
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7658658930841495540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70040deed71af4741836845399244021, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _catalog: {fileID: 11400000, guid: 26ddceede8cee4846a6b67e73f76e6d4, type: 2}
+--- !u!114 &3496339567473936257
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7658658930841495540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8264382fb866bfc4d88303c231777d48, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
