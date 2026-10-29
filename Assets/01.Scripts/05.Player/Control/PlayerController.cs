@@ -102,8 +102,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         && HasLocalControlAuthority
         && CanRunLocalWorld();
     public bool CanUseWreckBuoyancy => isActiveAndEnabled && CanProcessLocalInput
-        && IsDowned && !IsOnBoat && OwnedBoat && OwnedBoat.IsWrecked
-        && IsSessionSimulationReady && _rb && !_rb.isKinematic;
+        && !IsOnBoat && IsSessionSimulationReady && _rb && !_rb.isKinematic;
     public PlayerHFSM StateMachine => _hfsm;
 
     public PlayerPassiveController PassiveController => _passiveController;

@@ -1151,6 +1151,8 @@ GameObject:
   - component: {fileID: -3183427818904781202}
   - component: {fileID: -8992161067119886717}
   - component: {fileID: 8938642454017268104}
+  - component: {fileID: 5166046398985848794}
+  - component: {fileID: 5687769006039495063}
   m_Layer: 0
   m_Name: Tech 1
   m_TagString: Untagged
@@ -1328,8 +1330,11 @@ MonoBehaviour:
   _camera: {fileID: 2415168992369603088}
   _runMultiplier: 1.5
   _mouseSensitivity: 0.15
+  _onFootTurnSpeed: 720
   _allowOfflineControl: 1
+  _requireLocalWorldReady: 1
   _boatPrefab: {fileID: 2050603305816487322, guid: 7029604b97a61da46b62f0e58800192f, type: 3}
+  _wreckBuoyancy: {fileID: 5166046398985848794}
 --- !u!136 &6480794805475434152
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1444,6 +1449,8 @@ MonoBehaviour:
   _walkBlendSpeed: 0.5
   _minimumLocomotionRate: 0.65
   _maximumLocomotionRate: 1.5
+  _waterEnterFraction: 0.25
+  _waterExitFraction: 0.1
 --- !u!114 &2415168992369603088
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1460,8 +1467,16 @@ MonoBehaviour:
   _minPitch: -10
   _maxPitch: 70
   _cameraPivot: {fileID: 440580148379586522}
+  _boatCameraOffset: {x: 0, y: 0, z: 0}
   _boatLookReturnDelay: 3
   _boatLookReturnSpeed: 120
+  _lookSmoothTime: 0.08
+  _obstacleMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  _collisionRadius: 0.2
+  _collisionPadding: 0.05
+  _hideCharacterDistance: 0.8
 --- !u!114 &-7914389096021402594
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1774,6 +1789,60 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   _repairRatio: 0.5
+--- !u!114 &5166046398985848794
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4492665440649449213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1aafff1b5e63eb849ad57b0e0ed80c20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _isSimulating: 1
+  _profile:
+    _buoyancyRatio: 2.3
+    _restoreStrength: 0
+    _diveRatio: 0.9
+    _surfaceFollow: 1
+    _submergedFollow: 0.3
+    _plateThickness: 0.3
+    _depthCapScale: 3
+    _verticalDrag: 10
+    _horizontalDrag: 1
+    _angularDrag: 0.3
+    _heaveFollow: 1
+    _heaveBaselineSeconds: 4
+    _maxSinkDepth: 0.27
+    _minSinkDepth: 0.19
+  _pool: 1
+  _divisions: {x: 2, y: 2, z: 2}
+  _manualPoints:
+  - {x: 0, y: 0.1, z: 0}
+  - {x: 0, y: 0.5, z: 0}
+  - {x: 0, y: 0.9, z: 0}
+  _depthTolerance: 0.1
+  _warnInterval: 2
+--- !u!114 &5687769006039495063
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4492665440649449213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a87bac804e555444e8ae6ef4a6d77817, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _model: {fileID: 7308786738915734500}
+  _gate: {fileID: 5166046398985848794}
+  _gateMinFraction: 0.1
+  _tiltScale: 1
+  _maxTiltDegrees: 25
+  _followRate: 6
 --- !u!1 &4541714919809005310
 GameObject:
   m_ObjectHideFlags: 0
