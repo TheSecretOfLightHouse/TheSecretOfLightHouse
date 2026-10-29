@@ -101,7 +101,7 @@ namespace Lighthouse.World.Ocean
                 _profile,
                 normal,
                 force,
-                _ship.Mass,
+                _profile.ReferenceMass,
                 _shoreDistance);
 
             _driftVelocity = WaveDriftModel.Advance(
@@ -111,6 +111,19 @@ namespace Lighthouse.World.Ocean
                 dt);
 
             ApplyStep(_driftVelocity * dt);
+            ApplyImpulseForce(provider);
+        }
+
+        private void ApplyImpulseForce(IForceFieldProvider provider)
+        {
+            Vector3 force = provider.AccumulateForce(
+                ForceFieldRoute.Impulse,
+                _body.worldCenterOfMass,
+                _body.linearVelocity,
+                _ship.HullExposure,
+                _host.CurrentTime);
+
+            _body.AddForce(force / _profile.ReferenceMass, ForceMode.Acceleration);
         }
 
         private bool TryResolveServices(out IForceFieldProvider provider)

@@ -28,6 +28,7 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
 
     private Font _runtimeFont;
     private GuardShieldAbility _boundAbility;
+    private PlayerController _boundController;
     private Mirror.NetworkIdentity _boundPlayer;
     private bool _isOpen;
     private CursorLockMode _savedCursorLock;
@@ -75,7 +76,8 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
             Mirror.NetworkClient.localPlayer;
 
         if (_isOpen && (!localPlayer || !_boundAbility
-            || !_boundAbility.isActiveAndEnabled || _boundAbility.IsFinished))
+            || !_boundAbility.isActiveAndEnabled || _boundAbility.IsFinished
+            || !GuardShieldAbility.IsAboardOwnedBoat(_boundController)))
         {
             Hide();
         }
@@ -128,6 +130,15 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
     {
         if (!_panelRoot || _isOpen || !isActiveAndEnabled)
         {
+            return;
+        }
+
+        if (!GuardShieldAbility.IsAboardOwnedBoat(_boundController))
+        {
+            if (_boundAbility)
+            {
+                _boundAbility.CompleteSelection();
+            }
             return;
         }
 
@@ -247,7 +258,7 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
                 : $"선원 {player.ActorID}";
 
             BoatController boat = player.OwnedBoat;
-            bool canProtect = boat && !boat.IsWrecked
+            bool canProtect = GuardShieldAbility.IsAboardOwnedBoat(player)
                 && boat.TryGetComponent(out BoatShield shield)
                 && shield.isActiveAndEnabled && !shield.HasShield
                 && (!_request || !_request.IsAwaitingResult);
@@ -270,9 +281,16 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
 
         PlayerController target = _targets[index];
 
-        if (!target || !target.isActiveAndEnabled)
+        if (!GuardShieldAbility.IsAboardOwnedBoat(_boundController))
+        {
+            Hide();
+            return;
+        }
+
+        if (!GuardShieldAbility.IsAboardOwnedBoat(target))
         {
             RefreshTargets();
+            SetMessage("배에 탑승 중인 선원을 선택해주세요.");
             return;
         }
 
@@ -332,6 +350,7 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
         }
 
         _boundAbility = ability;
+        _boundController = ability ? ability.GetComponent<PlayerController>() : null;
         _request = ability ? ability.GetComponent<GuardShieldRequest>() : null;
 
         if (_boundAbility)
@@ -369,7 +388,7 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
             GuardShieldResult.AlreadyUsed => "오늘은 이미 사용했습니다. 다음 날 다시 사용할 수 있습니다.",
             GuardShieldResult.AlreadyShielded => "이미 쉴드가 있는 배입니다. 다른 선원을 선택해주세요.",
             GuardShieldResult.InvalidTarget => "대상 배를 보호할 수 없습니다. 다시 선택해주세요.",
-            GuardShieldResult.InvalidCaster => "현재 상태에서는 경비병 스킬을 사용할 수 없습니다.",
+            GuardShieldResult.InvalidCaster => "자신의 배에 탑승한 상태에서 사용해주세요.",
             GuardShieldResult.ClockUnavailable => "게임 시간 정보를 준비하는 중입니다.",
             GuardShieldResult.MatchUnavailable => "게임 진행 중에만 사용할 수 있습니다.",
             _ => "요청이 거절되었습니다. 사용권은 차감되지 않았습니다."

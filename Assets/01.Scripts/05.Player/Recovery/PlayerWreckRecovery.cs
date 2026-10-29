@@ -8,6 +8,8 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerController))]
 public sealed class PlayerWreckRecovery : NetworkBehaviour
 {
+    private const double CompletionRetryInterval = 1d;
+
     [SerializeField, Min(1f)]
     private float _recoveryDuration = 90f;
 
@@ -17,6 +19,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
     private double _recoveryDeadline;
 
     private bool _isCompletingRecovery;
+    private double _nextCompletionRetryTime;
     private WreckRecoveryResult _recoveryResult;
 
     private PlayerBoatSpawner _boatSpawner;
@@ -97,8 +100,18 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
     [ServerCallback]
     private void Update()
     {
-        if (!_isRecovering || _isCompletingRecovery)
+        if (!_isRecovering)
         {
+            return;
+        }
+
+        if (_isCompletingRecovery)
+        {
+            if (NetworkTime.time >= _nextCompletionRetryTime)
+            {
+                _nextCompletionRetryTime = NetworkTime.time + CompletionRetryInterval;
+                TryFinishRecovery();
+            }
             return;
         }
 
@@ -121,8 +134,18 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
     [Server]
     public bool TryBeginRecovery(Vector3 wreckPosition)
     {
-        if (_isRecovering)
+        BoatController wreckedBoat = _player.OwnedBoat;
+        if (_isRecovering || !wreckedBoat || wreckedBoat.Owner != _player
+            || !wreckedBoat.IsWrecked || !wreckedBoat.IsOccupied
+            || _player.CurrentBoat != wreckedBoat)
         {
+            return false;
+        }
+
+        _player.SetDowned(true);
+        if (!wreckedBoat.TryDetachForWreck(_player))
+        {
+            _player.SetDowned(false);
             return false;
         }
 
@@ -137,8 +160,6 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
         _hasDroppedResources = false;
         _hasDiscardedModule = false;
         _resourceDrops = System.Array.Empty<WreckDropItem>();
-        _player.SetDowned(true);
-
         return true;
     }
 
@@ -160,15 +181,16 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
             return false;
         }
 
-            BoatController wreckedBoat = _player.OwnedBoat;
+        BoatController wreckedBoat = _player.OwnedBoat;
 
         if (!wreckedBoat || !wreckedBoat.IsWrecked || wreckedBoat.Owner != _player || !_player.IsDowned
-            || !wreckedBoat.IsOccupied || _player.CurrentBoat != wreckedBoat)
+            || wreckedBoat.IsOccupied || _player.IsOnBoat)
         {
             return false;
         }
 
         _isCompletingRecovery = true;
+        _nextCompletionRetryTime = NetworkTime.time + CompletionRetryInterval;
         _recoveryResult = result;
 
         if (!TryFinishRecovery())
@@ -237,7 +259,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
         BoatController wreckedBoat = _player.OwnedBoat;
 
         if (!wreckedBoat || !wreckedBoat.IsWrecked || wreckedBoat.Owner != _player || !_player.IsDowned
-            || !wreckedBoat.IsOccupied || _player.CurrentBoat != wreckedBoat)
+            || wreckedBoat.IsOccupied || _player.IsOnBoat)
         {
             return false;
         }
@@ -272,6 +294,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
         _player.SetDowned(false);
         _isRecovering = false;
         _isCompletingRecovery = false;
+        _nextCompletionRetryTime = 0d;
         _recoveryDeadline = 0d;
 
         return true;

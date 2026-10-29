@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Lighthouse.Monsters.AI.Net;
 using Lighthouse.Monsters.AI.Rules;
+using Lighthouse.Monsters.AI.View;
 using Lighthouse.World.Query.Rules;
 using Mirror;
 using UnityEngine;
@@ -49,6 +50,7 @@ namespace Lighthouse.Monsters.AI.Server
         private MonsterMotion _motion;
         private SeaMonsterSensor _sensor;
         private Rigidbody _body;
+        private MonsterHitShake _hitShake;
         private IWorldQuery _world;
         private MonsterBoatTarget _target;
         private Rigidbody _targetBody;
@@ -101,6 +103,7 @@ namespace Lighthouse.Monsters.AI.Server
             _motion = GetComponent<MonsterMotion>();
             _sensor = GetComponent<SeaMonsterSensor>();
             _body = GetComponent<Rigidbody>();
+            _hitShake = GetComponent<MonsterHitShake>();
         }
 
         private void FixedUpdate()
@@ -292,7 +295,12 @@ namespace Lighthouse.Monsters.AI.Server
 
         private Vector3 GetTailLocalPosition()
         {
-            return _tailBone != null ? transform.InverseTransformPoint(_tailBone.position) : _tailLocalOffset;
+            if (_tailBone == null)
+            {
+                return _tailLocalOffset;
+            }
+            Vector3 position = _hitShake != null ? _hitShake.GetUnshakenPosition(_tailBone) : _tailBone.position;
+            return transform.InverseTransformPoint(position);
         }
 
         private Vector3 GetTailPosition()
