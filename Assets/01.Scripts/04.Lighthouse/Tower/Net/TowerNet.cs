@@ -101,6 +101,11 @@ namespace Lighthouse.Tower.Net
             Changed?.Invoke();
         }
 
+        public void BindWorkbench(WorkbenchNet workbench)
+        {
+            _workbench = workbench;
+        }
+
         public bool IsInstalled(int slot)
         {
             return slot >= 0 && slot < _installed.Count && _installed[slot];

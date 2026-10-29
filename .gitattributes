@@ -184,3 +184,5 @@ LightingData.asset     binary
 TerrainData*.asset     binary
 NavMesh.asset          binary
 NavMesh-*.asset        binary
+# Preserve the main island TerrainData binary without newline conversion.
+Assets/02.Prefabs/World/MainIsland/MainIslandTerrain_CoastBlend.asset binary

@@ -34,7 +34,7 @@ namespace Lighthouse.World.Ocean.Rules
             Version++;
         }
 
-        public static int Register(Vector3[] contour, float width, Vector4 profile = default, float lagoonReach = 0f)
+        public static int Register(Vector3[] contour, float width, Vector4 profile = default, float lagoonReach = 0f, float waveReach = 0f, float shoreLift = 0f)
         {
             if (contour.Length != Segments || width <= 0f)
             {
@@ -68,10 +68,11 @@ namespace Lighthouse.World.Ocean.Rules
                 radius = Mathf.Max(radius, Vector2.Distance(new Vector2(a.x, a.z), new Vector2(center.x, center.z)));
             }
             ProfileBuffer[slot] = profile;
-            BoundsBuffer[slot] = new Vector4(center.x, center.z, radius + width * ReachWidthScale, width);
+            BoundsBuffer[slot] = new Vector4(center.x, center.z, radius + Mathf.Max(width * ReachWidthScale, waveReach), width);
             RawRadius[slot] = radius;
             float desired = lagoonReach > 0f ? lagoonReach : width * DefaultLagoonWidthScale;
             DesiredLagoon[slot] = Mathf.Min(desired, width * ReachWidthScale * LagoonCoverageMargin);
+            LagoonBuffer[slot].y = Mathf.Max(0f, shoreLift);
             RefreshLagoons();
             Version++;
             return slot;
@@ -110,7 +111,7 @@ namespace Lighthouse.World.Ocean.Rules
                         new Vector2(BoundsBuffer[j].x, BoundsBuffer[j].y), RawRadius[j],
                         new ReadOnlySpan<Vector4>(EdgeBuffer, j * Segments, Segments));
                 }
-                LagoonBuffer[i] = new Vector4(reach, 0f, 0f, 0f);
+                LagoonBuffer[i] = new Vector4(reach, LagoonBuffer[i].y, 0f, 0f);
             }
         }
     }

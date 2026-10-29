@@ -96,6 +96,25 @@ namespace Lighthouse.Tower.View
             }
         }
 
+        public void Bind(TowerNet tower, GameObject[] slotVisuals, GameObject completeVisual)
+        {
+            if (isActiveAndEnabled && _tower)
+            {
+                _tower.Changed -= HandleTowerChanged;
+            }
+
+            _tower = tower;
+            _slotVisuals = slotVisuals;
+            _completeVisual = completeVisual;
+
+            if (isActiveAndEnabled && _tower)
+            {
+                _tower.Changed += HandleTowerChanged;
+            }
+
+            Refresh();
+        }
+
         private void HandleTowerChanged()
         {
             Refresh();

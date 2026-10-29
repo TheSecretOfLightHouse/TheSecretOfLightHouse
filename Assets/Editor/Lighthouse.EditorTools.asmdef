@@ -1,7 +1,10 @@
 {
     "name": "Lighthouse.EditorTools",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "Lighthouse.Runtime",
+        "Mirror"
+    ],
     "includePlatforms": [
         "Editor"
     ],

@@ -139,6 +139,16 @@ namespace Lighthouse.Tower.View
             FloatDamage();
         }
 
+        public void Bind(TowerMatchNet match)
+        {
+            _match = match;
+            _isShown = false;
+            _shownRepairTenths = -1;
+            _shownHealth = -1;
+            _shownMaxHealth = -1;
+            _root.SetActive(false);
+        }
+
         private float RepairRatio()
         {
             return _match.Tower ? Mathf.Clamp01(_match.Tower.RepairRatio) : 0f;
