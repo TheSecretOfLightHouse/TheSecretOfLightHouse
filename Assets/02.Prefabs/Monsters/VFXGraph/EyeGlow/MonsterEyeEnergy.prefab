@@ -4768,6 +4768,7 @@ GameObject:
   - component: {fileID: 4504567237962150090}
   - component: {fileID: 5825947051896161448}
   - component: {fileID: 6424208989425865991}
+  - component: {fileID: 5484832152569385267}
   m_Layer: 0
   m_Name: MonsterEyeEnergy
   m_TagString: Untagged
@@ -9774,3 +9775,16 @@ TrailRenderer:
   m_Autodestruct: 0
   m_Emitting: 1
   m_ApplyActiveColorSpace: 1
+--- !u!114 &5484832152569385267
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8765686080125548292}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93f3ed72a76a31744a0c939728806315, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _refreshInterval: 0.2

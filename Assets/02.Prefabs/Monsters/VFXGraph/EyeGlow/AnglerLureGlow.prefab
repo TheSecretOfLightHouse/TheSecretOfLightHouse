@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2345007691321146626}
   - component: {fileID: 7704900184337229309}
   - component: {fileID: 5481229239671283998}
+  - component: {fileID: 3057758957373778118}
   m_Layer: 0
   m_Name: AnglerLureGlow
   m_TagString: Untagged
@@ -4891,3 +4892,16 @@ ParticleSystemRenderer:
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
   m_MaskInteraction: 0
+--- !u!114 &3057758957373778118
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8221214094667222081}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93f3ed72a76a31744a0c939728806315, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _refreshInterval: 0.2
