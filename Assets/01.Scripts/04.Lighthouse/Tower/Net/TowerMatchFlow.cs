@@ -58,6 +58,12 @@ namespace Lighthouse.Tower.Net
         public bool IsDeadlineStopped => _isDeadlineStopped;
         public uint RevealedMafiaId => _revealedMafiaId;
 
+        public void BindServices(ModuleInteractionHandler modules, VotingNetworkController voting)
+        {
+            _modules = modules;
+            _voting = voting;
+        }
+
         private void Awake()
         {
             _match = GetComponent<TowerMatchNet>();

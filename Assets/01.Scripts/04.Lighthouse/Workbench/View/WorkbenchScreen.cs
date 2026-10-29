@@ -320,6 +320,27 @@ namespace Lighthouse.Workbench.View
             BindLocalPlayer(null);
         }
 
+        public void Bind(WorkbenchNet workbench, InteractionTarget target)
+        {
+            Close();
+
+            if (isActiveAndEnabled && _workbench)
+            {
+                _workbench.Changed -= HandleWorkbenchChanged;
+            }
+
+            _workbench = workbench;
+            _target = target;
+            _viewedRecipe = null;
+            _isInRange = false;
+            _prompt.SetActive(false);
+
+            if (isActiveAndEnabled && _workbench)
+            {
+                _workbench.Changed += HandleWorkbenchChanged;
+            }
+        }
+
         public void Open()
         {
             if (_isOpen || !_workbench || !_workbench.Catalog || !_relay)
