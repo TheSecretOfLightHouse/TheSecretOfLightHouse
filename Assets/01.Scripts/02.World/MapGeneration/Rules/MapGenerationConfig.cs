@@ -20,6 +20,7 @@ namespace Lighthouse.World.MapGeneration.Rules
         [SerializeField, Min(0f)] private float _shipClearance = 6f;
         [SerializeField, Min(0f)] private float _sailingChannelWidth = 24f;
         [SerializeField] private WorldDepositBudget _depositBudget;
+        [SerializeField] private WalkBoundaryConfig _walkBoundary;
 
         public IslandArchetype LighthouseIsland => _lighthouseIsland;
         public ResourceCatalog Resources => _resources;
@@ -29,6 +30,7 @@ namespace Lighthouse.World.MapGeneration.Rules
         public float ShipClearance => _shipClearance;
         public float SailingChannelWidth => _sailingChannelWidth;
         public WorldDepositBudget DepositBudget => _depositBudget;
+        public WalkBoundaryConfig WalkBoundary => _walkBoundary;
 
         public IReadOnlyList<IslandArchetype> Archetypes => _archetypes ?? Array.Empty<IslandArchetype>();
 

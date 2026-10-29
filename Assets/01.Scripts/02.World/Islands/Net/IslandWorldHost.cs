@@ -32,6 +32,7 @@ namespace Lighthouse.World.Islands.Net
         public int BuildVersion => _buildVersion;
 
         private IslandGroundHeightSource _ground;
+        private WalkBoundaryBaker _walkBaker;
 
         private void Awake()
         {
@@ -50,6 +51,14 @@ namespace Lighthouse.World.Islands.Net
             if (_ground != null)
             {
                 WorldServices.Register<IGroundHeightSource>(_ground);
+            }
+        }
+
+        private void Update()
+        {
+            if (_walkBaker != null)
+            {
+                _walkBaker.Tick();
             }
         }
 
@@ -102,6 +111,7 @@ namespace Lighthouse.World.Islands.Net
             }
 
             _config = config;
+            BeginWalkBoundary(config);
             _random = new SeededRandom(info.Seed);
             PlanDeposits();
             _nextIndex = 0;
@@ -117,6 +127,11 @@ namespace Lighthouse.World.Islands.Net
 
             IslandSpawnPlan plan = _plans[_nextIndex];
             _instances.Create(plan);
+
+            if (_walkBaker != null)
+            {
+                _walkBaker.Enqueue(plan, _ground);
+            }
 
             if (plan.Index != 0)
             {
@@ -141,6 +156,7 @@ namespace Lighthouse.World.Islands.Net
                 _harvestSession.Release();
             }
 
+            EndWalkBoundary();
             _isBuilding = false;
             _nextIndex = 0;
             _config = null;
@@ -156,6 +172,29 @@ namespace Lighthouse.World.Islands.Net
             {
                 _instances.Clear();
             }
+        }
+
+        private void BeginWalkBoundary(MapGenerationConfig config)
+        {
+            if (config.WalkBoundary == null)
+            {
+                return;
+            }
+
+            _walkBaker = new WalkBoundaryBaker(config.WalkBoundary);
+            WorldServices.Register<IWalkBoundary>(_walkBaker.Boundary);
+        }
+
+        private void EndWalkBoundary()
+        {
+            if (_walkBaker == null)
+            {
+                return;
+            }
+
+            WorldServices.Unregister<IWalkBoundary>(_walkBaker.Boundary);
+            _walkBaker.Clear();
+            _walkBaker = null;
         }
 
         private void PlanDeposits()
