@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Lighthouse.World.Query.Rules;
 using Mirror;
 using UnityEngine;
 
@@ -11,6 +12,8 @@ namespace Lighthouse.Monsters.AI.Server
 
         public abstract bool IsEligible { get; }
         public abstract float HitRadius { get; }
+        public bool IsInSafeZone => WorldServices.TryGet<IWorldQuery>(out IWorldQuery world)
+            && world.IsSafeZone(transform.position);
 
         public abstract bool TryApplyDamage(float damage);
 

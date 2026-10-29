@@ -15,12 +15,14 @@ namespace Lighthouse.Monsters.AI.Net
         private static readonly int IdleHash = Animator.StringToHash("Base Layer.Idle");
         private static readonly int AttackStartHash = Animator.StringToHash("Base Layer.DashAttackStart");
         private static readonly int AttackLoopHash = Animator.StringToHash("Base Layer.DashAttackLoop");
+        private static readonly int BiteHash = Animator.StringToHash("Base Layer.Bite");
         private static readonly int DashHash = Animator.StringToHash("Base Layer.Dash");
         private static readonly int TurnHash = Animator.StringToHash("Turn");
 
         [SerializeField] private Animator _animator;
         [SerializeField, Min(0f)] private float _transitionDuration = 0.1f;
         [SerializeField, Min(0f)] private float _attackOpeningDuration = 0.4f;
+        [SerializeField] private AnimationClip _biteClip;
         [SerializeField, Min(1f)] private float _turnRateForFullBlend = 60f;
         [SerializeField, Min(0.01f)] private float _turnBlendResponse = 0.2f;
         [SerializeField, Min(0.1f)] private float _turnSampleResetDistance = 10f;
@@ -33,6 +35,10 @@ namespace Lighthouse.Monsters.AI.Net
         private Vector3 _previousPosition;
         private bool _hasTurnSample;
         private float _smoothedAngularSpeed;
+        private double _biteEndsAt;
+        private bool _isBiting;
+
+        public float BiteDuration => _biteClip != null ? _biteClip.length : 0f;
 
         private void Awake()
         {
@@ -53,7 +59,12 @@ namespace Lighthouse.Monsters.AI.Net
             {
                 SetAnimationState(Dead);
             }
-            if (isClient && _renderedState != _animationState)
+            if (isClient && _isBiting && (_animationState == Dead || NetworkTime.time >= _biteEndsAt))
+            {
+                _isBiting = false;
+                _renderedState = -1;
+            }
+            if (isClient && !_isBiting && _renderedState != _animationState)
             {
                 ApplyAnimation(_renderedState < 0);
             }
@@ -67,6 +78,7 @@ namespace Lighthouse.Monsters.AI.Net
         {
             _renderedState = -1;
             _hasTurnSample = false;
+            _isBiting = false;
         }
 
         public override void OnStartServer()
@@ -96,10 +108,62 @@ namespace Lighthouse.Monsters.AI.Net
             _animationState = state;
         }
 
+        [Server]
+        public void PlayBite()
+        {
+            if (_monster != null && !_monster.IsDead)
+            {
+                RpcPlayBite(NetworkTime.time);
+            }
+        }
+
+        [Server]
+        public void CancelBite()
+        {
+            RpcCancelBite();
+        }
+
+        [ClientRpc]
+        private void RpcCancelBite()
+        {
+            if (_isBiting)
+            {
+                _isBiting = false;
+                _renderedState = -1;
+            }
+        }
+
+        [ClientRpc]
+        private void RpcPlayBite(double startedAt)
+        {
+            if (_animator == null || !_animator.isActiveAndEnabled
+                || _animator.runtimeAnimatorController == null || _biteClip == null
+                || _animationState == Dead)
+            {
+                return;
+            }
+
+            float elapsed = (float)System.Math.Max(0d, NetworkTime.time - startedAt);
+            if (elapsed >= _biteClip.length)
+            {
+                return;
+            }
+
+            // Keep the same clip position on clients receiving the impact at different times.
+            _biteEndsAt = startedAt + _biteClip.length;
+            _isBiting = true;
+            _animator.speed = 1f;
+            _animator.PlayInFixedTime(BiteHash, 0, elapsed);
+        }
+
         private void OnAnimationStateChanged(byte oldValue, byte newValue)
         {
-            if (isClient)
+            if (isClient && (!_isBiting || newValue == Dead))
             {
+                if (newValue == Dead)
+                {
+                    _isBiting = false;
+                }
                 ApplyAnimation(false);
             }
         }
