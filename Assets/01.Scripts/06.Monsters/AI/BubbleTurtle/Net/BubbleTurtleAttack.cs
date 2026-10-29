@@ -191,7 +191,7 @@ namespace Lighthouse.Monsters.AI.Net
             Quaternion rotation = direction.sqrMagnitude > 0.0001f ? Quaternion.LookRotation(direction, Vector3.up) : transform.rotation;
             GameObject projectile = Instantiate(_projectilePrefab, firePosition, rotation);
             BubbleProjectile movement = projectile.GetComponent<BubbleProjectile>();
-            if (movement == null || !movement.Initialize(_targetBoat, netIdentity, _monster.Profile.AttackDamage))
+            if (movement == null || !movement.Initialize(_targetBoat, netIdentity, _monster.Profile.AttackDamage, _attackStartedAt))
             {
                 Destroy(projectile);
                 Cancel();
