@@ -329,6 +329,7 @@ MonoBehaviour:
   _jumpSpeed: 5
   _groundCheckDistance: 0.08
   _minimumGroundNormalY: 0.65
+  _groundStickSpeed: 1.5
   _groundLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -354,7 +355,11 @@ MonoBehaviour:
   _camera: {fileID: 0}
   _runMultiplier: 1.5
   _mouseSensitivity: 0.15
+  _onFootTurnSpeed: 720
   _allowOfflineControl: 1
+  _requireLocalWorldReady: 1
+  _boatPrefab: {fileID: 0}
+  _wreckBuoyancy: {fileID: 0}
 --- !u!136 &4236948578390786948
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -487,6 +492,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _actionEvents: {fileID: 2040547451066052295}
+  _fallAnimationDelay: 0.08
+  _fallSpeedThreshold: 0.1
+  _walkMoveSpeed: 3
+  _runMoveSpeed: 4.5
+  _walkClipSpeed: 2
+  _runClipSpeed: 3
+  _stopSpeedThreshold: 0.08
+  _walkBlendSpeed: 0.5
+  _minimumLocomotionRate: 0.65
+  _maximumLocomotionRate: 1.5
 --- !u!114 &7343589763569238845
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -503,8 +518,16 @@ MonoBehaviour:
   _minPitch: -10
   _maxPitch: 80
   _cameraPivot: {fileID: 3158115175632131791}
+  _boatCameraOffset: {x: 0, y: 0, z: 0}
   _boatLookReturnDelay: 0.5
   _boatLookReturnSpeed: 120
+  _lookSmoothTime: 0.08
+  _obstacleMask:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  _collisionRadius: 0.2
+  _collisionPadding: 0.05
+  _hideCharacterDistance: 0.8
 --- !u!114 &967707442621922517
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -525,6 +548,9 @@ MonoBehaviour:
     m_Bits: 4294967295
   _relay: {fileID: 0}
   _actionEvents: {fileID: 2040547451066052295}
+  _impactPrefab: {fileID: 3384508783347067857, guid: 2744e3c6e54425945bf57279dc1c9766, type: 3}
+  _impactScale: 0.35
+  _impactCleanupDelay: 3
 --- !u!114 &-8490933374312442997
 MonoBehaviour:
   m_ObjectHideFlags: 0

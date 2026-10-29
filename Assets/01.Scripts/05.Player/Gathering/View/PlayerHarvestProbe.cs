@@ -27,6 +27,15 @@ public sealed class PlayerHarvestProbe : MonoBehaviour
     [SerializeField]
     private PlayerActionEvents _actionEvents;
 
+    [SerializeField]
+    private ParticleSystem _impactPrefab;
+
+    [SerializeField, Min(0.01f)]
+    private float _impactScale = 0.35f;
+
+    [SerializeField, Min(0.1f)]
+    private float _impactCleanupDelay = 3f;
+
     private readonly RaycastHit[] _hits = new RaycastHit[32];
 
     private void Awake()
@@ -142,10 +151,26 @@ public sealed class PlayerHarvestProbe : MonoBehaviour
             _actionEvents.Publish(PlayerAnimationAction.Dig);
         }
 
+        PlayImpact(nearestHit.point, nearestHit.normal);
+
         _relay.TrySendToNonNetworkTarget(
             InteractionTargetKind.HarvestSpot,
             spot.SpotId,
             InteractionAction.Harvest);
 
+    }
+
+    private void PlayImpact(Vector3 position, Vector3 normal)
+    {
+        if (!_impactPrefab)
+        {
+            return;
+        }
+
+        ParticleSystem impact = Instantiate(
+            _impactPrefab, position, Quaternion.FromToRotation(Vector3.up, normal));
+        impact.transform.localScale = Vector3.one * _impactScale;
+        impact.Play(true);
+        Destroy(impact.gameObject, _impactCleanupDelay);
     }
 }
