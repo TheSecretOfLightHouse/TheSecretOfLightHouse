@@ -72,7 +72,7 @@ namespace Lighthouse.Workbench.Editor
 
                 WorkbenchRecipeCard card = BuildRecipes(frame, out Text section);
                 Image progress = Picture("Progress", frame, "ws_panel_craft", 627f, 237f, 373f, 467f);
-                Image hero = Picture("BigIcon", progress.transform, null, 105f, 38f, 168f, 122f);
+                Image hero = Picture("BigIcon", progress.transform, null, 126f, 29f, 168f, 122f);
                 hero.preserveAspect = true;
                 Text title = Label("Title", progress.transform, "모듈", 24, 23f, 161f, 327f, 38f);
                 Text kind = Label("Kind", progress.transform, string.Empty, 14, 30f, 202f, 313f, 24f);
@@ -83,17 +83,37 @@ namespace Lighthouse.Workbench.Editor
                 Image track = Picture("ProgressTrack", progress.transform, "ws_bar_track", 24f, 337f, 322f, 26f);
                 Image fill = Picture("Fill", track.transform, "ws_bar_fill", 4f, 4f, 314f, 18f);
                 Stretch((RectTransform)fill.transform, 4f);
-                Button deposit = MakeButton("Deposit", progress.transform, "투입", "ws_button_active", 26f, 378f, 146f, 48f, 21, true);
-                Button craft = MakeButton("Craft", progress.transform, "제작", "ws_button_craft", 191f, 378f, 154f, 48f, 21, true);
-                Keycap(progress.transform, "E", 81f, 420f);
-                Keycap(progress.transform, "F", 254f, 420f);
+                // The mafia's withdraw sits between deposit and craft (2026-10-27). A row layout shares the width, so on
+                // citizens' screens, where it is hidden, the two buttons stand as before. Keys ride on their buttons.
+                RectTransform actions = Rect("Actions", progress.transform, 24f, 378f, 322f, 48f);
+                HorizontalLayoutGroup actionRow = actions.gameObject.AddComponent<HorizontalLayoutGroup>();
+                actionRow.spacing = 14f;
+                actionRow.childControlWidth = true;
+                actionRow.childControlHeight = true;
+                actionRow.childForceExpandWidth = true;
+                actionRow.childForceExpandHeight = true;
+                Button deposit = MakeActionButton("Deposit", actions, "투입", "ws_button_active", "E", true);
+                Button withdraw = MakeActionButton("Withdraw", actions, "빼기", "ws_button", "R", false);
+                Button craft = MakeActionButton("Craft", actions, "제작", "ws_button_craft", "F", true);
+                // The mask from the mafia's identity screen marks the button as theirs alone.
+                Image mafiaMark = Picture("MafiaMark", withdraw.transform, "ws_icon_mafia_mask", 0f, 0f, 34f, 34f);
+                mafiaMark.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+                mafiaMark.rectTransform.anchoredPosition = new Vector2(4f, -4f);
+                withdraw.gameObject.SetActive(false);
 
                 Image shelf = Picture("Stock", frame, "ws_panel_shelf", 1023f, 273f, 305f, 397f);
-                Label("Title", shelf.transform, "선반", 24, 20f, 18f, 100f, 36f, TextAnchor.MiddleLeft);
+                Label("Title", shelf.transform, "선반", 24, 22f, 20.4f, 100f, 36f, TextAnchor.MiddleLeft);
                 // Not in the sketch, but six slots cannot show all eight modules without paging.
-                Button previous = MakeButton("PreviousPage", shelf.transform, "‹", "ws_button", 178f, 25f, 26f, 24f, 16);
-                Text page = Label("Page", shelf.transform, "1 / 1", 13, 206f, 25f, 44f, 24f);
-                Button next = MakeButton("NextPage", shelf.transform, "›", "ws_button", 252f, 25f, 26f, 24f, 16);
+                // Placed from the shelf's top-right corner as the user laid them out in JH04 (2026-10-27). The screen swaps
+                // in the OS font when it runs, which is wider than the editor's and draws "‹ ›" off centre, so the arrows
+                // use "〈 〉" and the page count may run past its box instead of being cut.
+                Button previous = MakeButton("PreviousPage", shelf.transform, "〈", "ws_button", 0f, 0f, 26f, 24f, 16);
+                PlaceFromTopRight(previous.transform, -138f, -25f);
+                Text page = Label("Page", shelf.transform, "1 / 1", 20, 0f, 0f, 44f, 24f);
+                page.horizontalOverflow = HorizontalWrapMode.Overflow;
+                PlaceFromTopRight(page.transform, -102.2f, -26.4f);
+                Button next = MakeButton("NextPage", shelf.transform, "〉", "ws_button", 0f, 0f, 26f, 24f, 16);
+                PlaceFromTopRight(next.transform, -50f, -25f);
                 WorkbenchItemSlot[] slots = BuildStoredSlots(shelf.transform);
                 Button take = MakeButton("Take", shelf.transform, "가져가기", "ws_button_outline_active", 24f, 274f, 104f, 42f, 17);
                 Button putBack = MakeButton("Return", shelf.transform, "되돌려놓기", "ws_button_outline", 153f, 274f, 128f, 42f, 17);
@@ -104,12 +124,15 @@ namespace Lighthouse.Workbench.Editor
                 carryText.resizeTextMinSize = 12;
                 carryText.resizeTextMaxSize = 16;
 
-                Image carry = Picture("CarriedModule", frame, "ws_card", 744f, 793f, 90f, 90f);
+                // The carried module card stays on screen while a module is carried, also with the window closed, so it
+                // sits outside the window, pinned to the bottom centre of the screen like the open prompt above it
+                // (2026-10-27). The sketch's empty "G" slot beside it went, as the shelf's put-back button does that.
+                Image carry = Picture("CarriedModule", root.transform, "ws_card", 0f, 0f, 90f, 90f);
+                RectTransform carryRect = carry.rectTransform;
+                carryRect.anchorMin = carryRect.anchorMax = carryRect.pivot = new Vector2(0.5f, 0f);
+                carryRect.anchoredPosition = new Vector2(0f, 43f);
                 Image carryIcon = Picture("Icon", carry.transform, null, 15f, 12f, 60f, 62f);
                 carryIcon.preserveAspect = true;
-                // The sketch draws this as an empty slot with only the key.
-                Button returnShortcut = MakeButton("ReturnShortcut", frame, string.Empty, "ws_card", 845f, 793f, 86f, 90f, 16);
-                Keycap(returnShortcut.transform, "G", 59f, 58f);
                 Text message = Label("Message", frame, string.Empty, 16, 627f, 712f, 373f, 30f);
                 message.resizeTextForBestFit = true;
                 message.resizeTextMinSize = 12;
@@ -121,7 +144,8 @@ namespace Lighthouse.Workbench.Editor
                 RectTransform promptRect = (RectTransform)prompt.transform;
                 promptRect.anchorMin = promptRect.anchorMax = new Vector2(0.5f, 0f);
                 promptRect.pivot = new Vector2(0.5f, 0f);
-                promptRect.anchoredPosition = new Vector2(0f, 90f);
+                // Above the carried module card, which sits at the bottom centre (2026-10-27).
+                promptRect.anchoredPosition = new Vector2(0f, 150f);
                 Text promptText = Label("Text", prompt.transform, "E  작업대 열기", 22, 8f, 2f, 254f, 44f);
 
                 WorkbenchScreen screen = root.AddComponent<WorkbenchScreen>();
@@ -139,13 +163,13 @@ namespace Lighthouse.Workbench.Editor
                 Set(serialized, "_progressKind", kind);
                 Set(serialized, "_craftButton", craft);
                 Set(serialized, "_depositButton", deposit);
+                Set(serialized, "_withdrawButton", withdraw);
                 Set(serialized, "_takeButton", take);
                 Set(serialized, "_overallFill", fill.rectTransform);
                 Set(serialized, "_carryBar", carry.gameObject);
                 Set(serialized, "_carryIcon", carryIcon);
                 Set(serialized, "_carryText", carryText);
                 Set(serialized, "_returnButton", putBack);
-                Set(serialized, "_returnShortcutButton", returnShortcut);
                 Set(serialized, "_previousStockPageButton", previous);
                 Set(serialized, "_nextStockPageButton", next);
                 Set(serialized, "_stockPageText", page);
@@ -168,6 +192,7 @@ namespace Lighthouse.Workbench.Editor
                 SetRecipeIcons(serialized);
                 serialized.ApplyModifiedPropertiesWithoutUndo();
                 window.gameObject.SetActive(false);
+                carry.gameObject.SetActive(false);
                 prompt.gameObject.SetActive(false);
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
                 Debug.Log($"[{nameof(WorkbenchScreenSketchSetup)}] Built {PrefabPath}.");
@@ -233,7 +258,6 @@ namespace Lighthouse.Workbench.Editor
             {
                 SerializedObject trial = new SerializedObject(panel);
                 Set(trial, "_workbenchScreen", sketch.gameObject);
-                trial.FindProperty("_isRackMode").boolValue = false;
                 trial.ApplyModifiedProperties();
             }
 
@@ -279,7 +303,8 @@ namespace Lighthouse.Workbench.Editor
             button.targetGraphic = cardImage;
             button.transition = Selectable.Transition.None;
             CanvasGroup group = cardImage.gameObject.AddComponent<CanvasGroup>();
-            Image icon = Picture("Icon", cardImage.transform, "ws_icon_frame", 9f, 4f, 66f, 53f);
+            Image icon = Picture("Icon", cardImage.transform, "ws_icon_frame", 18f, 6f, 66f, 53f);
+            icon.rectTransform.localScale = Vector3.one * 0.9f;
             icon.preserveAspect = true;
             Text name = Label("Name", cardImage.transform, string.Empty, 14, 0f, 0f, 84f, 20f);
             Text detail = Label("Detail", cardImage.transform, string.Empty, 12, 0f, 0f, 84f, 20f);
@@ -399,7 +424,8 @@ namespace Lighthouse.Workbench.Editor
                 Object resource = item.FindPropertyRelative("Resource").objectReferenceValue;
                 string name = resource ? resource.name.ToLowerInvariant() : string.Empty;
                 string sprite = name.Contains("glass") ? "ws_icon_glass" : name.Contains("iron") ? "ws_icon_iron"
-                    : name.Contains("crystal") ? "ws_icon_crystal" : null;
+                    : name.Contains("crystal") ? "ws_icon_crystal" : name.Contains("wood") ? "ws_icon_wood"
+                    : name.Contains("stone") ? "ws_icon_stone" : name.Contains("fiber") ? "ws_icon_fiber" : null;
 
                 if (sprite != null)
                 {
@@ -504,6 +530,28 @@ namespace Lighthouse.Workbench.Editor
             Button button = rect.gameObject.AddComponent<Button>();
             button.targetGraphic = hit;
             button.transition = Selectable.Transition.None;
+            return button;
+        }
+
+        private static void PlaceFromTopRight(Transform item, float x, float y)
+        {
+            RectTransform rect = (RectTransform)item;
+            rect.anchorMin = rect.anchorMax = Vector2.one;
+            rect.anchoredPosition = new Vector2(x, y);
+            rect.localScale = Vector3.one * 1.1f;
+        }
+
+        // A button sized by its row layout, its caption filling it and its key just under its bottom edge.
+        private static Button MakeActionButton(string name, Transform parent, string caption, string sprite, string key, bool isFilled)
+        {
+            Button button = MakeButton(name, parent, caption, sprite, 0f, 0f, 100f, 48f, 21, isFilled);
+            Stretch((RectTransform)button.transform.Find("Text"), 4f);
+            Image keycap = Picture($"Key{key}", button.transform, "ws_key", 0f, 0f, 32f, 32f);
+            Label("Text", keycap.transform, key, 19, 1f, 0f, 30f, 30f);
+            RectTransform keyRect = keycap.rectTransform;
+            keyRect.anchorMin = keyRect.anchorMax = new Vector2(0.5f, 0f);
+            keyRect.pivot = new Vector2(0.5f, 1f);
+            keyRect.anchoredPosition = new Vector2(0f, 6f);
             return button;
         }
 

@@ -31,6 +31,9 @@ namespace Lighthouse.Tower.View
         [SerializeField, Range(0f, 1f)]
         private float _faintAlpha = 0.35f;
 
+        public Image Frame => _frame;
+        public RectTransform IconRect => _icon.rectTransform;
+
         public void Show(Sprite icon, State state)
         {
             bool isHighlighted = state == State.Installed || state == State.Target;

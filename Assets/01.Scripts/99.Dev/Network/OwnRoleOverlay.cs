@@ -1,4 +1,3 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using Lighthouse.Network.Connections.Net;
 using Lighthouse.Network.Session.Net;
@@ -84,4 +83,3 @@ namespace Lighthouse.Dev.Network
         }
     }
 }
-#endif

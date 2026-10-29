@@ -1,4 +1,3 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Workbench.Net;
@@ -161,4 +160,3 @@ namespace Lighthouse.Dev.Workbench
         }
     }
 }
-#endif

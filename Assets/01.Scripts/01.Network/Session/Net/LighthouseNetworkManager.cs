@@ -31,7 +31,8 @@ namespace Lighthouse.Network.Session.Net
         private static SessionEndedMessage _lastSessionEnd;
         private static string _pendingOfflineScene;
 
-        // Session flow (JH07): lobby scene (Online Scene) -> all ready -> game scene -> all loaded -> in progress.
+        // Session flow (JH07): lobby scene (Online Scene) -> all ready -> game scene -> all loaded -> in progress
+        // -> a finished match returns to the lobby (ReturnToLobby).
         // Leaving the lobby prefab or game scene empty keeps the single-scene direct mode the existing test scenes use.
         [Header("Session")]
         [SerializeField]
@@ -60,6 +61,8 @@ namespace Lighthouse.Network.Session.Net
         private readonly List<uint> _roster = new List<uint>(MaxPlayers);
         private readonly HashSet<int> _pendingGameSpawns = new HashSet<int>();
         private readonly HashSet<uint> _joinedActors = new HashSet<uint>();
+        // Lobby nicknames by actor, kept from loading until the game players spawn with them.
+        private readonly Dictionary<uint, string> _nicknames = new Dictionary<uint, string>(MaxPlayers);
         private readonly List<NetworkConnectionToClient> _rejectedConnections = new List<NetworkConnectionToClient>(MaxPlayers);
         private readonly HashSet<NetworkConnectionToClient> _leaveRequested = new HashSet<NetworkConnectionToClient>();
         private readonly List<IMatchStartGate> _startGates = new List<IMatchStartGate>();
@@ -525,6 +528,42 @@ namespace Lighthouse.Network.Session.Net
             return true;
         }
 
+        // A match that ended with a winner takes the same members back to the lobby scene (user decision 2026-10-29).
+        // Game players are removed like the lobby players at loading, so every client re-adds after the scene change
+        // and gets a fresh lobby player: readiness starts cleared, and the actor id and nickname carry over.
+        // Leaving or dropping mid-match still ends the session (EndMatch); this is only for a finished match.
+        [Server]
+        public bool ReturnToLobby()
+        {
+            if (!IsSessionFlowEnabled || _phase != MatchPhase.InProgress || string.IsNullOrWhiteSpace(onlineScene))
+            {
+                return false;
+            }
+
+            foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+            {
+                // Notify before the player object is destroyed, as on a disconnect.
+                if (_connections.TryGetActorId(conn, out uint actorId) && _joinedActors.Remove(actorId))
+                {
+                    ActorLeft?.Invoke(actorId, conn);
+                }
+
+                NetworkServer.RemovePlayerForConnection(conn, RemovePlayerOptions.Destroy);
+            }
+
+            _phase = MatchPhase.Lobby;
+            _roles.Clear();
+            _roster.Clear();
+            _joinedActors.Clear();
+            _nicknames.Clear();
+            ClearStartGates();
+
+            Debug.Log($"[{nameof(LighthouseNetworkManager)}] Match {_matchId} finished. Returning to lobby. players={_connections.Count}");
+            BroadcastState();
+            ServerChangeScene(onlineScene);
+            return true;
+        }
+
         // Called by SessionJoinAuthenticator before Mirror sends the scene message, so the client stays on its first screen.
         // Sends are batched until the end of the frame; the client leaves on receipt and the delayed drop is the fallback.
         [Server]
@@ -590,12 +629,19 @@ namespace Lighthouse.Network.Session.Net
             _roster.Clear();
             _joinedActors.Clear();
             _pendingGameSpawns.Clear();
+            _nicknames.Clear();
 
             foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
             {
                 if (_connections.TryGetActorId(conn, out uint actorId))
                 {
                     _roster.Add(actorId);
+
+                    // Read before the lobby player below is destroyed; the game player gets it at spawn.
+                    if (conn.identity && conn.identity.TryGetComponent(out LobbyPlayer lobbyPlayer) && lobbyPlayer.HasNickname)
+                    {
+                        _nicknames[actorId] = lobbyPlayer.DisplayName;
+                    }
                 }
 
                 // Remove lobby players explicitly so every client sees localPlayer == null and re-adds after loading.
@@ -764,7 +810,13 @@ namespace Lighthouse.Network.Session.Net
                 : Instantiate(selectedPrefab);
 
             player.name = $"{selectedPrefab.name} [actor={actorId} connId={conn.connectionId}]";
-            player.GetComponent<NetworkActor>().AssignActorId(actorId);
+            NetworkActor actor = player.GetComponent<NetworkActor>();
+            actor.AssignActorId(actorId);
+
+            if (_nicknames.TryGetValue(actorId, out string nickname))
+            {
+                actor.AssignDisplayName(nickname);
+            }
 
             if (!NetworkServer.AddPlayerForConnection(conn, player))
             {
@@ -812,6 +864,7 @@ namespace Lighthouse.Network.Session.Net
             _roster.Clear();
             _joinedActors.Clear();
             _pendingGameSpawns.Clear();
+            _nicknames.Clear();
             _rejectedConnections.Clear();
             _leaveRequested.Clear();
             ClearStartGates();
@@ -848,6 +901,13 @@ namespace Lighthouse.Network.Session.Net
         private void HandleSessionState(SessionStateMessage message)
         {
             ClientState = message;
+
+            // Back in the lobby after a finished match; the next match sends a new role.
+            if (message.Phase == MatchPhase.Lobby)
+            {
+                OwnRole = MatchRole.None;
+            }
+
             ClientStateChanged?.Invoke(message);
         }
 

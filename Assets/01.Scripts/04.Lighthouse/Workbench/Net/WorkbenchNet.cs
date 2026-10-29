@@ -53,6 +53,9 @@ namespace Lighthouse.Workbench.Net
         public event Action Changed;
         // Server-only. (actorId, recipeId, moduleId) when a module finishes. For logs, history and tests.
         public event Action<uint, int, uint> ModuleCompleted;
+        // Raised on every machine with the recipe id when a module finishes, for effects. The stock count alone cannot
+        // tell a finish from a module put back. Who crafted it is not sent.
+        public event Action<int> RecipeCompleted;
 
         private void Awake()
         {
@@ -388,6 +391,7 @@ namespace Lighthouse.Workbench.Net
             }
 
             ModuleCompleted?.Invoke(actorId, recipeId, moduleId);
+            RpcRecipeCompleted(recipeId);
         }
 
         [Server]
@@ -455,6 +459,12 @@ namespace Lighthouse.Workbench.Net
         {
             _ownCarriedRecipe = recipeId;
             Changed?.Invoke();
+        }
+
+        [ClientRpc]
+        private void RpcRecipeCompleted(int recipeId)
+        {
+            RecipeCompleted?.Invoke(recipeId);
         }
     }
 }

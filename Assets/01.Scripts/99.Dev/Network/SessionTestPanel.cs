@@ -1,4 +1,3 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Collections.Generic;
 using Lighthouse.Network.Session.Net;
 using Lighthouse.Network.Session.Rules;
@@ -152,4 +151,3 @@ namespace Lighthouse.Dev.Network
         }
     }
 }
-#endif

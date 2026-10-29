@@ -35,10 +35,22 @@ namespace Lighthouse.Workbench.View
         private Color _shortageColor = new Color(0.85f, 0.3f, 0.22f);
         [SerializeField]
         private Color _sufficientColor = new Color(0.96f, 0.91f, 0.76f);
+        [Tooltip("Share of the bar filled per second when progress goes up. Drops show at once.")]
+        [SerializeField]
+        private float _fillSpeed = 1.6f;
 
         private int _resourceId;
         private Action<int, bool> _depositClicked;
         private Action<int> _selected;
+        private float _shownRatio;
+        private float _targetRatio;
+
+        public int ResourceId => _resourceId;
+        public Image Icon => _icon;
+        public RectTransform CountRect => _count.rectTransform;
+        public Text Count => _count;
+        // Null when the row deposits through the screen's own button instead (sketch layout).
+        public RectTransform AddOneRect => _addOneButton && _addOneButton.gameObject.activeInHierarchy ? (RectTransform)_addOneButton.transform : null;
 
         private void Awake()
         {
@@ -56,6 +68,17 @@ namespace Lighthouse.Workbench.View
             {
                 _selectButton.onClick.AddListener(HandleSelected);
             }
+        }
+
+        private void Update()
+        {
+            if (!_fill || _shownRatio == _targetRatio)
+            {
+                return;
+            }
+
+            _shownRatio = Mathf.MoveTowards(_shownRatio, _targetRatio, _fillSpeed * Time.unscaledDeltaTime);
+            ApplyFill();
         }
 
         public void Bind(int resourceId, string displayName, Sprite icon, Action<int, bool> depositClicked)
@@ -80,11 +103,12 @@ namespace Lighthouse.Workbench.View
 
         public void SetProgress(int deposited, int required, int held, bool isOpen)
         {
-            float ratio = required > 0 ? Mathf.Clamp01((float)deposited / required) : 0f;
-            if (_fill)
+            _targetRatio = required > 0 ? Mathf.Clamp01((float)deposited / required) : 0f;
+
+            // Only gains climb; a drop (crafted or withdrawn) is not something to show off.
+            if (_targetRatio < _shownRatio)
             {
-                _fill.anchorMax = new Vector2(ratio, 1f);
-                _fill.gameObject.SetActive(ratio > 0f);
+                SnapFill();
             }
 
             _count.text = $"{deposited} / {required}";
@@ -119,11 +143,27 @@ namespace Lighthouse.Workbench.View
             }
         }
 
+        // For a freshly shown recipe, whose bar should not climb from where the previous one stood.
+        public void SnapFill()
+        {
+            _shownRatio = _targetRatio;
+            ApplyFill();
+        }
+
         public void SetSelected(bool isSelected)
         {
             if (_selection)
             {
                 _selection.enabled = isSelected;
+            }
+        }
+
+        private void ApplyFill()
+        {
+            if (_fill)
+            {
+                _fill.anchorMax = new Vector2(_shownRatio, 1f);
+                _fill.gameObject.SetActive(_shownRatio > 0f);
             }
         }
 

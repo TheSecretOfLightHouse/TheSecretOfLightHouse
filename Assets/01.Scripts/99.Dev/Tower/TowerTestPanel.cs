@@ -1,4 +1,3 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Tower.Net;
@@ -237,4 +236,3 @@ namespace Lighthouse.Dev.Tower
         }
     }
 }
-#endif
