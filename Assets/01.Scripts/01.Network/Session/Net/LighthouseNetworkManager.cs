@@ -58,6 +58,7 @@ namespace Lighthouse.Network.Session.Net
         private readonly ConnectionDirectory _connections = new ConnectionDirectory();
         private readonly MatchRoles _roles = new MatchRoles();
         private readonly List<uint> _roster = new List<uint>(MaxPlayers);
+        private readonly HashSet<int> _pendingGameSpawns = new HashSet<int>();
         private readonly HashSet<uint> _joinedActors = new HashSet<uint>();
         private readonly List<NetworkConnectionToClient> _rejectedConnections = new List<NetworkConnectionToClient>(MaxPlayers);
         private readonly HashSet<NetworkConnectionToClient> _leaveRequested = new HashSet<NetworkConnectionToClient>();
@@ -240,6 +241,17 @@ namespace Lighthouse.Network.Session.Net
 
         public override void OnServerAddPlayer(NetworkConnectionToClient conn)
         {
+            if ((!IsSessionFlowEnabled || _phase == MatchPhase.Loading)
+                && Lighthouse.World.Query.Rules.WorldServices.TryGet(out IGamePlayerSpawnSource source)
+                && !source.IsReady)
+            {
+                if (_pendingGameSpawns.Add(conn.connectionId))
+                {
+                    StartCoroutine(WaitForGameSpawn(conn));
+                }
+                return;
+            }
+
             if (!IsSessionFlowEnabled)
             {
                 SpawnGamePlayer(conn);
@@ -264,6 +276,42 @@ namespace Lighthouse.Network.Session.Net
                 conn.Disconnect();
             }
         }
+        private System.Collections.IEnumerator WaitForGameSpawn(NetworkConnectionToClient conn)
+        {
+            float deadline = Time.realtimeSinceStartup + _loadTimeoutSeconds;
+            try
+            {
+                while (NetworkServer.active && conn != null && conn.identity == null
+                    && NetworkServer.connections.TryGetValue(conn.connectionId, out NetworkConnectionToClient current)
+                    && current == conn)
+                {
+                    if (Lighthouse.World.Query.Rules.WorldServices.TryGet(out IGamePlayerSpawnSource source)
+                        && source.IsReady)
+                    {
+                        if (SpawnGamePlayer(conn))
+                        {
+                            BroadcastState();
+                            TryStartMatch();
+                        }
+                        yield break;
+                    }
+
+                    if (Time.realtimeSinceStartup > deadline)
+                    {
+                        Debug.LogError($"[{nameof(LighthouseNetworkManager)}] Main island spawn preparation timed out.");
+                        conn.Disconnect();
+                        yield break;
+                    }
+
+                    yield return null;
+                }
+            }
+            finally
+            {
+                _pendingGameSpawns.Remove(conn.connectionId);
+            }
+        }
+
         //public override void OnServerAddPlayer(NetworkConnectionToClient conn)
         //{
         //
@@ -541,6 +589,7 @@ namespace Lighthouse.Network.Session.Net
             _loadDeadline = Time.unscaledTimeAsDouble + _loadTimeoutSeconds;
             _roster.Clear();
             _joinedActors.Clear();
+            _pendingGameSpawns.Clear();
 
             foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
             {
@@ -675,12 +724,6 @@ namespace Lighthouse.Network.Session.Net
         [Server]
         private bool SpawnGamePlayer(NetworkConnectionToClient conn)
         {
-            if (!playerPrefab.TryGetComponent(out NetworkActor _))
-            {
-                Debug.LogError($"[{nameof(LighthouseNetworkManager)}] Player prefab '{playerPrefab.name}' has no {nameof(NetworkActor)}. connId={conn.connectionId} was not given a player.");
-                return false;
-            }
-
             // Register is idempotent, so a lobby actor keeps its id in the game scene.
             uint actorId = _connections.Register(conn);
 
@@ -690,16 +733,45 @@ namespace Lighthouse.Network.Session.Net
                 return false;
             }
 
-            Transform startPos = GetStartPosition();
-            GameObject player = startPos != null
-                ? Instantiate(playerPrefab, startPos.position, startPos.rotation)
-                : Instantiate(playerPrefab);
+            GameObject selectedPrefab = playerPrefab;
+            Transform startPos;
+            Lighthouse.World.Query.Rules.WorldServices.TryGet(out IGamePlayerSpawnSource source);
+            if (source != null)
+            {
+                if (!source.TryReserve(actorId, out selectedPrefab, out startPos))
+                {
+                    Debug.LogError($"[{nameof(LighthouseNetworkManager)}] No free main island spawn for actor {actorId}.");
+                    return false;
+                }
+            }
+            else
+            {
+                startPos = GetStartPosition();
+            }
 
-            player.name = $"{playerPrefab.name} [actor={actorId} connId={conn.connectionId}]";
+            if (!selectedPrefab || !selectedPrefab.TryGetComponent(out NetworkActor _))
+            {
+                if (source != null)
+                {
+                    source.Release(actorId);
+                }
+                Debug.LogError($"[{nameof(LighthouseNetworkManager)}] Invalid player spawn prefab.");
+                return false;
+            }
+
+            GameObject player = startPos
+                ? Instantiate(selectedPrefab, startPos.position, startPos.rotation)
+                : Instantiate(selectedPrefab);
+
+            player.name = $"{selectedPrefab.name} [actor={actorId} connId={conn.connectionId}]";
             player.GetComponent<NetworkActor>().AssignActorId(actorId);
 
             if (!NetworkServer.AddPlayerForConnection(conn, player))
             {
+                if (source != null)
+                {
+                    source.Release(actorId);
+                }
                 Destroy(player);
 
                 if (!IsSessionFlowEnabled)
@@ -739,6 +811,7 @@ namespace Lighthouse.Network.Session.Net
             _roles.Clear();
             _roster.Clear();
             _joinedActors.Clear();
+            _pendingGameSpawns.Clear();
             _rejectedConnections.Clear();
             _leaveRequested.Clear();
             ClearStartGates();

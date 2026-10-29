@@ -49,11 +49,12 @@ namespace Lighthouse.World.Ocean.Rules
         }
 
         public static float Apply(ReadOnlySpan<Vector4> bounds, ReadOnlySpan<Vector4> edges, ReadOnlySpan<Vector4> profiles,
-            float x, float z, float time, float height, float energy)
+            float x, float z, float time, float height, float energy, ReadOnlySpan<Vector4> lagoons = default)
         {
             float nearest = float.MaxValue;
             float width = 0f;
             float distance = 0f;
+            float shoreLift = 0f;
             for (int island = 0; island < bounds.Length; island++)
             {
                 Vector4 area = bounds[island];
@@ -69,6 +70,7 @@ namespace Lighthouse.World.Ocean.Rules
                     nearest = best;
                     width = WidthAt(area.w, profiles[island], x, z);
                     distance = signed;
+                    shoreLift = island < lagoons.Length ? lagoons[island].y : 0f;
                 }
             }
             if (width <= 0f)
@@ -83,7 +85,9 @@ namespace Lighthouse.World.Ocean.Rules
                 * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(Mathf.Lerp(-0.1f, 0.1f, beach), Mathf.Lerp(0.3f, 2f, beach), d));
             float phase = d * 0.55f + time * 0.9f;
             float shore = amplitude * (0.7f * Mathf.Sin(phase) - 0.4f * Mathf.Cos(phase * 2f) - 0.22f * Mathf.Sin(phase * 3f));
-            float result = Mathf.Lerp(shore, height, blend);
+            float runup = shoreLift * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, 0.6f, d))
+                * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(2f, 5f, d)));
+            float result = Mathf.Lerp(shore, height, blend) + runup;
             float safeDepth = 0.025f + 0.012f * d + 0.015f * Mathf.Max(0f, d - width);
             float release = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(width * 1.3f, width * 2.2f, d));
             return Mathf.Lerp(Mathf.Max(result, -safeDepth), result, release);
