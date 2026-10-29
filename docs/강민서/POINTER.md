@@ -1,5 +1,17 @@
 # 강민서 작업 pointer
-갱신일: 2026-10-28
+
+**야간 작업 커밋 정리(2026-10-29):** 등대섬 외형·시설·해안·폭발 파도 제거·스폰·계류를 기능별 로컬 커밋으로 분리. 실제4인 스폰·탑승은 앞선 실행 기록, 이번 재컴파일 및 프리팹 참조 검사 통과. 장시간 계류·원격 제작/장착·의식/소환은 남음. 참고 원본 씬·백업과 무관한 변경 보존, push 없음. [범위·커밋·검증](2026-10-29/야간작업-기능별-커밋정리.md).
+
+**해안 폭발형 효과 제거(2026-10-29):** 사용자 요청으로 MainGame·WorldSessionGame의 BreakerWave 연결 제거, SurfCrest 유지. Unity 저장·연결 확인, Play/육안 미검증. [원문](2026-10-27/물보라-부서지는-파도-리서치와-설계.md).
+갱신일: 2026-10-29
+
+**메인 섬 스폰·탑승·계류(2026-10-29, 최신):** 등대섬에 배치한 실제4인 위치를 PlayerSpawnPoints로 사용. 플레이어/직군/부두4자리 서버 무작위·중복 없음. 실제 MPP 호스트1+원격3 로비→InProgress·월드Ready4/4·플레이어/보트 netId·소유권 동일 확인. DockZone0개 누락을2개로 보완, 전원 탑승 사용자 확인 및 실제 상태4/4 확인. BoatMooring으로 미탑승 수평고정/탑승 해제/하선 재계류 구현·4프리팹 적용(장시간 미탑승·하선 재계류 측정 남음). 당시4인 세션 유지, 커밋 정리 시 에디터는 Play 종료 상태. [원문·검증](2026-10-29/메인섬-플레이어보트-스폰과계류.md).
+
+**메인 등대섬 월드 생성(2026-10-29, 최신):** 외형 프리팹과 네트워크 작업대·등대 분리, MainGame 기존 시설은 비활성 부모 아래 보관. 원점·회전0 Terrain 배치와 anchor 정합 확인. 1인 임시 호스트 월드 준비 완료, 시설 각1·장착8/8·재생성 통과. Terrain 해안 감쇠·ShoreLift25cm·외곽1.15m 완만한 경사 적용, 해안96/96 파도 노출 확인. 부두별 실제보트2척·BoatSpawnPoints4 배치, Dock 레이어·간격12~14cm 확인(후속 스폰 작업에서 런타임 바인딩·4인 확인 완료). 외형은 MainIslandAppearance.prefab/Variant에서 수정하며 원본 참고 씬과 자동 동기화되지 않음. 실제 로비→4인은 후속 확인 완료. UI제작·의식/소환 미검증. 런타임 변경은 기능별 로컬 커밋. [변경·검증·외형 수정 방법](2026-10-29/메인등대섬-월드생성-프리팹분리.md).
+
+
+
+**메인 등대섬 시스템 연결(2026-10-29):** LagoonReference 씬의 LighthouseIsland_Reference/Lighthouse에 MainGame 등대 시스템 연결, 현 작업대·슬롯8/완성등불·UI·모듈/투표 참조 재매핑. MainGame 미변경(SHA256동일), 기존 라군섬 미부착. 임시 실제 서버 운반→장착8/8·완성등불 확인·시험상태복원. **UI입력/4인/의식/소환/월드생성 통합 미검증, 최종교체 시 기존 시스템/지원그룹 중복 제거·참조전환 필요.** [원문·검증](2026-10-29/메인등대섬-시스템연결.md).
 
 **BC4 4b 1~2단계(2026-10-28, 최신):** `origin/develop` 병합 후 `BuoyantObject`→`BuoyancyObject` 참조 정리. 질량 500 덮어쓰기·중력 강제 제거(프리팹 5개 `useGravity` true로 이동), 외력은 `WaveDriftProfile.ReferenceMass`(가안 500)로 나눠 4a 수치 유지(`Impulse`는 `Acceleration` 모드). `BoatShipBody`→`WaterBody` 에디터 이름 변경(GUID 유지), `ShipStabilizer`·`BuoyancyTuning`·`BuoyancyForceSolver`·`IShipBody.Mass` 삭제(`BuoyancySampleSession`은 사용 중이라 유지). 재컴파일 오류 0, 순수 검증 3종 true, 프리팹 5개 `WaterBody` 연결·Missing 0. **Play 없이 진행: 질량 1 실제 거동·`WaveSlam` 임계·`WorldSandbox` 씬 배 인스턴스 중력 미검증. `BuoyancyBody` 껍데기 삭제는 `WorldSandbox` 씬 2곳이 참조해 보류(씬 교체와 알림 3 필요).** [결과](2026-10-28/BC4-4b-1단계-기준질량-전환-결과.md)
 
