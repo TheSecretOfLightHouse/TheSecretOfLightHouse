@@ -1,4 +1,5 @@
 using Lighthouse.Monsters.AI.Net;
+using Mirror;
 using UnityEngine;
 
 namespace Lighthouse.Monsters.AI.Server
@@ -12,6 +13,7 @@ namespace Lighthouse.Monsters.AI.Server
         [SerializeField, Min(0.01f)] private float _speed = 18f;
         [SerializeField, Min(0.01f)] private float _acceleration = 9f;
         [SerializeField, Min(0.01f)] private float _timeout = 10f;
+        [SerializeField, Min(0.01f)] private float _biteContactTime = 0.63f;
 
         [Header("공격 후 이탈 설정")]
         [SerializeField, Min(0.01f)] private float _retreatDistance = 15f;
@@ -24,13 +26,22 @@ namespace Lighthouse.Monsters.AI.Server
         private BlueSharkAnimation _animation;
         private CapsuleCollider _bodyCollider;
         private MonsterBoatTarget _target;
+        private Collider[] _targetColliders;
         private float _elapsedTime;
         private float _currentSpeed;
         private bool _isAttacking;
         private bool _hasSucceeded;
+        private bool _wasInterrupted;
+        private bool _isBiteHolding;
+        private bool _hasBiteStarted;
+        private double _biteStartedAt;
+        private double _biteEndsAt;
+        private Vector3 _previousTargetPosition;
+        private float _lastHealth;
 
         public bool IsAttacking => _isAttacking;
         public bool HasSucceeded => _hasSucceeded;
+        public bool WasInterrupted => _wasInterrupted;
         public float RetreatDistance => _retreatDistance;
         public float RetreatSpeed => _retreatSpeed;
         public float RetreatTimeout => _retreatTimeout;
@@ -56,13 +67,61 @@ namespace Lighthouse.Monsters.AI.Server
         {
             if (_isAttacking)
             {
-                StepAttack(Time.fixedDeltaTime);
+                if (_isBiteHolding)
+                {
+                    if (!CanAct)
+                    {
+                        FinishAttack(false);
+                    }
+                    else
+                    {
+                        if (NetworkTime.time >= _biteEndsAt)
+                        {
+                            FinishAttack(true);
+                        }
+                    }
+                }
+                else
+                {
+                    StepAttack(Time.fixedDeltaTime);
+                }
+            }
+        }
+
+        private void OnEnable()
+        {
+            if (_monster != null)
+            {
+                _lastHealth = _monster.CurrentHealth;
+                _monster.HealthChanged += HandleHealthChanged;
             }
         }
 
         private void OnDisable()
         {
+            if (_monster != null)
+            {
+                _monster.HealthChanged -= HandleHealthChanged;
+            }
             Cancel();
+        }
+
+        private void HandleHealthChanged(float health)
+        {
+            bool tookDamage = health < _lastHealth;
+            _lastHealth = health;
+            if (!tookDamage || !_isAttacking || _isBiteHolding || _monster == null
+                || !_monster.isServer || _monster.IsDead)
+            {
+                return;
+            }
+
+            _wasInterrupted = true;
+            FinishAttack(false);
+            if (_animation != null)
+            {
+                _animation.CancelBite();
+            }
         }
 
         private void OnCollisionEnter(Collision collision)
@@ -94,6 +153,12 @@ namespace Lighthouse.Monsters.AI.Server
             _elapsedTime = 0f;
             _currentSpeed = 0f;
             _hasSucceeded = false;
+            _wasInterrupted = false;
+            _lastHealth = _monster.CurrentHealth;
+            _isBiteHolding = false;
+            _hasBiteStarted = false;
+            _targetColliders = _target.GetComponentsInChildren<Collider>();
+            _previousTargetPosition = _target.transform.position;
             _motion.Stop();
             _isAttacking = true;
             _monster.TrySetBehaviorState(MonsterState.Attack);
@@ -139,6 +204,7 @@ namespace Lighthouse.Monsters.AI.Server
             }
 
             _currentSpeed = Mathf.MoveTowards(_currentSpeed, _speed, _acceleration * deltaTime);
+            TryStartBite(offset, deltaTime);
             if (_currentSpeed > 0f && !_motion.SetChargeVelocity(offset, _currentSpeed))
             {
                 FinishAttack(false);
@@ -147,7 +213,7 @@ namespace Lighthouse.Monsters.AI.Server
 
         private void HandleCollision(Collision collision)
         {
-            if (!_isAttacking || !CanAct || !HasValidTarget() || collision.collider == null
+            if (!_isAttacking || _isBiteHolding || !CanAct || !HasValidTarget() || collision.collider == null
                 || _monster.Profile == null || !IsPositive(_monster.Profile.AttackDamage)
                 || collision.collider.GetComponentInParent<MonsterBoatTarget>() != _target)
             {
@@ -161,10 +227,19 @@ namespace Lighthouse.Monsters.AI.Server
                     continue;
                 }
 
-                // 피해 콜백이나 추가 접촉이 같은 공격의 피해를 중복 적용하지 않도록 먼저 종료한다.
-                _isAttacking = false;
+                // Block repeated contact while damage callbacks may cancel this attack.
+                _isBiteHolding = true;
                 _motion.Stop();
                 bool succeeded = _target.TryApplyDamage(_monster.Profile.AttackDamage);
+                if (!_isAttacking)
+                {
+                    return;
+                }
+                if (succeeded && _hasBiteStarted && CanAct
+                    && NetworkTime.time < _biteEndsAt)
+                {
+                    return;
+                }
                 FinishAttack(succeeded);
                 return;
             }
@@ -173,8 +248,10 @@ namespace Lighthouse.Monsters.AI.Server
         private void FinishAttack(bool succeeded)
         {
             _isAttacking = false;
+            _isBiteHolding = false;
             _hasSucceeded = succeeded;
             _target = null;
+            _targetColliders = null;
             if (_monster == null || !_monster.isServer)
             {
                 return;
@@ -186,6 +263,54 @@ namespace Lighthouse.Monsters.AI.Server
             if (_animation != null)
             {
                 _animation.SetAnimationState(BlueSharkAnimation.Idle);
+            }
+        }
+
+        private void TryStartBite(Vector3 offset, float deltaTime)
+        {
+            Vector3 targetPosition = _target.transform.position;
+            Vector3 targetVelocity = deltaTime > 0f
+                ? (targetPosition - _previousTargetPosition) / deltaTime : Vector3.zero;
+            _previousTargetPosition = targetPosition;
+            if (_hasBiteStarted || _animation == null || _animation.BiteDuration <= 0f
+                || _targetColliders == null || !MonsterMotion.IsFinite(targetVelocity))
+            {
+                return;
+            }
+
+            float nearestDistance = float.PositiveInfinity;
+            Vector3 capsuleCenter = _bodyCollider.bounds.center;
+            foreach (Collider collider in _targetColliders)
+            {
+                if (collider == null || !collider.enabled || collider.isTrigger
+                    || !collider.gameObject.activeInHierarchy
+                    || Physics.GetIgnoreLayerCollision(_bodyCollider.gameObject.layer, collider.gameObject.layer)
+                    || Physics.GetIgnoreCollision(_bodyCollider, collider))
+                {
+                    continue;
+                }
+
+                Vector3 boatPoint = collider.ClosestPoint(capsuleCenter);
+                Vector3 sharkPoint = _bodyCollider.ClosestPoint(boatPoint);
+                boatPoint = collider.ClosestPoint(sharkPoint);
+                sharkPoint = _bodyCollider.ClosestPoint(boatPoint);
+                nearestDistance = Mathf.Min(nearestDistance, Vector3.Distance(sharkPoint, boatPoint));
+            }
+
+            offset.y = 0f;
+            Vector3 direction = offset.sqrMagnitude > 0.0001f ? offset.normalized : Vector3.zero;
+            targetVelocity.y = 0f;
+            float closingSpeed = Mathf.Max(0f, _currentSpeed - Vector3.Dot(targetVelocity, direction));
+            float leadTime = Mathf.Min(_biteContactTime, _animation.BiteDuration);
+            float accelerationTime = Mathf.Min(leadTime, Mathf.Max(0f, (_speed - _currentSpeed) / _acceleration));
+            float leadDistance = closingSpeed * leadTime
+                + _acceleration * accelerationTime * (leadTime - 0.5f * accelerationTime);
+            if (nearestDistance <= leadDistance + 0.05f)
+            {
+                _hasBiteStarted = true;
+                _biteStartedAt = NetworkTime.time;
+                _biteEndsAt = _biteStartedAt + _animation.BiteDuration;
+                _animation.PlayBite();
             }
         }
 
