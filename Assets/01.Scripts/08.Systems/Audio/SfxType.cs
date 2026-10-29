@@ -15,6 +15,9 @@ namespace Lighthouse.Systems.Audio
         PlayerBoard = 10,
         PlayerDisembark = 11,
         BoatRepair = 12,
-        ObstacleAlarm = 13
+        ObstacleAlarm = 13,
+        ReefCollision = 14,
+        PlayerWaterEnter = 15,
+        BoatDash = 16
     }
 }
