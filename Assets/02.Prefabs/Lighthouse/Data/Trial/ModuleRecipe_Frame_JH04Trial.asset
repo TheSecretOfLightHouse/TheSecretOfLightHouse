@@ -16,11 +16,13 @@ MonoBehaviour:
   _displayName: "\uAE30\uBC18 \uD504\uB808\uC784"
   _ingredients:
   - _resource: {fileID: 11400000, guid: fa31dd611901c164f8a45b569154efd6, type: 2}
-    _amount: 5
+    _amount: 20
   - _resource: {fileID: 11400000, guid: a2fd54a3f56b7b84e9b17d601cfd9284, type: 2}
-    _amount: 5
+    _amount: 10
   - _resource: {fileID: 11400000, guid: 8c7a2775b55dec340a1dfce8185c7fb5, type: 2}
     _amount: 2
   _maxExisting: 3
-  _isTestValue: 1
+  _isTestValue: 0
   _icon: {fileID: 21300000, guid: c7483939ed673eb4fb3925206b184fd6, type: 3}
+  _isBoatModule: 0
+  _boatModuleType: 0

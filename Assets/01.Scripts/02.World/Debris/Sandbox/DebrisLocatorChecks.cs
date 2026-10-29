@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Lighthouse.World.Debris.Rules;
 using Lighthouse.World.Debris.Server;
+using Lighthouse.World.Islands.Rules;
 using Lighthouse.World.MapGeneration.Rules;
 using Lighthouse.World.Ocean.Rules;
 using Lighthouse.World.Query.Rules.Mocks;
@@ -31,7 +32,7 @@ namespace Lighthouse.World.Debris.Sandbox
             ShoreDropResult second = locator.GetDropPoint(
                 new ShoreDropRequest(new Vector3(30f, 0f, 0f), DebrisKind.Resource, 1));
             ShoreDropResult module = locator.GetDropPoint(
-                new ShoreDropRequest(new Vector3(95f, 0f, 0f), DebrisKind.Module, 0));
+                new ShoreDropRequest(new Vector3(30f, 0f, 0f), DebrisKind.Module, 0));
 
             var noIslands = new ShoreDropLocator(new List<IslandPlacement>(), disc, world, regions, config);
             var noGround = new ShoreDropLocator(islands, new DiscGround(Vector2.zero, -1f, 0f), world, regions, config);
@@ -49,15 +50,62 @@ namespace Lighthouse.World.Debris.Sandbox
                 && noIslands.GetDropPoint(request).Failure == ShoreFailure.NoCandidateIsland
                 && noGround.GetDropPoint(request).Failure == ShoreFailure.ShoreNotFound;
 
+            isPassed &= RunIslandFallback(config, islands, world, regions);
+
             Object.DestroyImmediate(config);
 
             Debug.Log($"[{nameof(DebrisLocatorChecks)}] Locator {(isPassed ? "PASS" : "FAIL")} resource/slot/module/no island/no ground");
             return isPassed;
         }
 
+        private static bool RunIslandFallback(
+            DebrisConfig config,
+            List<IslandPlacement> islands,
+            FlatWorldQuery world,
+            IRegionGate regions)
+        {
+            var onlyFarIsland = new SingleIslandGround(1, new DiscGround(new Vector2(100f, 0f), DiscRadius, DiscHeight));
+            var locator = new ShoreDropLocator(islands, onlyFarIsland, world, regions, config);
+
+            ShoreDropResult resource = locator.GetDropPoint(
+                new ShoreDropRequest(new Vector3(30f, 0f, 0f), DebrisKind.Resource, 0));
+            ShoreDropResult module = locator.GetDropPoint(
+                new ShoreDropRequest(new Vector3(30f, 0f, 0f), DebrisKind.Module, 0));
+
+            var nobody = new ShoreDropLocator(islands, new SingleIslandGround(5, new DiscGround(Vector2.zero, DiscRadius, DiscHeight)), world, regions, config);
+            ShoreDropResult none = nobody.GetDropPoint(
+                new ShoreDropRequest(new Vector3(30f, 0f, 0f), DebrisKind.Resource, 0));
+
+            bool isPassed =
+                resource.IsSuccess && resource.IslandIndex == 1
+                && module.IsSuccess && module.IslandIndex == 1
+                && !none.IsSuccess && none.Failure == ShoreFailure.ShoreNotFound;
+
+            Debug.Log($"[{nameof(DebrisLocatorChecks)}] IslandFallback {(isPassed ? "PASS" : "FAIL")} resource/module/all failed");
+            return isPassed;
+        }
+
         private static IslandPlacement Place(short index, float x, float z)
         {
             return new IslandPlacement(index, 0, 0, SeaZone.Inner, new Vector2(x, z), 20f, 0f);
+        }
+
+        private sealed class SingleIslandGround : IGroundHeightSource
+        {
+            private readonly short _island;
+            private readonly DiscGround _ground;
+
+            public SingleIslandGround(short island, DiscGround ground)
+            {
+                _island = island;
+                _ground = ground;
+            }
+
+            public bool TryGetGroundHeight(short islandIndex, float x, float z, out float height)
+            {
+                height = 0f;
+                return islandIndex == _island && _ground.TryGetGroundHeight(islandIndex, x, z, out height);
+            }
         }
 
         private sealed class OpenRegionGate : IRegionGate

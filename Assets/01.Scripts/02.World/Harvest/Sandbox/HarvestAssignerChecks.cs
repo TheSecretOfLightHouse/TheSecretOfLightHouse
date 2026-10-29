@@ -35,7 +35,8 @@ namespace Lighthouse.World.Harvest.Sandbox
             HarvestDepositChecks.Report("Assigner determinism", isSame, $"same stream twice, spots={first.Count}");
             HarvestDepositChecks.Report("Assigner category rule", isRuleOk, $"assigned={assigned}, category match and amount within max");
             HarvestDepositChecks.Report("Assigner ubiquitous", isUbiquitousOk, "every spot with a ubiquitous resource of its category is assigned");
-            return isSame && isRuleOk && isUbiquitousOk;
+            bool isFixedOk = HarvestFixedAssignChecks.RunAll(catalog, archetype);
+            return isSame && isRuleOk && isUbiquitousOk && isFixedOk;
         }
 
         private static bool Assign(ResourceCatalog catalog, IslandArchetype archetype, List<HarvestSpotCategory> categories, List<SpotAssignment> results)

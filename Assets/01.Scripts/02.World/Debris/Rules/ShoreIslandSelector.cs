@@ -18,6 +18,20 @@ namespace Lighthouse.World.Debris.Rules
             Predicate<IslandPlacement> extraFilter,
             out IslandPlacement selected)
         {
+            return TrySelect(islands, origin, kind, unlockedZones, extraFilter, ReadOnlySpan<short>.Empty, out selected);
+        }
+
+        // Every kind goes to the nearest candidate; the lighthouse island is always a candidate, the others only
+        // once their zone is unlocked. Excluded islands (failed attempts) are skipped.
+        public static bool TrySelect(
+            IReadOnlyList<IslandPlacement> islands,
+            Vector3 origin,
+            DebrisKind kind,
+            SeaZone unlockedZones,
+            Predicate<IslandPlacement> extraFilter,
+            ReadOnlySpan<short> excluded,
+            out IslandPlacement selected)
+        {
             selected = default;
             if (islands == null)
             {
@@ -32,14 +46,8 @@ namespace Lighthouse.World.Debris.Rules
                 IslandPlacement island = islands[i];
                 bool isLighthouse = island.Index == LighthouseIslandIndex;
 
-                if (kind == DebrisKind.Module)
+                if (IsExcluded(excluded, island.Index))
                 {
-                    if (isLighthouse)
-                    {
-                        selected = island;
-                        return true;
-                    }
-
                     continue;
                 }
 
@@ -60,6 +68,19 @@ namespace Lighthouse.World.Debris.Rules
             }
 
             return isFound;
+        }
+
+        private static bool IsExcluded(ReadOnlySpan<short> excluded, short index)
+        {
+            for (int i = 0; i < excluded.Length; i++)
+            {
+                if (excluded[i] == index)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool IsCandidate(

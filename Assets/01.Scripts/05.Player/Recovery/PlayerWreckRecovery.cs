@@ -1,5 +1,7 @@
 using Lighthouse.Interaction.Targets.Net;
 using Lighthouse.Player.Boat;
+using Lighthouse.World.Debris.Rules;
+using Lighthouse.World.Query.Rules;
 using Mirror;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,6 +11,7 @@ using UnityEngine;
 public sealed class PlayerWreckRecovery : NetworkBehaviour
 {
     private const double CompletionRetryInterval = 1d;
+    private const float ShoreDropHeightOffset = 0.25f;
 
     [SerializeField, Min(1f)]
     private float _recoveryDuration = 90f;
@@ -28,6 +31,8 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
 
     private PlayerInventory _inventory;
     private PlayerInventoryDropper _dropper;
+    private ResourceDropSpawner _resourceDropSpawner;
+    private readonly List<ResourceDropHandle> _lockedShoreDrops = new List<ResourceDropHandle>();
     private bool _hasSettledInventory;
     private uint _actorId;
 
@@ -61,6 +66,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
         _player = GetComponent<PlayerController>();
         _inventory = GetComponent<PlayerInventory>();
         _dropper = GetComponent<PlayerInventoryDropper>();
+        _resourceDropSpawner = GetComponent<ResourceDropSpawner>();
         _rescueTarget = GetComponent<InteractionTarget>();
     }
 
@@ -335,15 +341,75 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
             return true;
         }
 
-        if (!_dropper.TryDropResources(_plannedResources, _wreckPosition, out WreckDropItem[] droppedItems))
+        bool isUnrescued = _recoveryResult == WreckRecoveryResult.TimedOut;
+        _lockedShoreDrops.Clear();
+
+        // Unrescued: lay the stacks on a shore first, locked, and only unlock them once the inventory has really
+        // given them up, so a failure at either step never loses or duplicates resources.
+        if (isUnrescued && !TrySpawnLockedShoreDrops())
         {
             return false;
         }
 
+        if (!_dropper.TryDropResources(_plannedResources, _wreckPosition, out WreckDropItem[] droppedItems))
+        {
+            WithdrawLockedShoreDrops();
+            return false;
+        }
+
+        for (int i = 0; i < _lockedShoreDrops.Count; i++)
+        {
+            _resourceDropSpawner.TryUnlockDrop(_lockedShoreDrops[i]);
+        }
+
+        _lockedShoreDrops.Clear();
         _resourceDrops = droppedItems;
         _hasDroppedResources = true;
 
         return true;
+    }
+
+    [Server]
+    private bool TrySpawnLockedShoreDrops()
+    {
+        if (_plannedResources.Count == 0)
+        {
+            return true;
+        }
+
+        if (!_resourceDropSpawner || !WorldServices.TryGet(out IShoreDropLocator locator))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < _plannedResources.Count; i++)
+        {
+            KeyValuePair<int, int> entry = _plannedResources[i];
+            ShoreDropResult spot = locator.GetDropPoint(new ShoreDropRequest(_wreckPosition, DebrisKind.Resource, i));
+
+            if (!spot.IsSuccess
+                || !_resourceDropSpawner.TrySpawnDrop(
+                    spot.Position + Vector3.up * ShoreDropHeightOffset, entry.Key, entry.Value, true, out ResourceDropHandle handle))
+            {
+                WithdrawLockedShoreDrops();
+                return false;
+            }
+
+            _lockedShoreDrops.Add(handle);
+        }
+
+        return true;
+    }
+
+    [Server]
+    private void WithdrawLockedShoreDrops()
+    {
+        for (int i = 0; i < _lockedShoreDrops.Count; i++)
+        {
+            _resourceDropSpawner.TryWithdrawDrop(_lockedShoreDrops[i]);
+        }
+
+        _lockedShoreDrops.Clear();
     }
 
     [Server]
@@ -381,7 +447,12 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
             1,
             _wreckPosition);
 
-        if (!_inventory.TryDiscardWreckModule(_plannedModuleId))
+        // Unrescued: the module lands on a shore instead of being lost; a failed attempt leaves it in the hands to retry.
+        bool isModuleHandled = _recoveryResult == WreckRecoveryResult.TimedOut
+            ? _inventory.TryDropWreckModuleToShore(_plannedModuleId, _wreckPosition)
+            : _inventory.TryDiscardWreckModule(_plannedModuleId);
+
+        if (!isModuleHandled)
         {
             return false;
         }

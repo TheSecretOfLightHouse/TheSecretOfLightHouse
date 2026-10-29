@@ -9,6 +9,7 @@ namespace Lighthouse.World.Harvest.Rules
         private static readonly List<HarvestSpot> ActiveSpots = new List<HarvestSpot>();
 
         [SerializeField] private HarvestSpotCategory _category;
+        [SerializeField] private ResourceDefinition _fixedResource;
 
         private int _spotId;
         private int _resourceId;
@@ -17,6 +18,8 @@ namespace Lighthouse.World.Harvest.Rules
         public static IReadOnlyList<HarvestSpot> Active => ActiveSpots;
 
         public HarvestSpotCategory Category => _category;
+
+        public ResourceDefinition FixedResource => _fixedResource;
 
         public int SpotId => _spotId;
 

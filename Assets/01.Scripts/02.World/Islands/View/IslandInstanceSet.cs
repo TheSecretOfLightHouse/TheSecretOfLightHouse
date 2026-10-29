@@ -63,13 +63,19 @@ namespace Lighthouse.World.Islands.View
             _instances.Add(instance);
             instance.name = $"Island_{plan.Index}_{plan.Archetype.name}_v{plan.VariantIndex}";
 
-            if (_coastalShelfMaterial != null && _coastalShelfWidth > 0f)
+            if (_coastalShelfMaterial != null && _coastalShelfWidth > 0f && !HasOwnCoastWaves(instance))
             {
                 if (!CoastalShelfView.Create(instance, _coastalShelfMaterial, _coastalShelfWidth, _coastalRockMaterial, _lagoonRadiusScale, _lagoonMinReach))
                 {
                     Debug.LogWarning($"[{nameof(IslandInstanceSet)}] Coastal shelf could not be built for {instance.name}.");
                 }
             }
+        }
+
+        private static bool HasOwnCoastWaves(GameObject instance)
+        {
+            return instance.TryGetComponent<IslandCoastWaveView>(out _)
+                || instance.TryGetComponent<TerrainCoastWaveView>(out _);
         }
 
         public void Clear()

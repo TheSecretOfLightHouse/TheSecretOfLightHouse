@@ -6,6 +6,7 @@ using Lighthouse.Network.Connections.Net;
 using Lighthouse.Network.Session.Net;
 using Lighthouse.Network.Session.Rules;
 using Lighthouse.Network.Session.View;
+using Lighthouse.World.Islands.Rules;
 using Lighthouse.World.MapGeneration.Net;
 using Lighthouse.World.Query.Rules;
 
@@ -341,6 +342,11 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
             }
 
             _motor.Face(rotation);
+        }
+
+        if (!IsDowned && WorldServices.TryGet(out IWalkBoundary walkBoundary))
+        {
+            moveDirection = walkBoundary.FilterMove(_rb.position, moveDirection);
         }
 
         _motor.Move(moveDirection, config,fixedDeltaTime);

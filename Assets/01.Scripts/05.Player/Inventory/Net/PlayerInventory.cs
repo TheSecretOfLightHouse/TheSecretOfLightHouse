@@ -251,6 +251,23 @@ public sealed class PlayerInventory : NetworkBehaviour
         return _serverModuleHandler.DiscardCarried(_serverActorId);
     }
 
+    [Server]
+    public bool TryDropWreckModuleToShore(uint expectedModuleId, Vector3 wreckPosition)
+    {
+        if (!_serverModuleHandler || expectedModuleId == 0)
+        {
+            return false;
+        }
+
+        if (!TryGetServerCarriedModule(out _, out uint moduleId)
+            || moduleId != expectedModuleId)
+        {
+            return false;
+        }
+
+        return _serverModuleHandler.TryDropCarriedToShore(_serverActorId, wreckPosition);
+    }
+
     //[Server]
     //public bool TrySelectWreckLoss(out bool isModule, out int itemId)
     //{
