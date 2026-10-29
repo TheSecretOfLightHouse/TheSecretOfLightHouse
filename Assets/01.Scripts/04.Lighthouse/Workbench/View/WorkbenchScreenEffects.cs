@@ -64,6 +64,7 @@ namespace Lighthouse.Workbench.View
         {
             public RectTransform Target;
             public Vector3 BaseScale;
+            public Vector3 BasePosition;
             public float Strength;
             public float Elapsed;
         }
@@ -214,7 +215,7 @@ namespace Lighthouse.Workbench.View
             {
                 if (_punches[i].Target)
                 {
-                    _punches[i].Target.localScale = _punches[i].BaseScale;
+                    SetPunchScale(ref _punches[i], 1f);
                 }
             }
 
@@ -279,7 +280,21 @@ namespace Lighthouse.Workbench.View
                 return;
             }
 
-            _punches[_punchCount++] = new Punch { Target = target, BaseScale = target.localScale, Strength = strength };
+            _punches[_punchCount++] = new Punch
+            {
+                Target = target, BaseScale = target.localScale, BasePosition = target.localPosition, Strength = strength,
+            };
+        }
+
+        // Scales about the rect's centre. The sketch rects pivot on their top-left corner, so scaling about the pivot
+        // throws the target down and to the right before it settles back.
+        private static void SetPunchScale(ref Punch punch, float factor)
+        {
+            Vector3 scale = punch.BaseScale * factor;
+            Vector2 center = punch.Target.rect.center;
+            punch.Target.localScale = scale;
+            punch.Target.localPosition = punch.BasePosition
+                - new Vector3(center.x * (scale.x - punch.BaseScale.x), center.y * (scale.y - punch.BaseScale.y), 0f);
         }
 
         // Blinks toward the flash colour and settles back on the graphic's colour at the moment it started.
@@ -527,14 +542,14 @@ namespace Lighthouse.Workbench.View
 
                 if (t >= 1f)
                 {
-                    punch.Target.localScale = punch.BaseScale;
+                    SetPunchScale(ref punch, 1f);
                     _punches[i] = _punches[--_punchCount];
                     continue;
                 }
 
                 // Up fast, back down with a small dip under rest.
                 float bump = Mathf.Sin(t * Mathf.PI) * (1f - t) + Mathf.Sin(t * Mathf.PI * 2f) * 0.15f * t;
-                punch.Target.localScale = punch.BaseScale * (1f + punch.Strength * bump);
+                SetPunchScale(ref punch, 1f + punch.Strength * bump);
             }
         }
 
