@@ -1,5 +1,6 @@
 using UnityEngine;
 using Lighthouse.Player.Boat.Net;
+using Lighthouse.Systems.Audio;
 
 namespace Lighthouse.Player.Boat.View
 {
@@ -8,6 +9,7 @@ namespace Lighthouse.Player.Boat.View
     public sealed class ObstacleAlarmHud : MonoBehaviour
     {
         [SerializeField] private bool _soundEnabled = true;
+        [SerializeField] private AudioClip _warningClip;
         [SerializeField, Range(0f, 1f)] private float _volume = 0.15f;
         [SerializeField, Min(0.1f)] private float _beepInterval = 0.6f;
         [SerializeField, Min(0f)] private float _pulseFrequency = 1f;
@@ -45,6 +47,8 @@ namespace Lighthouse.Player.Boat.View
             }
 
             _canvasRoot.SetActive(true);
+            SoundManager sound = SoundManager.Instance;
+            _audio.volume = sound ? (sound.IsMuted ? 0f : sound.MasterVolume * sound.EffectVolume) : 1f;
             Transform reference = _camera ? _camera.transform : transform;
             Vector3 forward = Vector3.ProjectOnPlane(reference.forward, Vector3.up);
             if (forward.sqrMagnitude < 0.0001f)
@@ -61,8 +65,9 @@ namespace Lighthouse.Player.Boat.View
             _arc.color = danger ? new Color(1f, 0.15f, 0.04f, pulse) : new Color(1f, 0.7f, 0.08f, 0.9f);
             if (danger && _soundEnabled && Time.unscaledTime >= _nextBeepTime)
             {
-                _audio.PlayOneShot(_beep, _volume);
-                _nextBeepTime = Time.unscaledTime + _beepInterval;
+                AudioClip clip = _warningClip ? _warningClip : _beep;
+                _audio.PlayOneShot(clip, _volume);
+                _nextBeepTime = Time.unscaledTime + Mathf.Max(_beepInterval, clip.length);
             }
             else if (!danger || !_soundEnabled)
             {
@@ -127,6 +132,10 @@ namespace Lighthouse.Player.Boat.View
             _audio = _canvasRoot.AddComponent<AudioSource>();
             _audio.playOnAwake = false;
             _audio.spatialBlend = 0f;
+            if (_warningClip)
+            {
+                return;
+            }
             _beep = AudioClip.Create("ObstacleAlarmBeep", 4410, 1, 44100, false);
             var samples = new float[4410];
             for (int i = 0; i < samples.Length; i++)

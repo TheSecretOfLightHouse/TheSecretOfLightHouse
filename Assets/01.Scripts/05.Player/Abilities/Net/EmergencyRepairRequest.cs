@@ -175,6 +175,11 @@ public sealed class EmergencyRepairRequest : NetworkBehaviour
                 return durability.CurrentDurability > previousDurability;
             });
 
+        if (succeeded && boat.TryGetComponent(out BoatRepair repair))
+        {
+            repair.NotifyRepaired();
+        }
+
         return succeeded
             ? EmergencyRepairResult.Success
             : EmergencyRepairResult.RequestRejected;
