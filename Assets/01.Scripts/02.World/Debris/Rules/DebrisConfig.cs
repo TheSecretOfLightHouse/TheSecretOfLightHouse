@@ -23,7 +23,11 @@ namespace Lighthouse.World.Debris.Rules
         [SerializeField] private float _minHeightAboveWater = 0.3f;
         [SerializeField] private float _maxSlopeDegrees = 35f;
         [SerializeField] private float _slotSpacing = 0.8f;
+        [SerializeField] private float _spotSearchRadius = 6f;
+        [SerializeField] private float _spotSearchStep = 0.5f;
 
+        public float SpotSearchRadius => _spotSearchRadius;
+        public float SpotSearchStep => _spotSearchStep;
         public float SearchStep => _searchStep;
         public int MissCountToExit => _missCountToExit;
         public float ShoreInset => _shoreInset;
@@ -48,6 +52,8 @@ namespace Lighthouse.World.Debris.Rules
             _minHeightAboveWater = Mathf.Max(0f, _minHeightAboveWater);
             _maxSlopeDegrees = Mathf.Clamp(_maxSlopeDegrees, 0f, MaxSlopeLimit);
             _slotSpacing = Mathf.Max(MinLength, _slotSpacing);
+            _spotSearchRadius = Mathf.Max(0f, _spotSearchRadius);
+            _spotSearchStep = Mathf.Max(MinLength, _spotSearchStep);
         }
     }
 }

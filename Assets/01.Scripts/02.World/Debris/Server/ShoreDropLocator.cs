@@ -10,6 +10,9 @@ namespace Lighthouse.World.Debris.Server
 {
     public sealed class ShoreDropLocator : IShoreDropLocator
     {
+        private const int MaxTrackedSlots = 16;
+        private const float MinSeparationScale = 0.75f;
+
         private readonly IReadOnlyList<IslandPlacement> _islands;
         private readonly IGroundHeightSource _ground;
         private readonly IWorldQuery _world;
@@ -44,29 +47,69 @@ namespace Lighthouse.World.Debris.Server
             float waterHeight = _world.SampleWaterHeight(new Vector3(center.x, 0f, center.y));
             float minHeight = waterHeight + _config.MinHeightAboveWater;
 
-            if (!TryFindShore(island, center, outward, minHeight, out float baseDistance))
+            if (!TryFindShore(island, center, outward, minHeight, out outward, out float baseDistance))
             {
                 return ShoreDropResult.Fail(ShoreFailure.ShoreNotFound);
             }
 
-            Vector2 slotPoint = ShoreSlotMath.GetPoint(
-                center, outward, baseDistance, 0f, request.Slot, _config.SlotSpacing);
-            Vector2 slotDirection = slotPoint - center;
-
-            if (!TryFindShore(island, center, slotDirection, minHeight, out float slotDistance))
+            Span<Vector2> taken = stackalloc Vector2[MaxTrackedSlots];
+            int count = 0;
+            int tracked = Mathf.Min(request.Slot, MaxTrackedSlots);
+            for (int slot = 0; slot < tracked; slot++)
             {
-                return ShoreDropResult.Fail(ShoreFailure.ShoreNotFound);
+                if (TryResolveSlot(island, center, minHeight, outward, baseDistance, slot, taken.Slice(0, count), out Vector2 earlier, out _)
+                    == ShoreFailure.None)
+                {
+                    taken[count++] = earlier;
+                }
             }
 
-            Vector2 point = center + slotDirection.normalized * Mathf.Max(0f, slotDistance - _config.ShoreInset);
-
-            if (!ShoreSpotValidator.TryValidate(
-                _ground, island.Index, point, minHeight, _config.MaxSlopeDegrees, out float height))
+            ShoreFailure failure = TryResolveSlot(
+                island, center, minHeight, outward, baseDistance, request.Slot, taken.Slice(0, count), out Vector2 spot, out float height);
+            if (failure != ShoreFailure.None)
             {
-                return ShoreDropResult.Fail(ShoreFailure.UnsafeSpot);
+                return ShoreDropResult.Fail(failure);
             }
 
-            return ShoreDropResult.Success(new Vector3(point.x, height, point.y), island.Index);
+            return ShoreDropResult.Success(new Vector3(spot.x, height, spot.y), island.Index);
+        }
+
+        private ShoreFailure TryResolveSlot(
+            IslandPlacement island,
+            Vector2 center,
+            float minHeight,
+            Vector2 outward,
+            float baseDistance,
+            int slot,
+            ReadOnlySpan<Vector2> taken,
+            out Vector2 spot,
+            out float height)
+        {
+            spot = center;
+            height = 0f;
+
+            Vector2 slotPoint = ShoreSlotMath.GetPoint(center, outward, baseDistance, 0f, slot, _config.SlotSpacing);
+            if (!TryFindShore(island, center, slotPoint - center, minHeight, out Vector2 slotDirection, out float slotDistance))
+            {
+                return ShoreFailure.ShoreNotFound;
+            }
+
+            Vector2 point = center + slotDirection * Mathf.Max(0f, slotDistance - _config.ShoreInset);
+            return ShoreSpotSearch.TryFind(
+                _ground,
+                island.Index,
+                point,
+                -slotDirection,
+                minHeight,
+                _config.MaxSlopeDegrees,
+                _config.SpotSearchRadius,
+                _config.SpotSearchStep,
+                taken,
+                _config.SlotSpacing * MinSeparationScale,
+                out spot,
+                out height)
+                ? ShoreFailure.None
+                : ShoreFailure.UnsafeSpot;
         }
 
         private bool TryFindShore(
@@ -74,9 +117,10 @@ namespace Lighthouse.World.Debris.Server
             Vector2 center,
             Vector2 direction,
             float minHeight,
+            out Vector2 foundDirection,
             out float distance)
         {
-            return ShoreLineSearch.TryFindShore(
+            return ShoreLineSearch.TryFindNearestShore(
                 _ground,
                 island.Index,
                 center,
@@ -85,6 +129,7 @@ namespace Lighthouse.World.Debris.Server
                 _config.SearchStep,
                 minHeight,
                 _config.MissCountToExit,
+                out foundDirection,
                 out distance);
         }
     }
