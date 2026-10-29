@@ -34,20 +34,17 @@ namespace Lighthouse.Dev.Tower
         private VotingNetworkController _voting;
         [SerializeField]
         private WorkbenchNet _workbench;
-        [Tooltip("In rack mode the mafia takes resources at the rack itself instead of with buttons here.")]
+        [Tooltip("Retired rack trial (2026-10-27). Hidden at start so the screen alone takes the bench keys.")]
         [SerializeField]
         private WorkbenchRack _rack;
-        [Header("Screen mode (2026-10-18 UI), kept to compare with the rack")]
+        [Header("Workbench screen (2026-10-18 UI)")]
         [SerializeField]
         private GameObject _workbenchScreen;
         [SerializeField]
         private Behaviour _workbenchPanel;
-        [Tooltip("Plain bench block shown instead of the rack; walk up to it and press the screen's key.")]
+        [Tooltip("Bench block shown where the rack stood; walk up to it and press the screen's key.")]
         [SerializeField]
         private GameObject _screenBox;
-        [Tooltip("Starting mode on this machine. Each tester may use either way of working the bench; the server rules are the same.")]
-        [SerializeField]
-        private bool _isRackMode = true;
 
         private readonly List<uint> _actors = new List<uint>();
         private InteractionRelay _relay;
@@ -76,24 +73,11 @@ namespace Lighthouse.Dev.Tower
         private void Start()
         {
             EnsureScreenBox();
-            ApplyWorkbenchMode();
-        }
-
-        private void Update()
-        {
-            if (_rack)
-            {
-                _rack.CanWithdraw = _isRackMode && CanWithdraw();
-            }
+            ApplyWorkbenchScreen();
         }
 
         private void OnDisable()
         {
-            if (_rack)
-            {
-                _rack.CanWithdraw = false;
-            }
-
             if (_voting)
             {
                 _voting.IdentityResponded -= HandleIdentityResponded;
@@ -118,12 +102,6 @@ namespace Lighthouse.Dev.Tower
             GUILayout.BeginArea(new Rect((Screen.width - Width) * 0.5f, 10f, Width, Screen.height * 0.6f), GUI.skin.box);
             _scroll = GUILayout.BeginScrollView(_scroll);
             GUILayout.Label($"판 진행 (JH04 시험안)  마지막 요청: {_lastResult}");
-
-            if (_rack && GUILayout.Button(_isRackMode ? "작업대: 선반 (눌러서 화면 UI로)" : "작업대: 화면 UI (눌러서 선반으로)"))
-            {
-                _isRackMode = !_isRackMode;
-                ApplyWorkbenchMode();
-            }
 
             if (!_round.IsStarted)
             {
@@ -483,37 +461,31 @@ namespace Lighthouse.Dev.Tower
             _screenBox.SetActive(false);
         }
 
-        // Rack mode shows the rack; screen mode shows a plain box where the screen opens. Both use F, so only one is on.
-        private void ApplyWorkbenchMode()
+        // The rack still sits in older scenes and also uses F, so it stays off and the box and screen take its place.
+        private void ApplyWorkbenchScreen()
         {
             if (!_rack)
             {
                 return;
             }
 
-            _rack.IsInputEnabled = _isRackMode;
-            _rack.gameObject.SetActive(_isRackMode);
+            _rack.IsInputEnabled = false;
+            _rack.gameObject.SetActive(false);
 
             if (_screenBox)
             {
-                _screenBox.SetActive(!_isRackMode);
+                _screenBox.SetActive(true);
             }
 
             if (_workbenchScreen)
             {
-                _workbenchScreen.SetActive(!_isRackMode);
+                _workbenchScreen.SetActive(true);
             }
 
             if (_workbenchPanel)
             {
-                _workbenchPanel.enabled = !_isRackMode;
+                _workbenchPanel.enabled = true;
             }
-        }
-
-        // Same window as the buttons below: the own mafia while repairing. The server still checks the role.
-        private bool CanWithdraw()
-        {
-            return _round && _round.isActiveAndEnabled && _round.IsStarted && _round.IsOwnMafia && _match && _match.Phase == TowerPhase.Repairing;
         }
 
         // Base resources only; finished modules never come out (2026-10-19 trial).
@@ -521,12 +493,6 @@ namespace Lighthouse.Dev.Tower
         {
             if (!_workbench || !_workbench.Catalog || _match.Phase != TowerPhase.Repairing)
             {
-                return;
-            }
-
-            if (_rack && _isRackMode)
-            {
-                GUILayout.Label($"작업대 선반 앞에서 [{_rack.WithdrawKey}]로 재료를 1개씩 몰래 뺀다. 빈 자리는 모두에게 빨갛게 보인다.");
                 return;
             }
 

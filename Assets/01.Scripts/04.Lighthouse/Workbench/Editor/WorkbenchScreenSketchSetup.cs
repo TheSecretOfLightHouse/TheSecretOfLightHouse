@@ -258,7 +258,6 @@ namespace Lighthouse.Workbench.Editor
             {
                 SerializedObject trial = new SerializedObject(panel);
                 Set(trial, "_workbenchScreen", sketch.gameObject);
-                trial.FindProperty("_isRackMode").boolValue = false;
                 trial.ApplyModifiedProperties();
             }
 
