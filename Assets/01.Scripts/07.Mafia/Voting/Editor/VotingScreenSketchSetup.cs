@@ -110,15 +110,16 @@ namespace Lighthouse.Mafia.Voting.Editor
             Debug.Log($"[{nameof(VotingScreenSketchSetup)}] Vote screen connected. Save the scene to keep it.");
         }
 
-        // The sketch's own in-game button, kept at the lower right away from the interaction prompt.
+        // The sketch's own in-game button at the lower right. Its bottom lines up with the role/boat panel at the lower
+        // left (InGameHudSetup: 1080 - 893 x 1920/1672 = about 55).
         private static void BuildHud(Transform root, SerializedObject serialized)
         {
             Image panel = Picture("Hud", root, Folder, "vt_hud_panel", 0f, 0f, 258f, 108f);
             RectTransform rect = panel.rectTransform;
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(1f, 0f);
-            rect.anchoredPosition = new Vector2(-28f, 28f);
-            // The sketch is drawn small; at 1920x1080 it reads at about 1.4 times.
-            rect.localScale = new Vector3(1.4f, 1.4f, 1f);
+            rect.anchoredPosition = new Vector2(-28f, 55f);
+            // The sketch is drawn small; at 1920x1080 it reads at 1.2 times next to the in-game HUD.
+            rect.localScale = new Vector3(1.2f, 1.2f, 1f);
             panel.raycastTarget = true;
             Button button = panel.gameObject.AddComponent<Button>();
             button.targetGraphic = panel;
@@ -297,9 +298,11 @@ namespace Lighthouse.Mafia.Voting.Editor
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
                 importer.alphaIsTransparency = true;
-                importer.mipmapEnabled = false;
+                // Mipmaps keep the drawn-in lettering readable when a small window shrinks these large pictures.
+                importer.mipmapEnabled = true;
+                importer.mipmapFilter = TextureImporterMipFilter.KaiserFilter;
                 importer.textureCompression = TextureImporterCompression.Uncompressed;
-                importer.filterMode = FilterMode.Bilinear;
+                importer.filterMode = FilterMode.Trilinear;
                 importer.wrapMode = TextureWrapMode.Clamp;
                 importer.maxTextureSize = 2048;
                 importer.spriteBorder = file == "vt_window_board" ? new Vector4(60f, 60f, 60f, 60f)

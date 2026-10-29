@@ -45,13 +45,12 @@ namespace Lighthouse.Workbench.Editor
 
                 RectTransform hud = HudSketchLayout.Layer("Hud", root.transform);
                 Vector2 corner = HudSketchLayout.BottomLeft;
-                Vector2 bottom = HudSketchLayout.Bottom;
 
-                // Key hints, right. Keys share a right edge; the wide ones grow to the left.
-                Key(hud, "Map", "hud_key_m", 1537f, 37f, 230f, "hud_label_map", 42f);
-                Key(hud, "Vote", "hud_key_v", 1537f, 37f, 277f, "hud_label_vote", 42f);
-                Key(hud, "Inventory", "hud_key_tab", 1524f, 50f, 323f, "hud_label_inventory", 62f);
-                Key(hud, "Menu", "hud_key_esc", 1527f, 47f, 369f, "hud_label_menu", 42f);
+                // Key hints, top right, one row per key under the final battle strip (its right side ends near 146).
+                // No V row: the voting screen shows its own button bottom right while voting is open.
+                Key(hud, "Map", "hud_key_m", 37f, 0, "hud_label_map", 42f);
+                Key(hud, "Inventory", "hud_key_tab", 50f, 1, "hud_label_inventory", 62f);
+                Key(hud, "Menu", "hud_key_esc", 47f, 2, "hud_label_menu", 42f);
 
                 // Carried item card, bottom left.
                 HudSketchLayout.Backing("CardBacking", hud, HudSketchLayout.CardBacking, corner, 60f, 653f, 62f, 60f);
@@ -60,20 +59,17 @@ namespace Lighthouse.Workbench.Editor
                 HudSketchLayout.Picture("CardName", hud, "hud_label_lens", corner, 144f, 648f, 56f, 33f);
                 HudSketchLayout.Picture("CardUse", hud, "hud_label_for_lighthouse", corner, 144f, 682f, 60f, 24f);
 
-                // Role and boat panel, bottom left.
-                HudSketchLayout.Picture("Panel", hud, "hud_panel", corner, 48f, 745f, 396f, 146f).preserveAspect = false;
-                HudSketchLayout.Picture("RoleIcon", hud, "hud_icon_navigator", corner, 66f, 752f, 54f, 48f);
-                HudSketchLayout.Picture("RoleName", hud, "hud_label_navigator", corner, 136f, 764f, 80f, 32f);
-                HudSketchLayout.Picture("PanelDivider", hud, "hud_panel_divider", corner, 62f, 801f, 368f, 10f).preserveAspect = false;
-                HudSketchLayout.Picture("BoatIcon", hud, "hud_icon_boat", corner, 64f, 822f, 70f, 45f);
-                HudSketchLayout.Picture("BoatTitle", hud, "hud_label_boat_durability", corner, 144f, 814f, 106f, 30f);
-                Image boatFill = HudSketchLayout.Bar("BoatBar", hud, corner, 146f, 847f, 188f, 24f,
+                // Role and boat panel, bottom left. A little wider than the mockup, with every piece kept clear of
+                // the panel's thick rounded rim (the mockup's spacing let the icons touch it).
+                HudSketchLayout.Picture("Panel", hud, "hud_panel", corner, 46f, 743f, 410f, 150f).preserveAspect = false;
+                HudSketchLayout.Picture("RoleIcon", hud, "hud_icon_navigator", corner, 72f, 758f, 44f, 39f);
+                HudSketchLayout.Picture("RoleName", hud, "hud_label_navigator", corner, 126f, 762f, 70f, 28f);
+                HudSketchLayout.Picture("PanelDivider", hud, "hud_panel_divider", corner, 66f, 803f, 370f, 9f).preserveAspect = false;
+                HudSketchLayout.Picture("BoatIcon", hud, "hud_icon_boat", corner, 72f, 826f, 58f, 37f);
+                HudSketchLayout.Picture("BoatTitle", hud, "hud_label_boat_durability", corner, 140f, 817f, 94f, 27f);
+                Image boatFill = HudSketchLayout.Bar("BoatBar", hud, corner, 142f, 849f, 178f, 22f,
                     "hud_small_bar_track", "hud_small_bar_fill", "hud_small_bar_frame", FrameInset);
-                Text boatText = HudSketchLayout.Label("BoatValue", hud, "- / -", 22f, HudSketchLayout.Cream, corner, 342f, 842f, 96f, 34f, TextAnchor.MiddleLeft);
-
-                // Interaction hint, bottom centre.
-                HudSketchLayout.Picture("PromptKey", hud, "hud_key_e", bottom, 745f, 838f, 46f, 45f);
-                HudSketchLayout.Picture("PromptLabel", hud, "hud_label_use_workbench", bottom, 804f, 846f, 122f, 28f);
+                Text boatText = HudSketchLayout.Label("BoatValue", hud, "- / -", 20f, HudSketchLayout.Cream, corner, 330f, 843f, 100f, 34f, TextAnchor.MiddleLeft);
 
                 InGameHud view = root.AddComponent<InGameHud>();
                 SerializedObject serialized = new SerializedObject(view);
@@ -92,6 +88,8 @@ namespace Lighthouse.Workbench.Editor
                 UnityEngine.SceneManagement.SceneManager.SetActiveScene(previousScene);
                 EditorSceneManager.CloseScene(buildScene, true);
             }
+
+            DayCycleHudSetup.Build();
         }
 
         [MenuItem("Lighthouse/UI/Use In-Game HUD In Open Scene")]
@@ -123,12 +121,21 @@ namespace Lighthouse.Workbench.Editor
             Debug.Log($"[{nameof(InGameHudSetup)}] In-game HUD added. Save the scene to keep it.");
         }
 
-        // A key cap and its caption, centred on the same line. Captions start at one shared left edge.
-        private static void Key(Transform parent, string name, string keySprite, float x, float width, float y, string labelSprite, float labelWidth)
+        // A key cap and its caption on one row, 1.12x the mockup's size. Every key is centred in one shared column and
+        // every caption starts at one shared left edge, so the rows line up whatever the key's width.
+        private static void Key(Transform parent, string name, string keySprite, float keyWidth, int row, string labelSprite, float labelWidth)
         {
+            const float size = 1.12f;
+            const float right = 1648f;
+            const float top = 160f;
+            float labelX = right - 62f * size;
+            float columnWidth = 50f * size;
+            float columnX = labelX - 14f * size - columnWidth;
+            float y = top + row * 46f * size;
+            float width = keyWidth * size;
             Vector2 anchor = HudSketchLayout.TopRight;
-            HudSketchLayout.Picture(name + "Key", parent, keySprite, anchor, x, y, width, 36f);
-            HudSketchLayout.Picture(name + "Label", parent, labelSprite, anchor, 1588f, y + 6f, labelWidth, 24f);
+            HudSketchLayout.Picture(name + "Key", parent, keySprite, anchor, columnX + (columnWidth - width) * 0.5f, y, width, 36f * size);
+            HudSketchLayout.Picture(name + "Label", parent, labelSprite, anchor, labelX, y + 6f * size, labelWidth * size, 24f * size);
         }
 
         private static void Set(SerializedObject serialized, string name, Object value)

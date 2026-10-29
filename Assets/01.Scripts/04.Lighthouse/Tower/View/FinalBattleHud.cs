@@ -5,18 +5,22 @@ using UnityEngine.UI;
 
 namespace Lighthouse.Tower.View
 {
-    // Top-of-screen HUD for the final battle (2026-10-29 in-game HUD mockup): repair on the left, the lighthouse's
-    // health on the right. Shown only while the phase is FinalBattle. The match values are SyncVars without hooks, so it reads them
-    // every frame and rebuilds text only when a shown number changes. Bars ease toward the synced value. The strip
-    // drops in from above when the battle starts; a hit shakes the health bar, flashes it red and floats the damage
+    // Top-of-screen lighthouse HUD (2026-10-29 in-game HUD mockup). The repair on the left shows for the whole match;
+    // the title and the lighthouse's health (the battle group) only while the phase is FinalBattle. The match values
+    // are SyncVars without hooks, so it reads them every frame and rebuilds text only when a shown number changes. Bars
+    // ease toward the synced value. The battle group drops in from above when the battle starts; a hit shakes the health bar, flashes it red and floats the damage
     // (UI effects 2026-10-26, no camera shake since the camera is the Player part's).
     [DisallowMultipleComponent]
     public sealed class FinalBattleHud : MonoBehaviour
     {
         [SerializeField]
         private TowerMatchNet _match;
+        [Tooltip("Everything; shown while the match runs.")]
         [SerializeField]
         private GameObject _root;
+        [Tooltip("The title and health under the root; shown only in the final battle.")]
+        [SerializeField]
+        private GameObject _battleRoot;
 
         [Header("Repair")]
         [SerializeField]
@@ -74,8 +78,9 @@ namespace Lighthouse.Tower.View
         private int _shownHealth = -1;
         private int _shownMaxHealth = -1;
         private bool _isShown;
-        private RectTransform _hud;
-        private Vector2 _hudPosition;
+        private bool _isBattleShown;
+        private RectTransform _battle;
+        private Vector2 _battlePosition;
         private RectTransform _healthBar;
         private Vector2 _healthBarPosition;
         private RectTransform _damage;
@@ -90,8 +95,8 @@ namespace Lighthouse.Tower.View
 
             _healthColor = _healthFill ? _healthFill.color : Color.white;
             _healthNumberHex = ColorUtility.ToHtmlStringRGB(_healthNumberColor);
-            _hud = (RectTransform)_root.transform;
-            _hudPosition = _hud.anchoredPosition;
+            _battle = (RectTransform)_battleRoot.transform;
+            _battlePosition = _battle.anchoredPosition;
 
             // The fill sits inside the bar's track and frame, so the bar itself is what shakes.
             if (_healthFill)
@@ -108,18 +113,32 @@ namespace Lighthouse.Tower.View
             }
 
             _root.SetActive(false);
+            _battleRoot.SetActive(false);
         }
 
         private void LateUpdate()
         {
-            bool isFinalBattle = _match && _match.Phase == TowerPhase.FinalBattle;
+            // Only a spawned match has synced values; the result screen takes over once it ends.
+            bool isRunning = _match && (_match.isClient || _match.isServer) && _match.Phase != TowerPhase.Ended;
+            bool isFinalBattle = isRunning && _match.Phase == TowerPhase.FinalBattle;
 
-            if (isFinalBattle != _isShown)
+            if (isRunning != _isShown)
             {
-                _isShown = isFinalBattle;
-                _root.SetActive(isFinalBattle);
+                _isShown = isRunning;
+                _root.SetActive(isRunning);
 
-                // Opens on the current values instead of easing in from the last battle's.
+                // Opens on the current values instead of easing in from the last match's.
+                if (isRunning)
+                {
+                    SnapBars();
+                }
+            }
+
+            if (isFinalBattle != _isBattleShown)
+            {
+                _isBattleShown = isFinalBattle;
+                _battleRoot.SetActive(isFinalBattle);
+
                 if (isFinalBattle)
                 {
                     SnapBars();
@@ -148,10 +167,12 @@ namespace Lighthouse.Tower.View
         {
             _match = match;
             _isShown = false;
+            _isBattleShown = false;
             _shownRepairTenths = -1;
             _shownHealth = -1;
             _shownMaxHealth = -1;
             _root.SetActive(false);
+            _battleRoot.SetActive(false);
         }
 
         private float RepairRatio()
@@ -271,7 +292,7 @@ namespace Lighthouse.Tower.View
 
             _dropTimer = Mathf.Max(0f, _dropTimer - Time.unscaledDeltaTime);
             float left = _dropTimer / _dropSeconds;
-            _hud.anchoredPosition = _hudPosition + new Vector2(0f, _dropDistance * left * left * left);
+            _battle.anchoredPosition = _battlePosition + new Vector2(0f, _dropDistance * left * left * left);
         }
 
         private void Shake()

@@ -5,9 +5,9 @@ using UnityEngine.UI;
 namespace Lighthouse.UI.Hud
 {
     // Always-on HUD from the 2026-10-29 in-game HUD mockup: carried item card and role/boat panel bottom left, key
-    // hints on the right, the interaction hint bottom centre. Only the boat's durability is live; it follows the local
-    // player's own boat, aboard or not. The role, card and interaction hint are the mockup's fixed pictures until their
-    // data exists (no role data yet; the hint has no source). Shown while a local player exists.
+    // hints top right. Only the boat's durability is live; it follows the local player's own boat, aboard or not. The
+    // role and card are the mockup's fixed pictures until their data exists (no role data yet). The mockup's "E" hint
+    // is left out: each station shows its own prompt when in range. Shown while a local player exists.
     [DisallowMultipleComponent]
     public sealed class InGameHud : MonoBehaviour
     {

@@ -34,7 +34,8 @@ namespace Lighthouse.Workbench.Editor
                 TextureImporter importer = (TextureImporter)AssetImporter.GetAtPath(path);
 
                 if (importer.textureType == TextureImporterType.Sprite && importer.spriteImportMode == SpriteImportMode.Single
-                    && importer.alphaIsTransparency && !importer.mipmapEnabled)
+                    && importer.alphaIsTransparency && importer.mipmapEnabled
+                    && importer.filterMode == FilterMode.Trilinear)
                 {
                     continue;
                 }
@@ -42,9 +43,11 @@ namespace Lighthouse.Workbench.Editor
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
                 importer.alphaIsTransparency = true;
-                importer.mipmapEnabled = false;
+                // Mipmaps keep the drawn-in lettering readable when a small window shrinks these large pictures.
+                importer.mipmapEnabled = true;
+                importer.mipmapFilter = TextureImporterMipFilter.KaiserFilter;
                 importer.textureCompression = TextureImporterCompression.Uncompressed;
-                importer.filterMode = FilterMode.Bilinear;
+                importer.filterMode = FilterMode.Trilinear;
                 importer.wrapMode = TextureWrapMode.Clamp;
                 importer.maxTextureSize = 2048;
                 importer.SaveAndReimport();

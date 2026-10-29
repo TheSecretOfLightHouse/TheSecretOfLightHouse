@@ -7,8 +7,9 @@ using UnityEngine.UI;
 
 namespace Lighthouse.Workbench.Editor
 {
-    // Builds the final battle HUD from the 2026-10-29 in-game HUD mockup: repair on the left, the title in the centre
-    // and the lighthouse's health on the right, each kept to its own edge of the screen (HudSketchLayout).
+    // Builds the lighthouse HUD from the 2026-10-29 in-game HUD mockup: repair on the left (whole match), the title in
+    // the centre and the lighthouse's health on the right (final battle only, under Battle), each kept to its own edge
+    // of the screen (HudSketchLayout).
     public static class FinalBattleHudSetup
     {
         private const string PrefabPath = "Assets/02.Prefabs/UI/Tower/FinalBattleHud.prefab";
@@ -48,6 +49,7 @@ namespace Lighthouse.Workbench.Editor
                 Vector2 left = HudSketchLayout.TopLeft;
                 Vector2 centre = HudSketchLayout.Top;
                 Vector2 right = HudSketchLayout.TopRight;
+                RectTransform battle = HudSketchLayout.Layer("Battle", hud);
 
                 // Repair, left.
                 HudSketchLayout.Picture("Lighthouse", hud, "hud_icon_lighthouse", left, 96f, 28f, 80f, 94f);
@@ -58,31 +60,33 @@ namespace Lighthouse.Workbench.Editor
                 HudSketchLayout.Picture("RepairGoal", hud, "hud_goal_citizen", left, 184f, 116f, 162f, 30f);
 
                 // Title, centre.
-                HudSketchLayout.Picture("DividerLeft", hud, "hud_divider_left", centre, 566f, 84f, 134f, 18f);
-                HudSketchLayout.Picture("LanternRayLeft", hud, "hud_ray_left", centre, 792f, 30f, 22f, 27f);
-                HudSketchLayout.Picture("Lantern", hud, "hud_icon_lantern", centre, 820f, 20f, 34f, 50f);
-                HudSketchLayout.Picture("LanternRayRight", hud, "hud_ray_right", centre, 862f, 30f, 22f, 27f);
-                HudSketchLayout.Picture("Title", hud, "hud_title_final_battle", centre, 728f, 64f, 214f, 66f);
-                HudSketchLayout.Picture("DividerRight", hud, "hud_divider_right", centre, 976f, 84f, 134f, 18f);
+                HudSketchLayout.Picture("DividerLeft", battle, "hud_divider_left", centre, 566f, 84f, 134f, 18f);
+                HudSketchLayout.Picture("LanternRayLeft", battle, "hud_ray_left", centre, 792f, 30f, 22f, 27f);
+                HudSketchLayout.Picture("Lantern", battle, "hud_icon_lantern", centre, 820f, 20f, 34f, 50f);
+                HudSketchLayout.Picture("LanternRayRight", battle, "hud_ray_right", centre, 862f, 30f, 22f, 27f);
+                HudSketchLayout.Picture("Title", battle, "hud_title_final_battle", centre, 728f, 64f, 214f, 66f);
+                HudSketchLayout.Picture("DividerRight", battle, "hud_divider_right", centre, 976f, 84f, 134f, 18f);
 
                 // Health, right. No cream frame here, as in the mockup.
-                HudSketchLayout.Picture("Shield", hud, "hud_icon_shield", right, 1152f, 42f, 54f, 68f);
-                HudSketchLayout.Picture("HealthTitle", hud, "hud_label_health", right, 1218f, 44f, 146f, 40f);
-                Text healthText = HudSketchLayout.Label("HealthValue", hud, "0 / 0", 26f, HudSketchLayout.Cream, right, 1400f, 46f, 166f, 36f, TextAnchor.MiddleRight);
-                Image healthFill = HudSketchLayout.Bar("HealthBar", hud, right, 1220f, 84f, 348f, 28f,
+                HudSketchLayout.Picture("Shield", battle, "hud_icon_shield", right, 1152f, 42f, 54f, 68f);
+                HudSketchLayout.Picture("HealthTitle", battle, "hud_label_health", right, 1218f, 44f, 146f, 40f);
+                Text healthText = HudSketchLayout.Label("HealthValue", battle, "0 / 0", 26f, HudSketchLayout.Cream, right, 1400f, 46f, 166f, 36f, TextAnchor.MiddleRight);
+                Image healthFill = HudSketchLayout.Bar("HealthBar", battle, right, 1220f, 84f, 348f, 28f,
                     "hud_bar_track", "hud_bar_fill_red", null, FullInset);
-                HudSketchLayout.Picture("HealthGoal", hud, "hud_goal_mafia", right, 1376f, 116f, 186f, 30f);
-                Text damageText = HudSketchLayout.Label("HealthDamage", hud, "-0", 26f, HudSketchLayout.Hit, right, 1400f, 14f, 166f, 34f, TextAnchor.MiddleRight);
+                HudSketchLayout.Picture("HealthGoal", battle, "hud_goal_mafia", right, 1376f, 116f, 186f, 30f);
+                Text damageText = HudSketchLayout.Label("HealthDamage", battle, "-0", 26f, HudSketchLayout.Hit, right, 1400f, 14f, 166f, 34f, TextAnchor.MiddleRight);
 
                 FinalBattleHud view = root.AddComponent<FinalBattleHud>();
                 SerializedObject serialized = new SerializedObject(view);
                 Set(serialized, "_root", hud.gameObject);
+                Set(serialized, "_battleRoot", battle.gameObject);
                 Set(serialized, "_repairFill", repairFill);
                 Set(serialized, "_repairText", repairText);
                 Set(serialized, "_healthFill", healthFill);
                 Set(serialized, "_healthText", healthText);
                 Set(serialized, "_damageText", damageText);
                 serialized.ApplyModifiedPropertiesWithoutUndo();
+                battle.gameObject.SetActive(false);
                 hud.gameObject.SetActive(false);
                 System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(PrefabPath));
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
