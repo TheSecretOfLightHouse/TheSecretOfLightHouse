@@ -33,6 +33,7 @@ namespace Lighthouse.Monsters.AI.Server
         private MonsterMotion _motion;
         private SeaMonsterSensor _sensor;
         private Rigidbody _body;
+        private MonsterBoatTarget _attackTarget;
         private Vector3 _aimPosition;
         private Vector3 _chargeDirection;
         private Vector3 _chargeStartPosition;
@@ -97,6 +98,12 @@ namespace Lighthouse.Monsters.AI.Server
 
             if (!_isCharging)
             {
+                return;
+            }
+
+            if (_attackTarget != null && _attackTarget.IsInSafeZone)
+            {
+                Cancel();
                 return;
             }
 
@@ -234,6 +241,7 @@ namespace Lighthouse.Monsters.AI.Server
             }
 
             Cancel();
+            _attackTarget = target.GetComponent<MonsterBoatTarget>();
             _motion.Stop();
             _aimPosition = target.transform.position;
             _aimPosition.y = _motion.HomePosition.y;
@@ -245,7 +253,7 @@ namespace Lighthouse.Monsters.AI.Server
 
         public bool UpdatePreparationAim(GameObject target)
         {
-            if (!CanAct || !_isPreparing)
+            if (!CanAct || !_isPreparing || (_attackTarget != null && _attackTarget.IsInSafeZone))
             {
                 return false;
             }
@@ -262,7 +270,7 @@ namespace Lighthouse.Monsters.AI.Server
 
         public bool CompletePreparation()
         {
-            if (!CanAct || !_isPreparing)
+            if (!CanAct || !_isPreparing || (_attackTarget != null && _attackTarget.IsInSafeZone))
             {
                 return false;
             }
@@ -274,7 +282,8 @@ namespace Lighthouse.Monsters.AI.Server
 
         public bool BeginCharge()
         {
-            if (!CanAct || !_hasPrepared || _isRecovering)
+            if (!CanAct || !_hasPrepared || _isRecovering
+                || (_attackTarget != null && _attackTarget.IsInSafeZone))
             {
                 return false;
             }
@@ -324,6 +333,7 @@ namespace Lighthouse.Monsters.AI.Server
             _recoveryCompletesCharge = false;
             _recoveryElapsedTime = 0f;
             _hitTargets.Clear();
+            _attackTarget = null;
             if (_motion != null)
             {
                 _motion.SetMovementLocked(false);
@@ -335,6 +345,12 @@ namespace Lighthouse.Monsters.AI.Server
         {
             if (!CanAct || !_isCharging || collision.collider == null)
             {
+                return;
+            }
+
+            if (_attackTarget != null && _attackTarget.IsInSafeZone)
+            {
+                Cancel();
                 return;
             }
 
@@ -366,7 +382,8 @@ namespace Lighthouse.Monsters.AI.Server
             _isRecovering = true;
             _hasCompletedCharge = false;
             _recoveryElapsedTime = 0f;
-            _recoveryCompletesCharge = target != null && target.IsEligible && IsRegisteredTarget(target);
+            _recoveryCompletesCharge = target != null && target.IsEligible
+                && !target.IsInSafeZone && IsRegisteredTarget(target);
             _motion.SetMovementLocked(true);
 
             if (_recoveryCompletesCharge && _hitTargets.Add(target) && IsPositive(_monster.Profile.AttackDamage))
@@ -445,7 +462,7 @@ namespace Lighthouse.Monsters.AI.Server
                 }
 
                 MonsterBoatTarget target = targets[i];
-                if (target == null || target.gameObject == gameObject || !target.IsEligible 
+                if (target == null || target.gameObject == gameObject || !target.IsEligible || target.IsInSafeZone
                     || _hitTargets.Contains(target) || !TryGetChargeIntersection(target, start, end, out float entryDistance))
                 {
                     continue;

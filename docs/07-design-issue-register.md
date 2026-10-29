@@ -126,7 +126,7 @@
 | [W14](design/references/v4-design-review.md#w14) | 랜덤 맵의 접근성과 필수 공급 보장이 없다 | P0 · 누락 계약 | 계약 확인 필요 |
 | [W15](design/references/v4-design-review.md#w15) | 가변 일수는 해금과 행동 횟수까지 바꾼다 | P1 · 누락 계약 | 가변N·비율은 원본 확인. 지원범위·반올림·리셋 미정 |
 | [W16](design/references/v4-design-review.md#w16) | 심연 이후의 날짜와 밤 전용 기능이 미정이다 | P1 · 누락 계약 | 부분 결정: 최후전투의 게임기한 패배 없음(5절). 별개인 World시간·일차·일일횟수/효과는 K03 확인 필요 |
-| [W17](design/references/v4-design-review.md#w17) | 안전지대와 소환 및 보스의 예외가 없다 | P1 · 누락 계약 | 계약 확인 필요 |
+| [W17](design/references/v4-design-review.md#w17) | 안전지대와 소환 및 보스의 예외가 없다 | P1 · 누락 계약 | 부분 결정: 일반 몬스터는 안전지대의 배를 탐지·추적하지 않고 대상 진입 시 공격을 취소한다(2026-10-29 사용자 결정). 구현·격리 검사, 실제 플레이·M2 미검증. 보스·소환·다른 위협의 예외는 계약 확인 필요. [결정](design/monster-safe-zone-decisions.md) · [작업](박태욱/2026-10-29/일반-몬스터-안전지대.md) |
 | [W18](design/references/v4-design-review.md#w18) | 합쳐진 위협과 반복 피해의 상한이 없다 | P1 · 검증 가설 | 가설 검증 필요 |
 | [W19](design/references/v4-design-review.md#w19) | 예보 변경의 시점이 단서의 존재를 결정한다 | P1 · 미정 명시 | 계약 확인 필요 |
 | [W20](design/references/v4-design-review.md#w20) | 특수 섬의 사용권과 점유 수명이 없다 | P1 · 미정 명시 | 계약 확인 필요 |

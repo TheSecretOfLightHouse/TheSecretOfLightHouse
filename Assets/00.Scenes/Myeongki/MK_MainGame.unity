@@ -6248,6 +6248,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: 5dabc63ff451bdc4f8d8db19aec93447, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 5dabc63ff451bdc4f8d8db19aec93447, type: 3}
       propertyPath: m_Name
       value: wooden_workbench_3d_model_low
@@ -8993,15 +8997,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6814428408794820564, guid: 87a8d063ed5d18449902479c6cfb41f0, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 2.5
+      value: -5.6
       objectReference: {fileID: 0}
     - target: {fileID: 6814428408794820564, guid: 87a8d063ed5d18449902479c6cfb41f0, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2.2
+      value: 1.266753
       objectReference: {fileID: 0}
     - target: {fileID: 6814428408794820564, guid: 87a8d063ed5d18449902479c6cfb41f0, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 2.5
+      value: 1.65
       objectReference: {fileID: 0}
     - target: {fileID: 6814428408794820564, guid: 87a8d063ed5d18449902479c6cfb41f0, type: 3}
       propertyPath: m_LocalRotation.w
@@ -9847,6 +9851,7 @@ MonoBehaviour:
   syncInterval: 0
   _modules: {fileID: 373932640}
   _voting: {fileID: 2137512392}
+  _lobbyReturnSeconds: 10
 --- !u!114 &1078190439
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10153,6 +10158,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _workbench: {fileID: 996586625}
+  _facilities: {fileID: 0}
 --- !u!4 &1110935334
 Transform:
   m_ObjectHideFlags: 0
@@ -16636,7 +16642,6 @@ MonoBehaviour:
   _workbenchScreen: {fileID: 1956485669}
   _workbenchPanel: {fileID: 1677320538}
   _screenBox: {fileID: 611699623}
-  _isRackMode: 0
 --- !u!114 &1822176900
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16659,6 +16664,7 @@ MonoBehaviour:
   _bossSettings: {fileID: 11400000, guid: 556732e820a224543b60dea7e8e5be52, type: 2}
   _tentacleBoss: {fileID: 0}
   _devSummonAttackPower: 10
+  _devDamage: 100
 --- !u!114 &1822176901
 MonoBehaviour:
   m_ObjectHideFlags: 0
