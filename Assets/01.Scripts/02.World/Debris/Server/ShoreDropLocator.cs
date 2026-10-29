@@ -12,6 +12,7 @@ namespace Lighthouse.World.Debris.Server
     {
         private const int MaxTrackedSlots = 16;
         private const float MinSeparationScale = 0.75f;
+        private const int MaxIslandAttempts = 4;
 
         private readonly IReadOnlyList<IslandPlacement> _islands;
         private readonly IGroundHeightSource _ground;
@@ -33,14 +34,41 @@ namespace Lighthouse.World.Debris.Server
             _config = config != null ? config : throw new ArgumentNullException(nameof(config));
         }
 
+        // A failed island is excluded and the next candidate is tried, so a single cluttered island cannot leave the
+        // wreck without a drop point. The first island's failure is reported when every attempt fails.
         public ShoreDropResult GetDropPoint(in ShoreDropRequest request)
         {
-            if (!ShoreIslandSelector.TrySelect(
-                _islands, request.Origin, request.Kind, _regions.UnlockedZones, null, out IslandPlacement island))
+            Span<short> tried = stackalloc short[MaxIslandAttempts];
+            int count = 0;
+            ShoreDropResult firstFailure = ShoreDropResult.Fail(ShoreFailure.NoCandidateIsland);
+
+            while (count < MaxIslandAttempts)
             {
-                return ShoreDropResult.Fail(ShoreFailure.NoCandidateIsland);
+                if (!ShoreIslandSelector.TrySelect(
+                    _islands, request.Origin, request.Kind, _regions.UnlockedZones, null, tried.Slice(0, count), out IslandPlacement island))
+                {
+                    break;
+                }
+
+                ShoreDropResult result = TryLocateOnIsland(island, request);
+                if (result.IsSuccess)
+                {
+                    return result;
+                }
+
+                if (count == 0)
+                {
+                    firstFailure = result;
+                }
+
+                tried[count++] = island.Index;
             }
 
+            return firstFailure;
+        }
+
+        private ShoreDropResult TryLocateOnIsland(IslandPlacement island, in ShoreDropRequest request)
+        {
             Vector2 center = island.Position;
             Vector2 origin = new Vector2(request.Origin.x, request.Origin.z);
             Vector2 outward = ShoreSlotMath.GetOutward(center, origin);

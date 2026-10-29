@@ -38,11 +38,13 @@ namespace Lighthouse.World.Debris.Sandbox
                 Select(islands, new Vector3(90f, 0f, 0f), DebrisKind.Resource, SeaZone.Inner, null) == 1
                 && Select(islands, new Vector3(60f, 0f, 40f), DebrisKind.Resource, SeaZone.Inner | SeaZone.Middle, null) == 2
                 && Select(islands, new Vector3(190f, 0f, 0f), DebrisKind.Resource, SeaZone.Inner, null) == 1
-                && Select(islands, new Vector3(190f, 0f, 0f), DebrisKind.Module, SeaZone.All, null) == 0
+                && Select(islands, new Vector3(190f, 0f, 0f), DebrisKind.Module, SeaZone.All, null) == 3
+                && Select(islands, new Vector3(190f, 0f, 0f), DebrisKind.Module, SeaZone.Inner, null) == 1
+                && Select(islands, new Vector3(-5f, 0f, 0f), DebrisKind.Module, SeaZone.Inner, null) == 0
                 && Select(islands, new Vector3(90f, 0f, 0f), DebrisKind.Resource, SeaZone.Inner, island => island.Index != 1) == 0
                 && Select(new List<IslandPlacement>(), Vector3.zero, DebrisKind.Resource, SeaZone.All, null) == -1;
 
-            Report("Selector", isPassed, "nearest/locked/module/filter/empty");
+            Report("Selector", isPassed, "nearest/locked/module nearest/filter/empty");
             return isPassed;
         }
 
