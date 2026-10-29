@@ -1,6 +1,7 @@
 using Mirror;
 using System;
 using UnityEngine;
+using Lighthouse.Systems.Audio;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(BoatController), typeof(BoatDurability))]
@@ -162,10 +163,29 @@ public sealed class BoatRepair : NetworkBehaviour
 
             Debug.Log($"{repairAmount}");
             _durability.RestoreDurability(repairAmount);
+            if (_durability.CurrentDurability > current)
+            {
+                NotifyRepaired();
+            }
             _deposited.Clear();
         }
 
         return true;
+    }
+
+    [Server]
+    public void NotifyRepaired()
+    {
+        RpcPlayRepairSound();
+    }
+
+    [ClientRpc]
+    private void RpcPlayRepairSound()
+    {
+        if (SoundManager.Instance)
+        {
+            SoundManager.Instance.PlaySfxAt(SfxType.BoatRepair, transform.position);
+        }
     }
 
     private bool HasAllMaterials()
