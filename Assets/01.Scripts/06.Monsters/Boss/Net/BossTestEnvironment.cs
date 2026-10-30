@@ -181,6 +181,10 @@ namespace Lighthouse.Monsters.Boss
         {
             // 클라이언트의 애니메이션 콜백 대신 서버의 시계로 감기와 타격 시점을 정한다.
             yield return new WaitForSecondsRealtime(_wrapDuration);
+            while (_towerMatch != null && _towerMatch.IsSummonCinematicPlaying && CanContinueBattle)
+            {
+                yield return null;
+            }
             if (!CanContinueBattle)
             {
                 _damageRoutine = null;

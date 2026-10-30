@@ -1,4 +1,5 @@
 using System;
+using Lighthouse.Common.Cinematics;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Interaction.Requests.Rules;
 using Lighthouse.Interaction.Router.Server;
@@ -35,6 +36,10 @@ namespace Lighthouse.Tower.Net
         [SyncVar]
         private TowerEndReason _endReason;
 
+        [SyncVar] private bool _isSummonCinematicPlaying;
+        [SyncVar] private double _summonCinematicStartedAt;
+        [SyncVar] private double _summonCinematicEndsAt;
+
         private TowerNet _tower;
 
         // Server-only.
@@ -52,6 +57,9 @@ namespace Lighthouse.Tower.Net
         public float MaxHealth => _maxHealth;
         public TowerOutcome Outcome => _outcome;
         public TowerEndReason EndReason => _endReason;
+        public bool IsSummonCinematicPlaying => _isSummonCinematicPlaying;
+        public double SummonCinematicStartedAt => _summonCinematicStartedAt;
+        public double SummonCinematicEndsAt => _summonCinematicEndsAt;
         public bool CanStartRitual => _phase == TowerPhase.Repairing && _tower && _tower.IsComplete;
 
         // Server-only.
@@ -66,6 +74,10 @@ namespace Lighthouse.Tower.Net
 
         private void Update()
         {
+            if (isServer && _isSummonCinematicPlaying && NetworkTime.time >= _summonCinematicEndsAt)
+            {
+                FinishSummonCinematic();
+            }
             if (!isServer || _phase != TowerPhase.Ritual || NetworkTime.time < _ritualEndsAt)
             {
                 return;
@@ -98,6 +110,7 @@ namespace Lighthouse.Tower.Net
 
         public override void OnStopServer()
         {
+            FinishSummonCinematic();
             if (_isStartRitualRegistered)
             {
                 InteractionRouter.UnregisterHandler(InteractionAction.StartRitual, this);
@@ -139,6 +152,10 @@ namespace Lighthouse.Tower.Net
             _ritualEndsAt = 0;
             _maxHealth = _settings.MaxHealth;
             _health = _maxHealth;
+            _summonCinematicStartedAt = NetworkTime.time;
+            _summonCinematicEndsAt = _summonCinematicStartedAt + _settings.SummonCinematicSeconds;
+            _isSummonCinematicPlaying = true;
+            ServerCinematicProtection.Begin(this);
             FinalBattleStarted?.Invoke();
             return true;
         }
@@ -147,7 +164,8 @@ namespace Lighthouse.Tower.Net
         [Server]
         public void ApplyDamage(float amount)
         {
-            if (_phase != TowerPhase.FinalBattle || amount <= 0f || float.IsNaN(amount) || float.IsInfinity(amount))
+            if (_phase != TowerPhase.FinalBattle || _isSummonCinematicPlaying
+                || amount <= 0f || float.IsNaN(amount) || float.IsInfinity(amount))
             {
                 return;
             }
@@ -170,10 +188,25 @@ namespace Lighthouse.Tower.Net
             }
 
             _phase = TowerPhase.Ended;
+            FinishSummonCinematic();
             _outcome = outcome;
             _endReason = reason;
             Ended?.Invoke(outcome, reason);
             return true;
+        }
+
+        private void OnDisable()
+        {
+            if (isServer)
+            {
+                FinishSummonCinematic();
+            }
+        }
+
+        private void FinishSummonCinematic()
+        {
+            _isSummonCinematicPlaying = false;
+            ServerCinematicProtection.End(this);
         }
 
         public InteractionResultCode Handle(in InteractionContext context)

@@ -20,6 +20,10 @@ namespace Lighthouse.Tower.Rules
         [SerializeField, Min(1f)]
         private float _maxHealth = 1000f;
 
+        [Tooltip("Server-owned summon presentation window. Temporary until the Timeline length is set.")]
+        [SerializeField, Min(0.1f)]
+        private float _summonCinematicSeconds = 10f;
+
         [Tooltip("On while the numbers are play-test values.")]
         [SerializeField]
         private bool _isTestValue = true;
@@ -27,11 +31,17 @@ namespace Lighthouse.Tower.Rules
         public float RitualSeconds => _ritualSeconds;
         public int RitualRequiredVotes => _ritualRequiredVotes;
         public float MaxHealth => _maxHealth;
+        public float SummonCinematicSeconds => _summonCinematicSeconds;
         public bool IsTestValue => _isTestValue;
 
         // Returns the first problem, or null.
         public string Validate()
         {
+            if (float.IsNaN(_summonCinematicSeconds) || float.IsInfinity(_summonCinematicSeconds)
+                || _summonCinematicSeconds <= 0f)
+            {
+                return $"{name}: summon cinematic duration must be positive and finite.";
+            }
             return _maxHealth >= 1f ? null : $"{name}: max health is below 1.";
         }
     }
