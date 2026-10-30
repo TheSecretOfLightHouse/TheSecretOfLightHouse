@@ -31,7 +31,8 @@ namespace Lighthouse.Monsters.Spinocroc.Server
         private Vector3 _reappearPosition;
         private Vector3 _lockedDirection;
         private RigidbodyConstraints _savedConstraints;
-        private float _surfaceHeight;
+        private MonsterWaterBody _water;
+        private float _returnDepth;
         private double _nextPreparationAt;
         private bool _ownsMotion;
         private SpinocrocPhase _phase;
@@ -82,6 +83,7 @@ namespace Lighthouse.Monsters.Spinocroc.Server
             _motion = GetComponent<MonsterMotion>();
             _sensor = GetComponent<SeaMonsterSensor>();
             _body = GetComponent<Rigidbody>();
+            _water = GetComponent<MonsterWaterBody>();
             _networkTransform = GetComponent<NetworkTransformBase>();
         }
 
@@ -126,27 +128,38 @@ namespace Lighthouse.Monsters.Spinocroc.Server
             }
 
             float progress = Mathf.Clamp01((float)(NetworkTime.time - _phaseStartedAt) / PhaseDuration);
-            float blend = Mathf.SmoothStep(0f, 1f, progress);
-            if (_phase == SpinocrocPhase.Diving)
+            if (_phase == SpinocrocPhase.Diving || _phase == SpinocrocPhase.Reappearing)
             {
-                // 이동 직전의 MovePosition 예약이 새 재등장 위치를 덮어쓰지 않게 한다.
-                if (progress < 1f)
+                if (_water == null || NetworkTime.time - _phaseStartedAt > _water.TransitionTimeout)
                 {
-                    SetHeight(_surfaceHeight - _settings.DiveDepth * blend);
+                    Cancel();
+                    return;
+                }
+                if (_phase == SpinocrocPhase.Reappearing)
+                {
+                    FaceTarget();
+                }
+                bool arrived = _phase == SpinocrocPhase.Diving
+                    ? _water.HasReachedDepth(_water.Buoyancy.TargetDepth) && _water.IsFullySubmerged(0.2f)
+                    : (_returnDepth > 0f ? _water.HasReachedDepth(_returnDepth)
+                        : _water.HasValidReading && _water.Buoyancy.Reading.SubmergedFraction >= 0.35f
+                            && _water.Buoyancy.Reading.SubmergedFraction <= 0.65f
+                            && Mathf.Abs(_body.linearVelocity.y) <= 1f);
+                if (progress < 1f || !arrived)
+                {
+                    return;
                 }
             }
-            else if (_phase == SpinocrocPhase.Reappearing)
+            else
             {
-                SetHeight(_surfaceHeight - _settings.DiveDepth * (1f - blend));
-                FaceTarget();
-            }
-            else if (_phase == SpinocrocPhase.Windup)
-            {
-                FaceTarget();
-            }
-            if (progress < 1f)
-            {
-                return;
+                if (_phase == SpinocrocPhase.Windup)
+                {
+                    FaceTarget();
+                }
+                if (progress < 1f)
+                {
+                    return;
+                }
             }
 
             switch (_phase)
@@ -159,12 +172,20 @@ namespace Lighthouse.Monsters.Spinocroc.Server
                     }
                     // 완전히 잠긴 뒤에만 이동하고 원격 보간도 초기화해 수평 이동이 노출되지 않게 한다.
                     Vector3 submergedPosition = _reappearPosition;
-                    submergedPosition.y = _surfaceHeight - _settings.DiveDepth;
+                    if (!_water.TrySampleSurface(submergedPosition, out float surface))
+                    {
+                        Cancel();
+                        return;
+                    }
+                    submergedPosition.y = surface - _water.Buoyancy.TargetDepth - _water.CenterOffsetY;
                     _body.position = submergedPosition;
                     if (_networkTransform != null)
                     {
                         _networkTransform.ServerTeleport(submergedPosition, _body.rotation);
                     }
+                    _body.linearVelocity = Vector3.zero;
+                    _water.Buoyancy.InvalidateSamples();
+                    _water.Buoyancy.SetTargetDepth(_returnDepth);
                     SetPhase(SpinocrocPhase.Reappearing);
                     break;
                 case SpinocrocPhase.Reappearing:
@@ -195,14 +216,17 @@ namespace Lighthouse.Monsters.Spinocroc.Server
 
         public bool TryBegin()
         {
-            if (!CanAct || _ownsMotion || NetworkTime.time < _nextPreparationAt
+            if (!CanAct || _water == null || !_water.HasValidReading || _ownsMotion || NetworkTime.time < _nextPreparationAt
                 || !TrySelectTarget(out MonsterBoatTarget selected))
             {
                 return false;
             }
             // 이후 보트 위치 추적과 분리해 재등장 중심과 목적지는 잠수 시작 때 한 번만 정한다.
             Vector3 reappearCenter = selected.transform.position;
-            float surfaceHeight = _motion.HomePosition.y;
+            if (!_water.TrySampleSurface(reappearCenter, out float surfaceHeight))
+            {
+                return false;
+            }
             if (!TrySelectReappearPosition(reappearCenter, surfaceHeight, out Vector3 reappearPosition))
             {
                 return false;
@@ -213,7 +237,8 @@ namespace Lighthouse.Monsters.Spinocroc.Server
             _reappearCenter = reappearCenter;
             _reappearPosition = reappearPosition;
             _lockedDirection = Vector3.zero;
-            _surfaceHeight = surfaceHeight;
+            _returnDepth = _water.Buoyancy.TargetDepth;
+            _water.Buoyancy.SetTargetDepth(_settings.DiveDepth);
             _savedConstraints = _body.constraints;
             _motion.SetMovementLocked(true);
             _body.constraints &= ~RigidbodyConstraints.FreezePositionY;
@@ -284,11 +309,9 @@ namespace Lighthouse.Monsters.Spinocroc.Server
             {
                 if (_body != null)
                 {
-                    if (!_monster.IsDead)
+                    if (_water != null)
                     {
-                        Vector3 position = _body.position;
-                        position.y = _surfaceHeight;
-                        _body.position = position;
+                        _water.Buoyancy.SetTargetDepth(_returnDepth);
                     }
                     _body.constraints = _savedConstraints;
                     if (!_body.isKinematic)
@@ -389,13 +412,6 @@ namespace Lighthouse.Monsters.Spinocroc.Server
                 }
             }
             return false;
-        }
-
-        private void SetHeight(float height)
-        {
-            Vector3 position = _body.position;
-            position.y = height;
-            _body.MovePosition(position);
         }
 
         private void FaceTarget()

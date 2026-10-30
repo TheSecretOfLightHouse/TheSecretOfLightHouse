@@ -60,6 +60,23 @@ namespace Lighthouse.World.Ocean.Rules
 
             meanSurface /= count;
 
+            float targetAcceleration = 0f;
+            bool controlsDepth = hasTarget && profile.TargetStrength > 0f;
+            if (controlsDepth)
+            {
+                float meanY = 0f;
+                float meanVelocity = 0f;
+                for (int i = 0; i < count; i++)
+                {
+                    meanY += worldPoints[i].y;
+                    meanVelocity += pointVelocities[i].y;
+                }
+                float error = meanSurface - meanY / count - targetDepth;
+                targetAcceleration = Mathf.Clamp(error * profile.TargetStrength
+                    - meanVelocity / count * profile.VerticalDrag,
+                    -profile.TargetMaxAcceleration, profile.TargetMaxAcceleration);
+            }
+
             float fractionSum = 0f;
             float depthSum = 0f;
 
@@ -78,8 +95,14 @@ namespace Lighthouse.World.Ocean.Rules
                         - velocity.y * profile.VerticalDrag * perPointMass * submerged,
                     -velocity.z * profile.HorizontalDrag * perPointMass * submerged);
 
+                if (controlsDepth)
+                {
+                    // Active depth control balances gravity even while the body crosses the surface.
+                    forces[i].y = perPointMass * (gravity + targetAcceleration);
+                }
+
                 fractionSum += submerged;
-                depthSum += Mathf.Clamp(waterHeights[i] - y, 0f, depthCap);
+                depthSum += controlsDepth ? waterHeights[i] - y : Mathf.Clamp(waterHeights[i] - y, 0f, depthCap);
             }
 
             reading = new BuoyancyReading(

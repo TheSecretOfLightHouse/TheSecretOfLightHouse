@@ -138,6 +138,12 @@ namespace Lighthouse.World.Ocean
             _targetDepth = depth > 0f ? depth : BuoyancySolver.NoTargetDepth;
         }
 
+        public void InvalidateSamples()
+        {
+            ReleaseLease();
+            _reading = default;
+        }
+
         public void ClearTargetDepth()
         {
             _targetDepth = BuoyancySolver.NoTargetDepth;

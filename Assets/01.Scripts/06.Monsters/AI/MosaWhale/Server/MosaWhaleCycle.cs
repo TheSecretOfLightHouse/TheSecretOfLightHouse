@@ -135,6 +135,16 @@ namespace Lighthouse.Monsters.MosaWhale.Server
             {
                 return true;
             }
+            bool depthPhase = _phase == MosaWhalePhase.Diving || _phase == MosaWhalePhase.Telegraph
+                || _phase == MosaWhalePhase.Recovering;
+            if (depthPhase && _movement != null && !_movement.CanLeaveDepthPhase)
+            {
+                if (NetworkTime.time - _phaseStartedAt > _phaseDuration + _movement.DepthTransitionTimeout)
+                {
+                    CancelAttack(MosaWhaleStopReason.WaterUnavailable);
+                }
+                return true;
+            }
             switch (_phase)
             {
                 case MosaWhalePhase.Diving:

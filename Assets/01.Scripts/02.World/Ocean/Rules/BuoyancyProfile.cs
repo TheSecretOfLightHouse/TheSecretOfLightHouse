@@ -24,6 +24,9 @@ namespace Lighthouse.World.Ocean.Rules
         [SerializeField, Min(0f)] private float _maxSinkDepth;
         [SerializeField, Min(0f)] private float _minSinkDepth;
 
+        [SerializeField, Min(0f)] private float _targetStrength;
+        [SerializeField, Min(0f)] private float _targetMaxAcceleration = 40f;
+
         public BuoyancyProfile()
         {
         }
@@ -45,6 +48,10 @@ namespace Lighthouse.World.Ocean.Rules
             _verticalDrag = verticalDrag;
             _horizontalDrag = horizontalDrag;
         }
+
+        public float TargetStrength => _targetStrength;
+
+        public float TargetMaxAcceleration => _targetMaxAcceleration;
 
         public float VerticalDrag => _verticalDrag;
 
