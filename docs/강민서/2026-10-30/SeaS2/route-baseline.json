@@ -1,0 +1,1109 @@
+{
+  "summary": {
+    "note": "straight dock-to-dock model, no waves/turns/berthing; speeds 8 m/s a4 (normal), 16 m/s a8 (Navigator x2)",
+    "requested": 200,
+    "invalid": 0,
+    "duplicates": 62,
+    "uniqueValidLayouts": 138,
+    "legs": 2430,
+    "blockedStraightLegs": 482,
+    "dockToDockFromLighthouseM": {
+      "n": 2430,
+      "min": 98.35235,
+      "p10": 124.0182,
+      "median": 281.9295,
+      "p90": 427.2978,
+      "max": 455.985748,
+      "mean": 285.0122
+    },
+    "centerToCenterFromLighthouseM": {
+      "n": 2430,
+      "min": 114.021324,
+      "p10": 129.822311,
+      "median": 288.8069,
+      "p90": 432.998322,
+      "max": 445.9429,
+      "mean": 291.121338
+    },
+    "nearestNeighborDockM": {
+      "n": 2568,
+      "min": 80.26614,
+      "p10": 97.55703,
+      "median": 121.5873,
+      "p90": 167.633041,
+      "max": 335.4004,
+      "mean": 128.776031
+    },
+    "farthestIslandDockFromLighthouseM": {
+      "n": 138,
+      "min": 408.6822,
+      "p10": 424.525818,
+      "median": 434.753571,
+      "p90": 445.726318,
+      "max": 455.985748,
+      "mean": 434.8549
+    },
+    "cruiseSecNormal": {
+      "n": 2430,
+      "min": 13.2940435,
+      "p10": 16.5022755,
+      "median": 36.241188,
+      "p90": 54.4122238,
+      "max": 57.99822,
+      "mean": 36.6265259
+    },
+    "cruiseSecNavigator": {
+      "n": 2430,
+      "min": 7.147022,
+      "p10": 8.751138,
+      "median": 18.620594,
+      "p90": 27.7061119,
+      "max": 29.49911,
+      "mean": 18.8132629
+    },
+    "byZone": {
+      "Inner": {
+        "n": 685,
+        "min": 98.35235,
+        "p10": 110.605453,
+        "median": 130.111343,
+        "p90": 149.054749,
+        "max": 163.572113,
+        "mean": 130.1776
+      },
+      "Middle": {
+        "n": 880,
+        "min": 227.27742,
+        "p10": 244.299576,
+        "median": 275.4457,
+        "p90": 304.7396,
+        "max": 321.352478,
+        "mean": 274.945343
+      },
+      "Outer": {
+        "n": 865,
+        "min": 386.976379,
+        "p10": 399.442566,
+        "median": 417.515533,
+        "p90": 436.8207,
+        "max": 455.985748,
+        "mean": 417.868378
+      }
+    },
+    "byArchetype": {
+      "102": {
+        "n": 378,
+        "min": 99.97653,
+        "p10": 115.120522,
+        "median": 150.725861,
+        "p90": 294.947662,
+        "max": 318.945129,
+        "mean": 196.6903
+      },
+      "101": {
+        "n": 1029,
+        "min": 98.35235,
+        "p10": 118.473671,
+        "median": 245.683777,
+        "p90": 422.1842,
+        "max": 453.1422,
+        "mean": 245.2413
+      },
+      "104": {
+        "n": 400,
+        "min": 231.125549,
+        "p10": 249.939362,
+        "median": 307.5237,
+        "p90": 430.2568,
+        "max": 451.826355,
+        "mean": 341.999847
+      },
+      "103": {
+        "n": 428,
+        "min": 227.27742,
+        "p10": 252.114868,
+        "median": 315.5625,
+        "p90": 430.391724,
+        "max": 455.985748,
+        "mean": 345.124756
+      },
+      "105": {
+        "n": 195,
+        "min": 390.3653,
+        "p10": 399.70993,
+        "median": 415.5104,
+        "p90": 437.8879,
+        "max": 453.424652,
+        "mean": 417.251862
+      }
+    }
+  },
+  "rows": [
+    {
+      "requestedSeed": 1000,
+      "usedSeed": 1000,
+      "islands": 18,
+      "reefs": 11,
+      "farthestDockM": 424.525818
+    },
+    {
+      "requestedSeed": 1001,
+      "usedSeed": 1001,
+      "islands": 22,
+      "reefs": 12,
+      "farthestDockM": 429.606842
+    },
+    {
+      "requestedSeed": 1002,
+      "usedSeed": 1004,
+      "islands": 16,
+      "reefs": 15,
+      "farthestDockM": 435.744171
+    },
+    {
+      "requestedSeed": 1005,
+      "usedSeed": 1005,
+      "islands": 21,
+      "reefs": 10,
+      "farthestDockM": 449.114716
+    },
+    {
+      "requestedSeed": 1006,
+      "usedSeed": 1006,
+      "islands": 22,
+      "reefs": 11,
+      "farthestDockM": 433.1667
+    },
+    {
+      "requestedSeed": 1007,
+      "usedSeed": 1007,
+      "islands": 17,
+      "reefs": 12,
+      "farthestDockM": 428.7373
+    },
+    {
+      "requestedSeed": 1008,
+      "usedSeed": 1008,
+      "islands": 20,
+      "reefs": 15,
+      "farthestDockM": 423.278534
+    },
+    {
+      "requestedSeed": 1009,
+      "usedSeed": 1010,
+      "islands": 19,
+      "reefs": 13,
+      "farthestDockM": 427.1519
+    },
+    {
+      "requestedSeed": 1011,
+      "usedSeed": 1011,
+      "islands": 18,
+      "reefs": 12,
+      "farthestDockM": 447.65976
+    },
+    {
+      "requestedSeed": 1012,
+      "usedSeed": 1012,
+      "islands": 19,
+      "reefs": 15,
+      "farthestDockM": 432.300079
+    },
+    {
+      "requestedSeed": 1013,
+      "usedSeed": 1013,
+      "islands": 20,
+      "reefs": 13,
+      "farthestDockM": 427.109772
+    },
+    {
+      "requestedSeed": 1014,
+      "usedSeed": 1014,
+      "islands": 19,
+      "reefs": 11,
+      "farthestDockM": 438.640045
+    },
+    {
+      "requestedSeed": 1015,
+      "usedSeed": 1015,
+      "islands": 18,
+      "reefs": 13,
+      "farthestDockM": 412.7306
+    },
+    {
+      "requestedSeed": 1016,
+      "usedSeed": 1016,
+      "islands": 17,
+      "reefs": 12,
+      "farthestDockM": 439.917877
+    },
+    {
+      "requestedSeed": 1017,
+      "usedSeed": 1017,
+      "islands": 18,
+      "reefs": 14,
+      "farthestDockM": 439.087921
+    },
+    {
+      "requestedSeed": 1018,
+      "usedSeed": 1019,
+      "islands": 16,
+      "reefs": 10,
+      "farthestDockM": 440.575043
+    },
+    {
+      "requestedSeed": 1020,
+      "usedSeed": 1020,
+      "islands": 16,
+      "reefs": 11,
+      "farthestDockM": 434.0088
+    },
+    {
+      "requestedSeed": 1021,
+      "usedSeed": 1021,
+      "islands": 18,
+      "reefs": 10,
+      "farthestDockM": 429.7862
+    },
+    {
+      "requestedSeed": 1022,
+      "usedSeed": 1022,
+      "islands": 20,
+      "reefs": 13,
+      "farthestDockM": 408.6822
+    },
+    {
+      "requestedSeed": 1023,
+      "usedSeed": 1023,
+      "islands": 17,
+      "reefs": 12,
+      "farthestDockM": 433.022766
+    },
+    {
+      "requestedSeed": 1024,
+      "usedSeed": 1025,
+      "islands": 17,
+      "reefs": 13,
+      "farthestDockM": 434.886047
+    },
+    {
+      "requestedSeed": 1026,
+      "usedSeed": 1026,
+      "islands": 19,
+      "reefs": 14,
+      "farthestDockM": 432.878021
+    },
+    {
+      "requestedSeed": 1027,
+      "usedSeed": 1027,
+      "islands": 20,
+      "reefs": 14,
+      "farthestDockM": 451.52652
+    },
+    {
+      "requestedSeed": 1028,
+      "usedSeed": 1028,
+      "islands": 19,
+      "reefs": 13,
+      "farthestDockM": 436.1528
+    },
+    {
+      "requestedSeed": 1029,
+      "usedSeed": 1030,
+      "islands": 18,
+      "reefs": 11,
+      "farthestDockM": 448.492371
+    },
+    {
+      "requestedSeed": 1031,
+      "usedSeed": 1031,
+      "islands": 20,
+      "reefs": 12,
+      "farthestDockM": 434.8904
+    },
+    {
+      "requestedSeed": 1032,
+      "usedSeed": 1032,
+      "islands": 19,
+      "reefs": 11,
+      "farthestDockM": 439.331848
+    },
+    {
+      "requestedSeed": 1033,
+      "usedSeed": 1034,
+      "islands": 20,
+      "reefs": 12,
+      "farthestDockM": 445.726318
+    },
+    {
+      "requestedSeed": 1035,
+      "usedSeed": 1035,
+      "islands": 21,
+      "reefs": 14,
+      "farthestDockM": 438.649231
+    },
+    {
+      "requestedSeed": 1036,
+      "usedSeed": 1036,
+      "islands": 18,
+      "reefs": 12,
+      "farthestDockM": 441.672
+    },
+    {
+      "requestedSeed": 1037,
+      "usedSeed": 1038,
+      "islands": 16,
+      "reefs": 13,
+      "farthestDockM": 442.6461
+    },
+    {
+      "requestedSeed": 1039,
+      "usedSeed": 1039,
+      "islands": 22,
+      "reefs": 15,
+      "farthestDockM": 431.5858
+    },
+    {
+      "requestedSeed": 1040,
+      "usedSeed": 1040,
+      "islands": 17,
+      "reefs": 13,
+      "farthestDockM": 440.4489
+    },
+    {
+      "requestedSeed": 1041,
+      "usedSeed": 1041,
+      "islands": 22,
+      "reefs": 16,
+      "farthestDockM": 434.217743
+    },
+    {
+      "requestedSeed": 1042,
+      "usedSeed": 1042,
+      "islands": 17,
+      "reefs": 13,
+      "farthestDockM": 439.8257
+    },
+    {
+      "requestedSeed": 1043,
+      "usedSeed": 1044,
+      "islands": 21,
+      "reefs": 12,
+      "farthestDockM": 425.707916
+    },
+    {
+      "requestedSeed": 1045,
+      "usedSeed": 1046,
+      "islands": 18,
+      "reefs": 13,
+      "farthestDockM": 432.516327
+    },
+    {
+      "requestedSeed": 1047,
+      "usedSeed": 1047,
+      "islands": 17,
+      "reefs": 14,
+      "farthestDockM": 431.645142
+    },
+    {
+      "requestedSeed": 1048,
+      "usedSeed": 1050,
+      "islands": 18,
+      "reefs": 10,
+      "farthestDockM": 419.3619
+    },
+    {
+      "requestedSeed": 1051,
+      "usedSeed": 1051,
+      "islands": 16,
+      "reefs": 13,
+      "farthestDockM": 443.309875
+    },
+    {
+      "requestedSeed": 1052,
+      "usedSeed": 1052,
+      "islands": 20,
+      "reefs": 12,
+      "farthestDockM": 446.66095
+    },
+    {
+      "requestedSeed": 1053,
+      "usedSeed": 1053,
+      "islands": 19,
+      "reefs": 12,
+      "farthestDockM": 418.6705
+    },
+    {
+      "requestedSeed": 1054,
+      "usedSeed": 1054,
+      "islands": 18,
+      "reefs": 13,
+      "farthestDockM": 440.325439
+    },
+    {
+      "requestedSeed": 1055,
+      "usedSeed": 1055,
+      "islands": 19,
+      "reefs": 11,
+      "farthestDockM": 423.7952
+    },
+    {
+      "requestedSeed": 1056,
+      "usedSeed": 1056,
+      "islands": 21,
+      "reefs": 12,
+      "farthestDockM": 440.91806
+    },
+    {
+      "requestedSeed": 1057,
+      "usedSeed": 1059,
+      "islands": 20,
+      "reefs": 12,
+      "farthestDockM": 431.310028
+    },
+    {
+      "requestedSeed": 1060,
+      "usedSeed": 1062,
+      "islands": 20,
+      "reefs": 14,
+      "farthestDockM": 432.230652
+    },
+    {
+      "requestedSeed": 1063,
+      "usedSeed": 1063,
+      "islands": 18,
+      "reefs": 11,
+      "farthestDockM": 436.110962
+    },
+    {
+      "requestedSeed": 1064,
+      "usedSeed": 1065,
+      "islands": 18,
+      "reefs": 11,
+      "farthestDockM": 434.753571
+    },
+    {
+      "requestedSeed": 1066,
+      "usedSeed": 1067,
+      "islands": 16,
+      "reefs": 9,
+      "farthestDockM": 427.258423
+    },
+    {
+      "requestedSeed": 1068,
+      "usedSeed": 1068,
+      "islands": 19,
+      "reefs": 16,
+      "farthestDockM": 429.563782
+    },
+    {
+      "requestedSeed": 1069,
+      "usedSeed": 1070,
+      "islands": 19,
+      "reefs": 14,
+      "farthestDockM": 441.608948
+    },
+    {
+      "requestedSeed": 1071,
+      "usedSeed": 1071,
+      "islands": 21,
+      "reefs": 12,
+      "farthestDockM": 437.995667
+    },
+    {
+      "requestedSeed": 1072,
+      "usedSeed": 1072,
+      "islands": 18,
+      "reefs": 13,
+      "farthestDockM": 429.758484
+    },
+    {
+      "requestedSeed": 1073,
+      "usedSeed": 1075,
+      "islands": 19,
+      "reefs": 13,
+      "farthestDockM": 437.816467
+    },
+    {
+      "requestedSeed": 1076,
+      "usedSeed": 1078,
+      "islands": 19,
+      "reefs": 13,
+      "farthestDockM": 445.712433
+    },
+    {
+      "requestedSeed": 1079,
+      "usedSeed": 1079,
+      "islands": 17,
+      "reefs": 13,
+      "farthestDockM": 441.536041
+    },
+    {
+      "requestedSeed": 1080,
+      "usedSeed": 1080,
+      "islands": 19,
+      "reefs": 14,
+      "farthestDockM": 451.826355
+    },
+    {
+      "requestedSeed": 1081,
+      "usedSeed": 1081,
+      "islands": 18,
+      "reefs": 13,
+      "farthestDockM": 438.2397
+    },
+    {
+      "requestedSeed": 1082,
+      "usedSeed": 1082,
+      "islands": 21,
+      "reefs": 10,
+      "farthestDockM": 431.574554
+    },
+    {
+      "requestedSeed": 1083,
+      "usedSeed": 1083,
+      "islands": 18,
+      "reefs": 14,
+      "farthestDockM": 442.8296
+    },
+    {
+      "requestedSeed": 1084,
+      "usedSeed": 1084,
+      "islands": 17,
+      "reefs": 12,
+      "farthestDockM": 437.181763
+    },
+    {
+      "requestedSeed": 1085,
+      "usedSeed": 1085,
+      "islands": 17,
+      "reefs": 14,
+      "farthestDockM": 437.990326
+    },
+    {
+      "requestedSeed": 1086,
+      "usedSeed": 1086,
+      "islands": 19,
+      "reefs": 16,
+      "farthestDockM": 455.985748
+    },
+    {
+      "requestedSeed": 1087,
+      "usedSeed": 1087,
+      "islands": 15,
+      "reefs": 10,
+      "farthestDockM": 447.0535
+    },
+    {
+      "requestedSeed": 1088,
+      "usedSeed": 1089,
+      "islands": 20,
+      "reefs": 14,
+      "farthestDockM": 448.985565
+    },
+    {
+      "requestedSeed": 1090,
+      "usedSeed": 1090,
+      "islands": 18,
+      "reefs": 12,
+      "farthestDockM": 438.9565
+    },
+    {
+      "requestedSeed": 1091,
+      "usedSeed": 1091,
+      "islands": 18,
+      "reefs": 10,
+      "farthestDockM": 438.2808
+    },
+    {
+      "requestedSeed": 1092,
+      "usedSeed": 1092,
+      "islands": 17,
+      "reefs": 13,
+      "farthestDockM": 431.815521
+    },
+    {
+      "requestedSeed": 1093,
+      "usedSeed": 1093,
+      "islands": 21,
+      "reefs": 12,
+      "farthestDockM": 433.621948
+    },
+    {
+      "requestedSeed": 1094,
+      "usedSeed": 1094,
+      "islands": 17,
+      "reefs": 14,
+      "farthestDockM": 429.747681
+    },
+    {
+      "requestedSeed": 1095,
+      "usedSeed": 1095,
+      "islands": 19,
+      "reefs": 9,
+      "farthestDockM": 432.192932
+    },
+    {
+      "requestedSeed": 1096,
+      "usedSeed": 1097,
+      "islands": 16,
+      "reefs": 14,
+      "farthestDockM": 433.984955
+    },
+    {
+      "requestedSeed": 1098,
+      "usedSeed": 1098,
+      "islands": 20,
+      "reefs": 10,
+      "farthestDockM": 442.549927
+    },
+    {
+      "requestedSeed": 1099,
+      "usedSeed": 1100,
+      "islands": 20,
+      "reefs": 11,
+      "farthestDockM": 439.77475
+    },
+    {
+      "requestedSeed": 1101,
+      "usedSeed": 1102,
+      "islands": 18,
+      "reefs": 13,
+      "farthestDockM": 426.980469
+    },
+    {
+      "requestedSeed": 1103,
+      "usedSeed": 1103,
+      "islands": 21,
+      "reefs": 14,
+      "farthestDockM": 429.522339
+    },
+    {
+      "requestedSeed": 1104,
+      "usedSeed": 1106,
+      "islands": 18,
+      "reefs": 11,
+      "farthestDockM": 432.607941
+    },
+    {
+      "requestedSeed": 1107,
+      "usedSeed": 1108,
+      "islands": 19,
+      "reefs": 12,
+      "farthestDockM": 441.486938
+    },
+    {
+      "requestedSeed": 1109,
+      "usedSeed": 1109,
+      "islands": 18,
+      "reefs": 14,
+      "farthestDockM": 432.7032
+    },
+    {
+      "requestedSeed": 1110,
+      "usedSeed": 1110,
+      "islands": 16,
+      "reefs": 12,
+      "farthestDockM": 420.5439
+    },
+    {
+      "requestedSeed": 1111,
+      "usedSeed": 1114,
+      "islands": 19,
+      "reefs": 11,
+      "farthestDockM": 448.034882
+    },
+    {
+      "requestedSeed": 1115,
+      "usedSeed": 1115,
+      "islands": 18,
+      "reefs": 12,
+      "farthestDockM": 436.400848
+    },
+    {
+      "requestedSeed": 1116,
+      "usedSeed": 1116,
+      "islands": 20,
+      "reefs": 12,
+      "farthestDockM": 430.570557
+    },
+    {
+      "requestedSeed": 1117,
+      "usedSeed": 1117,
+      "islands": 18,
+      "reefs": 11,
+      "farthestDockM": 420.262939
+    },
+    {
+      "requestedSeed": 1118,
+      "usedSeed": 1119,
+      "islands": 21,
+      "reefs": 12,
+      "farthestDockM": 430.587555
+    },
+    {
+      "requestedSeed": 1120,
+      "usedSeed": 1120,
+      "islands": 16,
+      "reefs": 15,
+      "farthestDockM": 430.931
+    },
+    {
+      "requestedSeed": 1121,
+      "usedSeed": 1121,
+      "islands": 17,
+      "reefs": 15,
+      "farthestDockM": 428.091217
+    },
+    {
+      "requestedSeed": 1122,
+      "usedSeed": 1123,
+      "islands": 19,
+      "reefs": 12,
+      "farthestDockM": 430.802124
+    },
+    {
+      "requestedSeed": 1124,
+      "usedSeed": 1124,
+      "islands": 19,
+      "reefs": 12,
+      "farthestDockM": 430.7228
+    },
+    {
+      "requestedSeed": 1125,
+      "usedSeed": 1125,
+      "islands": 20,
+      "reefs": 13,
+      "farthestDockM": 439.379578
+    },
+    {
+      "requestedSeed": 1126,
+      "usedSeed": 1127,
+      "islands": 18,
+      "reefs": 13,
+      "farthestDockM": 419.300171
+    },
+    {
+      "requestedSeed": 1128,
+      "usedSeed": 1128,
+      "islands": 19,
+      "reefs": 11,
+      "farthestDockM": 449.637
+    },
+    {
+      "requestedSeed": 1129,
+      "usedSeed": 1130,
+      "islands": 20,
+      "reefs": 13,
+      "farthestDockM": 437.6115
+    },
+    {
+      "requestedSeed": 1131,
+      "usedSeed": 1131,
+      "islands": 21,
+      "reefs": 10,
+      "farthestDockM": 435.683716
+    },
+    {
+      "requestedSeed": 1132,
+      "usedSeed": 1133,
+      "islands": 17,
+      "reefs": 14,
+      "farthestDockM": 436.8084
+    },
+    {
+      "requestedSeed": 1134,
+      "usedSeed": 1134,
+      "islands": 18,
+      "reefs": 14,
+      "farthestDockM": 432.128723
+    },
+    {
+      "requestedSeed": 1135,
+      "usedSeed": 1136,
+      "islands": 16,
+      "reefs": 9,
+      "farthestDockM": 433.6464
+    },
+    {
+      "requestedSeed": 1137,
+      "usedSeed": 1139,
+      "islands": 20,
+      "reefs": 11,
+      "farthestDockM": 436.540436
+    },
+    {
+      "requestedSeed": 1140,
+      "usedSeed": 1140,
+      "islands": 18,
+      "reefs": 12,
+      "farthestDockM": 435.418335
+    },
+    {
+      "requestedSeed": 1141,
+      "usedSeed": 1142,
+      "islands": 19,
+      "reefs": 12,
+      "farthestDockM": 417.4413
+    },
+    {
+      "requestedSeed": 1143,
+      "usedSeed": 1143,
+      "islands": 19,
+      "reefs": 13,
+      "farthestDockM": 430.368073
+    },
+    {
+      "requestedSeed": 1144,
+      "usedSeed": 1144,
+      "islands": 17,
+      "reefs": 14,
+      "farthestDockM": 429.975342
+    },
+    {
+      "requestedSeed": 1145,
+      "usedSeed": 1145,
+      "islands": 18,
+      "reefs": 14,
+      "farthestDockM": 438.419464
+    },
+    {
+      "requestedSeed": 1146,
+      "usedSeed": 1146,
+      "islands": 17,
+      "reefs": 11,
+      "farthestDockM": 427.24704
+    },
+    {
+      "requestedSeed": 1147,
+      "usedSeed": 1147,
+      "islands": 19,
+      "reefs": 11,
+      "farthestDockM": 439.055359
+    },
+    {
+      "requestedSeed": 1148,
+      "usedSeed": 1148,
+      "islands": 17,
+      "reefs": 12,
+      "farthestDockM": 433.27597
+    },
+    {
+      "requestedSeed": 1149,
+      "usedSeed": 1149,
+      "islands": 15,
+      "reefs": 14,
+      "farthestDockM": 435.568939
+    },
+    {
+      "requestedSeed": 1150,
+      "usedSeed": 1150,
+      "islands": 16,
+      "reefs": 14,
+      "farthestDockM": 428.272919
+    },
+    {
+      "requestedSeed": 1151,
+      "usedSeed": 1151,
+      "islands": 20,
+      "reefs": 12,
+      "farthestDockM": 443.285126
+    },
+    {
+      "requestedSeed": 1152,
+      "usedSeed": 1153,
+      "islands": 20,
+      "reefs": 11,
+      "farthestDockM": 438.499329
+    },
+    {
+      "requestedSeed": 1154,
+      "usedSeed": 1159,
+      "islands": 19,
+      "reefs": 9,
+      "farthestDockM": 427.077026
+    },
+    {
+      "requestedSeed": 1160,
+      "usedSeed": 1161,
+      "islands": 15,
+      "reefs": 16,
+      "farthestDockM": 428.018555
+    },
+    {
+      "requestedSeed": 1162,
+      "usedSeed": 1164,
+      "islands": 17,
+      "reefs": 12,
+      "farthestDockM": 428.5426
+    },
+    {
+      "requestedSeed": 1165,
+      "usedSeed": 1165,
+      "islands": 16,
+      "reefs": 9,
+      "farthestDockM": 432.851
+    },
+    {
+      "requestedSeed": 1166,
+      "usedSeed": 1166,
+      "islands": 20,
+      "reefs": 13,
+      "farthestDockM": 423.5948
+    },
+    {
+      "requestedSeed": 1167,
+      "usedSeed": 1167,
+      "islands": 18,
+      "reefs": 12,
+      "farthestDockM": 432.615417
+    },
+    {
+      "requestedSeed": 1168,
+      "usedSeed": 1169,
+      "islands": 20,
+      "reefs": 16,
+      "farthestDockM": 436.666626
+    },
+    {
+      "requestedSeed": 1170,
+      "usedSeed": 1170,
+      "islands": 22,
+      "reefs": 12,
+      "farthestDockM": 440.0137
+    },
+    {
+      "requestedSeed": 1171,
+      "usedSeed": 1171,
+      "islands": 19,
+      "reefs": 13,
+      "farthestDockM": 440.807617
+    },
+    {
+      "requestedSeed": 1172,
+      "usedSeed": 1172,
+      "islands": 20,
+      "reefs": 12,
+      "farthestDockM": 453.1422
+    },
+    {
+      "requestedSeed": 1173,
+      "usedSeed": 1173,
+      "islands": 15,
+      "reefs": 9,
+      "farthestDockM": 424.826019
+    },
+    {
+      "requestedSeed": 1174,
+      "usedSeed": 1174,
+      "islands": 22,
+      "reefs": 13,
+      "farthestDockM": 436.709351
+    },
+    {
+      "requestedSeed": 1175,
+      "usedSeed": 1176,
+      "islands": 21,
+      "reefs": 12,
+      "farthestDockM": 445.370544
+    },
+    {
+      "requestedSeed": 1177,
+      "usedSeed": 1179,
+      "islands": 17,
+      "reefs": 13,
+      "farthestDockM": 427.6277
+    },
+    {
+      "requestedSeed": 1180,
+      "usedSeed": 1181,
+      "islands": 15,
+      "reefs": 15,
+      "farthestDockM": 427.824341
+    },
+    {
+      "requestedSeed": 1182,
+      "usedSeed": 1187,
+      "islands": 19,
+      "reefs": 10,
+      "farthestDockM": 453.424652
+    },
+    {
+      "requestedSeed": 1188,
+      "usedSeed": 1188,
+      "islands": 18,
+      "reefs": 16,
+      "farthestDockM": 450.6052
+    },
+    {
+      "requestedSeed": 1189,
+      "usedSeed": 1189,
+      "islands": 20,
+      "reefs": 14,
+      "farthestDockM": 421.281
+    },
+    {
+      "requestedSeed": 1190,
+      "usedSeed": 1191,
+      "islands": 18,
+      "reefs": 13,
+      "farthestDockM": 424.043579
+    },
+    {
+      "requestedSeed": 1192,
+      "usedSeed": 1192,
+      "islands": 18,
+      "reefs": 11,
+      "farthestDockM": 441.0493
+    },
+    {
+      "requestedSeed": 1193,
+      "usedSeed": 1193,
+      "islands": 19,
+      "reefs": 13,
+      "farthestDockM": 439.192261
+    },
+    {
+      "requestedSeed": 1194,
+      "usedSeed": 1194,
+      "islands": 21,
+      "reefs": 15,
+      "farthestDockM": 427.8334
+    },
+    {
+      "requestedSeed": 1195,
+      "usedSeed": 1195,
+      "islands": 22,
+      "reefs": 12,
+      "farthestDockM": 438.950317
+    },
+    {
+      "requestedSeed": 1196,
+      "usedSeed": 1196,
+      "islands": 19,
+      "reefs": 15,
+      "farthestDockM": 423.6158
+    },
+    {
+      "requestedSeed": 1197,
+      "usedSeed": 1197,
+      "islands": 18,
+      "reefs": 11,
+      "farthestDockM": 430.2568
+    },
+    {
+      "requestedSeed": 1198,
+      "usedSeed": 1198,
+      "islands": 22,
+      "reefs": 9,
+      "farthestDockM": 445.1453
+    },
+    {
+      "requestedSeed": 1199,
+      "usedSeed": 1199,
+      "islands": 20,
+      "reefs": 16,
+      "farthestDockM": 432.14325
+    }
+  ]
+}
