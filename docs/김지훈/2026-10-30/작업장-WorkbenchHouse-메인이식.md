@@ -23,8 +23,14 @@
 - 미실행: Play 확인(JH04 모양 동일 여부, 메인 높이·겹침·밤 조명). 메인은 작업대 루트가 지면 +0.5m라 JH04(+0.61)와 약 0.1m 차이가 있어, 가판대가 살짝 묻힐 수 있다. 거리 등불은 작업대 -x 5m라 메인 지형 밖에 놓일 수 있다.
 - 메인 빌드: 이 세션에서 예약한 빌드는 사용자 요청으로 중단했다. 빌드 산출물 확인 안 함.
 
+## 이어서: 상시 HUD·승리 화면 이식 (커밋 `4b15e5b`, `e15f89c`)
+- 사용자 보고: 메인 테스트에서 배 내구도·직업 아이콘·직업 이름이 안 보임. 원인은 MainGame에 `InGameHud`가 없음. 09.UI는 김지훈 담당(2026-10-30 결정)이라 상시 HUD는 `InGameHud`로 간다.
+- `VictoryScreen`·`TowerMatchEffects`: `_match`가 비어 있으면 1초마다 `FindAnyObjectByType<TowerMatchNet>()`(InGameHud의 작업대 조회와 같은 방식). 판 연출은 찾은 뒤 장착·완성 이벤트를 구독하고, 작업대가 늦게 연결되면 다시 구독한다. 강민서 `MainIslandFacilitiesBuilder`는 고치지 않았다. MainGame의 기존 `TowerMatchEffects`는 `_match`가 비어 있어 이 수정 전에는 연출이 나오지 않았을 것으로 본다(미확인).
+- MainGame에 `InGameHud`·`VictoryScreen` 프리팹 인스턴스 추가(씬 참조 없음). 기존 내용 변경 없음(추가 196줄).
+- 검증: 컴파일 error 0. Play 미실행(사용자가 에디터에서 `JH04Offline` 작업 중이라 Play를 돌리지 않음).
+- 작업 트리에 이 작업과 무관한 미커밋 변경(문서·CODEOWNERS·`InGameHud.cs`·프리팹·투표 UI·빌드 설정 등)이 있어 커밋에서 제외했다.
+
 ## 남은 일
-- 메인 Play로 작업장 높이·거리 등불 위치 조정
-- MainGame에 `InGameHud`(직업 아이콘·이름·배 내구도) 배치. 런타임에 로컬 플레이어·배·작업대를 직접 찾으므로 배치만 하면 된다.
-- `VictoryScreen` 배치, `VictoryScreen`·`TowerMatchEffects`의 `_match`를 생성된 등대에서 찾도록 수정
+- MainOffline 호스트 Play: 작업장 높이·거리 등불 위치, HUD 직업·배 내구도 표시, 장착 알림·승리 화면
 - 유령선 메인 배치: 강민서 섬 레이어 회신 후
+- 4인 빌드 → PR
