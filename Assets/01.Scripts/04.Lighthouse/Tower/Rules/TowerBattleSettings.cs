@@ -20,11 +20,11 @@ namespace Lighthouse.Tower.Rules
         [SerializeField, Min(1f)]
         private float _maxHealth = 1000f;
 
-        [Tooltip("Server-owned summon presentation window. Temporary until the Timeline length is set.")]
+        [Tooltip("Summon Timeline duration. Keep synchronized with the presentation asset.")]
         [SerializeField, Min(0.1f)]
-        private float _summonCinematicSeconds = 10f;
+        private float _summonCinematicSeconds = 12f;
 
-        [SerializeField] private string _summonCinematicScene = "Assets/00.Scenes/TaeWook/SummonCinematic.unity";
+        [SerializeField] private GameObject _summonPresentationPrefab;
         [SerializeField, Min(0.1f)] private float _cinematicLoadTimeout = 10f;
         [SerializeField, Min(0.1f)] private float _cinematicReturnTimeout = 5f;
         [SerializeField, Min(0.1f)] private float _cinematicStartLead = 0.5f;
@@ -38,7 +38,7 @@ namespace Lighthouse.Tower.Rules
         public int RitualRequiredVotes => _ritualRequiredVotes;
         public float MaxHealth => _maxHealth;
         public float SummonCinematicSeconds => _summonCinematicSeconds;
-        public string SummonCinematicScene => _summonCinematicScene;
+        public GameObject SummonPresentationPrefab => _summonPresentationPrefab;
         public float CinematicLoadTimeout => _cinematicLoadTimeout;
         public float CinematicReturnTimeout => _cinematicReturnTimeout;
         public float CinematicStartLead => _cinematicStartLead;

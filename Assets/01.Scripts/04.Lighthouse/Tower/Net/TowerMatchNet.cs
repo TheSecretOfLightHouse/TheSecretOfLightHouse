@@ -44,7 +44,6 @@ namespace Lighthouse.Tower.Net
         [SyncVar] private uint _cinematicSequence;
         [SyncVar] private double _cinematicLoadDeadline;
         [SyncVar] private double _combatStartsAt;
-        [SyncVar] private string _cinematicScenePath;
         private double _returnDeadline;
         private readonly HashSet<int> _cinematicParticipants = new HashSet<int>();
         private readonly HashSet<int> _preparedParticipants = new HashSet<int>();
@@ -74,7 +73,6 @@ namespace Lighthouse.Tower.Net
         public uint CinematicSequence => _cinematicSequence;
         public double CinematicLoadDeadline => _cinematicLoadDeadline;
         public double CombatStartsAt => _combatStartsAt;
-        public string CinematicScenePath => _cinematicScenePath;
         public bool CanStartRitual => _phase == TowerPhase.Repairing && _tower && _tower.IsComplete;
 
         // Server-only.
@@ -179,7 +177,6 @@ namespace Lighthouse.Tower.Net
             _summonCinematicStartedAt = 0d;
             _summonCinematicEndsAt = 0d;
             _combatStartsAt = 0d;
-            _cinematicScenePath = _settings.SummonCinematicScene;
             _cinematicParticipants.Clear();
             _preparedParticipants.Clear();
             _returnedParticipants.Clear();

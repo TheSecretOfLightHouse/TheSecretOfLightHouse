@@ -20,21 +20,55 @@ namespace Lighthouse.Tower.View
         private readonly List<Behaviour> _behaviours = new List<Behaviour>();
         private TowerMatchNet _match;
         private Coroutine _routine;
-        private AsyncOperation _loading;
-        private Scene _presentation;
-        private string _loadingPath;
+        private MainSceneSummonPresentation _rig;
+        private Transform _island;
+        private bool _ownsRig;
         private uint _sequence;
         private bool _active;
         private bool _showing;
-        private bool _loadCleanupRegistered;
         private float _nextScanAt;
-        private Camera _camera;
-        private AudioListener _listener;
-        private PlayableDirector _director;
 
         public void Initialize(TowerMatchNet match)
         {
             _match = match;
+        }
+
+        /// <summary>Binds the presentation to the actual locally constructed island.</summary>
+        public void BindIsland(Transform island)
+        {
+            if (island == null || (_island == island && _rig != null))
+            {
+                return;
+            }
+            Cleanup();
+            if (_ownsRig && _rig != null)
+            {
+                Destroy(_rig.gameObject);
+            }
+            _island = island;
+            _rig = island.GetComponentInChildren<MainSceneSummonPresentation>(true);
+            _ownsRig = false;
+            if (_rig == null && _match != null && _match.Settings != null && _match.Settings.SummonPresentationPrefab != null)
+            {
+                GameObject instance = Instantiate(_match.Settings.SummonPresentationPrefab, island, false);
+                instance.transform.localPosition = Vector3.zero;
+                instance.transform.localRotation = Quaternion.identity;
+                _rig = instance.GetComponent<MainSceneSummonPresentation>();
+                _ownsRig = true;
+            }
+            if (_rig != null && _match != null && _match.CinematicPhase == SummonCinematicPhase.Combat)
+            {
+                _rig.Finish(true);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            Cleanup();
+            if (_ownsRig && _rig != null)
+            {
+                Destroy(_rig.gameObject);
+            }
         }
 
         private void Update()
@@ -84,41 +118,20 @@ namespace Lighthouse.Tower.View
 
         private IEnumerator Present()
         {
-            _loadingPath = _match.CinematicScenePath;
-            bool skipped = string.IsNullOrEmpty(_loadingPath) || !Application.CanStreamedLevelBeLoaded(_loadingPath);
-            if (!skipped)
+            while (IsCurrent && (_rig == null || !_rig.IsReady)
+                && _match.CinematicPhase == SummonCinematicPhase.Preparing
+                && NetworkTime.time < _match.CinematicLoadDeadline)
             {
-                try
-                {
-                    _loading = SceneManager.LoadSceneAsync(_loadingPath, LoadSceneMode.Additive);
-                }
-                catch (Exception)
-                {
-                    skipped = true;
-                }
-            }
-            while (!skipped && _loading != null && !_loading.isDone && IsCurrent)
-            {
-                if (NetworkTime.time >= _match.CinematicLoadDeadline || _match.CinematicPhase != SummonCinematicPhase.Preparing)
-                {
-                    skipped = true;
-                    RegisterLateLoadCleanup();
-                    break;
-                }
                 yield return null;
             }
             if (!IsCurrent)
             {
                 yield break;
             }
+            bool skipped = _rig == null || !_rig.IsReady;
             if (!skipped)
             {
-                _presentation = SceneManager.GetSceneByPath(_loadingPath);
-                skipped = !PreparePresentation();
-            }
-            if (skipped)
-            {
-                UnloadPresentation();
+                _rig.MatchCamera(Camera.main);
             }
             _match.CmdReportCinematicPrepared(_sequence);
             while (IsCurrent && _match.CinematicPhase == SummonCinematicPhase.Preparing)
@@ -130,91 +143,27 @@ namespace Lighthouse.Tower.View
                 double elapsed = NetworkTime.time - _match.SummonCinematicStartedAt;
                 if (!skipped && elapsed >= 0d && NetworkTime.time < _match.SummonCinematicEndsAt)
                 {
-                    if (!TryEvaluate(elapsed))
+                    try
+                    {
+                        if (!_showing)
+                        {
+                            CaptureScenes();
+                            _showing = true;
+                        }
+                        _rig.Synchronize(elapsed);
+                    }
+                    catch (Exception)
                     {
                         skipped = true;
                         RestoreVisuals();
-                        UnloadPresentation();
                     }
                 }
                 yield return null;
             }
             RestoreVisuals();
-            AsyncOperation unloading = UnloadPresentation();
-            while (unloading != null && !unloading.isDone && IsCurrent)
-            {
-                yield return null;
-            }
             if (IsCurrent)
             {
                 _match.CmdReportCinematicReturned(_sequence);
-            }
-            // Input remains locked until the server's shared Combat transition, including failed loads.
-        }
-
-        private bool PreparePresentation()
-        {
-            if (!_presentation.IsValid() || !_presentation.isLoaded)
-            {
-                return false;
-            }
-            _presentation.GetRootGameObjects(_roots);
-            foreach (GameObject root in _roots)
-            {
-                root.GetComponentsInChildren(true, _behaviours);
-                foreach (Behaviour behaviour in _behaviours)
-                {
-                    var camera = behaviour as Camera;
-                    var listener = behaviour as AudioListener;
-                    var director = behaviour as PlayableDirector;
-                    if (camera != null)
-                    {
-                        camera.enabled = false;
-                        if (_camera == null)
-                        {
-                            _camera = camera;
-                        }
-                    }
-                    if (listener != null)
-                    {
-                        listener.enabled = false;
-                        _listener = listener;
-                    }
-                    if (director != null)
-                    {
-                        director.playOnAwake = false;
-                        director.Stop();
-                        _director = director;
-                    }
-                }
-            }
-            return _camera != null && _director != null && _director.playableAsset != null
-                && _director.duration > 0d && !double.IsInfinity(_director.duration) && !double.IsNaN(_director.duration);
-        }
-
-        private bool TryEvaluate(double elapsed)
-        {
-            try
-            {
-                if (!_showing)
-                {
-                    CaptureScenes();
-                    _showing = true;
-                    _camera.enabled = true;
-                    if (_listener != null)
-                    {
-                        _listener.enabled = true;
-                    }
-                    _director.timeUpdateMode = DirectorUpdateMode.Manual;
-                    _director.Play();
-                }
-                _director.time = Math.Min(elapsed, _director.duration);
-                _director.Evaluate();
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
             }
         }
 
@@ -232,7 +181,7 @@ namespace Lighthouse.Tower.View
 
         private void CaptureScene(Scene scene)
         {
-            if (!scene.IsValid() || !scene.isLoaded || scene == _presentation)
+            if (!scene.IsValid() || !scene.isLoaded)
             {
                 return;
             }
@@ -242,6 +191,10 @@ namespace Lighthouse.Tower.View
                 root.GetComponentsInChildren(true, _behaviours);
                 foreach (Behaviour behaviour in _behaviours)
                 {
+                    if (_rig != null && behaviour.transform.IsChildOf(_rig.transform))
+                    {
+                        continue;
+                    }
                     if ((behaviour is Camera || behaviour is AudioListener || behaviour is Canvas || behaviour is EventSystem)
                         && !_saved.ContainsKey(behaviour))
                     {
@@ -259,17 +212,11 @@ namespace Lighthouse.Tower.View
         private void RestoreVisuals()
         {
             _showing = false;
-            if (_director != null)
+            if (_rig != null)
             {
-                _director.Stop();
-            }
-            if (_camera != null)
-            {
-                _camera.enabled = false;
-            }
-            if (_listener != null)
-            {
-                _listener.enabled = false;
+                bool completed = _match != null && (_match.CinematicPhase == SummonCinematicPhase.Returning
+                    || _match.CinematicPhase == SummonCinematicPhase.Combat);
+                _rig.Finish(completed);
             }
             foreach (KeyValuePair<Behaviour, bool> entry in _saved)
             {
@@ -278,41 +225,6 @@ namespace Lighthouse.Tower.View
                     entry.Key.enabled = entry.Value;
                 }
             }
-        }
-
-        private AsyncOperation UnloadPresentation()
-        {
-            if (_presentation.IsValid() && _presentation.isLoaded)
-            {
-                Scene scene = _presentation;
-                _presentation = default;
-                return SceneManager.UnloadSceneAsync(scene);
-            }
-            RegisterLateLoadCleanup();
-            return null;
-        }
-
-        private void RegisterLateLoadCleanup()
-        {
-            if (_loading == null || _loading.isDone || _loadCleanupRegistered)
-            {
-                return;
-            }
-            _loadCleanupRegistered = true;
-            string path = _loadingPath;
-            // The callback survives this component's destruction; a late load must never steal the screen.
-            _loading.completed += operation =>
-            {
-                Scene scene = SceneManager.GetSceneByPath(path);
-                if (scene.IsValid() && scene.isLoaded)
-                {
-                    foreach (GameObject root in scene.GetRootGameObjects())
-                    {
-                        root.SetActive(false);
-                    }
-                    SceneManager.UnloadSceneAsync(scene);
-                }
-            };
         }
 
         private void Cleanup()
@@ -328,7 +240,6 @@ namespace Lighthouse.Tower.View
                 _routine = null;
             }
             RestoreVisuals();
-            UnloadPresentation();
             foreach (KeyValuePair<Behaviour, bool> entry in _saved)
             {
                 if (entry.Key != null)
@@ -345,11 +256,6 @@ namespace Lighthouse.Tower.View
                 }
             }
             _selected.Clear();
-            _loading = null;
-            _loadCleanupRegistered = false;
-            _camera = null;
-            _director = null;
-            _listener = null;
             CinematicPresentationLock.Release(this);
         }
     }
