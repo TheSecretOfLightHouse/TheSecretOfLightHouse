@@ -34,3 +34,11 @@
 - MainOffline 호스트 Play: 작업장 높이·거리 등불 위치, HUD 직업·배 내구도 표시, 장착 알림·승리 화면
 - 유령선 메인 배치: 강민서 섬 레이어 회신 후
 - 4인 빌드 → PR
+
+## 이어서(2026-10-31): 작업대를 지붕 안 오른쪽 뒤로
+- 실제 런타임 섬은 `MainIslandAppearance`가 아니라 SVN `World/Final/Island/Island_Lighthouse/Island_Lighthouse.prefab`(강민서)이다. 여기서는 `Workshop_TealRoof`(중심 (-5.60, 3.56, 1.60), 5.64×4.06)와 기둥 4개(x -7.6/-3.6, z 0.16/2.96)가 켜져 있다. `WorkbenchAnchor`는 (-5.60, 1.27, 1.65), 회전 0.
+- `MainIslandWorkbench.prefab`의 `WorkbenchHouse` (0,0,0)→(0.5,0,0.5), `CraftEffects` (0,0.4,-0.18)→(0.5,0.4,0.32). 작업대 x -5.89~-4.32, z 1.50~2.80으로 오른쪽 앞 기둥 안쪽(-3.89)과 지붕 뒤 끝(3.63) 안에 들어간다. 상호작용 기준점(루트, range 3)은 앵커에 그대로라 외형 중심과 약 0.7m 차이가 난다.
+- 문제: `Island_Lighthouse`의 `WorkbenchAnchor` 아래에 예전 1.2배 작업대 모델(MeshCollider 포함)이 따로 있어, 옮긴 뒤 작업대가 두 개 보인다(미리보기 렌더로 확인). 이 모델 비활성화는 SVN·강민서 영역이라 권한 확인에서 막혀 실행하지 않았다.
+- 검증: 프리팹 저장 값 재확인, 프리뷰 씬 렌더(정면·위). Play 미실행.
+- 남은 일: 섬 쪽 중복 모델 처리(사용자 승인 후 비활성화 + 강민서 공유·SVN 커밋) 또는 이동 되돌림.
+- 후속(같은 날): 사용자 승인으로 `Island_Lighthouse.prefab`의 `WorkbenchAnchor/wooden_workbench_3d_model_low`를 비활성화(삭제 아님)하고 저장 값을 재확인했다. 이 경로는 `.gitignore`의 `/Assets/ThirdParty/`라 Git에 안 잡히고 SVN 커밋 전에는 이 PC에만 있다. 강민서 공유 필요.
