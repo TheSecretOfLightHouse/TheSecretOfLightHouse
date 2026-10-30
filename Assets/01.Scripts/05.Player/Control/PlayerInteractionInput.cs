@@ -48,6 +48,11 @@ public sealed class PlayerInteractionInput : MonoBehaviour
             return;
         }
 
+        if (Lighthouse.UI.SharedMap.Net.SharedMapRuntime.TryHandleInteraction(player))
+        {
+            return;
+        }
+
         if (TryHandleDockInteraction(player))
         {
             return;
