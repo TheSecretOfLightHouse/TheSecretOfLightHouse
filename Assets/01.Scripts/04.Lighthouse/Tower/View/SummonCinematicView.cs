@@ -60,6 +60,14 @@ namespace Lighthouse.Tower.View
             {
                 _rig.Finish(true);
             }
+            if (_rig != null && _match != null)
+            {
+                var combat = _rig.GetComponent<Lighthouse.Monsters.Boss.SummonTentacleCombatView>();
+                if (combat != null)
+                {
+                    combat.Bind(_match.GetComponent<Lighthouse.Monsters.Boss.BossTestEnvironment>());
+                }
+            }
         }
 
         private void OnDestroy()

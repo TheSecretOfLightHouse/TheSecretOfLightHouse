@@ -1,4 +1,5 @@
 using System.Collections;
+using Lighthouse.Mafia.AbyssGauge.Rules;
 using Lighthouse.Mafia.Voting.Net;
 using Lighthouse.Tower.Net;
 using Lighthouse.Tower.Rules;
@@ -18,9 +19,11 @@ namespace Lighthouse.Monsters.Boss
         [Tooltip("Required tower. Its round starts the boss and owns health and the result.")]
         [SerializeField] private TowerMatchNet _towerMatch;
         [SerializeField] private bool _enableSpecialEnding = true;
+        [SerializeField] private bool _useSummonPresentation;
 
         [SyncVar] private float _wrapDuration;
         [SyncVar] private float _squeezeDuration;
+        [SyncVar] private float _damageNormalizedTime;
         [SyncVar] private double _wrapStartedAt;
         [SyncVar] private double _attackStartedAt;
         [SyncVar] private double _visualStoppedAt;
@@ -40,6 +43,8 @@ namespace Lighthouse.Monsters.Boss
         public BossPhase Phase => _phase;
         public float WrapDuration => _wrapDuration;
         public float SqueezeDuration => _squeezeDuration;
+        public float DamageNormalizedTime => _damageNormalizedTime;
+        public TowerMatchNet TowerMatch => _towerMatch;
         public double WrapStartedAt => _wrapStartedAt;
         public double AttackStartedAt => _attackStartedAt;
         public double VisualStoppedAt => _visualStoppedAt;
@@ -49,8 +54,8 @@ namespace Lighthouse.Monsters.Boss
         public event System.Action SpecialEndingStarted;
         public event System.Action SpecialEndingCompleted;
         public bool HasSummoned => _phase != BossPhase.WaitingForSummon;
-        public bool HasValidSetup => _settings != null && _lighthouseModel != null
-            && _tentacleModel != null && _voting != null
+        public bool HasValidSetup => _settings != null && (_useSummonPresentation
+            || (_lighthouseModel != null && _tentacleModel != null)) && _voting != null
             && _towerMatch != null
             && IsPositiveFinite(_settings.AttackInterval) && IsPositiveFinite(_settings.SpecialEndingAttackThreshold)
             && IsPositiveFinite(_settings.WrapDuration) && IsPositiveFinite(_settings.SqueezeDuration)
@@ -70,6 +75,11 @@ namespace Lighthouse.Monsters.Boss
             }
         }
 
+        public void BindVoting(VotingNetworkController voting)
+        {
+            _voting = voting;
+        }
+
         public override void OnStartServer()
         {
             if (!HasValidSetup)
@@ -78,8 +88,9 @@ namespace Lighthouse.Monsters.Boss
                 return;
             }
 
-            _wrapDuration = _settings.WrapDuration;
+            _wrapDuration = _useSummonPresentation ? 0f : _settings.WrapDuration;
             _squeezeDuration = _settings.SqueezeDuration;
+            _damageNormalizedTime = _settings.DamageNormalizedTime;
             _wrapStartedAt = 0;
             _attackStartedAt = 0;
             _visualStoppedAt = 0;
@@ -90,6 +101,10 @@ namespace Lighthouse.Monsters.Boss
             _phase = BossPhase.WaitingForSummon;
             _towerMatch.Ended += HandleTowerEnded;
             _voting.VotingEnded += HandleVotingEnded;
+            if (_useSummonPresentation)
+            {
+                _towerMatch.FinalBattleStarted += HandleFinalBattleStarted;
+            }
         }
 
         public override void OnStopServer()
@@ -98,6 +113,7 @@ namespace Lighthouse.Monsters.Boss
             if (_towerMatch != null)
             {
                 _towerMatch.Ended -= HandleTowerEnded;
+                _towerMatch.FinalBattleStarted -= HandleFinalBattleStarted;
             }
             if (_voting != null)
             {
@@ -107,6 +123,7 @@ namespace Lighthouse.Monsters.Boss
             _phase = BossPhase.WaitingForSummon;
             _wrapDuration = 0;
             _squeezeDuration = 0;
+            _damageNormalizedTime = 0;
             _wrapStartedAt = 0;
             _attackStartedAt = 0;
             _visualStoppedAt = 0;
@@ -174,6 +191,31 @@ namespace Lighthouse.Monsters.Boss
                 _phase = BossPhase.Wrapping;
                 _damageRoutine = StartCoroutine(DealPeriodicDamage(_settings.AttackInterval,
                     _squeezeDuration * _settings.DamageNormalizedTime));
+            }
+        }
+
+        [Server]
+        private void HandleFinalBattleStarted()
+        {
+            if (_damageRoutine == null && !HasSummoned)
+            {
+                _damageRoutine = StartCoroutine(BeginApprovedBattle());
+            }
+        }
+
+        private IEnumerator BeginApprovedBattle()
+        {
+            // All summon handlers must finish freezing the gauge before it is consumed.
+            yield return null;
+            if (HasSummoned)
+            {
+                yield break;
+            }
+            _damageRoutine = null;
+            if (_towerMatch.Phase == TowerPhase.FinalBattle
+                && _voting.TryGetAbyssSnapshot(out AbyssGaugeSnapshot snapshot))
+            {
+                BeginBattle(snapshot.AttackPower);
             }
         }
 
