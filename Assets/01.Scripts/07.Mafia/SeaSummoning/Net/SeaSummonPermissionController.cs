@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Lighthouse.Mafia.SeaSummoning.Rules;
 using Lighthouse.Mafia.SeaSummoning.Server;
@@ -7,15 +7,22 @@ using Lighthouse.Network.Session.Net;
 using Lighthouse.Mafia.SeaSummoning.Testing;
 using Mirror;
 using UnityEngine;
+using Lighthouse.World.Query.Rules;
+using Lighthouse.World.Clock.Rules;
+using Lighthouse.World.Weather.Rules;
+using Lighthouse.Network.Session.Rules;
 
 namespace Lighthouse.Mafia.SeaSummoning.Net
 {
     [RequireComponent(typeof(NetworkIdentity))]
     public sealed class SeaSummonPermissionController : NetworkBehaviour
     {
+        private const float WeatherResponseTimeout = 5f;
         [SerializeField] private SeaSummonSettings _settings;
         private ISeaSummonAuthority _authority;
         private bool _hasOwnPermission;
+        private bool _isWeatherPending;
+        private float _weatherRequestedAt;
         private readonly Dictionary<uint, (uint BoatId, float Yaw)> _topViewFrames = new();
 
         public bool HasPermissionResponse { get; private set; }
@@ -23,6 +30,8 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         public SeaSummonSettings Settings => _settings;
         public float OwnTopViewYaw { get; private set; }
         public event Action<bool> PermissionResponded;
+        public event Action<bool, string> WeatherResponded;
+        public bool IsWeatherPending => _isWeatherPending && Time.unscaledTime - _weatherRequestedAt < WeatherResponseTimeout;
 
         public override void OnStartServer()
         {
@@ -44,6 +53,7 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         {
             HasPermissionResponse = false;
             _hasOwnPermission = false;
+            _isWeatherPending = false;
         }
 
         [Server]
@@ -91,6 +101,60 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
             {
                 CmdRequestOwnPermission();
             }
+        }
+
+        [Client]
+        public void RequestNextDayWeather(bool isStorm)
+        {
+            if (!NetworkClient.ready || IsWeatherPending)
+            {
+                return;
+            }
+            _isWeatherPending = true;
+            _weatherRequestedAt = Time.unscaledTime;
+            CmdRequestNextDayWeather(isStorm);
+        }
+
+        [Command(requiresAuthority = false)]
+        private void CmdRequestNextDayWeather(bool isStorm, NetworkConnectionToClient sender = null)
+        {
+            if (sender == null)
+            {
+                return;
+            }
+            bool success = false;
+            string result = "날씨 예약 불가 — 권한과 월드 상태를 확인해 주세요.";
+            bool isSessionRunning = !(NetworkManager.singleton is LighthouseNetworkManager manager)
+                || (!manager.IsMatchFinished && (!manager.IsSessionFlowEnabled || manager.Phase == MatchPhase.InProgress));
+            if (isSessionRunning && CanRequest(sender) && WorldServices.TryGet<IGameClock>(out var clock)
+                && WorldServices.TryGet<IForecastService>(out var forecast))
+            {
+                if (clock.DayIndex < 1 || (clock is GameClock gameClock && !gameClock.IsRunning))
+                {
+                    result = "게임 시작 후 날씨를 예약할 수 있습니다.";
+                }
+                else if (WorldServices.TryGet<WeatherSystem>(out var weather) && weather.Target == WeatherType.Maelstrom)
+                {
+                    result = "심연 날씨에서는 다음 날 날씨를 변경할 수 없습니다.";
+                }
+                else if (clock.DayIndex >= clock.TotalDays)
+                {
+                    result = "마지막 날에는 다음 날 날씨를 예약할 수 없습니다.";
+                }
+                else
+                {
+                    success = forecast.Tamper(clock.DayIndex + 1, isStorm ? WeatherType.Storm : WeatherType.Overcast);
+                    result = success ? (isStorm ? "다음 날 날씨를 폭풍우로 예약했습니다." : "다음 날 날씨를 안개(흐림)로 예약했습니다.") : "날씨 예약을 적용할 수 없습니다.";
+                }
+            }
+            TargetWeatherResult(sender, success, result);
+        }
+
+        [TargetRpc]
+        private void TargetWeatherResult(NetworkConnectionToClient target, bool success, string result)
+        {
+            _isWeatherPending = false;
+            WeatherResponded?.Invoke(success, result);
         }
 
         [Server]

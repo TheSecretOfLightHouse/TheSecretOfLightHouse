@@ -6,15 +6,16 @@ namespace Lighthouse.Mafia.SeaSummoning.View
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class SeaSummonWheelGraphic : MaskableGraphic
     {
-        private const int SlotCount = 7;
+        private int _slotCount = 7;
         private const int ArcSteps = 64;
         private const float EdgeFade = 1.5f;
         private int _hover = -1;
-        private bool[] _enabledSlots = new bool[SlotCount];
+        private bool[] _enabledSlots = new bool[7];
         private bool _isPending;
 
-        public void SetState(int hover, bool[] enabledSlots, bool isPending)
+        public void SetState(int hover, bool[] enabledSlots, bool isPending, int slotCount = 7)
         {
+            _slotCount = Mathf.Clamp(slotCount, 2, 7);
             _hover = hover;
             _enabledSlots = enabledSlots;
             _isPending = isPending;
@@ -33,8 +34,8 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             Disc(vh, radius * 0.972f, edge);
             Disc(vh, radius * 0.956f, ivory);
 
-            float segmentAngle = 360f / SlotCount;
-            for (int slot = 0; slot < SlotCount; slot++)
+            float segmentAngle = 360f / _slotCount;
+            for (int slot = 0; slot < _slotCount; slot++)
             {
                 float middle = slot * segmentAngle;
                 bool enabled = _enabledSlots != null && _enabledSlots[slot] && !_isPending;

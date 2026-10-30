@@ -1,4 +1,4 @@
-using Lighthouse.Mafia.SeaSummoning.Net;
+﻿using Lighthouse.Mafia.SeaSummoning.Net;
 using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -38,10 +38,11 @@ namespace Lighthouse.Mafia.SeaSummoning.View
         private float _savedFieldOfView;
         private bool _savedOrthographic;
 
-        public bool IsTopViewActive => _hasCameraControl && !_isReturning;
+        public bool IsAbilityMenuActive { get; private set; }
+        public bool IsTopViewActive => _hasCameraControl && !_isReturning && !IsAbilityMenuActive;
         public bool IsTransitioning => _hasCameraControl && _permission != null && _permission.Settings != null
             && Time.unscaledTime - _transitionStartedAt < _permission.Settings.CameraTransitionSeconds;
-        public string Status { get; private set; } = "F: 탑뷰 진입 / 복귀";
+        public string Status { get; private set; } = "F: 마피아 능력 열기 / 닫기";
 
         private void Awake()
         {
@@ -76,6 +77,10 @@ namespace Lighthouse.Mafia.SeaSummoning.View
                 Status = "탑승 상태 변경으로 탑뷰 종료";
                 return;
             }
+            if (IsAbilityMenuActive)
+            {
+                return;
+            }
 
             if (!_isReturning && !IsTransitioning)
             {
@@ -94,7 +99,7 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             if (_isReturning && t >= 1f)
             {
                 RestoreView();
-                Status = "F: 탑뷰 진입 / 복귀";
+                Status = "F: 마피아 능력 열기 / 닫기";
             }
         }
 
@@ -118,6 +123,11 @@ namespace Lighthouse.Mafia.SeaSummoning.View
         {
             if (_hasCameraControl)
             {
+                if (IsAbilityMenuActive)
+                {
+                    RestoreView();
+                    return;
+                }
                 if (!_isReturning)
                 {
                     _isReturning = true;
@@ -132,7 +142,7 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             }
             _isAwaitingPermission = true;
             _requestedAt = Time.unscaledTime;
-            Status = "서버에 탑뷰 진입 권한 확인 중";
+            Status = "서버에 능력 사용 권한 확인 중";
             _permission.RequestOwnPermission();
         }
 
@@ -172,15 +182,12 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             _savedWorldRotation = _camera.rotation;
             _savedFieldOfView = mainCamera.fieldOfView;
             _savedOrthographic = mainCamera.orthographic;
-            mainCamera.orthographic = false;
-            mainCamera.fieldOfView = _permission.Settings.TopViewFieldOfView;
             _savedCursorLock = Cursor.lockState;
             _savedCursorVisible = Cursor.visible;
             _wasInputActive = _playerInput.inputIsActive;
             // 현재 액션 맵을 중지하면 이동 취소 입력도 전달되어 직전 조종 값이 남지 않는다.
             _playerInput.DeactivateInput();
             _boat.Stop();
-            _camera.SetParent(null, true);
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             _topYaw = _permission.OwnTopViewYaw;
@@ -189,8 +196,31 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             _panVelocity = Vector3.zero;
             _hasCameraControl = true;
             _isReturning = false;
+            IsAbilityMenuActive = true;
+            Status = "마피아 능력 선택 / F로 닫기";
+            if (_radialMenu != null && _radialMenu.isActiveAndEnabled)
+            {
+                _radialMenu.OpenAbilities();
+            }
+            else
+            {
+                RestoreView();
+            }
+        }
+
+        public void BeginPointSelection()
+        {
+            if (!_hasCameraControl || !IsAbilityMenuActive || !CanKeepView())
+            {
+                return;
+            }
+            IsAbilityMenuActive = false;
+            Camera cameraComponent = _camera.GetComponent<Camera>();
+            cameraComponent.orthographic = false;
+            cameraComponent.fieldOfView = _permission.Settings.TopViewFieldOfView;
+            _camera.SetParent(null, true);
             StartTransition();
-            Status = "탑뷰 — 배 조종 중지 / F로 복귀";
+            Status = "탑뷰 — 소환 위치 선택 / F로 복귀";
         }
 
         private void UpdatePan()
@@ -237,6 +267,7 @@ namespace Lighthouse.Mafia.SeaSummoning.View
                 return;
             }
             _hasCameraControl = false;
+            IsAbilityMenuActive = false;
             _isReturning = false;
             bool isSameLocalPlayer = NetworkClient.localPlayer != null && _player != null
                 && NetworkClient.localPlayer.gameObject == _player.gameObject;
