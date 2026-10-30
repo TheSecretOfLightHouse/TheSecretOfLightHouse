@@ -8,6 +8,7 @@ using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using TMPro;
 
 namespace Lighthouse.Mafia.Voting.View
 {
@@ -47,9 +48,9 @@ namespace Lighthouse.Mafia.Voting.View
         [SerializeField]
         private Button _hudButton;
         [SerializeField]
-        private Text _hudRemaining;
+        private TMP_Text _hudRemaining;
         [SerializeField]
-        private Text _hudTarget;
+        private TMP_Text _hudTarget;
 
         [Header("Vote screen")]
         [SerializeField]
@@ -690,7 +691,7 @@ namespace Lighthouse.Mafia.Voting.View
         }
 
         // Two quick flashes towards the flash colour and back; the text is left alone between blinks.
-        private static void Blink(Text text, Color rest, Color flash, ref float endsAt)
+        private static void Blink(TMP_Text text, Color rest, Color flash, ref float endsAt)
         {
             if (endsAt <= 0f)
             {

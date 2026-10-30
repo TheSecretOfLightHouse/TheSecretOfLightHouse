@@ -3,6 +3,7 @@ using Lighthouse.Mafia.IdentityCheck.Rules;
 using Lighthouse.Mafia.Voting.Net;
 using Lighthouse.Network.Session.View;
 using Mirror;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -39,7 +40,7 @@ namespace Lighthouse.Mafia.IdentityCheck.View
         [SerializeField]
         private Button _summonButton;
         [SerializeField]
-        private Text _status;
+        private TMP_Text _status;
         [Tooltip("Tint of a button that cannot be pressed now.")]
         [SerializeField]
         private Color _unavailableColor = new Color(0.55f, 0.55f, 0.55f, 0.6f);

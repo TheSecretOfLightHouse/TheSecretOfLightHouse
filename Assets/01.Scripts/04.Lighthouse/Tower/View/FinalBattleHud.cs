@@ -1,5 +1,6 @@
 using Lighthouse.Tower.Net;
 using Lighthouse.Tower.Rules;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -26,7 +27,7 @@ namespace Lighthouse.Tower.View
         [SerializeField]
         private Image _repairFill;
         [SerializeField]
-        private Text _repairText;
+        private TMP_Text _repairText;
 
         [Header("Health")]
         [SerializeField]
