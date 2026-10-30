@@ -20,6 +20,7 @@ namespace Lighthouse.Workbench.Editor
         private const string SketchFolder = "Assets/03.Images/WorkbenchUiSketch/";
         private const string TowerFolder = "Assets/03.Images/TowerUiSketch/";
         private const string HudFolder = "Assets/03.Images/InGameHud/";
+        private const string PromptCaption = "등대 사용";
         private const float CardX = 651f;
         private const float CardY = 55f;
         private const float CardScale = 440f / 480f;
@@ -56,6 +57,7 @@ namespace Lighthouse.Workbench.Editor
             }
 
             ImportSprites();
+            HudSketchLayout.ImportSprites();
             var previousScene = EditorSceneManager.GetActiveScene();
             var buildScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
             UnityEngine.SceneManagement.SceneManager.SetActiveScene(buildScene);
@@ -78,8 +80,7 @@ namespace Lighthouse.Workbench.Editor
                 Image scrim = window.gameObject.AddComponent<Image>();
                 scrim.color = new Color(0f, 0f, 0f, 0.15f);
                 RectTransform frame = Rect("Frame", window, 0f, 0f, 1672f, 941f);
-                frame.anchorMin = frame.anchorMax = frame.pivot = new Vector2(0.5f, 0.5f);
-                frame.anchoredPosition = Vector2.zero;
+                PlaceFrameRight(frame);
 
                 Image card = Picture("Tower", frame, TowerFolder, "tw_card_tower", CardX, CardY, 480f * CardScale, 780f * CardScale);
                 card.preserveAspect = true;
@@ -119,19 +120,15 @@ namespace Lighthouse.Workbench.Editor
                 outline.effectColor = new Color(0.12f, 0.09f, 0.05f, 0.85f);
                 outline.effectDistance = new Vector2(1.5f, -1.5f);
 
-                Keycap(frame, "F", 1482f, 26f, 40f);
-                Label("InstallHint", frame, "장착", 22, 1534f, 26f, 120f, 40f, TextAnchor.MiddleLeft);
-                Keycap(frame, "ESC", 1482f, 80f, 72f);
-                Label("CloseHint", frame, "닫기", 22, 1566f, 80f, 100f, 40f, TextAnchor.MiddleLeft);
+                AddCloseHint(window);
 
-                // Keycap + label art without a backing panel, matching the HUD's Esc menu hint (2026-10-30).
+                // Keycap + TMP caption without a backing panel, like every station's prompt (2026-10-31).
                 RectTransform prompt = Rect("Prompt", root.transform, 0f, 0f, 177f, 48f);
                 prompt.anchorMin = prompt.anchorMax = new Vector2(0.5f, 0f);
                 prompt.pivot = new Vector2(0.5f, 0f);
                 // Above the workbench screen's carried module card at the bottom centre (2026-10-27).
                 prompt.anchoredPosition = new Vector2(0f, 150f);
-                Picture("Key", prompt, HudFolder, "hud_key_e", 0f, 1f, 47f, 46f).preserveAspect = true;
-                Picture("Label", prompt, HudFolder, "hud_label_use_lighthouse", 56f, 7f, 121f, 34f).preserveAspect = true;
+                HudSketchLayout.BuildPrompt(prompt, PromptCaption, 1f);
 
                 TowerScreen screen = root.AddComponent<TowerScreen>();
                 SerializedObject serialized = new SerializedObject(screen);
@@ -162,6 +159,70 @@ namespace Lighthouse.Workbench.Editor
                 Object.DestroyImmediate(root);
                 UnityEngine.SceneManagement.SceneManager.SetActiveScene(previousScene);
                 EditorSceneManager.CloseScene(buildScene, true);
+            }
+        }
+
+        // Moves the saved prefab to the 2026-10-30 layout without rebuilding it, so pieces changed by hand stay: the
+        // frame on the right half (the camera leaves the lighthouse on the left), and the HUD's Esc row in place of the
+        // F install and Esc close hints. Also redraws the E prompt with a TMP caption (2026-10-31).
+        [MenuItem("Lighthouse/Tower/Update Sketch Screen Layout")]
+        public static void UpdateLayout()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogError($"[{nameof(TowerScreenSketchSetup)}] Stop play mode before updating.");
+                return;
+            }
+
+            HudSketchLayout.ImportSprites();
+            GameObject root = PrefabUtility.LoadPrefabContents(PrefabPath);
+
+            try
+            {
+                Transform window = root.transform.Find("Window");
+                RectTransform frame = window ? (RectTransform)window.Find("Frame") : null;
+
+                if (!frame)
+                {
+                    Debug.LogError($"[{nameof(TowerScreenSketchSetup)}] {PrefabPath} has no Window/Frame.");
+                    return;
+                }
+
+                foreach (string name in new[] { "KeyF", "InstallHint", "KeyESC", "CloseHint" })
+                {
+                    Transform child = frame.Find(name);
+
+                    if (child)
+                    {
+                        Object.DestroyImmediate(child.gameObject);
+                    }
+                }
+
+                foreach (string name in new[] { "CloseKey", "CloseLabel" })
+                {
+                    Transform child = window.Find(name);
+
+                    if (child)
+                    {
+                        Object.DestroyImmediate(child.gameObject);
+                    }
+                }
+
+                PlaceFrameRight(frame);
+                AddCloseHint(window);
+                RectTransform prompt = (RectTransform)root.transform.Find("Prompt");
+
+                if (prompt)
+                {
+                    HudSketchLayout.BuildPrompt(prompt, PromptCaption, 1f);
+                }
+
+                PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
+                Debug.Log($"[{nameof(TowerScreenSketchSetup)}] Updated the layout of {PrefabPath}.");
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
             }
         }
 
@@ -313,6 +374,35 @@ namespace Lighthouse.Workbench.Editor
                 importer.maxTextureSize = 2048;
                 importer.SaveAndReimport();
             }
+        }
+
+        // The content spans 651..1328 of the sketch; anchored to the right edge it ends a margin short of it,
+        // so wider screens keep it beside the lighthouse rather than drifting to the middle.
+        private static void PlaceFrameRight(RectTransform frame)
+        {
+            const float contentRight = 1328f;
+            const float frameRightMargin = 130f;
+            frame.anchorMin = frame.anchorMax = frame.pivot = new Vector2(1f, 0.5f);
+            frame.anchoredPosition = new Vector2(1672f - contentRight - frameRightMargin, 0f);
+        }
+
+        // The in-game HUD's Esc row, same art and place (its canvas uses these mockup pixels too), since the HUD is
+        // hidden while this screen is open.
+        private static void AddCloseHint(Transform window)
+        {
+            HudSketchLayout.KeyRow(0, HudSketchLayout.ExitKeyWidth, out Rect key, out Rect label);
+            Image keyImage = Picture("CloseKey", window, HudFolder, HudSketchLayout.ExitKeySprite, 0f, 0f, key.width, key.height);
+            keyImage.preserveAspect = true;
+            PlaceTopRight(keyImage.rectTransform, key);
+            RectTransform caption = Rect("CloseLabel", window, 0f, 0f, label.width, label.height);
+            PlaceTopRight(caption, label);
+            HudSketchLayout.Caption(caption, HudSketchLayout.ExitCaption, HudSketchLayout.KeyCaptionSize);
+        }
+
+        private static void PlaceTopRight(RectTransform rect, Rect place)
+        {
+            rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
+            rect.anchoredPosition = new Vector2(place.x - 1672f, -place.y);
         }
 
         private static Image Keycap(Transform parent, string key, float x, float y, float width)

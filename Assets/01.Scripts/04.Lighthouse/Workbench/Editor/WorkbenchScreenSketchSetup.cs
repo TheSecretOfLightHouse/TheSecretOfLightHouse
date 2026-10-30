@@ -16,7 +16,7 @@ namespace Lighthouse.Workbench.Editor
         private const string PrefabPath = "Assets/02.Prefabs/UI/Workbench/WorkbenchScreen_Sketch.prefab";
         private const string SourcePath = "Assets/02.Prefabs/UI/Workbench/WorkbenchScreen_Wood.prefab";
         private const string SpriteFolder = "Assets/03.Images/WorkbenchUiSketch/";
-        private const string HudFolder = "Assets/03.Images/InGameHud/";
+        public const string PromptCaption = "작업대 사용";
         private const float FramePixelsPerUnit = 160f;
         private static readonly Color Cream = new Color(0.98f, 0.92f, 0.79f);
         private static readonly Color Muted = new Color(0.72f, 0.67f, 0.56f);
@@ -141,14 +141,13 @@ namespace Lighthouse.Workbench.Editor
                 Outline messageOutline = message.gameObject.AddComponent<Outline>();
                 messageOutline.effectColor = new Color(0.12f, 0.09f, 0.05f, 0.85f);
                 messageOutline.effectDistance = new Vector2(1.5f, -1.5f);
-                // Keycap + label art without a backing panel, matching the HUD's Esc menu hint (2026-10-30).
+                // Keycap + TMP caption without a backing panel, like every station's prompt (2026-10-31).
                 RectTransform prompt = Rect("Prompt", root.transform, 0f, 0f, 190f, 48f);
                 prompt.anchorMin = prompt.anchorMax = new Vector2(0.5f, 0f);
                 prompt.pivot = new Vector2(0.5f, 0f);
                 // Above the carried module card, which sits at the bottom centre (2026-10-27).
                 prompt.anchoredPosition = new Vector2(0f, 150f);
-                HudPicture("Key", prompt, "hud_key_e", 0f, 1f, 47f, 46f);
-                HudPicture("Label", prompt, "hud_label_use_workbench", 56f, 8.5f, 134f, 31f);
+                HudSketchLayout.BuildPrompt(prompt, PromptCaption, 1f);
 
                 WorkbenchScreen screen = root.AddComponent<WorkbenchScreen>();
                 SerializedObject serialized = new SerializedObject(screen);
@@ -590,22 +589,6 @@ namespace Lighthouse.Workbench.Editor
             Image image = rect.gameObject.AddComponent<Image>();
             image.sprite = sprite == null ? null : Load(sprite);
             image.type = image.sprite && image.sprite.border.sqrMagnitude > 0f ? Image.Type.Sliced : Image.Type.Simple;
-            image.raycastTarget = false;
-            return image;
-        }
-
-        private static Image HudPicture(string name, Transform parent, string sprite, float x, float y, float width, float height)
-        {
-            RectTransform rect = Rect(name, parent, x, y, width, height);
-            Image image = rect.gameObject.AddComponent<Image>();
-            image.sprite = AssetDatabase.LoadAssetAtPath<Sprite>($"{HudFolder}{sprite}.png");
-
-            if (!image.sprite)
-            {
-                throw new System.InvalidOperationException($"Missing HUD sprite: {sprite}");
-            }
-
-            image.preserveAspect = true;
             image.raycastTarget = false;
             return image;
         }

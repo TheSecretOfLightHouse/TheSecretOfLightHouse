@@ -16,8 +16,10 @@ namespace Lighthouse.Workbench.Editor
         private const string PrefabPath = "Assets/02.Prefabs/UI/GhostShip/GhostShipLedger.prefab";
         private const string ShipPrefabPath = "Assets/02.Prefabs/World/GhostShip/GhostShip.prefab";
         private const string Folder = "Assets/03.Images/GhostShipLedger/";
-        private const string HudFolder = "Assets/03.Images/InGameHud/";
         private const int DayCount = 5;
+        public const string PromptCaption = "유령선 확인";
+        // This canvas is 1920 wide where the station screens are 1672, so the prompt grows to look the same size.
+        public const float PromptUnit = 1920f / 1672f;
         private const float BoardWidth = 720f;
         private const float ContentWidth = 560f;
         // Torn edge and frame of the board art, kept unstretched (source pixels, art is 1041x780).
@@ -61,8 +63,7 @@ namespace Lighthouse.Workbench.Editor
                 prompt.anchorMin = prompt.anchorMax = new Vector2(0.5f, 0f);
                 prompt.pivot = new Vector2(0.5f, 0f);
                 prompt.anchoredPosition = new Vector2(0f, 150f);
-                Picture("Key", prompt, HudFolder, "hud_key_e", 0f, 1f, 47f, 46f).preserveAspect = true;
-                Picture("Label", prompt, HudFolder, "hud_label_check_ghostship", 56f, 8.5f, 133f, 31f).preserveAspect = true;
+                HudSketchLayout.BuildPrompt(prompt, PromptCaption, PromptUnit);
 
                 Sprite[] days = new Sprite[DayCount];
 
@@ -210,7 +211,7 @@ namespace Lighthouse.Workbench.Editor
                 ImportSprite(path, border);
             }
 
-            ImportSprite($"{HudFolder}hud_label_check_ghostship.png", Vector4.zero);
+            HudSketchLayout.ImportSprites();
         }
 
         private static void ImportSprite(string path, Vector4 border)

@@ -3,6 +3,7 @@ using Lighthouse.Tower.Net;
 using Lighthouse.Tower.Rules;
 using Lighthouse.World.Clock.Rules;
 using Lighthouse.World.Query.Rules;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,8 +15,8 @@ namespace Lighthouse.UI.Hud
         [SerializeField] private GameObject _display;
         [SerializeField] private Image _badge;
         [SerializeField] private Image _fill;
-        [SerializeField] private Text _dayText;
-        [SerializeField] private Text _phaseText;
+        [SerializeField] private TMP_Text _dayText;
+        [SerializeField] private TMP_Text _phaseText;
         [SerializeField] private Sprite _dayBadge;
         [SerializeField] private Sprite _nightBadge;
         [SerializeField] private Sprite _dayFill;

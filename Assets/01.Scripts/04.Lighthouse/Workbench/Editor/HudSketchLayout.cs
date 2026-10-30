@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,6 +12,15 @@ namespace Lighthouse.Workbench.Editor
     internal static class HudSketchLayout
     {
         public const string Folder = "Assets/03.Images/InGameHud/";
+        // The Esc row leads the HUD's key hints; screens that hide the HUD draw the same row in the same place.
+        public const string ExitKeySprite = "hud_key_esc";
+        public const string ExitCaption = "나가기";
+        public const float ExitKeyWidth = 47f;
+        // Caption sizes in mockup pixels (2026-10-31): a key hint row, and a station's E prompt with its larger key.
+        public const float KeyCaptionSize = 22f;
+        public const float PromptCaptionSize = 28f;
+        private const string CaptionFontPath = "Assets/09.Fonts/NotoSansKR/NotoSansKR-Bold SDF.asset";
+        private const string CaptionMaterialPath = "Assets/09.Fonts/NotoSansKR/NotoSansKR-Bold SDF Outline.mat";
         public static readonly Vector2 TopLeft = new Vector2(0f, 1f);
         public static readonly Vector2 Top = new Vector2(0.5f, 1f);
         public static readonly Vector2 TopRight = new Vector2(1f, 1f);
@@ -52,6 +62,100 @@ namespace Lighthouse.Workbench.Editor
                 importer.maxTextureSize = 2048;
                 importer.SaveAndReimport();
             }
+        }
+
+        // One top-right key hint row in mockup pixels: a key cap and its caption, 1.12x the mockup's size. Every key is
+        // centred in one shared column and every caption starts at one shared left edge, so the rows line up whatever
+        // the key's width. The caption box is as tall as the key, so its text sits on the key's middle.
+        public static void KeyRow(int row, float keyWidth, out Rect key, out Rect label)
+        {
+            const float size = 1.12f;
+            const float right = 1648f;
+            // Tucked into the corner, as far from the top as the captions are from the right (2026-10-30). The final
+            // battle strip's health side reaches under the first rows while it shows.
+            const float top = 24f;
+            float labelX = right - 62f * size;
+            float columnWidth = 50f * size;
+            float columnX = labelX - 14f * size - columnWidth;
+            float y = top + row * 46f * size;
+            float width = keyWidth * size;
+            key = new Rect(columnX + (columnWidth - width) * 0.5f, y, width, 36f * size);
+            label = new Rect(labelX, y, right + 24f - labelX, 36f * size);
+        }
+
+        // Every key hint caption and station prompt shares the HUD's TMP look (NotoSansKR Bold with its outline
+        // material, cream), one line from the left edge, centred on its box's height.
+        public static TextMeshProUGUI Caption(RectTransform rect, string caption, float fontSize)
+        {
+            TextMeshProUGUI text = rect.gameObject.AddComponent<TextMeshProUGUI>();
+            text.font = LoadAsset<TMP_FontAsset>(CaptionFontPath);
+            text.fontSharedMaterial = LoadAsset<Material>(CaptionMaterialPath);
+            text.fontSize = fontSize;
+            text.color = Cream;
+            text.alignment = TextAlignmentOptions.MidlineLeft;
+            text.textWrappingMode = TextWrappingModes.NoWrap;
+            text.overflowMode = TextOverflowModes.Overflow;
+            text.raycastTarget = false;
+            text.text = caption;
+            return text;
+        }
+
+        // A key hint caption on a canvas laid out by this class, placed and sized in mockup pixels.
+        public static TextMeshProUGUI KeyCaption(string name, Transform parent, string caption, Vector2 anchor, Rect place)
+        {
+            return Caption(Rect(name, parent, anchor, place.x, place.y, place.width, place.height), caption, KeyCaptionSize * Scale);
+        }
+
+        // A station's E prompt above the bottom centre: the E key cap and its caption, in mockup pixels times unit
+        // (canvas units per mockup pixel), so prompts on canvases of different reference sizes look the same. The
+        // prompt is as wide as key plus caption, so it stays centred. Replaces the key and label already there.
+        public static void BuildPrompt(RectTransform prompt, string caption, float unit)
+        {
+            foreach (string name in new[] { "Key", "Label" })
+            {
+                Transform old = prompt.Find(name);
+
+                if (old)
+                {
+                    Object.DestroyImmediate(old.gameObject);
+                }
+            }
+
+            RectTransform key = NewRect("Key", prompt);
+            Corner(key, 0f, 1f * unit, 47f * unit, 46f * unit);
+            Image keyImage = AddSprite(key, "hud_key_e");
+            keyImage.preserveAspect = true;
+            RectTransform label = NewRect("Label", prompt);
+            Corner(label, 56f * unit, 1f * unit, 0f, 46f * unit);
+            TextMeshProUGUI text = Caption(label, caption, PromptCaptionSize * unit);
+            // A dynamic font measures characters its atlas lacks as nothing, and text on an inactive object is not set
+            // up to measure, so the glyphs go in first and the prompt shows while measuring.
+            text.font.TryAddCharacters(caption);
+            bool wasActive = prompt.gameObject.activeSelf;
+            prompt.gameObject.SetActive(true);
+            float width = Mathf.Ceil(text.GetPreferredValues(caption).x);
+            prompt.gameObject.SetActive(wasActive);
+            label.sizeDelta = new Vector2(width, label.sizeDelta.y);
+            prompt.sizeDelta = new Vector2(56f * unit + width, 48f * unit);
+        }
+
+        private static void Corner(RectTransform rect, float x, float y, float width, float height)
+        {
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = new Vector2(x, -y);
+            rect.sizeDelta = new Vector2(width, height);
+        }
+
+        private static T LoadAsset<T>(string path) where T : Object
+        {
+            T asset = AssetDatabase.LoadAssetAtPath<T>(path);
+
+            if (!asset)
+            {
+                throw new System.InvalidOperationException($"Missing caption asset: {path}");
+            }
+
+            return asset;
         }
 
         // A layer that covers the whole canvas, for groups that show and hide or move together.
