@@ -30,6 +30,12 @@ namespace Lighthouse.Dev.GhostShip
 
         private void OnGUI()
         {
+            if (DevPanelSwitch.IsOn && !_ship)
+            {
+                // The main game spawns the ship from its prefab, so it cannot be wired in the scene.
+                _ship = FindAnyObjectByType<GhostShipNet>();
+            }
+
             if (!DevPanelSwitch.IsOn || !_ship || !_ship.isActiveAndEnabled || !NetworkClient.active)
             {
                 return;
