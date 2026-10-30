@@ -72,7 +72,8 @@ public sealed class HarvestInteractionHandler
             context.Sender.identity.GetComponent<PlayerController>();
 
         if (!player || !player.isActiveAndEnabled
-            || player.IsDowned || player.IsOnBoat)
+            || player.IsDowned || player.IsOnBoat
+            || (player.PassiveController && !player.PassiveController.IsJobAbilityEnabled))
         {
             return InteractionResultCode.Rejected;
         }
@@ -99,14 +100,16 @@ public sealed class HarvestInteractionHandler
             int multiplier = player.TryGetComponent(out GatheringFever fever) && fever.IsActive
                 ? 2
                 : 1;
+            PlayerPassiveController passives = player.PassiveController;
+            int towerBonus = passives ? passives.GetTowerHarvestBonusForNextSuccess() : 0;
 
-            if (reservation.Granted <= 0 || reservation.Granted > int.MaxValue / multiplier)
+            if (reservation.Granted <= 0 || reservation.Granted > (int.MaxValue - towerBonus) / multiplier)
             {
                 return InteractionResultCode.Rejected;
             }
 
             // Bonus yield changes the shared drop, not the amount reserved from the deposit.
-            int dropAmount = reservation.Granted * multiplier;
+            int dropAmount = reservation.Granted * multiplier + towerBonus;
 
             isSpawned = _dropSpawner.TrySpawnDrop(
                 reservation.Position,
@@ -131,6 +134,11 @@ public sealed class HarvestInteractionHandler
             if (!isCommitted)
             {
                 return InteractionResultCode.Rejected;
+            }
+
+            if (passives)
+            {
+                passives.RegisterSuccessfulTowerHarvest();
             }
 
             return InteractionResultCode.Success;

@@ -3,6 +3,11 @@ using Lighthouse.World.Ocean.Rules;
 using UnityEngine;
 using Lighthouse.Systems.Audio;
 using Mirror;
+using Lighthouse.World.Islands.Rules;
+using Lighthouse.World.Islands.View;
+using Lighthouse.World.MapGeneration.Net;
+using Lighthouse.World.MapGeneration.Rules;
+using Lighthouse.World.Query.Rules;
 
 [RequireComponent(typeof(Animator))]
 public sealed class PlayerAnimationDriver : MonoBehaviour
@@ -57,6 +62,7 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float _runVolume = 0.65f;
     [SerializeField, Range(0f, 1f)] private float _actionVolume = 0.65f;
     [SerializeField, Min(0.01f)] private float _minimumStepInterval = 0.12f;
+    [SerializeField] private IslandFootstepEntry[] _islandFootsteps = System.Array.Empty<IslandFootstepEntry>();
     [SerializeField] private AudioClip _boatMovementClip;
     [SerializeField, Range(0f, 1f)] private float _boatMovementVolume = 0.3f;
     [SerializeField, Min(0.01f)] private float _boatMovementSpeedThreshold = 0.15f;
@@ -91,6 +97,20 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
     private float _boatMovementGain;
     private AudioSource _swimMovementAudio;
     private float _swimMovementGain;
+    private Collider _footstepGround;
+    private MapLayout _footstepLayout;
+    private int _footstepArchetypeId = -1;
+
+    [System.Serializable]
+    private struct IslandFootstepEntry
+    {
+        [SerializeField] private IslandArchetype _archetype;
+        [SerializeField] private AudioClip _walkClip;
+        [SerializeField] private AudioClip _runClip;
+
+        public IslandArchetype Archetype => _archetype;
+        public AudioClip GetClip(bool running) => running ? _runClip : _walkClip;
+    }
 
     private bool CanPlaySound => _controller && _controller.isActiveAndEnabled
         && !(NetworkServer.active && !NetworkClient.active)
@@ -222,8 +242,7 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
             running = animationEvent.intParameter == 1;
         }
 
-        if (PlaySound(running ? SfxType.PlayerRun : SfxType.PlayerWalk,
-            running ? _runVolume : _walkVolume))
+        if (PlayFootstepSound(running))
         {
             _nextStepTime = Time.time + _minimumStepInterval;
         }
@@ -238,6 +257,71 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
         {
             PlaySound(SfxType.PlayerJump, _actionVolume);
         }
+    }
+
+    private bool PlayFootstepSound(bool running)
+    {
+        float volume = running ? _runVolume : _walkVolume;
+        AudioClip clip = GetIslandFootstepClip(running);
+        if (!clip)
+        {
+            return PlaySound(running ? SfxType.PlayerRun : SfxType.PlayerWalk, volume);
+        }
+
+        EnsureSoundManager();
+        return SoundManager.Instance && SoundManager.Instance.PlayEffectAt(clip, transform.position, volume);
+    }
+
+    private AudioClip GetIslandFootstepClip(bool running)
+    {
+        if (_islandFootsteps == null || _islandFootsteps.Length == 0 || !_motor
+            || !_motor.TryGetGroundCollider(out Collider ground)
+            || !WorldServices.TryGet(out MapStateNet map) || !map.IsLayoutReady || map.Layout == null)
+        {
+            return null;
+        }
+
+        if (_footstepGround != ground || !ReferenceEquals(_footstepLayout, map.Layout))
+        {
+            _footstepGround = ground;
+            _footstepLayout = map.Layout;
+            _footstepArchetypeId = -1;
+
+            // Match the contacted island root; distance and generated names cannot prove ground ownership.
+            IslandInstanceSet instances = ground.GetComponentInParent<IslandInstanceSet>();
+            if (instances)
+            {
+                for (int i = 0; i < instances.Count; i++)
+                {
+                    Transform root = instances.GetTransform(i);
+                    if (!root || !ground.transform.IsChildOf(root))
+                    {
+                        continue;
+                    }
+
+                    short index = instances.GetIndex(i);
+                    for (int j = 0; j < map.Layout.Islands.Count; j++)
+                    {
+                        IslandPlacement island = map.Layout.Islands[j];
+                        if (island.Index == index)
+                        {
+                            _footstepArchetypeId = island.ArchetypeId;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        foreach (IslandFootstepEntry entry in _islandFootsteps)
+        {
+            if (entry.Archetype && entry.Archetype.Id == _footstepArchetypeId)
+            {
+                return entry.GetClip(running);
+            }
+        }
+        return null;
     }
 
     private bool PlaySound(SfxType type, float volume)

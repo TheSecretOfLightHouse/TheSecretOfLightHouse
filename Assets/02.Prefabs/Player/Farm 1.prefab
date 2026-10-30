@@ -1943,6 +1943,22 @@ MonoBehaviour:
   _runVolume: 0.65
   _actionVolume: 0.65
   _minimumStepInterval: 0.12
+  _islandFootsteps:
+  - _archetype: {fileID: 11400000, guid: 20b784bc0c874f94684292c42f443dd7, type: 2}
+    _walkClip: {fileID: 8300000, guid: b72b033519d66a749b75f3d4d04e2a4f, type: 3}
+    _runClip: {fileID: 8300000, guid: 5c6f70b33bf79854ab8cb9d35d1e184c, type: 3}
+  - _archetype: {fileID: 11400000, guid: 3d707b5962c56974ebca0173c24427cc, type: 2}
+    _walkClip: {fileID: 8300000, guid: 6b76df84d8997684c8c99e3912559e40, type: 3}
+    _runClip: {fileID: 8300000, guid: 963de87f71ac14146b627296c80150ff, type: 3}
+  - _archetype: {fileID: 11400000, guid: d9f61dee372bc0f498a8159ed7c4ed07, type: 2}
+    _walkClip: {fileID: 8300000, guid: 8a953fbe4530c79418d034c17f3f675a, type: 3}
+    _runClip: {fileID: 8300000, guid: adf0a0daffac897459ed966cadcbc820, type: 3}
+  - _archetype: {fileID: 11400000, guid: 78380432124db6549b6686a5b0c19e48, type: 2}
+    _walkClip: {fileID: 8300000, guid: 4acec4770f61f864f9274cb6ba770378, type: 3}
+    _runClip: {fileID: 8300000, guid: 33c618f95579b0e4299c9b89ac6fbd21, type: 3}
+  - _archetype: {fileID: 11400000, guid: c89285000056c2441b90ab0aa26616bf, type: 2}
+    _walkClip: {fileID: 8300000, guid: 7a1378f6c6f5ac84d9a10678325129b8, type: 3}
+    _runClip: {fileID: 8300000, guid: 5ef7d54f80b02d047b0c423363b3d693, type: 3}
   _boatMovementClip: {fileID: 8300000, guid: aa2740dd36427624fafc890c106817f2, type: 3}
   _boatMovementVolume: 0.3
   _boatMovementSpeedThreshold: 0.15
@@ -2191,6 +2207,10 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   _passiveComponent: {fileID: 5683989254682954227}
+  _towerBoatSpeedBonus: 1.5
+  _towerHarvestBonusInterval: 5
+  _towerHarvestBonusAmount: 1
+  _towerCannonDamageMultiplier: 1.2
 --- !u!114 &4061218471500761091
 MonoBehaviour:
   m_ObjectHideFlags: 0

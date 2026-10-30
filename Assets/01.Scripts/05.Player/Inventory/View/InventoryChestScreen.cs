@@ -84,7 +84,7 @@ namespace Lighthouse.Player.Inventory.View
             {
                 return;
             }
-            if (!_inventory || !_player || _player.IsDowned || !NetworkClient.isConnected)
+            if (!_inventory || !_inventory.CanUseInventory || !_player || _player.IsDowned || !NetworkClient.isConnected)
             {
                 Close();
                 return;
@@ -111,7 +111,7 @@ namespace Lighthouse.Player.Inventory.View
                 Close();
                 return;
             }
-            if (!_inventory || !_player || _player.IsDowned || SessionScreen.IsGameplayOverlayOpen)
+            if (!_inventory || !_inventory.CanUseInventory || !_player || _player.IsDowned || SessionScreen.IsGameplayOverlayOpen)
             {
                 return;
             }

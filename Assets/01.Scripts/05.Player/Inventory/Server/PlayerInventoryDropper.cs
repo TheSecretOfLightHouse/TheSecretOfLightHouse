@@ -83,7 +83,7 @@ public sealed class PlayerInventoryDropper : NetworkBehaviour
                     new KeyValuePair<int, int>(entry.Key, 0));
 
                 int removedAmount =
-                    _inventory.TryRemoveTo(entry.Key, entry.Value);
+                    _inventory.TryRemoveWreckResource(entry.Key, entry.Value);
 
                 _removedContents[_removedContents.Count - 1] =
                     new KeyValuePair<int, int>(
@@ -136,7 +136,7 @@ public sealed class PlayerInventoryDropper : NetworkBehaviour
             KeyValuePair<int, int> entry = _removedContents[i];
 
             if (entry.Value == 0
-                || _inventory.TryAdd(entry.Key, entry.Value))
+                || _inventory.TryRestoreWreckResource(entry.Key, entry.Value))
             {
                 _removedContents.RemoveAt(i);
             }

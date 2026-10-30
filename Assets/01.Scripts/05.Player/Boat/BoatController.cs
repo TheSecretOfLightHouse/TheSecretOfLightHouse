@@ -430,12 +430,15 @@ public sealed class BoatController : NetworkBehaviour
 
         float dashMultiplier = isDashing ? _dashModule.SpeedMultiplier : 1f;
         float passiveMultiplier = 1f;
+        float towerSpeedBonus = 0f;
         if (player.PassiveController)
         {
             passiveMultiplier = player.PassiveController.GetBoatSpeedMultiplier(this);
+            towerSpeedBonus = player.PassiveController.GetTowerBoatSpeedBonus();
         }
 
-        Vector3 targetVelocity = forward * Mathf.Clamp(input.y, -1f, 1f) * _speed * config.SpeedMultiplier *passiveMultiplier * dashMultiplier;
+        float targetSpeed = (_speed * config.SpeedMultiplier * passiveMultiplier + towerSpeedBonus) * dashMultiplier;
+        Vector3 targetVelocity = forward * Mathf.Clamp(input.y, -1f, 1f) * targetSpeed;
         Vector3 velocity = _rb.linearVelocity;
         Vector3 horizontal = new Vector3(velocity.x, 0f, velocity.z);
         if (Time.time >= _recoilEndTime)
@@ -482,7 +485,16 @@ public sealed class BoatController : NetworkBehaviour
             return false;
         }
 
-        _nextFireTime = Time.time + _reloadDuration;
+        float reloadDurationMultiplier = 1f;
+
+        if (player.PassiveController)
+        {
+            reloadDurationMultiplier = player.PassiveController.GetReloadDurationMultiplier(this);
+        }
+
+        float reloadDuration = _reloadDuration * reloadDurationMultiplier;
+
+        _nextFireTime = Time.time + reloadDuration;
         CannonFired?.Invoke(player);
         return true;
     }

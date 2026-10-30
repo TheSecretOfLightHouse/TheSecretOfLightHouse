@@ -39,7 +39,7 @@ namespace Lighthouse.Player.Inventory.View
             UpdateCarriedHudAnchor();
             int recipeId = _inventory ? _inventory.ModuleRecipeId : 0;
             ModuleRecipe recipe = recipeId != 0 ? _inventory.GetModuleRecipe() : null;
-            bool isVisible = recipeId != 0 && _player && NetworkClient.isConnected
+            bool isVisible = recipeId != 0 && _inventory && _inventory.CanUseInventory && _player && NetworkClient.isConnected
                 && !_isOpen && !SessionScreen.IsGameplayOverlayOpen;
             RefreshCarriedModuleHud(recipeId, recipe, isVisible);
         }
