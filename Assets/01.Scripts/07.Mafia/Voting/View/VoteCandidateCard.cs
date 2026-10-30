@@ -132,6 +132,7 @@ namespace Lighthouse.Mafia.Voting.View
             _clicked = clicked;
         }
 
+        // isLocked greys the card: the ritual locked the votes, or this player is the mafia and has none.
         public void Show(uint actorId, string displayName, Sprite portrait, bool isCurrent, bool canPick, bool isLocked)
         {
             // Pops only when this same player becomes the pick, not when the card first fills or changes player.
