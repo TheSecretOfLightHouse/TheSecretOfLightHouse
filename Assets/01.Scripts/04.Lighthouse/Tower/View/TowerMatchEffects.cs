@@ -22,6 +22,9 @@ namespace Lighthouse.Tower.View
     [DisallowMultipleComponent]
     public sealed class TowerMatchEffects : MonoBehaviour
     {
+        private const float MatchLookupInterval = 1f;
+
+        [Tooltip("Optional. Left empty, the match is looked up once a second, for scenes that spawn the tower at match start.")]
         [SerializeField]
         private TowerMatchNet _match;
 
@@ -105,6 +108,7 @@ namespace Lighthouse.Tower.View
         private bool _isReadyPending;
         private TowerNet _tower;
         private WorkbenchNet _workbench;
+        private float _nextMatchLookup;
 
         private void Awake()
         {
@@ -130,32 +134,32 @@ namespace Lighthouse.Tower.View
 
         private void OnEnable()
         {
-            _tower = _match ? _match.Tower : null;
-
-            // Awake of the match may run after this one, so fall back to the component beside it.
-            if (!_tower && _match)
-            {
-                _tower = _match.GetComponent<TowerNet>();
-            }
-
-            _workbench = _tower ? _tower.Workbench : null;
-
-            if (_tower)
-            {
-                _tower.SlotInstalled += HandleSlotInstalled;
-            }
-
-            if (_workbench)
-            {
-                _workbench.RecipeCompleted += HandleRecipeCompleted;
-            }
+            Subscribe();
         }
 
         private void LateUpdate()
         {
+            // The main island spawns its tower at match start, so there is nothing to wire in the scene (2026-10-30).
+            if (!_match && Time.unscaledTime >= _nextMatchLookup)
+            {
+                _nextMatchLookup = Time.unscaledTime + MatchLookupInterval;
+                _match = FindAnyObjectByType<TowerMatchNet>();
+
+                if (_match)
+                {
+                    Subscribe();
+                }
+            }
+
             if (!_match)
             {
                 return;
+            }
+
+            // The spawned tower gets its workbench bound after it appears.
+            if (_tower && !_workbench)
+            {
+                SubscribeWorkbench();
             }
 
             ObservePhase();
@@ -176,6 +180,34 @@ namespace Lighthouse.Tower.View
             if (_workbench)
             {
                 _workbench.RecipeCompleted -= HandleRecipeCompleted;
+            }
+        }
+
+        private void Subscribe()
+        {
+            _tower = _match ? _match.Tower : null;
+
+            // Awake of the match may run after this one, so fall back to the component beside it.
+            if (!_tower && _match)
+            {
+                _tower = _match.GetComponent<TowerNet>();
+            }
+
+            if (_tower)
+            {
+                _tower.SlotInstalled += HandleSlotInstalled;
+            }
+
+            SubscribeWorkbench();
+        }
+
+        private void SubscribeWorkbench()
+        {
+            _workbench = _tower ? _tower.Workbench : null;
+
+            if (_workbench)
+            {
+                _workbench.RecipeCompleted += HandleRecipeCompleted;
             }
         }
 

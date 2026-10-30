@@ -18,6 +18,9 @@ namespace Lighthouse.Tower.View
     [DisallowMultipleComponent]
     public sealed class VictoryScreen : MonoBehaviour
     {
+        private const float MatchLookupInterval = 1f;
+
+        [Tooltip("Optional. Left empty, the match is looked up once a second, for scenes that spawn the tower at match start.")]
         [SerializeField]
         private TowerMatchNet _match;
         [SerializeField]
@@ -69,6 +72,7 @@ namespace Lighthouse.Tower.View
         private bool _hasSavedCursor;
         private CursorLockMode _savedLockMode;
         private bool _savedCursorVisible;
+        private float _nextMatchLookup;
 
         private void Awake()
         {
@@ -92,6 +96,13 @@ namespace Lighthouse.Tower.View
 
         private void LateUpdate()
         {
+            // The main island spawns its tower at match start, so there is nothing to wire in the scene (2026-10-30).
+            if (!_match && Time.unscaledTime >= _nextMatchLookup)
+            {
+                _nextMatchLookup = Time.unscaledTime + MatchLookupInterval;
+                _match = FindAnyObjectByType<TowerMatchNet>();
+            }
+
             if (_match)
             {
                 ObservePhase();
