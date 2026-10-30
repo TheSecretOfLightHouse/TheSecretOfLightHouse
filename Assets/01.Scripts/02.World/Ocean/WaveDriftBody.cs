@@ -12,6 +12,9 @@ namespace Lighthouse.World.Ocean
 
         [SerializeField] private WaveDriftProfile _profile;
 
+        [SerializeField, Min(0f)] private float _depthFadeDistance;
+
+        private BuoyancyObject _buoyancy;
         private Rigidbody _body;
         private IShipBody _ship;
         private WaterSamplerHost _host;
@@ -36,6 +39,8 @@ namespace Lighthouse.World.Ocean
                 enabled = false;
                 return;
             }
+
+            TryGetComponent(out _buoyancy);
 
             if (_profile == null)
             {
@@ -110,11 +115,18 @@ namespace Lighthouse.World.Ocean
                 _targetVelocity,
                 dt);
 
-            ApplyStep(_driftVelocity * dt);
-            ApplyImpulseForce(provider);
+            float exposure = 1f;
+            if (_depthFadeDistance > 0f)
+            {
+                exposure = _buoyancy != null && _buoyancy.Reading.IsValid
+                    ? Mathf.Exp(-Mathf.Max(0f, _buoyancy.Reading.MeanDepth) / _depthFadeDistance)
+                    : 0f;
+            }
+            ApplyStep(_driftVelocity * (dt * exposure));
+            ApplyImpulseForce(provider, exposure);
         }
 
-        private void ApplyImpulseForce(IForceFieldProvider provider)
+        private void ApplyImpulseForce(IForceFieldProvider provider, float exposure)
         {
             Vector3 force = provider.AccumulateForce(
                 ForceFieldRoute.Impulse,
@@ -123,7 +135,7 @@ namespace Lighthouse.World.Ocean
                 _ship.HullExposure,
                 _host.CurrentTime);
 
-            _body.AddForce(force / _profile.ReferenceMass, ForceMode.Acceleration);
+            _body.AddForce(force * (exposure / _profile.ReferenceMass), ForceMode.Acceleration);
         }
 
         private bool TryResolveServices(out IForceFieldProvider provider)
