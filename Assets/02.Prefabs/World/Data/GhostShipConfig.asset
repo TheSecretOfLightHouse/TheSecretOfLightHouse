@@ -14,9 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _nightChance: 0.6
   _nightDelayRange: {x: 5, y: 20}
-  _roamSeconds: 90
+  _roamSeconds: 25
+  _isLastNightGuaranteed: 1
   _riseSeconds: 5
   _riseDepth: 12
+  _risePitch: 18
   _sinkSeconds: 8
   _sinkDepth: 35
   _sinkPitch: 18

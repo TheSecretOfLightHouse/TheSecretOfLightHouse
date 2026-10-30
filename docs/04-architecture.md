@@ -16,7 +16,8 @@
 | `05.Player/` | 최명기 | 배·이동·입력·상태·직군 능력·인벤토리·채집 행동·애니메이션 연결 |
 | `06.Monsters/` | 박태욱 | 몬스터 AI·스폰 실행 |
 | `07.Mafia/` | 박태욱 | 투표·심해 게이지 |
-| `08.Systems/`, `09.UI/` | 최명기 | 기존 시스템&UI 범위 및 각 기능의 서버·클라이언트·동기화 |
+| `08.Systems/` | 최명기 | 기존 시스템 범위 및 각 기능의 서버·클라이언트·동기화 |
+| `09.UI/` | 김지훈 | 상시 HUD 등 게임 UI. 인벤토리 화면·배 모듈 장착 UI는 `05.Player/Inventory/View/`로 최명기 담당 (2026-10-30 사용자 결정) |
 | `99.Dev/` | 관련 기능 담당 | 공용 개발·검증 도구, 4인 테스트는 김지훈 리드 |
 
 Unity 루트의 `Assets/00.Scenes`, `02.Prefabs`~`07.Materials`, `Packages/`, `ProjectSettings/` 구성은 유지한다. 번호 폴더의 구분자는 점으로 통일한다. `Assets/00.Scenes/` 아래 사람별 개발 씬 폴더(Minseo, Jihun, Myeongki, TaeWook)는 이동·개명하지 않고, [CODEOWNERS](../.github/CODEOWNERS)에서 폴더 주인을 리뷰 담당으로 지정한다. 문서·자동화·스킬은 AX 영역이며 김민성을 게임 코드 담당으로 지정하지 않는다.

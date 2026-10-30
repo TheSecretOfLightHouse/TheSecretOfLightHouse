@@ -13,6 +13,8 @@ namespace Lighthouse.World.GhostShip.Net
     //   Roams: sails open-sea legs around the roam center, turning at a ship's pace instead of snapping.
     //   Leaves: when its roam time ends or day breaks, it keeps drifting forward while sinking bow-first deep
     //   under the sea, and only then hides.
+    //   W22 (2026-10-30): the last night brings it for sure if no night has yet, a night after the mafia took the
+    //   hint brings it for sure (ForceNextNight), and once the final battle starts it stops for good (Retire).
     // Vertical wave motion is left to the World buoyancy component: with a non-kinematic Rigidbody assigned, roaming
     // only sets horizontal velocity and yaw. Rising and sinking switch the body to kinematic so buoyancy cannot
     // push the ship back up.
@@ -43,9 +45,16 @@ namespace Lighthouse.World.GhostShip.Net
         private float _sinkStartY;
         private float _sinkStartSpeed;
         private bool _wasBodyKinematic;
+        // Server-only.
+        private bool _hasAppeared;
+        private bool _isNextNightForced;
+        private bool _isRetired;
 
         public GhostShipPhase Phase => _phase;
         public bool IsVisible => _phase != GhostShipPhase.Hidden;
+        public float SeaLevel => _seaLevel;
+        // Server-only.
+        public bool IsRetired => _isRetired;
 
         public event Action<GhostShipPhase> PhaseChanged;
 
@@ -68,7 +77,7 @@ namespace Lighthouse.World.GhostShip.Net
                 return;
             }
 
-            _route = new GhostShipRoute(_config, _landLayers, System.Environment.TickCount);
+            _route = new GhostShipRoute(_config, _landLayers, transform, System.Environment.TickCount);
             AttachClock();
             Park();
         }
@@ -140,7 +149,7 @@ namespace Lighthouse.World.GhostShip.Net
         [ContextMenu("Summon Now (Server)")]
         public void Summon()
         {
-            if (_phase != GhostShipPhase.Hidden)
+            if (_phase != GhostShipPhase.Hidden || _isRetired)
             {
                 return;
             }
@@ -157,6 +166,24 @@ namespace Lighthouse.World.GhostShip.Net
             {
                 BeginSinking();
             }
+        }
+
+        // The next night start skips the chance roll. Used when the mafia took a sighting's hint, so the citizens
+        // get another chance (2026-10-30).
+        [Server]
+        public void ForceNextNight()
+        {
+            _isNextNightForced = true;
+        }
+
+        // No more sightings this match: the hint is for finding a hidden mafia, which the final battle is past.
+        [Server]
+        public void Retire()
+        {
+            _isRetired = true;
+            _isNextNightForced = false;
+            _pendingDelay = -1f;
+            Dismiss();
         }
 
         [Server]
@@ -187,7 +214,17 @@ namespace Lighthouse.World.GhostShip.Net
         [Server]
         private void HandleNightStarted(int dayIndex)
         {
-            if (_phase != GhostShipPhase.Hidden || UnityEngine.Random.value >= _config.NightChance)
+            if (_phase != GhostShipPhase.Hidden || _isRetired)
+            {
+                return;
+            }
+
+            bool isLastNightUnseen = _config.IsLastNightGuaranteed && !_hasAppeared && _clock != null
+                && dayIndex >= _clock.TotalDays;
+            bool isForced = _isNextNightForced || isLastNightUnseen;
+            _isNextNightForced = false;
+
+            if (!isForced && UnityEngine.Random.value >= _config.NightChance)
             {
                 return;
             }
@@ -218,7 +255,7 @@ namespace Lighthouse.World.GhostShip.Net
 
             _pendingDelay = -1f;
             bool isNight = _clock == null || _clock.Phase == DayPhase.Night;
-            if (isNight && _phase == GhostShipPhase.Hidden)
+            if (isNight && _phase == GhostShipPhase.Hidden && !_isRetired)
             {
                 Appear();
             }
@@ -240,20 +277,25 @@ namespace Lighthouse.World.GhostShip.Net
             _yaw = Quaternion.LookRotation(Vector3.Cross(Vector3.up, toCenter.normalized)).eulerAngles.y;
             _hasDestination = _route.TryPickNext(center, _seaLevel, spawn, out _destination);
 
+            _hasAppeared = true;
             SetBodyKinematic(true);
-            Vector3 start = spawn + Vector3.down * _config.RiseDepth;
-            Teleport(start, Quaternion.Euler(0f, _yaw, 0f));
+            // Starts behind and below the checked spot so the forward drift while rising ends on it.
+            Vector3 riseRun = Quaternion.Euler(0f, _yaw, 0f) * Vector3.forward * (_config.Speed * _config.RiseSeconds);
+            Vector3 start = spawn - riseRun + Vector3.down * _config.RiseDepth;
+            Teleport(start, Quaternion.Euler(-_config.RisePitch, _yaw, 0f));
             SetPhase(GhostShipPhase.Rising);
         }
 
+        // The sink played backwards: sailing speed and a steady climb keep it on one straight diagonal, bow-up
+        // until it levels out near the surface, so it reads as surfacing rather than a lift going up.
         [Server]
         private void StepRising(float deltaTime)
         {
             float t = Mathf.Clamp01(_phaseTime / _config.RiseSeconds);
-            float eased = 1f - (1f - t) * (1f - t);
-            Vector3 position = MoveForward(transform.position, _config.Speed * t, deltaTime);
-            position.y = _seaLevel - _config.RiseDepth * (1f - eased);
-            transform.SetPositionAndRotation(position, Quaternion.Euler(0f, _yaw, 0f));
+            Vector3 position = MoveForward(transform.position, _config.Speed, deltaTime);
+            position.y = _seaLevel - _config.RiseDepth * (1f - t);
+            float pitch = -_config.RisePitch * Mathf.SmoothStep(0f, 1f, (1f - t) * 2f);
+            transform.SetPositionAndRotation(position, Quaternion.Euler(pitch, _yaw, 0f));
 
             if (t >= 1f)
             {
@@ -319,14 +361,14 @@ namespace Lighthouse.World.GhostShip.Net
             SetPhase(GhostShipPhase.Sinking);
         }
 
-        // Accelerates downward (ease-in) and pitches bow-down while the forward drift dies out,
-        // so it reads as the sea swallowing the ship rather than an elevator going down.
+        // Keeps sailing forward while it goes down at a steady rate and pitches bow-down, so the whole sink is one
+        // straight diagonal: a speed dying out under an accelerating drop read as a short slide and then an elevator.
         [Server]
         private void StepSinking(float deltaTime)
         {
             float t = Mathf.Clamp01(_phaseTime / _config.SinkSeconds);
-            Vector3 position = MoveForward(transform.position, _sinkStartSpeed * (1f - t), deltaTime);
-            position.y = _sinkStartY - _config.SinkDepth * t * t;
+            Vector3 position = MoveForward(transform.position, _sinkStartSpeed, deltaTime);
+            position.y = _sinkStartY - _config.SinkDepth * t;
             float pitch = _config.SinkPitch * Mathf.SmoothStep(0f, 1f, t * 2f);
             transform.SetPositionAndRotation(position, Quaternion.Euler(pitch, _yaw, 0f));
 

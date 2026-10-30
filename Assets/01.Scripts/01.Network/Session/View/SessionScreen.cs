@@ -350,8 +350,8 @@ namespace Lighthouse.Network.Session.View
                 return;
             }
 
-            // A match result kept over the lobby (VictoryScreen) holds Escape too. Game scene overlays can be destroyed
-            // without closing, so dead entries are dropped first; this runs only on the key press.
+            // Game scene overlays can be destroyed without closing, so dead entries are dropped first; this runs only on
+            // the key press.
             if (mode == Mode.Lobby)
             {
                 GameplayOverlays.RemoveWhere(IsDestroyedOverlay);

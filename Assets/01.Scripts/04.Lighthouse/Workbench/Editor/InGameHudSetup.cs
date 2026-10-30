@@ -1,3 +1,4 @@
+using Lighthouse.Network.Session.View;
 using Lighthouse.Player.Inventory.View;
 using Lighthouse.UI.Hud;
 using UnityEditor;
@@ -13,6 +14,7 @@ namespace Lighthouse.Workbench.Editor
     public static class InGameHudSetup
     {
         private const string PrefabPath = "Assets/02.Prefabs/UI/Hud/InGameHud.prefab";
+        private const string JobIconFolder = "Assets/03.Images/VotingUiSketch/";
         // The small frame sprite's hollow (13..717 x 14..62 of 731x78), widened a little so track and fill tuck under it.
         private static readonly Rect FrameInset = new Rect(8f / 731f, 9f / 78f, 714f / 731f, 58f / 78f);
         // The inventory's carried card (InventoryChestScreen.Hud) size and fill, its left bottom over the boat panel
@@ -20,6 +22,8 @@ namespace Lighthouse.Workbench.Editor
         private static readonly Vector2 CardSize = new Vector2(230f, 76f);
         private static readonly Vector2 CardPosition = new Vector2(53f, 244f);
         private static readonly Color CardFill = new Color(0.10f, 0.075f, 0.045f, 0.9f);
+        // Every key row name a build has used, so an update clears old rows too.
+        private static readonly string[] KeyRows = { "Exit", "Map", "Inventory", "Ability", "Menu" };
 
         [MenuItem("Lighthouse/UI/Build In-Game HUD Prefab")]
         public static void Build()
@@ -52,11 +56,7 @@ namespace Lighthouse.Workbench.Editor
                 RectTransform hud = HudSketchLayout.Layer("Hud", root.transform);
                 Vector2 corner = HudSketchLayout.BottomLeft;
 
-                // Key hints, top right, one row per key under the final battle strip (its right side ends near 146).
-                // No V row: the voting screen shows its own button bottom right while voting is open.
-                Key(hud, "Map", "hud_key_m", 37f, 0, "hud_label_map", 42f);
-                Key(hud, "Inventory", "hud_key_tab", 50f, 1, "hud_label_inventory", 62f);
-                Key(hud, "Menu", "hud_key_esc", 47f, 2, "hud_label_menu", 42f);
+                AddKeys(hud);
 
                 // Carried module card, bottom left above the boat panel, shown only while a module is carried. Same look
                 // as the inventory's carried card (InventoryChestScreen.Hud: its drawn frame, colours, sizes and the
@@ -81,8 +81,9 @@ namespace Lighthouse.Workbench.Editor
                 // Role and boat panel, bottom left. A little wider than the mockup, with every piece kept clear of
                 // the panel's thick rounded rim (the mockup's spacing let the icons touch it).
                 HudSketchLayout.Picture("Panel", hud, "hud_panel", corner, 46f, 743f, 410f, 150f).preserveAspect = false;
-                HudSketchLayout.Picture("RoleIcon", hud, "hud_icon_navigator", corner, 72f, 758f, 44f, 39f);
-                HudSketchLayout.Picture("RoleName", hud, "hud_label_navigator", corner, 126f, 762f, 70f, 28f);
+                InGameHud view = root.AddComponent<InGameHud>();
+                SerializedObject serialized = new SerializedObject(view);
+                AddRole(hud, serialized);
                 HudSketchLayout.Picture("PanelDivider", hud, "hud_panel_divider", corner, 66f, 803f, 370f, 9f).preserveAspect = false;
                 HudSketchLayout.Picture("BoatIcon", hud, "hud_icon_boat", corner, 72f, 826f, 58f, 37f);
                 HudSketchLayout.Picture("BoatTitle", hud, "hud_label_boat_durability", corner, 140f, 817f, 94f, 27f);
@@ -90,8 +91,6 @@ namespace Lighthouse.Workbench.Editor
                     "hud_small_bar_track", "hud_small_bar_fill", "hud_small_bar_frame", FrameInset);
                 Text boatText = HudSketchLayout.Label("BoatValue", hud, "- / -", 20f, HudSketchLayout.Cream, corner, 330f, 843f, 100f, 34f, TextAnchor.MiddleLeft);
 
-                InGameHud view = root.AddComponent<InGameHud>();
-                SerializedObject serialized = new SerializedObject(view);
                 Set(serialized, "_root", hud.gameObject);
                 Set(serialized, "_card", card.gameObject);
                 Set(serialized, "_cardIcon", cardIcon);
@@ -101,6 +100,7 @@ namespace Lighthouse.Workbench.Editor
                 card.gameObject.SetActive(false);
                 Set(serialized, "_boatFill", boatFill);
                 Set(serialized, "_boatText", boatText);
+                SetBoatOnlyHints(serialized, hud);
                 serialized.ApplyModifiedPropertiesWithoutUndo();
                 hud.gameObject.SetActive(false);
                 System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(PrefabPath));
@@ -146,21 +146,199 @@ namespace Lighthouse.Workbench.Editor
             Debug.Log($"[{nameof(InGameHudSetup)}] In-game HUD added. Save the scene to keep it.");
         }
 
-        // A key cap and its caption on one row, 1.12x the mockup's size. Every key is centred in one shared column and
-        // every caption starts at one shared left edge, so the rows line up whatever the key's width.
-        private static void Key(Transform parent, string name, string keySprite, float keyWidth, int row, string labelSprite, float labelWidth)
+        // Swaps the fixed navigator picture in the saved prefab for the per-job role, without rebuilding it, so pieces
+        // changed by hand since the last build (such as the carried card's board) stay.
+        [MenuItem("Lighthouse/UI/Update In-Game HUD Role")]
+        public static void UpdateRole()
         {
-            const float size = 1.12f;
-            const float right = 1648f;
-            const float top = 160f;
-            float labelX = right - 62f * size;
-            float columnWidth = 50f * size;
-            float columnX = labelX - 14f * size - columnWidth;
-            float y = top + row * 46f * size;
-            float width = keyWidth * size;
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogError($"[{nameof(InGameHudSetup)}] Stop play mode before updating.");
+                return;
+            }
+
+            GameObject root = PrefabUtility.LoadPrefabContents(PrefabPath);
+
+            try
+            {
+                Transform hud = root.transform.Find("Hud");
+                Transform oldIcon = hud ? hud.Find("RoleIcon") : null;
+                Transform oldName = hud ? hud.Find("RoleName") : null;
+
+                if (!oldIcon || !oldName)
+                {
+                    Debug.LogError($"[{nameof(InGameHudSetup)}] {PrefabPath} has no Hud/RoleIcon or Hud/RoleName.");
+                    return;
+                }
+
+                int index = oldIcon.GetSiblingIndex();
+                Object.DestroyImmediate(oldIcon.gameObject);
+                Object.DestroyImmediate(oldName.gameObject);
+                SerializedObject serialized = new SerializedObject(root.GetComponent<InGameHud>());
+                AddRole(hud, serialized);
+                hud.Find("RoleIcon").SetSiblingIndex(index);
+                hud.Find("RoleName").SetSiblingIndex(index + 1);
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
+                Debug.Log($"[{nameof(InGameHudSetup)}] Updated the role in {PrefabPath}.");
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        // Lays the key hint rows out again in the saved prefab without rebuilding it, so pieces changed by hand since the
+        // last build stay.
+        [MenuItem("Lighthouse/UI/Update In-Game HUD Keys")]
+        public static void UpdateKeys()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogError($"[{nameof(InGameHudSetup)}] Stop play mode before updating.");
+                return;
+            }
+
+            HudSketchLayout.ImportSprites();
+            GameObject root = PrefabUtility.LoadPrefabContents(PrefabPath);
+
+            try
+            {
+                Transform hud = root.transform.Find("Hud");
+
+                if (!hud)
+                {
+                    Debug.LogError($"[{nameof(InGameHudSetup)}] {PrefabPath} has no Hud.");
+                    return;
+                }
+
+                foreach (string row in KeyRows)
+                {
+                    DestroyChild(hud, row + "Key");
+                    DestroyChild(hud, row + "Label");
+                }
+
+                AddKeys(hud);
+                SerializedObject serialized = new SerializedObject(root.GetComponent<InGameHud>());
+                SetBoatOnlyHints(serialized, hud);
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
+                Debug.Log($"[{nameof(InGameHudSetup)}] Updated the key hints in {PrefabPath}.");
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        // One step for every key hint and station prompt in the saved prefabs (2026-10-31): the HUD's rows, the
+        // lighthouse screen's layout and Esc, and the workbench, lighthouse and ghost ship E prompts, all with TMP captions.
+        [MenuItem("Lighthouse/UI/Update Key Hints And Prompts")]
+        public static void UpdateKeyHintsAndPrompts()
+        {
+            UpdateKeys();
+            TowerScreenSketchSetup.UpdateLayout();
+            UpdatePrompt("Assets/02.Prefabs/UI/Workbench/WorkbenchScreen_Sketch.prefab", WorkbenchScreenSketchSetup.PromptCaption, 1f);
+            UpdatePrompt("Assets/02.Prefabs/UI/GhostShip/GhostShipLedger.prefab", GhostShipLedgerSetup.PromptCaption, GhostShipLedgerSetup.PromptUnit);
+        }
+
+        private static void UpdatePrompt(string prefabPath, string caption, float unit)
+        {
+            GameObject root = PrefabUtility.LoadPrefabContents(prefabPath);
+
+            try
+            {
+                RectTransform prompt = (RectTransform)root.transform.Find("Prompt");
+
+                if (!prompt)
+                {
+                    Debug.LogError($"[{nameof(InGameHudSetup)}] {prefabPath} has no Prompt.");
+                    return;
+                }
+
+                HudSketchLayout.BuildPrompt(prompt, caption, unit);
+                PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+                Debug.Log($"[{nameof(InGameHudSetup)}] Updated the prompt in {prefabPath}.");
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        // Key hints, top right, one row per key under the final battle strip (its right side ends near 146). Esc leads
+        // as "exit" (2026-10-30). Q is every job's active ability. No V row: the voting screen shows its own button
+        // bottom right while voting is open.
+        // The Q row shows only aboard (2026-10-31): InGameHud toggles both of its pieces.
+        private static void SetBoatOnlyHints(SerializedObject serialized, Transform hud)
+        {
+            SerializedProperty hints = serialized.FindProperty("_boatOnlyHints");
+            hints.arraySize = 2;
+            hints.GetArrayElementAtIndex(0).objectReferenceValue = hud.Find("AbilityKey").gameObject;
+            hints.GetArrayElementAtIndex(1).objectReferenceValue = hud.Find("AbilityLabel").gameObject;
+        }
+
+        private static void AddKeys(Transform hud)
+        {
+            Image exit = Key(hud, "Exit", HudSketchLayout.ExitKeySprite, HudSketchLayout.ExitKeyWidth, 0, HudSketchLayout.ExitCaption);
+            // The HUD's Esc is the match's leave control, so the session screen hides its own fallback Esc button
+            // (which sat where the Tab row is now).
+            exit.raycastTarget = true;
+            exit.gameObject.AddComponent<Button>().targetGraphic = exit;
+            exit.gameObject.AddComponent<SessionLeaveButton>();
+            Key(hud, "Map", "hud_key_m", 37f, 1, "지도");
+            Key(hud, "Inventory", "hud_key_tab", 50f, 2, "소지품");
+            Key(hud, "Ability", "hud_key_q", 37f, 3, "능력 사용");
+        }
+
+        private static void DestroyChild(Transform parent, string name)
+        {
+            Transform child = parent.Find(name);
+
+            if (child)
+            {
+                Object.DestroyImmediate(child.gameObject);
+            }
+        }
+
+        // The role icon and name in the panel's top row. The mockup only drew the navigator, so the icons are the
+        // voting screen's job portraits and the name is text in the cut labels' cream; InGameHud picks the local job.
+        private static void AddRole(Transform hud, SerializedObject serialized)
+        {
+            Vector2 corner = HudSketchLayout.BottomLeft;
+            Image icon = HudSketchLayout.Rect("RoleIcon", hud, corner, 72f, 757f, 44f, 44f).gameObject.AddComponent<Image>();
+            icon.sprite = LoadJobIcon("navigator");
+            icon.preserveAspect = true;
+            icon.raycastTarget = false;
+            Text name = HudSketchLayout.Label("RoleName", hud, "항해사", 24f, HudSketchLayout.Cream, corner, 126f, 760f, 120f, 32f, TextAnchor.MiddleLeft);
+            Set(serialized, "_roleIcon", icon);
+            Set(serialized, "_roleName", name);
+            Set(serialized, "_navigatorIcon", LoadJobIcon("navigator"));
+            Set(serialized, "_mechanicIcon", LoadJobIcon("mechanic"));
+            Set(serialized, "_guardIcon", LoadJobIcon("guard"));
+            Set(serialized, "_gathererIcon", LoadJobIcon("gatherer"));
+        }
+
+        private static Sprite LoadJobIcon(string job)
+        {
+            string path = $"{JobIconFolder}vt_job_{job}.png";
+            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+
+            if (!sprite)
+            {
+                throw new System.InvalidOperationException($"Missing job icon: {path}");
+            }
+
+            return sprite;
+        }
+
+        // Captions are TMP text in the HUD's font (2026-10-31), so every row reads alike.
+        private static Image Key(Transform parent, string name, string keySprite, float keyWidth, int row, string caption)
+        {
+            HudSketchLayout.KeyRow(row, keyWidth, out Rect key, out Rect label);
             Vector2 anchor = HudSketchLayout.TopRight;
-            HudSketchLayout.Picture(name + "Key", parent, keySprite, anchor, columnX + (columnWidth - width) * 0.5f, y, width, 36f * size);
-            HudSketchLayout.Picture(name + "Label", parent, labelSprite, anchor, labelX, y + 6f * size, labelWidth * size, 24f * size);
+            HudSketchLayout.KeyCaption(name + "Label", parent, caption, anchor, label);
+            return HudSketchLayout.Picture(name + "Key", parent, keySprite, anchor, key.x, key.y, key.width, key.height);
         }
 
         // A card child placed from the card's top left in canvas units, as the inventory card lays out its pieces.

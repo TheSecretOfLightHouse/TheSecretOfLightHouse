@@ -1,10 +1,14 @@
 using System.Collections.Generic;
+using Lighthouse.Common.UI;
 using Lighthouse.Mafia.Voting.Net;
 using Lighthouse.Mafia.Voting.Rules;
 using Lighthouse.Network.Connections.Net;
+using Lighthouse.Network.Session.Net;
+using Lighthouse.Network.Session.Rules;
 using Lighthouse.Network.Session.View;
 using Lighthouse.Player.Abilities.Net;
 using Mirror;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -13,8 +17,8 @@ namespace Lighthouse.Mafia.Voting.View
 {
     // Secret vote UI (2026-10-22 sketch): an in-game button that shows the own votes left, the vote screen with one card
     // per other player, and the confirm box asked before a vote is spent (2026-10-29: the box again, not text on the
-    // card). The server decides every vote; this screen only asks. The mafia cannot vote but sees the same screen with
-    // a pretend count that is never sent, so the screen does not give the role away (win-vote-decisions 1).
+    // card). The server decides every vote; this screen only asks. The mafia cannot vote: it sees the same cards greyed
+    // with no button to press, and a notice says why each time the screen opens (2026-10-30, replaces the pretend count).
     [DisallowMultipleComponent]
     public sealed class VotingScreen : MonoBehaviour
     {
@@ -26,6 +30,7 @@ namespace Lighthouse.Mafia.Voting.View
         private const float NoticeFadeSeconds = 0.4f;
         private const float BlinkSeconds = 0.8f;
         private const float LockFadeSeconds = 0.15f;
+        private const string MafiaCannotVoteText = "마피아는 투표할 수 없습니다";
 
         [Tooltip("Found in the scene when empty. Mirror keeps scene network objects inactive until they spawn.")]
         [SerializeField]
@@ -34,9 +39,6 @@ namespace Lighthouse.Mafia.Voting.View
         private Key _openKey = Key.V;
         [SerializeField]
         private float _fadeInSeconds = 0.12f;
-        [Tooltip("How long a made pick stays on screen before the screen closes itself. 0 keeps it open.")]
-        [SerializeField]
-        private float _autoCloseSeconds = 0.6f;
         [Tooltip("How long a notice stays before it fades out.")]
         [SerializeField]
         private float _noticeHoldSeconds = 2.5f;
@@ -50,9 +52,9 @@ namespace Lighthouse.Mafia.Voting.View
         [SerializeField]
         private Button _hudButton;
         [SerializeField]
-        private Text _hudRemaining;
+        private TMP_Text _hudRemaining;
         [SerializeField]
-        private Text _hudTarget;
+        private TMP_Text _hudTarget;
 
         [Header("Vote screen")]
         [SerializeField]
@@ -124,12 +126,8 @@ namespace Lighthouse.Mafia.Voting.View
         private CursorLockMode _savedLockMode;
         private bool _savedCursorVisible;
         private bool _wasPlayerInputEnabled;
-        // Seen when a mafia without identity state tries to vote; the pretend count takes over from then on.
+        // Seen when the server refuses a vote as the mafia's, in case the role message has not arrived.
         private bool _wasRefusedAsMafia;
-        private uint _fakeTarget;
-        private int _fakeRemaining = VoteService.MaxVoteCount;
-        // A made pick closes the screen at this time; 0 while none is waiting.
-        private float _closeAt;
         // Used ballots last drawn, so a newly spent one drops; -1 until the open screen has drawn once.
         private int _shownUsed = -1;
         private int _droppingBallot = -1;
@@ -140,6 +138,9 @@ namespace Lighthouse.Mafia.Voting.View
         private float _noticeShakeEndsAt;
         private Vector2 _noticeRest;
         private CanvasGroup _lockBandGroup;
+        // The band also tells the mafia it cannot vote; its own caption comes back once the ritual locks the votes.
+        private Text _lockBandText;
+        private string _lockBandCaption;
         private float _lockShownAt;
         private Color _hudRemainingColor;
         private Color _hudTargetColor;
@@ -153,7 +154,9 @@ namespace Lighthouse.Mafia.Voting.View
 
         public bool IsOpen => _isOpen;
 
-        private bool IsOwnMafia => _voting && (_voting.HasOwnIdentityState || _wasRefusedAsMafia);
+        // Only the player's own role is sent to a client (2026-10-22); identity state also reaches the mafia alone.
+        private bool IsOwnMafia => (LighthouseNetworkManager.Instance && LighthouseNetworkManager.Instance.OwnRole == MatchRole.Mafia)
+            || (_voting && _voting.HasOwnIdentityState) || _wasRefusedAsMafia;
 
         private void Awake()
         {
@@ -180,6 +183,8 @@ namespace Lighthouse.Mafia.Voting.View
                     _lockBandGroup = _lockBand.AddComponent<CanvasGroup>();
                 }
 
+                _lockBandText = _lockBand.GetComponentInChildren<Text>(true);
+                _lockBandCaption = _lockBandText ? _lockBandText.text : string.Empty;
                 _lockBand.SetActive(false);
             }
 
@@ -246,12 +251,6 @@ namespace Lighthouse.Mafia.Voting.View
             Blink(_hudRemaining, _hudRemainingColor, _lastChanceColor, ref _remainingBlinkEndsAt);
             Blink(_hudTarget, _hudTargetColor, _rejectColor, ref _lockBlinkEndsAt);
 
-            if (_closeAt > 0f && Time.unscaledTime >= _closeAt)
-            {
-                Close();
-                return;
-            }
-
             HandleKeys();
         }
 
@@ -281,12 +280,16 @@ namespace Lighthouse.Mafia.Voting.View
             _window.SetActive(true);
             _confirm.SetActive(false);
             _pendingTarget = 0;
-            _closeAt = 0f;
             _shownUsed = -1;
             SetNotice(string.Empty, _noticeColor);
             LockPlayer(true);
             RefreshRoster();
             Refresh();
+
+            if (IsOwnMafia)
+            {
+                ScreenNotice.Show(new ScreenNoticeRequest(MafiaCannotVoteText, ScreenNoticeStyle.Warning));
+            }
         }
 
         public void Close()
@@ -298,7 +301,6 @@ namespace Lighthouse.Mafia.Voting.View
 
             _isOpen = false;
             _pendingTarget = 0;
-            _closeAt = 0f;
             StopBallotDrop();
             StopNoticeShake();
             SessionScreen.SetGameplayOverlayOpen(this, false);
@@ -359,9 +361,9 @@ namespace Lighthouse.Mafia.Voting.View
         {
             VoteResponse vote = _voting.OwnVoteState;
             bool isMafia = IsOwnMafia;
-            uint current = isMafia ? _fakeTarget : vote.TargetActorId;
-            int remaining = isMafia ? _fakeRemaining : vote.RemainingVoteCount;
-            // The mafia gets the same lock as everyone, so the screen locks at the same moment.
+            uint current = vote.TargetActorId;
+            // The server already counts none for the mafia.
+            int remaining = vote.RemainingVoteCount;
             bool isLocked = vote.IsLocked || vote.IsEnded;
             TrackLock(isLocked);
 
@@ -372,8 +374,9 @@ namespace Lighthouse.Mafia.Voting.View
                 ShakeNotice();
             }
 
-            _hudRemaining.text = $"남은 지목  {remaining} / {VoteService.MaxVoteCount}";
+            _hudRemaining.text = isMafia ? "투표권 없음" : $"남은 지목  {remaining} / {VoteService.MaxVoteCount}";
             _hudTarget.text = isLocked ? "투표 잠김"
+                : isMafia ? "지목할 수 없음"
                 : current != 0 ? $"내 지목: {GetDisplayName(current)}" : "내 지목 없음";
             TrackHudBlinks(remaining);
             int used = VoteService.MaxVoteCount - remaining;
@@ -383,7 +386,6 @@ namespace Lighthouse.Mafia.Voting.View
                 return;
             }
 
-            // The server's answer and the mafia's pretend count both lower this, so both drop a ballot alike.
             if (_shownUsed >= 0 && used > _shownUsed && used <= _ballots.Length)
             {
                 StartBallotDrop(used - 1);
@@ -399,9 +401,12 @@ namespace Lighthouse.Mafia.Voting.View
                 }
             }
 
-            _remaining.text = $"<color={Highlight}>{remaining}</color> / {VoteService.MaxVoteCount}";
-            ShowLockBand(isLocked);
-            bool canPick = !isLocked && !_isPending && _pendingTarget == 0 && _closeAt <= 0f;
+            // The mafia's ballots all show as spent and its count reads zero in red, beside the band that says why.
+            _remaining.text = isMafia
+                ? $"<color=#{ColorUtility.ToHtmlStringRGB(_rejectColor)}>0</color> / {VoteService.MaxVoteCount}"
+                : $"<color={Highlight}>{remaining}</color> / {VoteService.MaxVoteCount}";
+            ShowLockBand(isLocked || isMafia, isLocked ? _lockBandCaption : MafiaCannotVoteText);
+            bool canPick = !isMafia && !isLocked && !_isPending && _pendingTarget == 0;
 
             for (int i = 0; i < _cards.Length; i++)
             {
@@ -411,7 +416,8 @@ namespace Lighthouse.Mafia.Voting.View
                 if (hasCandidate)
                 {
                     uint actorId = _candidates[i];
-                    _cards[i].Show(actorId, GetDisplayName(actorId), GetPortrait(actorId), actorId == current, canPick, isLocked);
+                    _cards[i].Show(actorId, GetDisplayName(actorId), GetPortrait(actorId), actorId == current, canPick,
+                        isLocked || isMafia);
                 }
             }
         }
@@ -429,9 +435,8 @@ namespace Lighthouse.Mafia.Voting.View
         private void HandleCardClicked(VoteCandidateCard card)
         {
             VoteResponse vote = _voting.OwnVoteState;
-            bool isMafia = IsOwnMafia;
-            uint current = isMafia ? _fakeTarget : vote.TargetActorId;
-            int remaining = isMafia ? _fakeRemaining : vote.RemainingVoteCount;
+            uint current = vote.TargetActorId;
+            int remaining = vote.RemainingVoteCount;
 
             // Re-picking the current target is free and needs no box; an empty count only says so.
             if (card.ActorId == current)
@@ -466,20 +471,9 @@ namespace Lighthouse.Mafia.Voting.View
             }
 
             CloseConfirm();
-
-            if (IsOwnMafia)
-            {
-                _fakeTarget = target;
-                _fakeRemaining--;
-                SetNotice($"{GetDisplayName(target)}님을 지목했습니다.", _noticeColor);
-                ScheduleClose();
-            }
-            else
-            {
-                _isPending = true;
-                _requestedTarget = target;
-                _voting.RequestVote(target);
-            }
+            _isPending = true;
+            _requestedTarget = target;
+            _voting.RequestVote(target);
         }
 
         private void CloseConfirm()
@@ -502,18 +496,16 @@ namespace Lighthouse.Mafia.Voting.View
             {
                 case VoteChangeResult.Changed:
                     SetNotice($"{GetDisplayName(response.TargetActorId)}님을 지목했습니다.", _noticeColor);
-                    ScheduleClose();
                     break;
                 case VoteChangeResult.Unchanged:
                     SetNotice("이미 지목하고 있는 선원입니다.", _noticeColor);
                     break;
                 case VoteChangeResult.MafiaCannotVote:
-                    // Only a match without identity state gets here; act as if the vote went through.
+                    // Only a vote sent before the role arrived gets here; the cards grey out from now on.
                     _wasRefusedAsMafia = true;
-                    _fakeTarget = _requestedTarget;
-                    _fakeRemaining--;
-                    SetNotice($"{GetDisplayName(_requestedTarget)}님을 지목했습니다.", _noticeColor);
-                    ScheduleClose();
+                    CloseConfirm();
+                    SetNotice($"{MafiaCannotVoteText}.", _rejectColor);
+                    ShakeRefused();
                     break;
                 case VoteChangeResult.VotingLocked:
                 case VoteChangeResult.GameEnded:
@@ -531,14 +523,6 @@ namespace Lighthouse.Mafia.Voting.View
                     SetNotice("지목하지 못했습니다. 잠시 후 다시 시도하세요.", _rejectColor);
                     ShakeRefused();
                     break;
-            }
-        }
-
-        private void ScheduleClose()
-        {
-            if (_isOpen && _autoCloseSeconds > 0f)
-            {
-                _closeAt = Time.unscaledTime + _autoCloseSeconds;
             }
         }
 
@@ -589,14 +573,27 @@ namespace Lighthouse.Mafia.Voting.View
             }
         }
 
-        private void ShowLockBand(bool isLocked)
+        private void ShowLockBand(bool isShown, string caption)
         {
-            if (!_lockBand || _lockBand.activeSelf == isLocked)
+            if (!_lockBand)
             {
                 return;
             }
 
-            _lockBand.SetActive(isLocked);
+            // A new caption fades in again, e.g. when the ritual locks the votes over the mafia's band.
+            if (_lockBandText && isShown && _lockBandText.text != caption)
+            {
+                _lockBandText.text = caption;
+                _lockShownAt = Time.unscaledTime;
+                _lockBandGroup.alpha = 0f;
+            }
+
+            if (_lockBand.activeSelf == isShown)
+            {
+                return;
+            }
+
+            _lockBand.SetActive(isShown);
             _lockShownAt = Time.unscaledTime;
             _lockBandGroup.alpha = 0f;
         }
@@ -714,7 +711,7 @@ namespace Lighthouse.Mafia.Voting.View
         }
 
         // Two quick flashes towards the flash colour and back; the text is left alone between blinks.
-        private static void Blink(Text text, Color rest, Color flash, ref float endsAt)
+        private static void Blink(TMP_Text text, Color rest, Color flash, ref float endsAt)
         {
             if (endsAt <= 0f)
             {
@@ -767,8 +764,6 @@ namespace Lighthouse.Mafia.Voting.View
             Close();
             _isPending = false;
             _wasRefusedAsMafia = false;
-            _fakeTarget = 0;
-            _fakeRemaining = VoteService.MaxVoteCount;
             _hasLockState = false;
             _isLockBlinkWaiting = false;
             _hudShownRemaining = -1;
