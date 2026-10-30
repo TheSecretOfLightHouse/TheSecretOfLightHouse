@@ -7,6 +7,10 @@ namespace Lighthouse.Player.Inventory.View
 {
     public sealed partial class InventoryChestScreen
     {
+        [Tooltip("Off where the in-game HUD shows its own carried module card (MainGame), so the two do not overlap.")]
+        [SerializeField]
+        private bool _isCarriedHudShown = true;
+
         private RectTransform _carriedHud;
         private UnityEngine.UI.Image _carriedHudIcon;
         private UnityEngine.UI.Text _carriedHudName;
@@ -39,7 +43,7 @@ namespace Lighthouse.Player.Inventory.View
             UpdateCarriedHudAnchor();
             int recipeId = _inventory ? _inventory.ModuleRecipeId : 0;
             ModuleRecipe recipe = recipeId != 0 ? _inventory.GetModuleRecipe() : null;
-            bool isVisible = recipeId != 0 && _inventory && _inventory.CanUseInventory && _player && NetworkClient.isConnected
+            bool isVisible = _isCarriedHudShown && recipeId != 0 && _inventory && _inventory.CanUseInventory && _player && NetworkClient.isConnected
                 && !_isOpen && !SessionScreen.IsGameplayOverlayOpen;
             RefreshCarriedModuleHud(recipeId, recipe, isVisible);
         }

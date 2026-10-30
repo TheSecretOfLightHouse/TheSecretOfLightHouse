@@ -10,10 +10,14 @@ namespace Lighthouse.World.GhostShip.Rules
         [SerializeField, Range(0f, 1f)] private float _nightChance = 0.6f;
         [SerializeField] private Vector2 _nightDelayRange = new Vector2(5f, 20f);
         [SerializeField] private float _roamSeconds = 90f;
+        [Tooltip("Rise on the last night for sure when no night has brought the ship yet (W22, 2026-10-30).")]
+        [SerializeField] private bool _isLastNightGuaranteed = true;
 
         [Header("떠오름·가라앉음")]
         [SerializeField] private float _riseSeconds = 5f;
         [SerializeField] private float _riseDepth = 12f;
+        [Tooltip("Bow-up angle at the start of the rise, levelling out at the surface: the sink played backwards.")]
+        [SerializeField, Range(0f, 45f)] private float _risePitch = 18f;
         [SerializeField] private float _sinkSeconds = 8f;
         [SerializeField] private float _sinkDepth = 35f;
         [SerializeField, Range(0f, 45f)] private float _sinkPitch = 18f;
@@ -33,8 +37,10 @@ namespace Lighthouse.World.GhostShip.Rules
         public float NightChance => _nightChance;
         public Vector2 NightDelayRange => _nightDelayRange;
         public float RoamSeconds => _roamSeconds;
+        public bool IsLastNightGuaranteed => _isLastNightGuaranteed;
         public float RiseSeconds => _riseSeconds;
         public float RiseDepth => _riseDepth;
+        public float RisePitch => _risePitch;
         public float SinkSeconds => _sinkSeconds;
         public float SinkDepth => _sinkDepth;
         public float SinkPitch => _sinkPitch;

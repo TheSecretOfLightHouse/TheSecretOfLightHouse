@@ -1,5 +1,6 @@
 using Lighthouse.Tower.Net;
 using Lighthouse.Tower.Rules;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -26,7 +27,7 @@ namespace Lighthouse.Tower.View
         [SerializeField]
         private Image _repairFill;
         [SerializeField]
-        private Text _repairText;
+        private TMP_Text _repairText;
 
         [Header("Health")]
         [SerializeField]
@@ -118,8 +119,10 @@ namespace Lighthouse.Tower.View
 
         private void LateUpdate()
         {
-            // Only a spawned match has synced values; the result screen takes over once it ends.
-            bool isRunning = _match && (_match.isClient || _match.isServer) && _match.Phase != TowerPhase.Ended;
+            // Only a spawned match has synced values; the result screen takes over once it ends. In a build a client
+            // keeps scene objects inactive until spawned, so netIdentity (behind isClient) is still null before that.
+            bool isRunning = _match && _match.isActiveAndEnabled && (_match.isClient || _match.isServer)
+                && _match.Phase != TowerPhase.Ended;
             bool isFinalBattle = isRunning && _match.Phase == TowerPhase.FinalBattle;
 
             if (isRunning != _isShown)

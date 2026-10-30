@@ -11,15 +11,20 @@ namespace Lighthouse.World.GhostShip.Server
         private const float ProbeHeight = 500f;
         private const float LandMargin = 0.5f;
         private const int ClearanceProbes = 8;
+        private const int MaxProbeHits = 8;
 
         private readonly GhostShipConfig _config;
         private readonly LayerMask _landLayers;
+        private readonly Transform _ship;
         private readonly System.Random _random;
+        private readonly RaycastHit[] _hits = new RaycastHit[MaxProbeHits];
 
-        public GhostShipRoute(GhostShipConfig config, LayerMask landLayers, int seed)
+        // The ship's own colliders are skipped, so its hull never counts as land under the next leg.
+        public GhostShipRoute(GhostShipConfig config, LayerMask landLayers, Transform ship, int seed)
         {
             _config = config;
             _landLayers = landLayers;
+            _ship = ship;
             _random = new System.Random(seed);
         }
 
@@ -104,8 +109,17 @@ namespace Lighthouse.World.GhostShip.Server
         private bool IsLand(Vector3 point, float seaLevel)
         {
             Vector3 origin = new Vector3(point.x, seaLevel + ProbeHeight, point.z);
-            return Physics.Raycast(origin, Vector3.down, out RaycastHit hit, ProbeHeight * 2f, _landLayers, QueryTriggerInteraction.Ignore)
-                && hit.point.y > seaLevel + LandMargin;
+            int count = Physics.RaycastNonAlloc(origin, Vector3.down, _hits, ProbeHeight * 2f, _landLayers, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < count; i++)
+            {
+                RaycastHit hit = _hits[i];
+                if (hit.point.y > seaLevel + LandMargin && !hit.transform.IsChildOf(_ship))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

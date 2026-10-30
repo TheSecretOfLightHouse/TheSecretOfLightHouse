@@ -120,9 +120,10 @@ namespace Lighthouse.Workbench.View
 
             bool isFull = deposited >= required;
 
+            // Red only when there is nothing to put in (2026-10-30): holding fewer than still missing can still go in.
             if (_isShortageTinted)
             {
-                _count.color = isFull || held >= required - deposited ? _sufficientColor : _shortageColor;
+                _count.color = isFull || held > 0 ? _sufficientColor : _shortageColor;
             }
 
             if (_doneMark)
