@@ -209,6 +209,11 @@ public sealed class PlayerMotor : MonoBehaviour
         IsJumping = value;
     }
 
+    public bool TryGetGroundCollider(out Collider groundCollider)
+    {
+        return TryGetGroundNormal(out _, out _, out groundCollider);
+    }
+
     private bool CheckGrounded()
     {
         return TryGetGroundNormal(out _);
@@ -222,8 +227,15 @@ public sealed class PlayerMotor : MonoBehaviour
     private bool TryGetGroundNormal(
         out Vector3 groundNormal, out float groundDistance)
     {
+        return TryGetGroundNormal(out groundNormal, out groundDistance, out _);
+    }
+
+    private bool TryGetGroundNormal(
+        out Vector3 groundNormal, out float groundDistance, out Collider groundCollider)
+    {
         groundNormal = Vector3.up;
         groundDistance = 0f;
+        groundCollider = null;
 
         if (!_bodyCollider || !_bodyCollider.enabled)
         {
@@ -272,6 +284,7 @@ public sealed class PlayerMotor : MonoBehaviour
 
             nearestDistance = hit.distance;
             groundNormal = hit.normal;
+            groundCollider = hit.collider;
             groundDistance = Mathf.Max(0f, hit.distance - skin * 2f);
             hasGround = true;
         }

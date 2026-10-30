@@ -41,6 +41,7 @@ public sealed class PlayerInventory : NetworkBehaviour
     private int _stackCapacity = InventoryData.StackCapacity;
 
     public int StackCapacity => _stackCapacity;
+    public bool CanUseInventory => !_passiveController || _passiveController.IsJobAbilityEnabled;
 
     private ModuleInteractionHandler _serverModuleHandler;
     private void Awake()
@@ -103,6 +104,18 @@ public sealed class PlayerInventory : NetworkBehaviour
     [Server]
     public bool TryAdd(int id, int amount)
     {
+        return CanUseInventory && TryAddResource(id, amount);
+    }
+
+    [Server]
+    internal bool TryRestoreWreckResource(int id, int amount)
+    {
+        return TryAddResource(id, amount);
+    }
+
+    [Server]
+    private bool TryAddResource(int id, int amount)
+    {
         if(!_resourceCatalog)
         {
             return false;
@@ -113,7 +126,9 @@ public sealed class PlayerInventory : NetworkBehaviour
             return false;
         }
 
-        int stackCapacity = _passiveController ? _passiveController.GetStackCapacity() : InventoryData.StackCapacity;
+        // Recovery rollback preserves the existing stacks even after the owner's hands close.
+        int stackCapacity = CanUseInventory && _passiveController
+            ? _passiveController.GetStackCapacity() : _data.StackLimit;
 
         _stackCapacity = stackCapacity;
         _data.SetStackCapacity(stackCapacity);
@@ -129,6 +144,18 @@ public sealed class PlayerInventory : NetworkBehaviour
 
     [Server]
     public int TryRemoveTo(int id, int requestedAmount)
+    {
+        return CanUseInventory ? TryRemoveResource(id, requestedAmount) : 0;
+    }
+
+    [Server]
+    internal int TryRemoveWreckResource(int id, int requestedAmount)
+    {
+        return TryRemoveResource(id, requestedAmount);
+    }
+
+    [Server]
+    private int TryRemoveResource(int id, int requestedAmount)
     {
         if (!_resourceCatalog || requestedAmount <= 0)
         {

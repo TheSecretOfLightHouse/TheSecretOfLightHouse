@@ -447,7 +447,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         }
 
         Cursor.lockState = CursorLockMode.Confined;
-        Cursor.visible = true;
+        Cursor.visible = false;
     }
 
     private void RestoreCursor()
