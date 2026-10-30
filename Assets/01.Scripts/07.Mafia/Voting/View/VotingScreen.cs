@@ -34,9 +34,6 @@ namespace Lighthouse.Mafia.Voting.View
         private Key _openKey = Key.V;
         [SerializeField]
         private float _fadeInSeconds = 0.12f;
-        [Tooltip("How long a made pick stays on screen before the screen closes itself. 0 keeps it open.")]
-        [SerializeField]
-        private float _autoCloseSeconds = 0.6f;
         [Tooltip("How long a notice stays before it fades out.")]
         [SerializeField]
         private float _noticeHoldSeconds = 2.5f;
@@ -128,8 +125,6 @@ namespace Lighthouse.Mafia.Voting.View
         private bool _wasRefusedAsMafia;
         private uint _fakeTarget;
         private int _fakeRemaining = VoteService.MaxVoteCount;
-        // A made pick closes the screen at this time; 0 while none is waiting.
-        private float _closeAt;
         // Used ballots last drawn, so a newly spent one drops; -1 until the open screen has drawn once.
         private int _shownUsed = -1;
         private int _droppingBallot = -1;
@@ -246,12 +241,6 @@ namespace Lighthouse.Mafia.Voting.View
             Blink(_hudRemaining, _hudRemainingColor, _lastChanceColor, ref _remainingBlinkEndsAt);
             Blink(_hudTarget, _hudTargetColor, _rejectColor, ref _lockBlinkEndsAt);
 
-            if (_closeAt > 0f && Time.unscaledTime >= _closeAt)
-            {
-                Close();
-                return;
-            }
-
             HandleKeys();
         }
 
@@ -281,7 +270,6 @@ namespace Lighthouse.Mafia.Voting.View
             _window.SetActive(true);
             _confirm.SetActive(false);
             _pendingTarget = 0;
-            _closeAt = 0f;
             _shownUsed = -1;
             SetNotice(string.Empty, _noticeColor);
             LockPlayer(true);
@@ -298,7 +286,6 @@ namespace Lighthouse.Mafia.Voting.View
 
             _isOpen = false;
             _pendingTarget = 0;
-            _closeAt = 0f;
             StopBallotDrop();
             StopNoticeShake();
             SessionScreen.SetGameplayOverlayOpen(this, false);
@@ -401,7 +388,7 @@ namespace Lighthouse.Mafia.Voting.View
 
             _remaining.text = $"<color={Highlight}>{remaining}</color> / {VoteService.MaxVoteCount}";
             ShowLockBand(isLocked);
-            bool canPick = !isLocked && !_isPending && _pendingTarget == 0 && _closeAt <= 0f;
+            bool canPick = !isLocked && !_isPending && _pendingTarget == 0;
 
             for (int i = 0; i < _cards.Length; i++)
             {
@@ -472,7 +459,6 @@ namespace Lighthouse.Mafia.Voting.View
                 _fakeTarget = target;
                 _fakeRemaining--;
                 SetNotice($"{GetDisplayName(target)}님을 지목했습니다.", _noticeColor);
-                ScheduleClose();
             }
             else
             {
@@ -502,7 +488,6 @@ namespace Lighthouse.Mafia.Voting.View
             {
                 case VoteChangeResult.Changed:
                     SetNotice($"{GetDisplayName(response.TargetActorId)}님을 지목했습니다.", _noticeColor);
-                    ScheduleClose();
                     break;
                 case VoteChangeResult.Unchanged:
                     SetNotice("이미 지목하고 있는 선원입니다.", _noticeColor);
@@ -513,7 +498,6 @@ namespace Lighthouse.Mafia.Voting.View
                     _fakeTarget = _requestedTarget;
                     _fakeRemaining--;
                     SetNotice($"{GetDisplayName(_requestedTarget)}님을 지목했습니다.", _noticeColor);
-                    ScheduleClose();
                     break;
                 case VoteChangeResult.VotingLocked:
                 case VoteChangeResult.GameEnded:
@@ -531,14 +515,6 @@ namespace Lighthouse.Mafia.Voting.View
                     SetNotice("지목하지 못했습니다. 잠시 후 다시 시도하세요.", _rejectColor);
                     ShakeRefused();
                     break;
-            }
-        }
-
-        private void ScheduleClose()
-        {
-            if (_isOpen && _autoCloseSeconds > 0f)
-            {
-                _closeAt = Time.unscaledTime + _autoCloseSeconds;
             }
         }
 

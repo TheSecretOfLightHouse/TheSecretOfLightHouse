@@ -650,6 +650,75 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b00abf456258c144ab4aaa76f0138788, type: 3}
+--- !u!1001 &164895002
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: d63ebb44ddd500d409b72c2d77bca0ee, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d63ebb44ddd500d409b72c2d77bca0ee, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d63ebb44ddd500d409b72c2d77bca0ee, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d63ebb44ddd500d409b72c2d77bca0ee, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -10
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d63ebb44ddd500d409b72c2d77bca0ee, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d63ebb44ddd500d409b72c2d77bca0ee, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d63ebb44ddd500d409b72c2d77bca0ee, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.8660254
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d63ebb44ddd500d409b72c2d77bca0ee, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d63ebb44ddd500d409b72c2d77bca0ee, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d63ebb44ddd500d409b72c2d77bca0ee, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d63ebb44ddd500d409b72c2d77bca0ee, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d63ebb44ddd500d409b72c2d77bca0ee, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d63ebb44ddd500d409b72c2d77bca0ee, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: d63ebb44ddd500d409b72c2d77bca0ee, type: 3}
+      propertyPath: m_Name
+      value: SailingShip_StreetLantern
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: d63ebb44ddd500d409b72c2d77bca0ee, type: 3}
 --- !u!1001 &187006748
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1385,6 +1454,17 @@ MonoBehaviour:
   m_LightCookieSize: {x: 1, y: 1}
   m_LightCookieOffset: {x: 0, y: 0}
   m_SoftShadowQuality: 0
+--- !u!114 &380778326 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8514474361857122210, guid: 7fd0708557ecc444c953e2f60d05dbd9, type: 3}
+  m_PrefabInstance: {fileID: 380778323}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1ae3ec17d521c248a5580f0bc3ca365, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &419484043
 GameObject:
   m_ObjectHideFlags: 0
@@ -7853,6 +7933,7 @@ GameObject:
   - component: {fileID: 1449044439}
   - component: {fileID: 1449044438}
   - component: {fileID: 1449044440}
+  - component: {fileID: 1449044441}
   m_Layer: 0
   m_Name: DevTowerTools
   m_TagString: Untagged
@@ -7987,6 +8068,20 @@ MonoBehaviour:
   _voting: {fileID: 1743248119}
   _workbench: {fileID: 1781499503}
   _grant: {fileID: 1449044435}
+--- !u!114 &1449044441
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1449044433}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cec988b9200e194c86db34b845ac5ed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _ship: {fileID: 380778326}
+  _top: 300
 --- !u!1 &1512286797
 GameObject:
   m_ObjectHideFlags: 0
@@ -15843,3 +15938,4 @@ SceneRoots:
   - {fileID: 148055346}
   - {fileID: 967675921}
   - {fileID: 380778323}
+  - {fileID: 164895002}

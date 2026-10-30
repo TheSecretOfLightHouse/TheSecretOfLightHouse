@@ -19,12 +19,6 @@ namespace Lighthouse.Mafia.Voting.Editor
         private const float ButtonHeight = 78f;
         // The check and summon buttons are drawn at 0.9 times the sketch, kept to the group's right edge.
         private const float ButtonScale = 0.9f;
-        // Summon right cue: the draining bar under the summon button, the glow around it and the line above the group.
-        private const float TimerGap = 6f;
-        private const float TimerHeight = 8f;
-        private const float GlowPadding = 18f;
-        private const float LineWidth = 560f;
-        private const float LineHeight = 44f;
         // The reveal banner sketch is 861x306; it hangs under the day board (8 + 186 at the top centre).
         private const float RevealWidth = 861f;
         private const float RevealHeight = 306f;
@@ -131,8 +125,7 @@ namespace Lighthouse.Mafia.Voting.Editor
             float height = ButtonHeight * ButtonScale;
             float x = ButtonWidth - width;
             float summonY = 32f + height + 8f * ButtonScale;
-            float timerY = summonY + height + TimerGap;
-            RectTransform group = Rect("Buttons", root, 0f, 0f, ButtonWidth, timerY + TimerHeight + 4f);
+            RectTransform group = Rect("Buttons", root, 0f, 0f, ButtonWidth, summonY + height + 4f);
             group.anchorMin = group.anchorMax = group.pivot = new Vector2(1f, 0f);
             group.anchoredPosition = new Vector2(-28f, 196f);
 
@@ -146,42 +139,16 @@ namespace Lighthouse.Mafia.Voting.Editor
             Set(serialized, "_checkButton", check);
             Set(serialized, "_summonButton", summon);
             Set(serialized, "_status", status);
-            BuildSummonCue(root, group, summon, x, timerY, width);
+            BuildSummonCue(root, summon);
             group.gameObject.SetActive(false);
         }
 
-        // The summon right's cue: glow behind the summon button, a draining bar under it and the last seconds beside it
-        // live in the button group so they hide with it; the screen-edge flash and the line sit on the root.
-        private static void BuildSummonCue(Transform root, RectTransform group, Button summon, float x, float timerY,
-            float width)
+        // The summon right's cue pulses the summon button and posts its lines on the shared ScreenNotice strip
+        // (2026-10-30), so it only needs the button and a sound source.
+        private static void BuildSummonCue(Transform root, Button summon)
         {
             RectTransform button = (RectTransform)summon.transform;
-            Vector2 size = button.sizeDelta;
-            Vector2 topLeft = new Vector2(button.anchoredPosition.x, -button.anchoredPosition.y);
             CenterPivot(button);
-
-            RectTransform glowRect = Rect("SummonGlow", group, topLeft.x - GlowPadding, topLeft.y - GlowPadding,
-                size.x + GlowPadding * 2f, size.y + GlowPadding * 2f);
-            Image glow = glowRect.gameObject.AddComponent<Image>();
-            glow.raycastTarget = false;
-            glowRect.SetSiblingIndex(button.GetSiblingIndex());
-
-            RectTransform timer = Rect("SummonTimer", group, x, timerY, width, TimerHeight);
-            Image track = timer.gameObject.AddComponent<Image>();
-            track.color = new Color(0f, 0f, 0f, 0.5f);
-            track.raycastTarget = false;
-            RectTransform fillRect = Rect("Fill", timer, 0f, 0f, 0f, 0f);
-            Stretch(fillRect);
-            Image fill = fillRect.gameObject.AddComponent<Image>();
-            fill.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
-            fill.type = Image.Type.Filled;
-            fill.fillMethod = Image.FillMethod.Horizontal;
-            fill.fillOrigin = (int)Image.OriginHorizontal.Left;
-            fill.raycastTarget = false;
-
-            Text seconds = Label("SummonSeconds", group, string.Empty, 44, x - 76f, topLeft.y, 64f, size.y,
-                TextAnchor.MiddleRight);
-            seconds.horizontalOverflow = HorizontalWrapMode.Overflow;
 
             RectTransform holder = Rect("SummonCue", root, 0f, 0f, 0f, 0f);
             Stretch(holder);
@@ -190,31 +157,8 @@ namespace Lighthouse.Mafia.Voting.Editor
             audio.playOnAwake = false;
             audio.spatialBlend = 0f;
 
-            RectTransform vignetteRect = Rect("Vignette", holder, 0f, 0f, 0f, 0f);
-            Stretch(vignetteRect);
-            Image vignette = vignetteRect.gameObject.AddComponent<Image>();
-            vignette.raycastTarget = false;
-
-            // Right-aligned just above the button group so the eye lands on the summon button next.
-            RectTransform lineRect = Rect("Line", holder, 0f, 0f, LineWidth, LineHeight);
-            lineRect.anchorMin = lineRect.anchorMax = lineRect.pivot = new Vector2(1f, 0f);
-            lineRect.anchoredPosition = new Vector2(-28f, 196f + group.sizeDelta.y + 8f);
-            Image strip = lineRect.gameObject.AddComponent<Image>();
-            strip.color = new Color(0f, 0f, 0f, 0.6f);
-            strip.raycastTarget = false;
-            CanvasGroup line = Fade(lineRect);
-            Text lineText = Label("Text", lineRect, string.Empty, 24, 16f, 0f, LineWidth - 32f, LineHeight,
-                TextAnchor.MiddleRight);
-
             SerializedObject serialized = new SerializedObject(cue);
             Set(serialized, "_summonButton", button);
-            Set(serialized, "_glow", glow);
-            Set(serialized, "_timer", timer.gameObject);
-            Set(serialized, "_timerFill", fill);
-            Set(serialized, "_seconds", seconds);
-            Set(serialized, "_vignette", vignette);
-            Set(serialized, "_line", line);
-            Set(serialized, "_lineText", lineText);
             Set(serialized, "_audio", audio);
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }

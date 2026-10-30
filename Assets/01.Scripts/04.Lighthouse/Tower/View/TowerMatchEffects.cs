@@ -11,8 +11,8 @@ using UnityEngine.UI;
 namespace Lighthouse.Tower.View
 {
     // Screen-only effects for the lighthouse match (UI effects plan 2026-10-26): lines on the shared ScreenNotice strip
-    // for installs, finished floors, the last part and finished modules; a centre title for full repair, ritual,
-    // summon and falling health; the end fade under the VictoryScreen; the ritual countdown; and an edge flash standing in for camera shake (the
+    // for installs, finished floors, the last part, finished modules, summon and falling health; a centre title for full repair and ritual;
+    // the end fade under the VictoryScreen; the ritual countdown; and an edge flash standing in for camera shake (the
     // camera is the Player part's). Who installed or crafted is never shown, since only the carrier knows they held a
     // module.
     // Installs and finished modules arrive as events on every machine. Phase and health are SyncVars without hooks and
@@ -51,7 +51,7 @@ namespace Lighthouse.Tower.View
         private Color _readyColor = new Color(1f, 0.8f, 0.3f);
         [SerializeField]
         private Color _summonColor = new Color(0.85f, 0.08f, 0.08f);
-        [Tooltip("Below this share of health the edge keeps pulsing red during the final battle, and the first drop below it gets a title.")]
+        [Tooltip("Below this share of health the edge keeps pulsing red during the final battle, and the first drop below it gets a notice.")]
         [SerializeField, Range(0f, 1f)]
         private float _lowHealthRatio = 0.3f;
 
@@ -278,7 +278,7 @@ namespace Lighthouse.Tower.View
                     Play(_ritualClip);
                     break;
                 case TowerPhase.FinalBattle:
-                    ShowTitle("심해의 괴물이 깨어났다", false);
+                    ScreenNotice.Show(new ScreenNoticeRequest("크툴루가 깨어났다 — 최후 전투 시작", ScreenNoticeStyle.Warning));
                     FlashEdge(_summonColor, 0.9f, 2f);
                     Play(_summonClip);
                     break;
@@ -305,7 +305,8 @@ namespace Lighthouse.Tower.View
                     && _shownHealth / max >= _lowHealthRatio)
                 {
                     _hasWarnedLowHealth = true;
-                    ShowTitle("등대가 무너지고 있다", false);
+                    ScreenNotice.Show(new ScreenNoticeRequest("등대가 무너지고 있다", ScreenNoticeStyle.Warning)
+                        .WithGauge(Mathf.Clamp01(_shownHealth / max), Mathf.Clamp01(health / max)));
                     FlashEdge(_summonColor, 0.6f, 1.4f);
                 }
             }

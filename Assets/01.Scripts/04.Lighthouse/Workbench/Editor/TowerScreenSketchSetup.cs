@@ -19,6 +19,7 @@ namespace Lighthouse.Workbench.Editor
         private const string LayoutPath = "Assets/02.Prefabs/Lighthouse/Data/Trial/TowerLayout_JH04Trial.asset";
         private const string SketchFolder = "Assets/03.Images/WorkbenchUiSketch/";
         private const string TowerFolder = "Assets/03.Images/TowerUiSketch/";
+        private const string HudFolder = "Assets/03.Images/InGameHud/";
         private const float CardX = 651f;
         private const float CardY = 55f;
         private const float CardScale = 440f / 480f;
@@ -123,13 +124,14 @@ namespace Lighthouse.Workbench.Editor
                 Keycap(frame, "ESC", 1482f, 80f, 72f);
                 Label("CloseHint", frame, "닫기", 22, 1566f, 80f, 100f, 40f, TextAnchor.MiddleLeft);
 
-                Image prompt = Picture("Prompt", root.transform, SketchFolder, "ws_button", 0f, 0f, 270f, 48f);
-                RectTransform promptRect = prompt.rectTransform;
-                promptRect.anchorMin = promptRect.anchorMax = new Vector2(0.5f, 0f);
-                promptRect.pivot = new Vector2(0.5f, 0f);
+                // Keycap + label art without a backing panel, matching the HUD's Esc menu hint (2026-10-30).
+                RectTransform prompt = Rect("Prompt", root.transform, 0f, 0f, 177f, 48f);
+                prompt.anchorMin = prompt.anchorMax = new Vector2(0.5f, 0f);
+                prompt.pivot = new Vector2(0.5f, 0f);
                 // Above the workbench screen's carried module card at the bottom centre (2026-10-27).
-                promptRect.anchoredPosition = new Vector2(0f, 150f);
-                Label("Text", prompt.transform, "E  등대 열기", 22, 8f, 2f, 254f, 44f);
+                prompt.anchoredPosition = new Vector2(0f, 150f);
+                Picture("Key", prompt, HudFolder, "hud_key_e", 0f, 1f, 47f, 46f).preserveAspect = true;
+                Picture("Label", prompt, HudFolder, "hud_label_use_lighthouse", 56f, 7f, 121f, 34f).preserveAspect = true;
 
                 TowerScreen screen = root.AddComponent<TowerScreen>();
                 SerializedObject serialized = new SerializedObject(screen);
