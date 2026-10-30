@@ -59,7 +59,7 @@ Transform:
   m_GameObject: {fileID: 3323437098551374655}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 8, z: 0}
+  m_LocalPosition: {x: 0, y: 5.6, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -156,7 +156,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.7, y: 0.7, z: 0.7}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7033465340136506028}
@@ -9841,6 +9841,10 @@ GameObject:
   - component: {fileID: 8469657670535042561}
   - component: {fileID: 8514474361857122210}
   - component: {fileID: 3216069747686333102}
+  - component: {fileID: 1517402764973720135}
+  - component: {fileID: 430479479327437149}
+  - component: {fileID: 2498033533396567083}
+  - component: {fileID: 6157931882847924537}
   m_Layer: 0
   m_Name: GhostShip
   m_TagString: Untagged
@@ -9938,7 +9942,7 @@ MonoBehaviour:
   _landLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  _body: {fileID: 0}
+  _body: {fileID: 6157931882847924537}
 --- !u!114 &3216069747686333102
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9957,6 +9961,78 @@ MonoBehaviour:
   _fog:
   - {fileID: 5913782534034915801}
   - {fileID: 5033167541210964603}
+--- !u!114 &1517402764973720135
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7661092765283775685}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ada3de8c79de565459f6cbb86fa5b96d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _defaultAction: 9
+  _supportedActions: 09
+  _range: 20
+  _serverRangeSlack: 1.5
+--- !u!114 &430479479327437149
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7661092765283775685}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d161cd7936f11cb42bfc47a3537a7fb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _leaveAfterReadSeconds: 8
+--- !u!114 &2498033533396567083
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7661092765283775685}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98810d207f0f3314c940bfb8cfb25671, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _screenPrefab: {fileID: 6335483569820204275, guid: a6b985083ab5ec745bfd4a504521a853, type: 3}
+--- !u!54 &6157931882847924537
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7661092765283775685}
+  serializedVersion: 4
+  m_Mass: 20000
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1001 &7033465340136601406
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10038,8 +10114,12 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 64254688754150758, guid: ca514cb9ea5a00b499f879bd90a9aaca, type: 3}
+      propertyPath: m_Convex
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 64254688754150758, guid: ca514cb9ea5a00b499f879bd90a9aaca, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 64334681003490536, guid: ca514cb9ea5a00b499f879bd90a9aaca, type: 3}
       propertyPath: m_Enabled

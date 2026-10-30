@@ -131,7 +131,7 @@
 | [W19](design/references/v4-design-review.md#w19) | 예보 변경의 시점이 단서의 존재를 결정한다 | P1 · 미정 명시 | 계약 확인 필요 |
 | [W20](design/references/v4-design-review.md#w20) | 특수 섬의 사용권과 점유 수명이 없다 | P1 · 미정 명시 | 계약 확인 필요 |
 | [W21](design/references/v4-design-review.md#w21) | 관측소 기준선과 레이더 관측 시간이 없다 | P1 · 누락 계약 | 계약 확인 필요 |
-| [W22](design/references/v4-design-review.md#w22) | 유령선의 출현 기회와 힌트 이용 규칙이 없다 | P1 · 누락 계약 | 계약 확인 필요 |
+| [W22](design/references/v4-design-review.md#w22) | 유령선의 출현 기회와 힌트 이용 규칙이 없다 | P1 · 누락 계약 | 2026-10-30 결정: [유령선 힌트 결정](design/ghost-ship-hint-decisions.md)(작업대 인출 날짜별 장부·선착순 1명·최소 1회·소환 후 중지). 코드 구현, 메인 씬 배치·4인 검증 남음 |
 
 ### N 네트워크·권위·비밀 정보
 

@@ -4,6 +4,8 @@ using Lighthouse.Modules.Rules;
 using Lighthouse.Modules.Server;
 using Lighthouse.Network.Session.Net;
 using Lighthouse.Workbench.Rules;
+using Lighthouse.World.Clock.Rules;
+using Lighthouse.World.Query.Rules;
 using Mirror;
 using UnityEngine;
 
@@ -39,6 +41,10 @@ namespace Lighthouse.Workbench.Net
         // Server-only. What each actor carries from this bench: actor id -> module id / recipe id.
         private readonly Dictionary<uint, uint> _carriedModules = new Dictionary<uint, uint>();
         private readonly Dictionary<uint, int> _carriedRecipes = new Dictionary<uint, int>();
+        // Server-only, in the order they happened. Read by the ghost ship hint; never synced.
+        private readonly List<WithdrawRecord> _withdrawals = new List<WithdrawRecord>();
+        private IGameClock _clock;
+        private bool _isSelfRegistered;
         private bool _isCatalogValid;
         // Client-side. Recipe id of the module the local player carries from this bench, 0 when empty.
         private int _ownCarriedRecipe;
@@ -47,6 +53,8 @@ namespace Lighthouse.Workbench.Net
         public IReadOnlyDictionary<int, int> StoredCounts => _storedCounts;
         // Recipe id of the module the local player carries from this bench, or 0. Only the owner is told.
         public int OwnCarriedRecipe => _ownCarriedRecipe;
+        // Server-only. Every successful withdraw this match, oldest first.
+        public IReadOnlyList<WithdrawRecord> Withdrawals => _withdrawals;
 
         // Raised on every machine whenever the public progress or stock changes, and on the owner's machine when
         // what they carry changes. For UI refresh.
@@ -77,6 +85,14 @@ namespace Lighthouse.Workbench.Net
         public override void OnStartServer()
         {
             base.OnStartServer();
+
+            // The main island registers its bench; test scenes without one still need the ghost ship hint to find it.
+            if (!WorldServices.TryGet(out WorkbenchNet _))
+            {
+                WorldServices.Register(this);
+                _isSelfRegistered = true;
+            }
+
             string error = _catalog ? _catalog.Validate() : "no recipe catalog assigned.";
             _isCatalogValid = error == null;
 
@@ -106,6 +122,17 @@ namespace Lighthouse.Workbench.Net
                     _deposited.Add(0);
                 }
             }
+        }
+
+        public override void OnStopServer()
+        {
+            if (_isSelfRegistered)
+            {
+                WorldServices.Unregister(this);
+                _isSelfRegistered = false;
+            }
+
+            base.OnStopServer();
         }
 
         public int GetDepositedAt(int recipeId, int ingredientIndex)
@@ -244,6 +271,7 @@ namespace Lighthouse.Workbench.Net
 
             progress.Remove(resourceId, amount);
             _deposited[_offsets[slot] + index] = progress.GetDepositedAt(index);
+            _withdrawals.Add(new WithdrawRecord(CurrentDay(), resourceId, amount));
 
             if (!progress.IsStarted && _craftingModuleIds[slot] != 0)
             {
@@ -405,6 +433,17 @@ namespace Lighthouse.Workbench.Net
 
             modules.Add(moduleId);
             _storedCounts[recipeId] = modules.Count;
+        }
+
+        // 0 when the scene has no game clock (test scenes); the hint still lists the amounts.
+        private int CurrentDay()
+        {
+            if (_clock == null)
+            {
+                WorldServices.TryGet(out _clock);
+            }
+
+            return _clock != null ? _clock.DayIndex : 0;
         }
 
         private void BuildOffsets()
