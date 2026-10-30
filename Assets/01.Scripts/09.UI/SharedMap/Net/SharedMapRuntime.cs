@@ -177,8 +177,7 @@ namespace Lighthouse.UI.SharedMap.Net
             {
                 _instance.RequestReady();
             }
-            // A table interaction consumes E even outside evening; it must not also operate a nearby station.
-            return true;
+            return _instance.State.IsEvening && !_instance.State.IsEditing;
         }
 
         public void Submit(SharedMapOperation operation)

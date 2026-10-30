@@ -11,7 +11,7 @@ namespace Lighthouse.UI.SharedMap.View
     public sealed class SharedMapScreen : MonoBehaviour
     {
         private SharedMapRuntime _runtime;
-        private GameObject _canvas, _panel, _tools;
+        private GameObject _canvas, _panel, _tools, _promptPanel;
         private UnityEngine.UI.Text _title, _prompt;
         private UnityEngine.UI.Text _toolLabel;
         private RectTransform _landmark;
@@ -48,7 +48,7 @@ namespace Lighthouse.UI.SharedMap.View
                 SetOpen(false);
                 if (_prompt)
                 {
-                    _prompt.text = string.Empty;
+                    _promptPanel.SetActive(false);
                 }
                 return;
             }
@@ -65,8 +65,10 @@ namespace Lighthouse.UI.SharedMap.View
                 SetOpen(false);
             }
             bool near = _runtime.IsNearTable(player);
-            _prompt.text = !_open && near
-                ? state.IsEvening ? $"공유지도  ·  준비 {state.ReadyCount}/4  ·  E 준비  /  M 열람" : "공유지도  ·  저녁에 함께 작성  /  M 열람"
+            bool showPrompt = !_open && near && state.IsEvening && !state.IsEditing && !SessionScreen.IsGameplayOverlayOpen;
+            _promptPanel.SetActive(showPrompt);
+            _prompt.text = showPrompt
+                ? "E  지도 작성"
                 : string.Empty;
             if (Keyboard.current != null)
             {
@@ -101,6 +103,10 @@ namespace Lighthouse.UI.SharedMap.View
         private void OnDisable()
         {
             SetOpen(false);
+            if (_promptPanel)
+            {
+                _promptPanel.SetActive(false);
+            }
         }
 
         private void OnDestroy()
@@ -262,7 +268,23 @@ namespace Lighthouse.UI.SharedMap.View
             scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920f, 1080f);
             scaler.matchWidthOrHeight = 0.5f;
-            _prompt = Label("MapPrompt", _canvas.transform, new Vector2(0f, -400f), new Vector2(1000f, 60f), 25);
+            UnityEngine.UI.Image promptFrame = Box("MapPromptPanel", _canvas.transform, Vector2.zero,
+                new Vector2(270f, 48f), new Color(0.20f, 0.11f, 0.055f, 0.95f));
+            _promptPanel = promptFrame.gameObject;
+            promptFrame.rectTransform.anchorMin = new Vector2(0.5f, 0f);
+            promptFrame.rectTransform.anchorMax = new Vector2(0.5f, 0f);
+            promptFrame.rectTransform.pivot = new Vector2(0.5f, 0f);
+            promptFrame.rectTransform.anchoredPosition = new Vector2(0f, 150f);
+            promptFrame.raycastTarget = false;
+            if (_settings && _settings.PromptSprite)
+            {
+                promptFrame.sprite = _settings.PromptSprite;
+                promptFrame.color = Color.white;
+                promptFrame.type = _settings.PromptSprite.border.sqrMagnitude > 0f
+                    ? UnityEngine.UI.Image.Type.Sliced : UnityEngine.UI.Image.Type.Simple;
+            }
+            _prompt = Label("MapPrompt", _promptPanel.transform, Vector2.zero, new Vector2(254f, 44f), 22);
+            _promptPanel.SetActive(false);
             _panel = Box("SharedMapPanel", _canvas.transform, Vector2.zero, new Vector2(1450f, 1010f), new Color(0.20f, 0.11f, 0.055f)).gameObject;
             UnityEngine.UI.Image frame = _panel.GetComponent<UnityEngine.UI.Image>();
             if (_settings && _settings.PanelSprite)
