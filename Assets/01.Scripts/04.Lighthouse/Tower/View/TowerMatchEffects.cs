@@ -139,6 +139,13 @@ namespace Lighthouse.Tower.View
 
         private void LateUpdate()
         {
+            // A tower left wired to a disabled scene object (the retired main island facilities) never reports anything.
+            if (_match && !_match.gameObject.activeInHierarchy)
+            {
+                Unsubscribe();
+                _match = null;
+            }
+
             // The main island spawns its tower at match start, so there is nothing to wire in the scene (2026-10-30).
             if (!_match && Time.unscaledTime >= _nextMatchLookup)
             {
@@ -172,6 +179,11 @@ namespace Lighthouse.Tower.View
 
         private void OnDisable()
         {
+            Unsubscribe();
+        }
+
+        private void Unsubscribe()
+        {
             if (_tower)
             {
                 _tower.SlotInstalled -= HandleSlotInstalled;
@@ -181,6 +193,9 @@ namespace Lighthouse.Tower.View
             {
                 _workbench.RecipeCompleted -= HandleRecipeCompleted;
             }
+
+            _tower = null;
+            _workbench = null;
         }
 
         private void Subscribe()
