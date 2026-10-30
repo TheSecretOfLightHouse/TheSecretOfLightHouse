@@ -104,6 +104,10 @@ public sealed class EmergencyRepairRequest : NetworkBehaviour
     [Server]
     private EmergencyRepairResult TryApplyRepair(uint targetNetId)
     {
+        if (Lighthouse.Common.Cinematics.ServerCinematicProtection.IsActive)
+        {
+            return EmergencyRepairResult.RequestRejected;
+        }
         LighthouseNetworkManager manager = LighthouseNetworkManager.Instance;
         if (manager && manager.IsSessionFlowEnabled
             && manager.Phase != MatchPhase.InProgress)

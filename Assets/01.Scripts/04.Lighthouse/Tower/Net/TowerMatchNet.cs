@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Lighthouse.Common.Cinematics;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Interaction.Requests.Rules;
@@ -39,6 +40,15 @@ namespace Lighthouse.Tower.Net
         [SyncVar] private bool _isSummonCinematicPlaying;
         [SyncVar] private double _summonCinematicStartedAt;
         [SyncVar] private double _summonCinematicEndsAt;
+        [SyncVar] private SummonCinematicPhase _cinematicPhase;
+        [SyncVar] private uint _cinematicSequence;
+        [SyncVar] private double _cinematicLoadDeadline;
+        [SyncVar] private double _combatStartsAt;
+        [SyncVar] private string _cinematicScenePath;
+        private double _returnDeadline;
+        private readonly HashSet<int> _cinematicParticipants = new HashSet<int>();
+        private readonly HashSet<int> _preparedParticipants = new HashSet<int>();
+        private readonly HashSet<int> _returnedParticipants = new HashSet<int>();
 
         private TowerNet _tower;
 
@@ -60,6 +70,11 @@ namespace Lighthouse.Tower.Net
         public bool IsSummonCinematicPlaying => _isSummonCinematicPlaying;
         public double SummonCinematicStartedAt => _summonCinematicStartedAt;
         public double SummonCinematicEndsAt => _summonCinematicEndsAt;
+        public SummonCinematicPhase CinematicPhase => _cinematicPhase;
+        public uint CinematicSequence => _cinematicSequence;
+        public double CinematicLoadDeadline => _cinematicLoadDeadline;
+        public double CombatStartsAt => _combatStartsAt;
+        public string CinematicScenePath => _cinematicScenePath;
         public bool CanStartRitual => _phase == TowerPhase.Repairing && _tower && _tower.IsComplete;
 
         // Server-only.
@@ -70,13 +85,19 @@ namespace Lighthouse.Tower.Net
         private void Awake()
         {
             _tower = GetComponent<TowerNet>();
+            var view = GetComponent<Lighthouse.Tower.View.SummonCinematicView>();
+            if (view == null)
+            {
+                view = gameObject.AddComponent<Lighthouse.Tower.View.SummonCinematicView>();
+            }
+            view.Initialize(this);
         }
 
         private void Update()
         {
-            if (isServer && _isSummonCinematicPlaying && NetworkTime.time >= _summonCinematicEndsAt)
+            if (isServer && _isSummonCinematicPlaying)
             {
-                FinishSummonCinematic();
+                TickSummonCinematic();
             }
             if (!isServer || _phase != TowerPhase.Ritual || NetworkTime.time < _ritualEndsAt)
             {
@@ -152,8 +173,23 @@ namespace Lighthouse.Tower.Net
             _ritualEndsAt = 0;
             _maxHealth = _settings.MaxHealth;
             _health = _maxHealth;
-            _summonCinematicStartedAt = NetworkTime.time;
-            _summonCinematicEndsAt = _summonCinematicStartedAt + _settings.SummonCinematicSeconds;
+            _cinematicSequence++;
+            _cinematicPhase = SummonCinematicPhase.Preparing;
+            _cinematicLoadDeadline = NetworkTime.time + _settings.CinematicLoadTimeout;
+            _summonCinematicStartedAt = 0d;
+            _summonCinematicEndsAt = 0d;
+            _combatStartsAt = 0d;
+            _cinematicScenePath = _settings.SummonCinematicScene;
+            _cinematicParticipants.Clear();
+            _preparedParticipants.Clear();
+            _returnedParticipants.Clear();
+            foreach (NetworkConnectionToClient connection in NetworkServer.connections.Values)
+            {
+                if (connection != null && connection.isReady && connection.identity != null)
+                {
+                    _cinematicParticipants.Add(connection.connectionId);
+                }
+            }
             _isSummonCinematicPlaying = true;
             ServerCinematicProtection.Begin(this);
             FinalBattleStarted?.Invoke();
@@ -205,8 +241,70 @@ namespace Lighthouse.Tower.Net
 
         private void FinishSummonCinematic()
         {
+            if (_isSummonCinematicPlaying)
+            {
+                _cinematicPhase = SummonCinematicPhase.Cancelled;
+            }
             _isSummonCinematicPlaying = false;
             ServerCinematicProtection.End(this);
+        }
+
+        private void TickSummonCinematic()
+        {
+            double now = NetworkTime.time;
+            if (_cinematicPhase == SummonCinematicPhase.Preparing
+                && (_preparedParticipants.Count == _cinematicParticipants.Count || now >= _cinematicLoadDeadline))
+            {
+                _summonCinematicStartedAt = now + _settings.CinematicStartLead;
+                _summonCinematicEndsAt = _summonCinematicStartedAt + _settings.SummonCinematicSeconds;
+                _cinematicPhase = SummonCinematicPhase.Playing;
+            }
+            else if (_cinematicPhase == SummonCinematicPhase.Playing && now >= _summonCinematicEndsAt)
+            {
+                _returnDeadline = now + _settings.CinematicReturnTimeout;
+                _cinematicPhase = SummonCinematicPhase.Returning;
+            }
+            else if (_cinematicPhase == SummonCinematicPhase.Returning)
+            {
+                if (_combatStartsAt == 0d
+                    && (_returnedParticipants.Count == _cinematicParticipants.Count || now >= _returnDeadline))
+                {
+                    _combatStartsAt = now + _settings.CinematicReturnGrace;
+                }
+                if (_combatStartsAt > 0d && now >= _combatStartsAt)
+                {
+                    _cinematicPhase = SummonCinematicPhase.Combat;
+                    _isSummonCinematicPlaying = false;
+                    ServerCinematicProtection.End(this);
+                }
+            }
+        }
+
+        [Command(requiresAuthority = false)]
+        public void CmdReportCinematicPrepared(uint sequence, NetworkConnectionToClient sender = null)
+        {
+            if (_cinematicPhase == SummonCinematicPhase.Preparing && IsCinematicParticipant(sequence, sender))
+            {
+                // A skipped presentation is also prepared; it never advances combat on its own.
+                _preparedParticipants.Add(sender.connectionId);
+            }
+        }
+
+        [Command(requiresAuthority = false)]
+        public void CmdReportCinematicReturned(uint sequence, NetworkConnectionToClient sender = null)
+        {
+            if (_cinematicPhase == SummonCinematicPhase.Returning && IsCinematicParticipant(sequence, sender))
+            {
+                _returnedParticipants.Add(sender.connectionId);
+            }
+        }
+
+        private bool IsCinematicParticipant(uint sequence, NetworkConnectionToClient sender)
+        {
+            return sequence == _cinematicSequence && sender != null && sender.identity != null && sender.isReady
+                && _cinematicParticipants.Contains(sender.connectionId)
+                && NetworkServer.connections.TryGetValue(sender.connectionId, out NetworkConnectionToClient current)
+                && current == sender;
         }
 
         public InteractionResultCode Handle(in InteractionContext context)
