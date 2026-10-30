@@ -67,6 +67,11 @@ namespace Lighthouse.Tower.View
                 {
                     combat.Bind(_match.GetComponent<Lighthouse.Monsters.Boss.BossTestEnvironment>());
                 }
+                var whips = _rig.GetComponent<Lighthouse.Monsters.Boss.WhipTentaclePresentation>();
+                if (whips != null)
+                {
+                    whips.Bind(_match.GetComponent<Lighthouse.Monsters.Boss.WhipTentacleBattleNet>());
+                }
             }
         }
 
