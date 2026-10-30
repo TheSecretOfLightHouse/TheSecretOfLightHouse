@@ -52,6 +52,7 @@ namespace Lighthouse.World.GhostShip.Net
 
         public GhostShipPhase Phase => _phase;
         public bool IsVisible => _phase != GhostShipPhase.Hidden;
+        public float SeaLevel => _seaLevel;
         // Server-only.
         public bool IsRetired => _isRetired;
 
