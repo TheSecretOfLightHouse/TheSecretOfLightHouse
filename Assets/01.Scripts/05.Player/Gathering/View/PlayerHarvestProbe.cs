@@ -5,6 +5,7 @@ using Lighthouse.World.Harvest.Rules;
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Lighthouse.Player.Gathering.View;
 
 [RequireComponent(typeof(PlayerController))]
 public sealed class PlayerHarvestProbe : MonoBehaviour
@@ -69,6 +70,16 @@ public sealed class PlayerHarvestProbe : MonoBehaviour
         if (_player)
         {
             _player.HarvestRequested -= HandleHarvestRequested;
+        }
+    }
+
+    private void Start()
+    {
+        if (_player && (_player.isLocalPlayer || _player.CanSimulateLocalWorld)
+            && !TryGetComponent<HarvestSpotSparkles>(out _))
+        {
+            HarvestSpotSparkles sparkles = gameObject.AddComponent<HarvestSpotSparkles>();
+            sparkles.Initialize(_player, _impactPrefab);
         }
     }
 
