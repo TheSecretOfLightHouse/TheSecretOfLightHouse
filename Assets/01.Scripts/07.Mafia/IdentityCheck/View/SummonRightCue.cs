@@ -8,7 +8,7 @@ using UnityEngine;
 namespace Lighthouse.Mafia.IdentityCheck.View
 {
     // Makes the mafia's 10 second summon right hard to miss (2026-10-29): a line on the shared ScreenNotice strip and a
-    // sound when the right is granted, a pulse on the summon button that quickens for the last seconds, and a line when
+    // sound when the right is granted, a heartbeat on the summon button that quickens for the last seconds, and a line when
     // it lapses (the public battle-start notice belongs to TowerMatchEffects). The green glow, screen flash, timer bar
     // and the cue's own line were dropped; the screen's status text keeps the seconds. Only the mafia receives identity state, so citizens
     // never see any of it. Nothing here takes input, so the right's seconds are never spent on a box.
@@ -37,6 +37,14 @@ namespace Lighthouse.Mafia.IdentityCheck.View
         private float _pulseRate = 1.2f;
         [SerializeField]
         private float _hurryPulseRate = 3f;
+        [Tooltip("Length of one beat in seconds.")]
+        [SerializeField, Min(0.02f)]
+        private float _beatSeconds = 0.12f;
+        [Tooltip("Seconds from the first beat to the second.")]
+        [SerializeField, Min(0f)]
+        private float _secondBeatDelay = 0.2f;
+        [SerializeField, Range(0f, 1f)]
+        private float _secondBeatStrength = 0.6f;
         [Tooltip("Played on this client only when the right is granted. Empty = silent.")]
         [SerializeField]
         private AudioClip _grantedClip;
@@ -109,8 +117,22 @@ namespace Lighthouse.Mafia.IdentityCheck.View
             }
 
             float rate = left <= _hurrySeconds ? _hurryPulseRate : _pulseRate;
-            float wave = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * rate * 2f * Mathf.PI);
-            _summonButton.localScale = Vector3.one * (1f + _pulseScale * wave);
+            _summonButton.localScale = Vector3.one * (1f + _pulseScale * Heartbeat(Time.unscaledTime, rate));
+        }
+
+        // A heartbeat rather than a swell: a strong beat and a softer one right after, then rest until the next.
+        // The beats keep their length in seconds, so a faster rate only shortens the rest.
+        private float Heartbeat(float time, float rate)
+        {
+            float cycle = 1f / rate;
+            float t = time % cycle;
+            return Beat(t, 0f) + _secondBeatStrength * Beat(t, _secondBeatDelay);
+        }
+
+        private float Beat(float t, float start)
+        {
+            float x = (t - start) / _beatSeconds;
+            return x > 0f && x < 1f ? Mathf.Sin(x * Mathf.PI) : 0f;
         }
 
         private void HandleIdentityResponded(IdentityResponse response)
@@ -126,7 +148,7 @@ namespace Lighthouse.Mafia.IdentityCheck.View
 
         private void PlayGranted()
         {
-            ScreenNotice.Show(new ScreenNoticeRequest("바다가 응답했다 — 지금 크툴루를 소환할 수 있다", ScreenNoticeStyle.Gold));
+            ScreenNotice.Show(new ScreenNoticeRequest("정체 확인 성공 — 지금 크툴루를 소환할 수 있다", ScreenNoticeStyle.Gold));
 
             if (_audio && _grantedClip)
             {
