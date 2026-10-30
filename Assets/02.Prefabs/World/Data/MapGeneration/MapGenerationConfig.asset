@@ -22,8 +22,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: c89285000056c2441b90ab0aa26616bf, type: 2}
   _zones:
   - _zone: 1
-    _innerRadius: 70
-    _outerRadius: 200
+    _innerRadius: 30
+    _outerRadius: 100
     _minIslands: 4
     _maxIslands: 6
     _extraIslandSpacing: 0
@@ -32,21 +32,21 @@ MonoBehaviour:
     _minReefDistance: 25
     _reefRadius: 6
   - _zone: 2
-    _innerRadius: 200
-    _outerRadius: 360
+    _innerRadius: 100
+    _outerRadius: 180
     _minIslands: 5
     _maxIslands: 8
-    _extraIslandSpacing: 4
+    _extraIslandSpacing: 0
     _minReefs: 3
     _maxReefs: 6
     _minReefDistance: 25
     _reefRadius: 6
   - _zone: 4
-    _innerRadius: 360
-    _outerRadius: 490
+    _innerRadius: 180
+    _outerRadius: 250
     _minIslands: 5
     _maxIslands: 8
-    _extraIslandSpacing: 8
+    _extraIslandSpacing: 0
     _minReefs: 6
     _maxReefs: 10
     _minReefDistance: 25

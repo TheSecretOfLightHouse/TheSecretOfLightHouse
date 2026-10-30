@@ -1,0 +1,2507 @@
+[
+  {
+    "path": "Assets/00.Scenes/Main/MainGame.unity",
+    "sha256": "C2FF80299A3B4A818AC1D7D36ABAB7A96E7AA07D87FDA8D96576F82926E028D4",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/00.Scenes/Minseo/WorldSessionGame.unity",
+    "sha256": "08C3BDE3D7AB13DE6C4C95E898AF8F63DC730408EAADE80A145F6D5AA21E0A01",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\Rules\\DayCycleConfig.cs",
+    "sha256": "D36B91822AD52C57086E8B99A0490BF2CE6E5A092757B10D2E04856497EC4292",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\Rules\\DayCycleMath.cs",
+    "sha256": "7A0084904A5B1276A7F4476F8F22F253051BB60B63E7BAB7172E39EBCF215564",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\Rules\\DayCycleSignals.cs",
+    "sha256": "DD5794716C69831B9E2A9C998DF65E714E2F53CD084B2EE94895A5BC2639B387",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\Rules\\DayCycleState.cs",
+    "sha256": "A3156C4F30E37D76471BD6C4C2FEABFE2CCF3AC524853C157716854E972E7B3A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\Rules\\DayCycleTransitions.cs",
+    "sha256": "A801D6CDAE2BF2D25F7E0E81332688C8DF4BF1BFB3AF1B344C8292954D085C0D",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\Rules\\DayPhase.cs",
+    "sha256": "F04D567074935A9DCBEC05A2C16E639BC25C98A114D007B1430CA3F4E444159F",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\Rules\\GameClock.cs",
+    "sha256": "200DDEC855AE459F2F4CE02EFC4EE60EFBC3809615FFFC0C346DD0D9012365DA",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\Rules\\IClock.cs",
+    "sha256": "A8A87D78A9E193CBB488E83D44C7F773EE07C0C055B1BBE2BE35BEC682B52F53",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\Rules\\IGameClock.cs",
+    "sha256": "91FB96848C1FB3B99DC5EAE9632FFEEB087EE64C2ACF3AEBFF612563E3E39938",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\Rules\\LocalClock.cs",
+    "sha256": "31DF4BB79FFFCFA064D349FF503C0DD6EC14D1D99E3E7C33ADFD07E3762829A6",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\Rules\\SwitchableClock.cs",
+    "sha256": "90AAEC87A77407932FD4FBE0D48F35113CC501CA947844E6568395AB44E00681",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\Sandbox\\ClockCheck.cs",
+    "sha256": "4088B0DDC358BA72D697A46E6C1214276B53BFC3E9E2555B7F3DA8793E84A13E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\Sandbox\\ClockChecks.cs",
+    "sha256": "1A2BD4337E59A1ED3782BF6225091BAD0EB1BB6561EBC7847B963DBFBB1AC39C",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\Sandbox\\GameClockProbe.cs",
+    "sha256": "C1D5C7572EDC5F15EBE8F3E3FC446F985E120BFD30046B376DD7F0527091D264",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\Sandbox\\ManualClock.cs",
+    "sha256": "78802FFEC3D081872AEEE53588C6AD5A14B1508ADB18C8A7903025E2C4B263D5",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\View\\DayNightSunConfig.cs",
+    "sha256": "95A5FE233B9FE8677B4CB0D13725175025AB9FCDD5DCAA7B817078FD0C458DA7",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Clock\\View\\DayNightSunView.cs",
+    "sha256": "FE0E3985E062A6F9566B0C0714B2E096E7D3D36BFE4E6F83A85C0B8922EF2EB3",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Net\\DebrisWorldHost.cs",
+    "sha256": "8E6429F648813E8465E7DA56F46022CF2475ED95481A552AAB148664C7E1704C",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Rules\\DebrisConfig.cs",
+    "sha256": "307739178F5FF111E79BB2449B544C090DBB21541EC71ADF87BEE215A45AC779",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Rules\\DebrisExpiryEntry.cs",
+    "sha256": "3CBC42825E97F47F86B3EF6B05CFF67E42B233731A254A1B23AF3E6C1B513862",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Rules\\DebrisExpiryList.cs",
+    "sha256": "815A2084DDB14F3DAD31C098C944CFDF0F285E65553CD195F9FD0876EF4E5838",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Rules\\DebrisKind.cs",
+    "sha256": "82A0343C52A283543FA6671778A55DCD15E60221B42FA89903C00A2FAC545E45",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Rules\\IDebrisTracker.cs",
+    "sha256": "3B9A7706DE577AC23A506A692B37D4FA92FDBD5DB6C004A54E2E0709D71B22C7",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Rules\\IExpirableDrop.cs",
+    "sha256": "44BD6DCAC8E6511E12601B3F4B8FAFE9E0EB7FE9D91C417140B521B4DEA9922B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Rules\\IShoreDropLocator.cs",
+    "sha256": "491A703043088F21FF6C834619F4F07D474F436348803F12669D1044FCF4CC9E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Rules\\ShoreDropRequest.cs",
+    "sha256": "35AD3D56D5465E6BE9A0BA2B9F65EFEE88AD87861B275853E816E0E088EB0115",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Rules\\ShoreDropResult.cs",
+    "sha256": "B6AD0BA333C19E622AB2AC010F89E7B5DC9D8DE6AD03DF0127C913761FAE14A9",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Rules\\ShoreFailure.cs",
+    "sha256": "F876CA7D339FF7925D06EAF0D7C4EC6E231C63B286F3028AF2D63CE7CCE990E5",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Rules\\ShoreIslandSelector.cs",
+    "sha256": "DC8D9524E64D2457D2428189DD546FEF3F60E1BA3C712643442AF847803825FD",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Rules\\ShoreLineSearch.cs",
+    "sha256": "8AE27E8A6F05B7988F261B9B21B4F67EBDE5382F39ED077975D0FE47179C8D2E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Rules\\ShoreSlotMath.cs",
+    "sha256": "7E63DAF9F680532A09FEDC59A9259B245999CCA9CA6BCDA304FDC116D8CC4028",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Rules\\ShoreSpotSearch.cs",
+    "sha256": "E59F97597B92484364B2C02ACF77CBDAB9F670634233A1CC57E6EC677DE52FCF",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Rules\\ShoreSpotValidator.cs",
+    "sha256": "B970E6CC44605647B0BC4A083C6FC0967E071E51CA92EDE03999B2C1FEF2FE64",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Sandbox\\DebrisCheckRunner.cs",
+    "sha256": "FA02215BC2C950814F952E3139B75F51651A10A8647449BF4AEDDBEBCC1546AB",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Sandbox\\DebrisExpiryChecks.cs",
+    "sha256": "E414D8A551E5E00C7BB509BF82C5F717673697B1F9EF9C20423C8E6898D7AF67",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Sandbox\\DebrisLocatorChecks.cs",
+    "sha256": "4D71B43A0638C13A47999006971A2049B42303E082AEE5843C51BA80AB7093FB",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Sandbox\\DebrisTrackerChecks.cs",
+    "sha256": "95BD55ED743053AE987B2791598E1579DC85ACC6C41975AEA5F6EC92526392CC",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Sandbox\\DiscGround.cs",
+    "sha256": "9DB385CC875C7DE84C31AF60FA163C257B4114AD2699B65592B7BEB4EE2A7C37",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Sandbox\\FakeExpirableDrop.cs",
+    "sha256": "BBBB269BFFD1D38FF6E8E29C29814A4734989EAACF920BEC1F139CB41CA1A269",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Sandbox\\ShoreChecks.cs",
+    "sha256": "67368F67DA18564AC985C67AC40F9E5129531B0F06815A7544BFB81C5E136FE4",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Sandbox\\ShoreDropBakeProbe.cs",
+    "sha256": "E3B89A2D1F5BD1153E5BC7AFA486DEE4AD6C628BDCDC913BAD7F91BFFA1EE48A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Sandbox\\ShoreMeasureProbe.cs",
+    "sha256": "10B20F559C47A2CE4FB8CCE7320B05982CB89C6E691EA7335F16BBD610D73BB5",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Sandbox\\ShoreSpotSearchChecks.cs",
+    "sha256": "7975A0F92B9389944AE5F31EC04D7408347AE52D18F3E6B85FF110AD17FB13AA",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Server\\DebrisLifetimeTracker.cs",
+    "sha256": "68C229787FE2B3619835A08DEAE1C25EEE48BEC3F59AFB73DE47E42765853D88",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Debris\\Server\\ShoreDropLocator.cs",
+    "sha256": "1A1B2B4AC5C88B4D93C831429C49C7DC8241C0B1D2328860F98D6E01A4185545",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Environment\\View\\EnvironmentBlendModel.cs",
+    "sha256": "3017BB4CBEB2FB925DBDE19C8B920A2C6DB950C9FC2F970C738967AB846D0FA4",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Environment\\View\\EnvironmentClockModel.cs",
+    "sha256": "916C179331A3E2E485F1AF756D8C9B9A0D87C6F302AC2441BE60C1A2206DB488",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Environment\\View\\EnvironmentRegionSampler.cs",
+    "sha256": "CB0F8623622AE56F486702671167527C1372D4D7C6644CF2A85ABEDF69DCAF48",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Environment\\View\\EnvironmentSkyMaterial.cs",
+    "sha256": "FC9ADE385EDE1D399D0691C2E9C69DD69471A86EDA2F37BEA40B9375B063F28E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Environment\\View\\EnvironmentSkyPreview.cs",
+    "sha256": "753706460AAA1C220101DD2E899E0E8295E9864C2065321387AAB8A327B3F5EB",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Environment\\View\\EnvironmentSkyView.cs",
+    "sha256": "3513BAF971B8426C30FBE18924AC188287CA58EFC30EDB3B5D890752607C4EC6",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Environment\\View\\IslandLayoutOceanPreview.cs",
+    "sha256": "6174038E39A8EDE682A2C2BA715D1D49D5980E069859B3296BA172A0FBD0E200",
+    "gitTracked": false
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Environment\\View\\IslandWalkthroughPreview.cs",
+    "sha256": "8E59ED88C49934361CB91CD714703231F4800503997C6C86645693D14D83F67E",
+    "gitTracked": false
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Environment\\View\\SeaEnvironmentProfile.cs",
+    "sha256": "65E09758C89280C2B0864C60D3BC9EF9E67821094023A760930BC7D9B8760C35",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Environment\\View\\SkyEnvironmentState.cs",
+    "sha256": "31DCB8DC22D158D21E9E0E9C459FE0D3EF41372D4694A347573ED3F52E0CB86A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Environment\\View\\WeatherEnvironmentProfile.cs",
+    "sha256": "E9ACCC0DC8E409B579A48D1E2CD4CD6A83A1EBFE54ECAE2808DE9BC76C69D255",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Environment\\View\\WeatherEnvironmentSampler.cs",
+    "sha256": "E834EED240209D3A05D13B72A827BF97590F9B58A3675223B4A110563742023E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Environment\\View\\WeatherEnvironmentState.cs",
+    "sha256": "2E2B0D9B0328DAE4B0FB66FEFBEF8B85C3E8F32CF2BFF21979DBF48341276371",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\GhostShip\\Net\\GhostShipNet.cs",
+    "sha256": "B239F289EEFA7182C23F6DDE72471F96FA9B074F6EC359173AC2426CDF49152F",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\GhostShip\\Rules\\GhostShipConfig.cs",
+    "sha256": "772F2E241B028F718AA6D9CCFAE54D4986FA6D9F1420A878FBA1DB99BD44F37B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\GhostShip\\Rules\\GhostShipPhase.cs",
+    "sha256": "CDF703F9E9893748F01252CEB2A38C4C0A323915234030000F50F16DCB45D70C",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\GhostShip\\Server\\GhostShipRoute.cs",
+    "sha256": "DD34463FCBB1DF66EE59669EA22E101EA1422094AC4A4C3B8E3EE55CD1BC6546",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\GhostShip\\View\\GhostShipView.cs",
+    "sha256": "2404660438B4C090D7F93126D8E999FCE3B464FC44958257BC9ED1228634B0C0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\DepositDistributor.cs",
+    "sha256": "6A2C9EF76EFE13F5592044E8D1C10D28C95C1F3924A8D1D684DD6EB85761F004",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\DepositSpec.cs",
+    "sha256": "3FD312C69EA6A47CD745980C1F9E268271367E509A1F4320FE8540FBA477BD95",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\HarvestCandidate.cs",
+    "sha256": "855DA7B0CB3B70425FA868C516579ADCA96909AC1BD4E5D40C6D44CD8F4D54CA",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\HarvestCandidateCollector.cs",
+    "sha256": "984C593B514A93D05534A89E95A2E7CD3D6F9D2FE47846A1238C71D5B366859D",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\HarvestChangeNotification.cs",
+    "sha256": "22714AC4BB0A1616CD786D8F78FC55AE4198ED93D73212DE9205452C2C123CB2",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\HarvestIslandSetup.cs",
+    "sha256": "CDA648AD3EB34DCD19FAC77C3217A9B3B26B530AB148E2D2982405952A46704D",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\HarvestNotificationQueue.cs",
+    "sha256": "4FEC6DE2141BF661C4FBF2D5DCA7B23569D6BED82F71942BED783780B1F134E2",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\HarvestReservation.cs",
+    "sha256": "4CCC0B49D5E9BFF8C72320D8AF51EEF423AC0CCFF85FC7FE33527BEE3EF50AA2",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\HarvestSpot.cs",
+    "sha256": "A6292546940B6D34F4E788994B5C5552723A7B83691B41F0FBD7B58A2013C812",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\HarvestSpotAssigner.cs",
+    "sha256": "22A98009A238B14AA25EBFE0418D2C3FE799B1E25152273187C0501311CF8DD7",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\HarvestSpotBinder.cs",
+    "sha256": "901F956A50031DB377FD2A9F2B7F728B1D7DB90DC4B732B060B3A1B19335577A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\HarvestSpotCategory.cs",
+    "sha256": "EF7451F19D0C029F0D92A74DA894FC2E9A9E3600E922A7E4AE33AA8B36F71B72",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\HarvestSpotIds.cs",
+    "sha256": "022B43C86259289F1EBFA0A431FF16E7770F55FB8283849C98BED773EF38DFA8",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\IHarvestChangeSource.cs",
+    "sha256": "FA3A0F9EB3378C6C2D4E9DEF1D3C81915281FF8BBC88DCB9D0C32D80F37D66CA",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\IHarvestIslandRegistrar.cs",
+    "sha256": "56425CADD0F72F3D7DBB1E710240F869D31495857AACDBBE19A066E05B7C9B89",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\IHarvestSpotQuery.cs",
+    "sha256": "6783D96B1C2A6BDD758A4020D1AD3D33B608EDCADC2052A189C9E1A5C9264321",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\IHarvestSpotRegistry.cs",
+    "sha256": "CF716DDEDBE6D488F9258E085798CA0B64701DC7078A81A5A169853B7FE16D56",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\IRegenPolicy.cs",
+    "sha256": "A20B530E3FB88AA1153573A519B4BF43261ED97494B265739C3AA15A9ED59175",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\Mocks\\FakeHarvestRegistry.cs",
+    "sha256": "08CAF4C4973BD15572A69C92EDD76960A38C114C3A5255B4DFF606B43551C0A1",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\NodeState.cs",
+    "sha256": "F34B2FC71B6920CB9861E17DDF7705A193B4C642325DAA0BC7C98B9D67110395",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\ProportionalRegenPolicy.cs",
+    "sha256": "76C90974102F29B60EE88E9228CFC50BD0D91692C568612E15DF2C651CEFF0D4",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\ResourceBudgetEntry.cs",
+    "sha256": "66F9B7F0F9C5164368EB64F48741C4DFF879AE5130ACA36B30DD40D20F16E108",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\ResourceCatalog.cs",
+    "sha256": "09FBE241D47F6F9784C6B7374FAC7C42C617E6F21C1E38DD205885DD998E0B8C",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\ResourceDefinition.cs",
+    "sha256": "FB511D6AF048146AF9C91A539C09EAED569466EF0EDD422A7EE8BBCF465E7A3C",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\ResourceDeposit.cs",
+    "sha256": "E07410837D354CE0F1D8B1883A068F53023FBF346F24EB8F65454B33B258B626",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\ResourceRarity.cs",
+    "sha256": "11FEF02447EAC858CA40E0D44AB5844C6A1970DDB923922B12D657F48C7A9787",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\SpotAssignment.cs",
+    "sha256": "334DACD7B5E0AD4BDE5C739D8C9D59952570687876A230F6A247B99D8499CAF8",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\SpotInfo.cs",
+    "sha256": "81BC19573F4447AC2CC0B032AE8338337C3A24848770826A88538316F8BF5FE2",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\WorldDepositBudget.cs",
+    "sha256": "D000B7D5EB93CF6E6FC696747730B3B7A9DD6DBB7F13190B8452CBB02171613B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Rules\\WorldDepositPlanner.cs",
+    "sha256": "BCBBF8275D237697CA8A13FFBAD066C5EE4B871DC830BEC1220A8F99BBFC7C06",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Sandbox\\DepositDistributorChecks.cs",
+    "sha256": "E4D7A9202A713F48F5E599313BC2C0969BAF1D0750FF26D371659A6769E241EC",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Sandbox\\HarvestAssignerChecks.cs",
+    "sha256": "FEC1E1981A89E389CBB8CD9013FFC96D1D86DDB75B66F5047FB1CDBA64EB980E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Sandbox\\HarvestDepositCheck.cs",
+    "sha256": "43B309B2068A0A43DB3B9E0431DC3F8233B052DABE275F6A694F9EF430594A92",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Sandbox\\HarvestDepositChecks.cs",
+    "sha256": "5A433D264148482EA785537014895F2FEB92ED82321672E082BAF84C007355D0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Sandbox\\HarvestFixedAssignChecks.cs",
+    "sha256": "05E5DF0F2E1951C3695ACAB1F7F56DF35EE5B821E700DA8D068447CFBA383E75",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Sandbox\\HarvestMockPlayer.cs",
+    "sha256": "F10805E8D4E24D2BC8D90BC39B5E532F3E24C9F8F0CE53F89CAC011BA61D8CD0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Sandbox\\HarvestNotificationChecks.cs",
+    "sha256": "D979D3B3C51006FC31D985D6492DB1285D448B6147B468407CC33608CE59B439",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Sandbox\\HarvestSandboxIsland.cs",
+    "sha256": "97A3931B67C32D1A472ECB45A42F48DD81011E2960102F5B115C6746C5F33968",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Sandbox\\TempHarvestSpotPlacer.cs",
+    "sha256": "BD89054E59B8B4350EA8EA619A5D922684EFD9B2B2CBF6F5AD1E118DB0E9B1B3",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Sandbox\\WorldDepositPlannerChecks.cs",
+    "sha256": "775596168F6FF771BFA491556F82081BEA163400BDCB6EB48B847A06297B90FD",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Server\\HarvestHost.cs",
+    "sha256": "7AD38BC2679DF9EF4B155477EA4A5BCF89F50B59101D3337ECB5F98A902FF26E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Server\\HarvestRegenDriver.cs",
+    "sha256": "D2779AC654C5113E6D84DFF1DFADC13B3D1EB9CC1C2AF415AE214D3E74A8213C",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Server\\HarvestSpotRegistry.cs",
+    "sha256": "05A30B67A9DC52C8170E632820573A32D957E0980F720212CECA6AF45BD8FAA2",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Harvest\\Server\\HarvestTargetAdapter.cs",
+    "sha256": "20F00A361DF551729CB3BC439D946E8903BD6821ADF7813348155B66CC42F245",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\IllusionIsland\\Rules\\IIllusionService.cs",
+    "sha256": "C8BDB44843DE35259786EAE54E83979EC09031AAC915FA2AF9891D16E14CFE71",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Net\\IslandGroundHeightSource.cs",
+    "sha256": "97901A409CE753A158A6B75ACF47612C531BFF5F81AB234FC974926EDF2B03A6",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Net\\IslandStateNet.cs",
+    "sha256": "0A674CA7600596C8CDBD7148CC12D891E8D618A7C77D0D1C8A7B657DC6161796",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Net\\IslandWorldHost.cs",
+    "sha256": "9136044573F9E5421606920D2F86B8A61CBADBB8695CC80D13E1754A9D3430ED",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Net\\MainIslandFacilitiesBuilder.cs",
+    "sha256": "F33E2D3247014BD71CCCE2F16B72C9915B18016EEF2EF8B57CE5B4EBCEAAD801",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Net\\MainIslandFacilityNet.cs",
+    "sha256": "75920A41165CEE342422BEB6C29B2F317C487094C2D3E5988C87A7D26794C81E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Net\\MainIslandPlayerSpawns.cs",
+    "sha256": "B9B4FF0324A55D9A3EA4635E44E6011FC78C6AAB35870E0919459A4EC708C52D",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Net\\PickupPrefabRegistrar.cs",
+    "sha256": "AEF6657E0B9E308C035BF339E8657B318D8127597CF11B99F0D14B3709464D7B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Net\\WalkBoundaryBaker.cs",
+    "sha256": "0706CE7528DDE22B5E7A59D09B610C918BE2CE5483B70E00ADEAFD179D69BC33",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Rules\\IGroundHeightSource.cs",
+    "sha256": "857BCBCD68E9A86FB35D9377DEE5CBDBBF501E5D327E3E33D1B9A386595773BA",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Rules\\IIslandRootSource.cs",
+    "sha256": "74551DCA3EEAF25A95367E26FC7445B0F0EB0F4534497DD49CC8C8EA6F25D1C4",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Rules\\IslandArchetype.cs",
+    "sha256": "DAA0010F6A656A6E489E048150F17ED46D466CEA092DC1A17DA1B8715FBB4078",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Rules\\IslandHandle.cs",
+    "sha256": "E42C13DFC524EC924625C317025B204AAC29F6CFCADBD89553ED7C4D0E1CFAC5",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Rules\\IslandResourceEntry.cs",
+    "sha256": "3B4F3B0880686BC0A45F2C131550EA3A7DAEBE82DBE7794582D08AA028E9887B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Rules\\IslandSpawnPlan.cs",
+    "sha256": "ABB890DA73184882FDB14052E884116521E71BFC0CF8CD5380650064A52C5C2A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Rules\\IslandSpawnPlanner.cs",
+    "sha256": "156AA0FE7015DB9445714757A7091A8728E2AE56FD42D8BFD83B7E64DE0DBA87",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Rules\\IslandVariant.cs",
+    "sha256": "23489899F25A4893202D84FFAFA902B6CB39B2C1B3DED0A910EFF08469D8F2C0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Rules\\IWalkBoundary.cs",
+    "sha256": "CB87BB75E264E1538A31B17BA1FBD7A483E157B0F624A69952B8AFC29E47A653",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Rules\\SafeZone.cs",
+    "sha256": "0FD88C440E8A14390E93CF2611A73E836C88C2002FAA426673A69FC9631D64CF",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Rules\\WalkBoundary.cs",
+    "sha256": "1550D468222E51E07C19EDA401453F45799D1455CE1C1834E2C48A44A46F2ECA",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Rules\\WalkBoundaryConfig.cs",
+    "sha256": "8F956E31F9D96B370736B2072473821ACD8AC6C75462E2CC8E4F87EE3DC47413",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Rules\\WalkMask.cs",
+    "sha256": "FD2A60B765AF4D41A25FF712DEE22141A3FCAC1666B7EA0994AB578279906C24",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Rules\\WalkMaskBuilder.cs",
+    "sha256": "D1674B0CB08E3B1ADED0C0B4F2B5BC0C1A053F9304BA734C275D958C0AB15541",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Sandbox\\IslandFootprintCheck.cs",
+    "sha256": "31921E244EDB514E7763FB2917DE52688C2E4717ED1B0C584E17778E6435CD2E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Sandbox\\IslandNetProbe.cs",
+    "sha256": "7A29453B80296564A04C832086F68D870300C13F7D7C4EF74567B821DA881407",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Sandbox\\IslandNetTestSpawner.cs",
+    "sha256": "E6FFEDBDD8F85C5887178BC925E843781A5970BEA412548718D6E83305578957",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Sandbox\\IslandSpawnProbe.cs",
+    "sha256": "80E5700311BCC8DEA2CFE796EA2C68D42527663F87B77C60E1435C9AEA467E97",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Sandbox\\WalkBoundaryBakeProbe.cs",
+    "sha256": "9C1ED46AA1C5C5F8EC6D45F09FE574A01C4946925F965A54AE9FB481AF2C45BA",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Sandbox\\WalkBoundaryChecks.cs",
+    "sha256": "1D42B40C1C928926041903C3CA46C145D53D6763AD5DCAC9349672E06E1BCD32",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\Server\\IslandHarvestSession.cs",
+    "sha256": "3773B1B1FFE1A7EA8C0CBC71161E550A94367756CC901AC070F171030727DAC9",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\View\\CoastalShelfMesh.cs",
+    "sha256": "4EAB9DB72AB5A8F4E54F51BDC6370877EC1590DDA581CC9C8098BBEFCB4FC4A6",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\View\\CoastalShelfView.cs",
+    "sha256": "54B25F41994052BABA3F474517570A012FD80DA2A2851D2C443DD5113FFBA8D9",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\View\\DockSeabedMesh.cs",
+    "sha256": "13B07F6CDFFE8BAD8191D8651724720773887F976002614F2F5B07B32262F7B0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\View\\IslandCoastWaveView.cs",
+    "sha256": "4CBAFD7EFF4EAE9001EE8C0C1865E7F6B56D5165BA368463ABEF7E86D6941D3A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\View\\IslandInstanceSet.cs",
+    "sha256": "B8646391FBFB55167E75808A7F41F96B868306B8FE906FE3346B9D798CE5051D",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\View\\MainIslandPresentation.cs",
+    "sha256": "0FAD864FF7979C22B2E3396DA694C1A6A3F0CF5E26C0CE9B6571F36857D86377",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\View\\TerrainCoastContour.cs",
+    "sha256": "6CF170990688F09AA72D0B19726D64DCEC964FDCF62C2AF03D67804ACD404F7D",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Islands\\View\\TerrainCoastWaveView.cs",
+    "sha256": "C1A1241985708DA55601038D9B025DF6F2597D4348ED5E222FDC686B19BDD6E6",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Net\\CompositeLocalMapBuilder.cs",
+    "sha256": "BFE5136171809893F9BA2A4A7FBE437BF7DC06714CD3DEF4494A006DF2A95665",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Net\\LocalMapBuildSession.cs",
+    "sha256": "FB7EAD4AC25AF180FD7C38271D5AD93FBE2E8E31BCC7D1341F05A999A86B9CD4",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Net\\MapStateNet.cs",
+    "sha256": "63B809E0CD6CC8E4F4CFDC79C80415FF122028C7287F2B629FADD02D5EA766D7",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Net\\WorldReadyMessage.cs",
+    "sha256": "AD572262B3C669542A4AFF6B8E3F4516E2A6C75C8F6ED448BEB68B131CC75255",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\ArchetypeContentValidator.cs",
+    "sha256": "436C6524BBE5BB065DA9622C448E5C3FFD378FEAF034F4B71A5634FEC4D49C45",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\ArchetypeVariantValidator.cs",
+    "sha256": "15BBDC7F2A7F8F1C4C7CA7ABB405D9CBCF2F9106CC80274B814A8E96AD867966",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\FillAssigner.cs",
+    "sha256": "CB3E750E508CD4F94A5883AAD4D8D038A36F59CD000339A5C3B699D38524DA3B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\ILocalMapBuilder.cs",
+    "sha256": "72D84B539F9EA220971A6E9366714E2D6BB900C5782A54C51408FAAC68CC016A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\IMapGenerationStep.cs",
+    "sha256": "5C084E2C289445413C13D3DDDBF77407CC0D7EC7BDC53815083F6EDAFD2D17D6",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\IRegionGate.cs",
+    "sha256": "2F7CB833B1FBBCB0E937A98D8D5BB13B862D091EA3389F267D151AE1744972F7",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\ISampleDomain.cs",
+    "sha256": "2150C52CC3CA1A9DDEE626C0A781B4D336FFD5E106FAA45AFBE2807C1157226B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\IslandAppearanceStep.cs",
+    "sha256": "265407B83FC34A5D7CDE2966486C606D0FEB10E4625C775F4769126D876A5161",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\IslandAssignmentStep.cs",
+    "sha256": "E1E7230A8B251E4CB7E5199975D2F903BBDBAB2511B405303E4C4C5C31154AC4",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\IslandPlacement.cs",
+    "sha256": "5EE458113D4EC33429FC4FF58861F301E5A319EF270B7CA411BB1C0C0BB657EA",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\IslandSlot.cs",
+    "sha256": "A3D000271F65D7DACAC23666296FDC6858CFC0F785585DA2648BE4C592CF690C",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\IslandSlotStep.cs",
+    "sha256": "7CB656F9600C657C0A0A39690591A7F7CC62D8E9749BAAC027F0423688997020",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\IWorldReadyGate.cs",
+    "sha256": "1A6DF12E5EF9DFA40B48AF6C0AC9F5A9A77C855140775D77E3A1E38D1980CC4E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\MapBuilder.cs",
+    "sha256": "31BE19F6A0392D68B71CF0A000A2F4BB07C858A3A78321A2534558CA76F937B0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\MapBuildResult.cs",
+    "sha256": "603278E4D70D806603364BD51CE0078FFC55DA26C29D2C8AD99225587DD38ED5",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\MapChecksumResult.cs",
+    "sha256": "126D8DBCF1246808F38A7D0277EB4F2A28664013365F8F3BD0382239734E77C7",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\MapContentHasher.cs",
+    "sha256": "3BAEA6FF220785543A15B2B8B6C8770E0E85D7142B1D694F43431CF9662BD880",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\MapContext.cs",
+    "sha256": "EBB1D0A99DDCF93B83FF2DEA748F571F3496835070C33737E00F6CDB6F143B93",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\MapGenerationConfig.cs",
+    "sha256": "E5F866C07C16489C32229EE44CD3600F1A7D6ECF2C8B72FF9A046FAFAA2A7ADE",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\MapGenerationConfigValidator.cs",
+    "sha256": "818FDD94D4203715C340E167E109F390B1069960D31250E26F723731F62A4EFA",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\MapGenerationStepId.cs",
+    "sha256": "631D57ED1FD1DA808CD002CE95213BEC9DAF53C354F4E94BC3CEA9CDE62E9E15",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\MapLayout.cs",
+    "sha256": "171E1FAE8D9ED36949AF33DEA0C5F9DF72D67A135CAD879C795939DFADD268BD",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\MapLayoutAssembler.cs",
+    "sha256": "24CA4AEC0AE52F1143819BA653EE101B63823FEF10B275093B17BA7CC59DE3DA",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\MapLayoutLoader.cs",
+    "sha256": "F55010D331C0C506962623CD3EAF253C4A5EA942A9E765F10C3B64CD11D361EE",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\MapSeedInfo.cs",
+    "sha256": "6EB9CEB94E557B2DFF513005B601B2DE03A8902519929FFC461BAAE67F250596",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\PoissonDiskSampler.cs",
+    "sha256": "1FA86E54247C18A9706FBDD292AF5CA8C2B489FC7413352AD4C9CFA2B9BE7EB8",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\PoissonGrid.cs",
+    "sha256": "3BE8FF01F2A2A8001B98F3A71400BAB06FE36135B7513DE3AAB335AC5EF03454",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\QuotaAssigner.cs",
+    "sha256": "C83BDABE6EC3A064D20F72CEEE8A224EAC1F5A632376BDBA7B6A0DD9A80218E6",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\ReefPlacement.cs",
+    "sha256": "118D992F4D6A70A86DBBB84F9D78B36C5F03EBCCAC0625C885E004204B65E92D",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\ReefPlacementStep.cs",
+    "sha256": "34067F002C0EED6191F4AC9058AD293644D109CD6B99688F29A331BE5DFCA289",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\RegionGate.cs",
+    "sha256": "34A307D7DD9C6D5E4FC29ADF56C5F6031266FB4FC176DEF370B29AFB6658BCD2",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\ResourceContentValidator.cs",
+    "sha256": "76C839C984EB36EC98EA622D7DDC5925D24746715EBFE270F2801FB62D38CD9A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\ResourceFloor.cs",
+    "sha256": "392EA580D815F6B074D596825E539A08A8E02A4BE77CD42F5AA840E4B11CEB02",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\ResourceFloorValidationStep.cs",
+    "sha256": "462822940E06EB1A40FACC67FF2BDD6B85F4633203BAAEC8F5456CB72C2C705E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\RingDomain.cs",
+    "sha256": "5AD06DCD371218D1A2D564B65A13D6725C4B5AE3BCA651E620B37268785956D6",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\RouteAndFloorValidator.cs",
+    "sha256": "92B9C1F4B9EDFD8ED979BF89DF53ED540D4569E11246089BEB59431C73B7D61C",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\RouteGrid.cs",
+    "sha256": "FE2B03851017EDBC9C03F09904E8442F0016D7B9446DA62B9CA009F8919F50B5",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\RouteValidationStep.cs",
+    "sha256": "3F7737A3D2FCF394ABF28E2E8C7B28B9C816CEEA3D43D4E50F4DCB5342395421",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\SameTypeDistanceValidator.cs",
+    "sha256": "0BE43E1287616962349F9031A63675CF26CCA87072FEC96C5D749216D35515DF",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\SameTypeSpacing.cs",
+    "sha256": "62DC541AB42558DBE9CE025D4A89649BA2A074B26A1AB3989233C71671576B81",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\SeededRandom.cs",
+    "sha256": "CE1F14138988D8DC4B7A1B94A1061C6F027B5B11EC03F0CF4BFAA1E31A31224A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\StableHash.cs",
+    "sha256": "3E183676C892F7CE83FC43F81982EBFBEE69AAB6919A78C94F0FD53C17F0CD0E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\StormWallSession.cs",
+    "sha256": "DE0B1BB0717A45209085C3E3843B25B5205680F1F75FA3732905A1AD6BFE10FD",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\WeightedChoice.cs",
+    "sha256": "C2B7506F78BB01122FC7AD09744D43FBBCB95B2503032291A4A1431A3CCAB433",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\ZoneConfig.cs",
+    "sha256": "7B3EBA0B07D3DAB05B91BCF948DB6A87F218AD026080C1B4088156A275987F7B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\ZoneConfigValidator.cs",
+    "sha256": "07703E4D41CF55F264BAA8416CEB85CD140CCD9EECFE8D45203CACC0AF63E5A0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\ZoneLayoutStep.cs",
+    "sha256": "1B54B3C3E689E809D89A21B0AFC26EB14DF9C76F65FEA77D37511BB380D16FBC",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Rules\\ZoneRing.cs",
+    "sha256": "6687116F8D719E7F05B2658E1A2470633BF372C2B0939D445B02F5B1B62E74D0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Sandbox\\MapBuilderCheck.cs",
+    "sha256": "FA9D81AC2F5D64F744A370D7B27CE2E663B14F9B526A89126B10FC83C3F1072F",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Sandbox\\MapBuilderChecks.cs",
+    "sha256": "292AAD995EF0617965B964FDA8C0889533D36338039678CFADABD3FC195B0A8C",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Sandbox\\MapCheckLog.cs",
+    "sha256": "641EBE7373C3D63DE421F8F71D2185F8552DC38D8E1F2F4E990EB8E01D9780B4",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Sandbox\\MapChecksumChecks.cs",
+    "sha256": "8A38527A324CD7B23500B487AB2DB48DBD44E8F3DE08C04EC0195E46A5322A36",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Sandbox\\MapConfigCheck.cs",
+    "sha256": "6AC4750B76B72FD3E09111DB326AD986F1CA708585069F7A0385119FEEA31C0E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Sandbox\\MapLayoutChecks.cs",
+    "sha256": "6C80138AF28EA3A1246EAEB25E61098FF48A5171773275EC24E5BEADC0A05777",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Sandbox\\MapLayoutRuleChecks.cs",
+    "sha256": "617B84E4C05C79F43899347858093F2888DC2FE00774A5718DEE2FDFFF412AD9",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Sandbox\\MapNetProbe.cs",
+    "sha256": "F51C6105DDCDD367E6880441F7C14E765C81E78C534B629F379696492787C555",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Sandbox\\PoissonDiskCheck.cs",
+    "sha256": "512307D5A76AF544547AD46EFFC1B65DEF3EC525DB1AFC5241DDB1EB0C0E84EF",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Sandbox\\PoissonDiskChecks.cs",
+    "sha256": "BA04F7C16AE98F6C60BD99012E8FC88F11B22C95DBF1039AD91614F9D6319CE8",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Sandbox\\SeededRandomChecks.cs",
+    "sha256": "ABCBACA595ADAE36E60FBE045C71497361EDF2EEA4EC392786C996538753631D",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Server\\MapSeedSource.cs",
+    "sha256": "ED154AEFCED5A8EAD0AC24D1AE505A4C61F412C76DC6CDB3482211E7654607E6",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Server\\MapServerBuilder.cs",
+    "sha256": "59A6B22C41D2661C7A05A59304C6338FE0819512876ED49816FD1B5547979393",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Server\\ServerMapContext.cs",
+    "sha256": "DFBAC767FDBC6A3D507D7267C97284CD1BE30DBB86F6AA4816A025DD94DBF6A5",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\Server\\WorldReadyTracker.cs",
+    "sha256": "8F2CC3326C6D29915D119AAED607BF8E9BCEB2E8FC53497F6891034FE822BA0D",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\View\\StormLightningPattern.cs",
+    "sha256": "F450E611027454968CF47BBEF9AD156C8AF59C732F9C378260B94CF3EDA64A67",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\View\\StormWallAtmosphere.cs",
+    "sha256": "682751EE0E15A03DDA33887953D7D5822BFE205A83E2061D38E4EF582CFFE081",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\View\\StormWallView.cs",
+    "sha256": "8C679C83FEC3AA90593DE604815A0C3E82929E00DB0C7C959FD1FF13A817BB14",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\MapGeneration\\View\\StormWallVisualConfig.cs",
+    "sha256": "8DB23A6CB1AC7BAEB6A7BA7465DE831CE70C3880FA7A6CA58F714387D52A0CA0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\BuoyancyObject.cs",
+    "sha256": "AB4B1F1A0715C2898994ACD2408768D44B3FEA0E15255DF550EC5A741BFA0D63",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\ForceFieldHost.cs",
+    "sha256": "57353C4BEF0E18346D87076D72E3C2479CD38EF9DAB7AC8F2F9BE8A3BCB2A780",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Net\\BoatBuoyancyAuthority.cs",
+    "sha256": "24AF210C78B7372A2623FD021A0DC96EF0F932F1C4E0A9F7D1DA75517C0A5D08",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BreakerApproach.cs",
+    "sha256": "4AA8256107F2150AA44C99DAD42849C32EFC6483BE0C0959BA19A24283240BDD",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BreakerEvent.cs",
+    "sha256": "1277991DABAA5C4B62D1352AD833F3D0F77B9A060306D625552F672A5963CE1E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BreakerEventSchedule.cs",
+    "sha256": "0545476519B88E86A65825E22FCA4FD0DDABB3D3D33F4006F5E79DF2FAA694F1",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BreakerPhase.cs",
+    "sha256": "0A7EF677182D701179CD536784F01C8094D61D35E75A4FC057F6F7488B615690",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BreakerShape.cs",
+    "sha256": "8750F4A0709D2AAC52FB745A239BD8AE6D55BEE76DBFC54274D694E321258A25",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BreakerSource.cs",
+    "sha256": "2DA9ACF855D5D9082CCC17B03BCCF6D3DC26149A3FEF63D30CE026503F24EAC0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BreakerSourceFilter.cs",
+    "sha256": "3FE783DDF4ACC4A655769C00D38357F7A1C39F4156FD91C7D9A53E04BC7AC399",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BreakerSwell.cs",
+    "sha256": "8FDF3415FB2AD73F3D618692D99ECADA81708AD00197E4FDD516BB11290774E1",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BreakerTimeline.cs",
+    "sha256": "D100FF5520B9AB45216176EAA3E0347E0B516152180129A9CE1D8A803F0BB398",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BreakerWaveTuning.cs",
+    "sha256": "058E67999296BFE63889ED99521DB66933FCFA8E4BB40AAC56B95E3E32420DBA",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BuoyancyBoundsCollector.cs",
+    "sha256": "7A462C723F037967073BAC137C1A8906BB2A2267157A188FDC074FA919EAD6C3",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BuoyancyForceApplier.cs",
+    "sha256": "54B609CA06590BCAEF76A493F4FE2A94D301C0740BA2681D272D9DD6246BAEB5",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BuoyancyPointGrid.cs",
+    "sha256": "99C1970B4A48E025B262F1EEEA675AD279D30049D5AC513AAD53A40356B40FA4",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BuoyancyProfile.cs",
+    "sha256": "EBEFFAB326861741070D885413F89A7AF0ADBEEA9E874FC6204E53B2ED62CE5B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BuoyancyReading.cs",
+    "sha256": "2853B7C733550844E7BC67725AF3081784AFABDA5348795D0FC14CBA41010916",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BuoyancySampleSession.cs",
+    "sha256": "273EF7290168E8AE53A754E0DB51C04798817164FB8E5858779FD26391E09FEB",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BuoyancySinkLimiter.cs",
+    "sha256": "F6AC556F8546D633FA5AB4953A5F2663980DCF4E0AD7696DE8D3A31CEB95080F",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\BuoyancySolver.cs",
+    "sha256": "A021A3555885FFB2185049F802228530AD12213F380F0D82FBD544C9CBE0AE42",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\CoastLagoonModel.cs",
+    "sha256": "6F092DCB18C5B83C5139669CCBE45FE77EE1FD1D58B6B6A6E6C7E353FB9F0E5F",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\CoastWaveModel.cs",
+    "sha256": "3AE33A64FC331C081C88A25DACF7B8E4692C4A75FA9CC8776CEA3EDBC68F2E60",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\CoastWaveRegistry.cs",
+    "sha256": "0C4AA3FDF9F8A6B77BC7156DF1699F97D6DA58AA09BC1F5FE027B3D078CBEDA4",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\F3WaveField.cs",
+    "sha256": "2AA2451A8FCA1034E59530A35CD83FA84A50ACE19F559B3E3D501ACCAFF385A7",
+    "gitTracked": false
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\ForceFieldRegistry.cs",
+    "sha256": "CAC3EC7F87D54EE700A3F265D23090E97A538B5CA74EE9B1BEA9392FAA68E86A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\ForceFieldRoute.cs",
+    "sha256": "3C353A3D77850CE73F29DC6F48F70E76BA02493CD4425A138C57182E8AA2F536",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\HazardEvents.cs",
+    "sha256": "D77553AD5B631E1D420BBE0E56D7616AB333B0474AE6421CB9A4954DFA78936B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\HazardHit.cs",
+    "sha256": "6C2B28DCA5595E2330A8F49097940E9885EC0792B696901094073AFAA514468E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\HazardType.cs",
+    "sha256": "E11E72F3EAB32910E5DD3BF74E14F6528C4F62182588C52A811E4B6E5E47418D",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\IForceField.cs",
+    "sha256": "D44E4157CBF365D6865CD5A4B586178B0EAEE80E9B6F9D94595125D1563C1DF2",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\IForceFieldProvider.cs",
+    "sha256": "7C86CED70AB7AE85694AC0036C21BFD56EAEFB7D2A8B9593DF363484687D740A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\IHazardEvents.cs",
+    "sha256": "057843A6ADB07A3D303BA47B535C60078628D9D2A1D3F0911F09416DB46E1487",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\IShipBody.cs",
+    "sha256": "C206A5E24CE00E442AE1F42AFB191C60D426E4774C2174EDA2514B95D350E87B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\IWaterSampleSource.cs",
+    "sha256": "A6FDFCEE626AC4B3B787138B8053A5BA8AF98985EEBBFA21556CC2644EEF3430",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\IWaveModifierSource.cs",
+    "sha256": "E5EACA4F68772D8F9B19E254E0845CB424BA37579308547098F046D96C00F234",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\IWindSource.cs",
+    "sha256": "2488C9EA0A2CF46238E719B6743986F7D1EF067E6FC51E44596FD3F12DD42162",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\Mocks\\ZeroForceFieldProvider.cs",
+    "sha256": "F2B27E92E994F1E216A6ABF80214E403D1EC70D1B7518432355A26CD488D6417",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\OceanOpticsModel.cs",
+    "sha256": "CD42152A9E417309206C4F3959F473E856B653A86EF2232FAA4E2D9E2658DE38",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\OceanOpticsProfile.cs",
+    "sha256": "C1351A9226F5BECB7100E5A0B8DFDE0CB91986B86D209070CD1B39B07BB00F62",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\OceanOpticsState.cs",
+    "sha256": "EE2C1EF92047A533C0C6C3C2C75CCAEB43C88EE300E2D71C74788518464B4370",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\OceanZoneOptics.cs",
+    "sha256": "1CB1235695F030E7B1BBCB7BA8806E08D6793B5D2D7CCA215C8DD8CFD4504A76",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\RightingModel.cs",
+    "sha256": "1306B76812657C0875F8FD469203C0DDC70D62AF281FB7A737BFBC74605A10D7",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\SamplerPool.cs",
+    "sha256": "911EB4445223AE15FEB87A9202FF2715A89F8C30A25EF95441DAD680A4C12B75",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\SamplerSlotAllocator.cs",
+    "sha256": "E99739CDBFD814F00896C41D1944EF6E5F1AF246EEAE081A8D02FD8C75C55B2A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\SamplerTicket.cs",
+    "sha256": "6685D1F3C8F59ED439305E73DB3A9FC6BEA99C32DDED3B1B6834F5F685B3E26B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\SeaZone.cs",
+    "sha256": "FC402582BE39839A4CA1254FEE2FC179B5F4E878E7B897178C20A9616B752A38",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\SlamEstimator.cs",
+    "sha256": "20337BDE29E45A1C9620C23221431E27334C2B1EB198F8D156841BA50D13E667",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\SlamReporter.cs",
+    "sha256": "D2AEED60D9939E9B7545B11E0815A282A593B24EF58FC47EBEF80FD76213A6F4",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\StormWallConfig.cs",
+    "sha256": "1BA56A6E5817C4B1004434D40EA230FF07FDB953D6BAFF17E253E5542568E95A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\StormWallField.cs",
+    "sha256": "1118D2A08E7800B184F28B932ED326A4C6498FD5CB73838A349564E3F5159377",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\StormWallWaveSource.cs",
+    "sha256": "3B9647FE61BF79158F115DD67A172916F57A1C1E6DD2619A339050EA4ED765B6",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\WaterSampleJob.cs",
+    "sha256": "59F40DA697D370183C654EA5AA42B4997DDAF87CF91EAD6792E05E3CA54441D0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\WaterSampler.cs",
+    "sha256": "F18B6E3DF1077996F965BDD2D2123126B58FCCEDE95B855785EFCF8ADE819FD9",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\WaterSamplerHost.cs",
+    "sha256": "435F4F228D5CD4BABD216BDCB39E25EAD944457F9F016A5CCACEB68B23FD8E39",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\WaveDriftModel.cs",
+    "sha256": "0286311BAB847720C062BD1A79AB685A6C7A878E2204F2C2192C69B12FA2C297",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\WaveDriftProfile.cs",
+    "sha256": "BF5A3DE02DE07C01F33F859F7DE8C5835E21F7A53D709E0C9D7D9209BEB80E04",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\WaveInputs.cs",
+    "sha256": "9ECD06C0C42ABDB2A013F5D22B2929D441F3C76141CF373F2090A077DB2E445B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\WaveModel.cs",
+    "sha256": "2EA7BBED16507D09567727B307738F8C1133AD8B5C0C52CFF4A00B8DC7EF82E1",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\WaveModifierData.cs",
+    "sha256": "FE7D91B769AB8DBAD3AA4DDD587CA0416F2B5BA2A6B1719740F45F46D3493CD2",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\WaveModifierKind.cs",
+    "sha256": "F76D2D2DB8506CD3097DC368130D36CCA3ED56901D93B1FF3D4F369F31C8FAA0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\WaveModifierModel.cs",
+    "sha256": "74E94F8B9EEB5EB433E765ACC1E5EC5DCCAECACC2B6510271B0ED4D0ADD11B2E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\WaveModifierRegistry.cs",
+    "sha256": "2C95F6EBDF27BEACC477AC41A339E5E55EA94DB9442627A80B6A277BE0687996",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\WaveParams.cs",
+    "sha256": "88FDE9B081C89A03E1322D8ECF749F3CC1A6B82BE609FF919D69319BC833651E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Rules\\WindField.cs",
+    "sha256": "5E974D9E529F26D274E7D3B79D402BCDDF503CF1A93B466FF250FEF522179566",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\BoatDriftProbe.cs",
+    "sha256": "D32E7752E9F8ACA660D5E8816A9C1DA977B48BD0145450BF5DF4A7E405894F97",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\BoxShipBody.cs",
+    "sha256": "80111CFE4263DF7B7771956EBC040E8C2A90CFEA64064F01C790BB3225059646",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\BreakerEventChecks.cs",
+    "sha256": "2609864C62B93E899D5D65D8728D5A03DB0418472C707C1B1D820EDFE599C0FD",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\BuoyancyChecks.cs",
+    "sha256": "FFB0D0D6CA22798E0BDB0AFB47348412B9152952D824906ACFC6CAA9470FD3D8",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\BuoyancyHeaveChecks.cs",
+    "sha256": "CE177F130E250E2D4D3BE599969576B47748B6F827E8B7348AB6A4A92AE064E9",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\BuoyancyTelemetry.cs",
+    "sha256": "A80C94CDC3FC1EA1BF2047991D4D0CEABC6501340B2056AD9098F3FD22ED3CA8",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\BuoyancyTestProbe.cs",
+    "sha256": "5621E7B11142DC6D5735C567F17E0BF77357DA105BD770931413B032C3A55FF5",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\BuoyancyTestSpawner.cs",
+    "sha256": "0B167E359A57FB1C90DFB934ED4A67DE534B3BB32B9E28E046A283549042B6C6",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\CoastDistanceChecks.cs",
+    "sha256": "D47ED331339562233899AA5A1F268EF47F4FD8D67B849A25CC3451E05F83A7B0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\ConservativeWaterTank.cs",
+    "sha256": "EE624933841A1763EFF51C87F08BC4D8D97243DBB709ED7E13E57B0CC0A8CBC4",
+    "gitTracked": false
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\ForceFieldCheck.cs",
+    "sha256": "74B8B5AD23825A671FFF7B351C05FAF01BADBAC544CC99752E5FAB624D5C88B1",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\ForceFieldChecks.cs",
+    "sha256": "4E3EB54DE4D4612C3D2B2AFE9758465C1F349680B4C1D925B8C9374AAEFD5358",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\HazardLogProbe.cs",
+    "sha256": "6BB26186B290D71EB8B7BD3D8DAD41F2EEFA63969B49158F581826DED7EC782F",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\ManualWindInstaller.cs",
+    "sha256": "074F34D56F565E80D81C5184D3E557DC904C83AA1DD78D6BB921ED571CFD6F8B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\ManualWindSource.cs",
+    "sha256": "32A0B616AAEF5A56FA93997D89F7B8374CBB5DBFAC1D56595DB1E3A8834A977B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\SamplerSlotChecks.cs",
+    "sha256": "E3013548C30F63BFEFBB78B66491959F4DB17FCA45026D27B474115CAD17B001",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WaterF2ContactProxy.cs",
+    "sha256": "AC5EDC74437C2AB76C4883FCB8B8F935CA0B6D119861F6AB34136AE86C225827",
+    "gitTracked": false
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WaterF2Proxy.cs",
+    "sha256": "07D52043F9DE4AEF712A1F01EDCD94729C2AA43A8232EB51FB9A4508BD506218",
+    "gitTracked": false
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WaterF3Surf.cs",
+    "sha256": "E5FCA73EC7E173D900D8CEE0C57DAEDD981A5B3950FF9CF5A99252805BD51FDE",
+    "gitTracked": false
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WaterF3Terrain.cs",
+    "sha256": "DC623711EA2B6A8EF34BF2D08DF015B62F5322040A22BFD98942E02E72CF9A40",
+    "gitTracked": false
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WaterSamplerCheck.cs",
+    "sha256": "918B526E1B466303EC00093E51992DC91EDBC7BC3F6A3FE05D2CBF0CB780C69C",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WaterSamplerChecks.cs",
+    "sha256": "568E0C61CC4E173814C8BF306F00F2C51F6AE4F3957C025546C2A79B263934DF",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WaterSamplerHostProbe.cs",
+    "sha256": "0DE0BC2FAA8E3F44DB9328A2B6B94A12DADE05B3949E5A24DF8004DEB4B0C102",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WaveCheckContext.cs",
+    "sha256": "466357541528573169691E88E488C0A4241CF114F2663C3B738194B732F0F1C6",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WaveCheckLog.cs",
+    "sha256": "AC16BA72751493F5F02A59861FB9533A49975F7FF910AD46F115CCAC621D6AFD",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WaveDebugMesh.cs",
+    "sha256": "15111E3EC9E30ECFA0994F960C4E3AD4E2D784FB2A8ADEF8689E493D47E2A47E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WaveDriftChecks.cs",
+    "sha256": "9CACBA696819F25D67AB505EFB39CECDF571AB6FDA0A9EAFCC81A4E1C95468DA",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WaveGrid.cs",
+    "sha256": "254F1C4FFA930EA9DCB6F573C6C51EC37ACE917EF320550FA68FD2D3ED06FD20",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WaveMeshBuilder.cs",
+    "sha256": "72CFAF2B40473F4883502D6CCAD128F907AFD6923B41521F518EBEBF2D50C7A6",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WaveModelChecks.cs",
+    "sha256": "743D958C055F86338CD4112AF743C144164101DDF7C29637FD46D12DE105AD71",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WaveModifierChecks.cs",
+    "sha256": "AED202C33C4498016E9937DE3DA6BA2C2F0C2A70A9C6C8BB181EF4A473433C7D",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WavePresetSwitcher.cs",
+    "sha256": "CD0F9BB2475E8DA410AEDC3C64BB50B45C56E2161903B6561FA25BDBF3D54AB5",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\Sandbox\\WindFieldChecks.cs",
+    "sha256": "262CF68567BD44E300F02AD89F0F055A14EBAB34997475DDC03AF9FE70940837",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\View\\BreakerSourceCollector.cs",
+    "sha256": "C58861C0B8C6111D1D3ABE6959D8C75B0DEA435673074D917CB48BE394572540",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\View\\BreakerWaveRenderer.cs",
+    "sha256": "F1451C1BA4D10182BBF765697BA7230F027619E606A256B4CA41591DAF880F1B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\View\\OceanAppearanceView.cs",
+    "sha256": "8EABE61DB1A638FA0E1FF95A41E858C7F3F38B2BD61EA87C7291AC60A735C76D",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\View\\OceanOpticsMaterial.cs",
+    "sha256": "93A0EC9DA08FF717D1644113B47AC3816E62477D8DEA8685907353EBA8AD9F56",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\View\\OceanShaderBridge.cs",
+    "sha256": "8DB4206002F556F99AEABEA7169C098926790CC846FC015F6D6F59B3B52B5A83",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\View\\SurfaceInteractionGrid.cs",
+    "sha256": "187E076F1CCA3C031FBC9992EB018E59DEA82A12BF9685FDA0EF8860D55F45CE",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\View\\SurfCrestRenderer.cs",
+    "sha256": "F41B9924652AB67BD89E65AE6F7E906B3F8696FB8E3BDE5E39026DC40F74ADEA",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\View\\WaterContactEffectsView.cs",
+    "sha256": "E92071D81FD87365D2E1C762A8DD9B396C9EF364DE3EB535ECE5E6F5E6C9310F",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\View\\WaveTiltVisual.cs",
+    "sha256": "73CAEAF826BF2F7401170BF2853C5A96731DC559763174FE2BD4535D63C099CC",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\WaterBody.cs",
+    "sha256": "300FE99F772BD16CA55AB198A19CFBB3BCC684CD3A4CFE1EFAAECF5BFC71F364",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\WaveDriftBody.cs",
+    "sha256": "ED09EAC2A44C492148B6C07C03595C7E7C3566DE0078C822B362447BB1435D4A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Ocean\\WaveSlamSource.cs",
+    "sha256": "C5BDE5069DA8374206EC34D6FA2D0FCF74499651DF24574F8011F9AFE7ADFA80",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Query\\Rules\\IWorldQuery.cs",
+    "sha256": "FAABECE5D28D82EB79C7A2293AB892325147B44D3A650002A64C550595495DE7",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Query\\Rules\\MapGeometry.cs",
+    "sha256": "91F73B9CD2A16381D3EAEEC6F83716107E6E588F1CC6FB1707853420DCF42A82",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Query\\Rules\\Mocks\\FlatWorldQuery.cs",
+    "sha256": "8C9FA68928C12EB148E7AF182FB39CB1F2032051DFB0C8A30D2EF02E00A06308",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Query\\Rules\\Mocks\\MockServicesInstaller.cs",
+    "sha256": "663819ABAD74384C90C7B6566C6EC9F145525C3802A38C163439F91359D24868",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Query\\Rules\\WorldQueryFacade.cs",
+    "sha256": "171A3D856B65E06CAB6C9618DA719E748B6080E38C907F6F8E477494281608DB",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Query\\Rules\\WorldQuerySession.cs",
+    "sha256": "8B9F3DBBF9CA72896EEFF2BA962576130A9342D58C50B9FE0BCEBE3185B23049",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Query\\Rules\\WorldQuerySettingsHash.cs",
+    "sha256": "0B08D6C21F8719EA7EFD3D16DB10BCE02410E9B7B26A393AA94E80E12731EDAF",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Query\\Rules\\WorldServices.cs",
+    "sha256": "240AECA93CCF4BEEFD8284B6803D720DFC633DB78F9F9A232B1B7A89078EBDE8",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Reefs\\Net\\ReefWorldHost.cs",
+    "sha256": "39A9664E1B2CEC1DDFD3479442A8DBDA22AD01E01365A39E92BE20CC4CE1FFD7",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Reefs\\Rules\\ReefPlacementMath.cs",
+    "sha256": "DBC9810D6497EE56B6A3E5920302D648509DF23088D573AC09CE915E1DCD771C",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Reefs\\Rules\\ReefPrefabSet.cs",
+    "sha256": "B502BF373DF1077469593D7E5735794A841ED51C366C16408FDE4EA216B30DC1",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Reefs\\Rules\\ReefVariant.cs",
+    "sha256": "D03FF0F07446A9AF91452D5360E160A804052DA4BEF4F096354A55BBCBFABEAB",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Reefs\\Sandbox\\ReefPlacementChecks.cs",
+    "sha256": "D913FFD0D5BBBCA59A1C870256B43D46410350E371670DD89DDF36652404A822",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Reefs\\Sandbox\\ReefWorldProbe.cs",
+    "sha256": "192BD116CE9366AC04ECCE6BA61AC95A1F692CF77E6A0361167553B7F0A8DC1D",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Reefs\\View\\ReefInstanceSet.cs",
+    "sha256": "C1C20FAA2F1F8A87BE41E19BDC6200A9D39C41BC26383938CDD05A92A017A8BB",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Rules\\ISpawnZoneProvider.cs",
+    "sha256": "AE0AF55588FA5B14206EC77E7794FC0C31A72A106482452F98609A250C43BCDD",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Rules\\Mocks\\FakeSpawnZoneProvider.cs",
+    "sha256": "9651246E7ED2C5D584F76C42C97207AF3F00B2BE7B90B9DB380D6AD6DE1EAA53",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Rules\\SpawnerAllocation.cs",
+    "sha256": "C80A6AF413982281284ADEBE6E540F87B18E64E4A37666B89DD3478AA81B043F",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Rules\\SpawnerPlacementConfig.cs",
+    "sha256": "617CDFEA568DDC91C50C1065B89D6121CE0D35AF52E8B98F83CA091582780344",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Rules\\SpawnerPoint.cs",
+    "sha256": "ECE20A115AB17689D9BE30355214265BDE5313D899D9726552849990622BE396",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Rules\\SpawnerProfile.cs",
+    "sha256": "88B9CEFCA0882B63110F7B7C8E89913479569AC7909756A4BEBB7D4224BF2E25",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Rules\\SpawnExclusionMap.cs",
+    "sha256": "C6CEDC9D802E575DA1882F048D02C65643D33D10697BD7843B8A4D8C052523B2",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Rules\\SpawnRegistrationLedger.cs",
+    "sha256": "E1D2C971193C92A5A2E344B4E99C7CD93B9BEA255140A140C52D7D566AC192CD",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Sandbox\\SpawnerRegistryCheck.cs",
+    "sha256": "2E5B41681F26E999A2823F7D73D261FCF3ECA4537E87A5892899EA24EA591214",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Sandbox\\SpawnExclusionMapChecks.cs",
+    "sha256": "C2D3DFA1173678A1FCF15FB9D1B611E4AA1C4646C10C96EBFE5EE4B6B98FEF93",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Sandbox\\SpawnRegistrationLedgerChecks.cs",
+    "sha256": "5B72C4B9EDF883615DFC2F28A07B5892D298A3B750249F60C7BB899405A53715",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Sandbox\\WorldMonsterSpawnProbe.cs",
+    "sha256": "7C304C39D28CD572AEE8A39EF2F99CC6E17B5D6605337816A28B8D06B37867D2",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Sandbox\\WorldMonsterSpawnValidatorProbe.cs",
+    "sha256": "DA882B1D0162BDE4AE85307CCA0E4B487559F9890298BD7D4EBA41B13682A397",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Server\\MonsterSpawnBinding.cs",
+    "sha256": "0EF5129B05A806FA151440B692394CE2A1C5FB4FE83A972AD6D08984F00A2A72",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Server\\MonsterSpawnBindings.cs",
+    "sha256": "7A5067993A623E590BEAD3978FBD0B076A9BDB1C840202E51B25DC86F6146BA8",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Server\\SpawnerPlacementStep.cs",
+    "sha256": "0592FC2E834647CE0710DC292FE28D9EA5686D01EB2FB659379A1616E7715A68",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Server\\SpawnerRegistry.cs",
+    "sha256": "E74A728AE9A80CB15CEC2BEF50970E220A9099186955AA7C256B694FCE3A6BAD",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Server\\SpawnerSampleDomain.cs",
+    "sha256": "C80188A6B883F4B9D2DA5F37E244DB3AE5B6BA400DC6B96ECF941C327B4EB6FE",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Server\\SpawnerSeedSource.cs",
+    "sha256": "8055DAAF48161FF2A9C1CECBDDC4E491F588BA0497781FA15797626CCAAC2716",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Server\\SpawnerSession.cs",
+    "sha256": "F61504511867B9CD4E3169DFC171B16B07935BA1D2759D5AA323CDE825421FC0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Server\\WorldMonsterSpawnHost.cs",
+    "sha256": "B6E93E2284A7FE69E1B3DECAA0E08DBABA79DCADC606528D528E1D2A12DEF470",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Server\\WorldMonsterSpawnPositionValidator.cs",
+    "sha256": "50877A601758B9E02099F6654E1AB1758FE0240248EF5E0C9B8190ACE970E140",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Spawning\\Server\\WorldMonsterSpawnSession.cs",
+    "sha256": "CF30915A364304753386485C333051685FB6082B0802816DEBA4F4CA813CC4B3",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Net\\WeatherApplyBinder.cs",
+    "sha256": "090882984D48FBD9985E11A1C0F86CF23AFE410DA218A6DFF2BDC34C90F88FDF",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Net\\WeatherScheduleDriver.cs",
+    "sha256": "B87CD48F21D31DFE58EB1D0E35C68685D944CF4680B98BED686DF5B9657A7B1E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Net\\WeatherStateNet.cs",
+    "sha256": "09B8272AD837559AFF21979C750E8818DEFC7A1D5645D83F338135BB8E0158B1",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\CalmState.cs",
+    "sha256": "7750D48089C08331FFD68F78D4F3E3555734BF05A8DED2810A480EE7CF6DFB34",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\IForecastService.cs",
+    "sha256": "37E144302B9C120F7084293C1F9233B571A4F3039A32DD2257FF5B836637A160",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\IWeatherListener.cs",
+    "sha256": "B837482DD38AFAF31F038E688AF2D70E6D1936AC6F7DD6B29AE7289F922E83D5",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\IWeatherService.cs",
+    "sha256": "50EB41A0A12B0B7154FDAEBD52E80E4BA76C9D50A02BC54CDA46453E6D612E2E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\IWeatherTransitionSink.cs",
+    "sha256": "0CF69852884D85BF55A3AACFE8896375205E32EBD5EA051E184AB3CAE2C373E0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\MaelstromState.cs",
+    "sha256": "8F493514E639957575CCF1FA885E739691EC253ACF605D62C3AC53CCE3E5763A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\OvercastState.cs",
+    "sha256": "280A7E1AEA857309977B86C531227355FFA447A9BF8E5F244C776BB0A7A59416",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\RainState.cs",
+    "sha256": "8A612F29C385478755361BC47EDEE7C9C25F52D08A39ECFF3EA29FA0A706719B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\StormState.cs",
+    "sha256": "DADC92E2264AFAA7D0DAB7D295D35BF98BEAA51AEAF989E6975C6B0BF87198B7",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WaveLevel.cs",
+    "sha256": "DD39EADCE8FDFE2DE8558BBDE0CF74A62F8419CEBF43E08CD81A35FBA2EB1356",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WaveSlot.cs",
+    "sha256": "FF8DFD8A1CAD7D94E83567978FDBC1AFCEC2A5DE8FB4A64472AE82D036FBC069",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WaveSlotLayout.cs",
+    "sha256": "07BBF98AECB83F3AF3B5B79872CBC04BD769180C6A16AF2069EE1DA8BC08A4F4",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WeatherCatalog.cs",
+    "sha256": "C2D7551E5718260572A98CC57C1DC12914047CE8B505CF73A82EBAE5F0111BF3",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WeatherListenerHub.cs",
+    "sha256": "BB4CF4B840754AB4F4A86A16854650402759A267228B37237408BCCD3851113A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WeatherProfile.cs",
+    "sha256": "A42D1315D7D65B8867A87510EFD769D2B71ED69AB70487F9F06B309833BA3F5A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WeatherScheduleProfile.cs",
+    "sha256": "FE5BB9038C652E03743DE84BE6E215B95A970BA765E03C9C3E9EE52A9EEFB0E9",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WeatherSnapshot.cs",
+    "sha256": "6033A9B1356057D5556BF161386B8A0A27C422FBC4DB236C6659D334EB6EC441",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WeatherState.cs",
+    "sha256": "96A259FFD366B6DC5E2DF47EA29707967840250CA9A9EAB70B961F8807CC5864",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WeatherStateSet.cs",
+    "sha256": "D971AC13FF182A4E1F6A0A3E872A6AF1A4E88D3E8E827932BAF7933F23AAC3E6",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WeatherSystem.cs",
+    "sha256": "89ACD431457D0D6B92FEFD40DAAAB18B93ACF69281A1E9139FF1C877F60215B6",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WeatherTransition.cs",
+    "sha256": "3FDAF46E4805E9B80883C4CE1D8899E430120518C87C1E9E09091E5F33F70D25",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WeatherTransitionInfo.cs",
+    "sha256": "2FB44A7EACF5E775119CDF92A1EA13ED18ED5437BA020AABD47BA002ABAAB9FF",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WeatherType.cs",
+    "sha256": "186BA848303526A3896413832B14E3A98FD4527C047730ACF6BA14BA12F099D9",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WeatherWeight.cs",
+    "sha256": "C5820D2643E864311233555879A54B6898ED4802346D4DC1499D4708E6EFA7E0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WeatherWeightTable.cs",
+    "sha256": "1BD4D1F27446A50B585295858872369667D81361974BDC812E2EA067B948452C",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Rules\\WeatherWindSource.cs",
+    "sha256": "55C89E159503559FBFD5D0C1AD5BCC097EB0337ED9A92282F2B578095F8FB145",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Sandbox\\WeatherBinderChecks.cs",
+    "sha256": "5FB0C047CCEED2F11B426F3F5F6BF4E7200C3CC6E51BFCB4C06CCA5D6F24A006",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Sandbox\\WeatherCatalogChecks.cs",
+    "sha256": "7E622F62232E371041F629DFA4D6730F6598DD32E639637AEC404DFCC7582A12",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Sandbox\\WeatherCheck.cs",
+    "sha256": "6627A04D8D0CF29FC69AB6E40653E8487A19398F414F4CA70120DEF49051BFC0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Sandbox\\WeatherCheckData.cs",
+    "sha256": "C42935293E81F03BDABF93C3EE35007B4C42FD61E21C1EAB92C6349A3429B8EB",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Sandbox\\WeatherCheckLog.cs",
+    "sha256": "E644282DF6F8C4B0AA0FF02A1DE6C91F4EEF51CAF16DA242860F01B1208A5127",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Sandbox\\WeatherForecastChecks.cs",
+    "sha256": "9B0E9C57C01AA937DCBF87CAADF30CEA35BF536CF32AAD8B3A507227C60A8818",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Sandbox\\WeatherForecastProbe.cs",
+    "sha256": "A207BFA7F4690DF6B2E997A6D2A3983F1816A6A33D2641F17468192E110B1C0D",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Sandbox\\WeatherNetProbe.cs",
+    "sha256": "D1CDE251E2C8144243A7B27C36F3E90C1A8700535335903708487075861B21E8",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Sandbox\\WeatherRunnerChecks.cs",
+    "sha256": "7EB5046346E4135D1E7AC1DB840D5503CFDF331335FD3062C946B32C76327979",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Sandbox\\WeatherSandboxDriver.cs",
+    "sha256": "AF92AF9724C996EFFED75C85A03565B5AA7F531E3DF8B93C2BAE4DC5B0851E25",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Sandbox\\WeatherSchedulerChecks.cs",
+    "sha256": "994784D2DAB30105707FE881CC4D284755F30797870D1B4EDD848F64D33F4664",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Sandbox\\WeatherSnapshotChecks.cs",
+    "sha256": "A5FA40280FF294E5F108B83E53CCBEB47B94945FD5F1F581066C82B04008EB39",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Sandbox\\WeatherSystemChecks.cs",
+    "sha256": "620575CD510E6DADE18AC599B2C990F6D0C731632DF5081F3573ACFF05941AC4",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Server\\DailyForecast.cs",
+    "sha256": "255A777EAF68B80BEEAAE2D04BAD9C1992425CB439A324678D12F4C83389AB47",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Server\\IForecast.cs",
+    "sha256": "98BBD8F35521044D9513C2C031EE178056ADA16E701A5620A3F2A146CE964BCD",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Server\\TamperedForecast.cs",
+    "sha256": "39F05E2231B1B5066074CE1F88FC6CA0F7DDE5BF8ACA2633F688DD906D1AE40E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Server\\WeatherForecastGenerator.cs",
+    "sha256": "C1BDFE36457F2AF62F89E34D7DAA5605959A306B4F7B735C11BFAC92A5B9F800",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Server\\WeatherScheduler.cs",
+    "sha256": "5DB2D826D2FDFBD1713FA3DDBDF87EFE10FDC2E218041E142F8A8719E3FD6F4B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\Server\\WeatherScheduleRunner.cs",
+    "sha256": "6A215AAE7346A2A7360946C3F2F392365B43AB1D52AB1D96F37FCC74B70CF3DF",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\WeatherHost.cs",
+    "sha256": "EE2542EB5DD9565E02CDE2DA2DCB7713F1142655ACFFED6799767236AEA90D8E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\WeatherWaveBridge.cs",
+    "sha256": "7D119A3BC049D86E590C5C5F9E3D27E62DA724CF10DBF3EA00D7F32A9A175A72",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\Weather\\WeatherWindBridge.cs",
+    "sha256": "6B00D5D9891D72CF531D6A8C92D265CE1BBD5CA79A6BBDEE2C121248AA91A1BC",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\WorldState\\Net\\MatchClockBinder.cs",
+    "sha256": "E95C5CC0DB63F01B74FC569B4C23CDB9BC4206A6DAFE1B2F1515552E4956B4B9",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\WorldState\\Net\\NetworkClock.cs",
+    "sha256": "D4459B6C9CA52CAC9DCA5E72D3F580DB9A6DF0860E56306C986F14AEF4AC6B41",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\WorldState\\Net\\WorldStateNet.cs",
+    "sha256": "0D8FFF4898E6EAFD1A1030CCBA1E5D2145688DC8D76F6A72576A0A06AD64B64F",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\WorldState\\Rules\\MatchStartInfo.cs",
+    "sha256": "72353A1396681FF2CAD5B40C11FF84537E09EF5B2A507569CAA0EFA0B5096DC3",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\WorldState\\Sandbox\\MppmClientDriver.cs",
+    "sha256": "56B5BE8D68D0AFDA3FDA3906790D6A5AE83F0025B7E15015411273BD1EB6EFD3",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\WorldState\\Sandbox\\NetMessageCapture.cs",
+    "sha256": "4A9DF21F592A3FBEE9FF1F5350D42F933440968F68F9A0A47E04CE8666B12751",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\WorldState\\Sandbox\\NetPayloadDecoder.cs",
+    "sha256": "8614F6BCFFBED368445D71DF6A3595C975EC836BC393AEC72B86C1FA0355E537",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\WorldState\\Sandbox\\NetPayloadInspector.cs",
+    "sha256": "C3CADE87EAFE83F4BE60CE4E6AD68C232090753F01F7507CFDA3CA67B5B8F073",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\WorldState\\Sandbox\\WorldStateProbe.cs",
+    "sha256": "2E13822EEDF51678E494FCACA97B3E3C676E056B68C47AEC8B2702241656ACB3",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/01.Scripts/02.World\\WorldState\\Server\\ForecastSeedSource.cs",
+    "sha256": "2AE2E8965C3575F527EEFBB4CD8CEB4B706CC99782689DFDBBA6E1785967C98F",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Behavior/BlueMarlinBehavior.asset",
+    "sha256": "C77A6769695A7D5A41FD5F86F649B9CCD30178125CCF008743D7F631E4783048",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Behavior/BlueSharkBehavior.asset",
+    "sha256": "5DB51F186AFCC70EBC4149FA1D17ABD02514B3C77E55F434CB1E21A33A764B69",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Behavior/BubbleTurtleBehavior.asset",
+    "sha256": "E39D64682758841D20884268F8784DF80DD803101376B15A73DECDECB57D41EE",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Behavior/MantaBehavior.asset",
+    "sha256": "2ADE3FBAECDFCD970E19F4AD7AC4879EB59D5C69A111C84D2A8852FCEB923114",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Behavior/MosaWhaleBehavior.asset",
+    "sha256": "6C1BE2E69B0AF8B79FB0116388E7669C1DA32C1A36AC7F961316F3C9FB76D4AE",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Behavior/SpinocrocBehavior.asset",
+    "sha256": "2EBEF3D60D9BB142E138CA83DF8F60A1C38264326F0D6F58B9CDAD2CD6DC934A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Data/AnglerProfile.asset",
+    "sha256": "0A108A93AC5BC33890932E6E46D545C77EAAFC8AEDB53990D9FB90757585E30A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Data/BlueMarline_Profile.asset",
+    "sha256": "DB00B7B803D0026317CB4703E7FB3B9BF2D9B388FA1E4117FFA238913571F3F3",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Data/BlueShark_Profile.asset",
+    "sha256": "E8FDE8B9F8B52F4A7067ACB67CE261D18E8D780F0DA046896B2928C80DEDD51E",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Data/BubbleTurtleProfile.asset",
+    "sha256": "322490F2A83AFAD24B70C6264266B0C4D8A7325B30D6DED7C9F9B3A16D3626FE",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Data/MantaProfile.asset",
+    "sha256": "A5A0A5063260B14CE3CACF37AB5285DF0AD0F1A584951EA319D8F3112BA3B5C8",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Data/MonsterCatalog.asset",
+    "sha256": "007086C4800938B450C298CBD786AF24E9B2E4B76AD854A37052C56189A7B74A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Data/MosaWhalePoseProfile.asset",
+    "sha256": "933BEC6D1C921CE778F6CED7EBEFFCB8A488AB2B286C264F9F992352E2182D21",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Data/MosaWhaleProfile.asset",
+    "sha256": "743B112FCF760FA6E4341CC2C80ABD2234D9706C327CB552C132E5A22215BBF4",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Data/MosaWhaleSettings.asset",
+    "sha256": "D30E959B3CAF37B43D8D84534BF12D1FAEBA24B9F5CFE4B3CE71B1D501A10565",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Data/SpinocrocProfile.asset",
+    "sha256": "333E53A3CB24130D24FE78C1297F37643F71BEC673263473A5C1F5D0BD537C10",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/Monsters/Data/SpinocrocSettings.asset",
+    "sha256": "23E4AC85AA678F3097E731A3939A9EA2A09B899D414730CC335C120C48D34524",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/DayCycleConfig_Test.asset",
+    "sha256": "C2A2F9BA1FEB6CC39652AEF8491DC0359928C43F5358B02DFEF5ED35E9B6E4BA",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/DayCycleConfig.asset",
+    "sha256": "5344A0CA9882FC755B69BDECD41E7CD79478C1803259F529EBFA7F9C6A52FBAD",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/DayNightSunConfig_Test.asset",
+    "sha256": "0AA459AF703E1214A3388122264A9C28FF856AACC25FCF849B000D2846D754F1",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/DebrisConfig.asset",
+    "sha256": "D96031333B630C168858D65A65CB800A419816D88BE5B2FF9D54885B1185C928",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Environment/SeaEnvironment_Inner.asset",
+    "sha256": "445FF0F6FC15DF136DF03CAB30259833E4588E3D6E2478BED89FBBE901D9FDC4",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Environment/SeaEnvironment_Middle.asset",
+    "sha256": "D27A31B615B44A15BDB6FE66AF92FC9AF62D82515E35E846855910748511C5A5",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Environment/SeaEnvironment_Outer.asset",
+    "sha256": "B38430631F1FB772858A7D433D5399BA8D93FC100D39166ABA14DE43643F45CB",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Environment/WeatherEnvironment_Calm.asset",
+    "sha256": "DC99E031B15446A2E7B5BF2D047664B227F8CFF9BC81C79ABDC3D332BB30AF29",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Environment/WeatherEnvironment_Maelstrom.asset",
+    "sha256": "3B8225C36169969E042A94941FC770D7CC830E45DF004F5178B00E25C81D7EA9",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Environment/WeatherEnvironment_Overcast.asset",
+    "sha256": "6E117805C355C0237D2C3B11EFB4A997404EF0019DFE86E1FBEABD94D75F3431",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Environment/WeatherEnvironment_Rain.asset",
+    "sha256": "D00E3BBC0C0BFFC87A04705E8715E93D8BC7A51318F755F6B8CF96699F8CCDFE",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Environment/WeatherEnvironment_Storm.asset",
+    "sha256": "794C6DA6C4D55D13ED842EA60BE52E5E121010D15F95FE6029C1B6B48764E5E2",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/GhostShipConfig.asset",
+    "sha256": "5227B4BB95F7908ABDFDAD6759CF657458044641DE5713AC1D8E0BD93DDD9241",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/MapGeneration/Islands/Island_Crystal.asset",
+    "sha256": "3AD50534537FE65645779D61104CEB1859D7B246069CBCD6B220A2895E0C9A43",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/MapGeneration/Islands/Island_Forest.asset",
+    "sha256": "0BFAA3586EF0BE6AE673F6B749158D01DB4BA4F448D060D8C25ACC6D3E676D8F",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/MapGeneration/Islands/Island_General.asset",
+    "sha256": "3566D5EB1B8CFBF03B2EB2534371163A3A46E4A3353F41616139F4FC139E7BB9",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/MapGeneration/Islands/Island_Lighthouse.asset",
+    "sha256": "130AF914EAD485ADCD8963FF0C71E7011404187497C1AA23F1410FB15D0A3A36",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/MapGeneration/Islands/Island_Ore.asset",
+    "sha256": "F818AC64981095D49C2FB8B2DEB7C98B7BEDE483278A0B76B8AC7256FB6FDC75",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/MapGeneration/Islands/Island_Sand.asset",
+    "sha256": "D44F54C3AA17498753651F47B88CDBD04E06163723AE24CA0659D4D330B444C7",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/MapGeneration/MapGenerationConfig.asset",
+    "sha256": "8EA608CB21F8F500E9950B398908FED61F6CB81737DD57D81B1F39584811C89A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/MapGeneration/ResourceCatalog.asset",
+    "sha256": "9D2B2CAA08F59F47406D8212CCFAEC9D808DE80607D44D71622E2ED8D4DF78D1",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/MapGeneration/ResourceDefs/Resource_Crystal.asset",
+    "sha256": "5FBDB462699A0B8B7A958175AA990BA8A9FC95AA552312A3E1726C6BDD5D71B5",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/MapGeneration/ResourceDefs/Resource_Fiber.asset",
+    "sha256": "B9DEFE55A9E205D6496E6C93D8561FA06AFBAD6D262A1304E521A5E2FD7B69A9",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/MapGeneration/ResourceDefs/Resource_Glass.asset",
+    "sha256": "4F92978B719BC158046F6DA7A264AB4B041F99EA466132CE47132D51D0538272",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/MapGeneration/ResourceDefs/Resource_Iron.asset",
+    "sha256": "8A46C74A3731DD8A40C76FA0116A72F9BBEA51F39998E569320C5AE6E49AA752",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/MapGeneration/ResourceDefs/Resource_Stone.asset",
+    "sha256": "7C40DAB5FCBC743CB971C055ABD7C0C975A4F08AFCB48C9661722B98BB03578D",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/MapGeneration/ResourceDefs/Resource_Wood.asset",
+    "sha256": "793AB1D01EDC2E7E426D40AB35AADEDD4B2763B47C6A356CA18A32D56812E89D",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/MapGeneration/WalkBoundaryConfig.asset",
+    "sha256": "81C5FB342DCE9EC8A3DCA49863EA49336789DC74DF6A08BB458EB268F4EBBEAD",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/MapGeneration/WorldDepositBudget.asset",
+    "sha256": "74D219EC8CB4E33BCF9A18B3DD95D1E6363542041ED87712B9CFC88A7E4A0F22",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/OceanOpticsProfile_Default.asset",
+    "sha256": "51A8F0D6EC4B97CDFB1DDD6DCCA30FD89085B54110A583651C85CE7AF6A568C6",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/ReefPrefabSet.asset",
+    "sha256": "F77D13A2FAD6BEA2C96035DE1C864378FA9B0D95375AE57ACBB13DD39795CC61",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/SpawnerPlacementConfig_Test.asset",
+    "sha256": "4D8A05DC8D8CD912E772D1B17E1C65563ECCA96036CDEB8586CFB1DC4FF25EF7",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/SpawnerProfile_Test.asset",
+    "sha256": "21FF84345CD2DF24C23E4412F81F8552CB5185A9AF5B0EE50A229C04D1FFBA44",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Spawning/MonsterSpawnBindings.asset",
+    "sha256": "C593E4ABFF189F0B99FA74F838F7E73BAAA8FBEBDBF3654FDCEB0458F89C2FFD",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Spawning/MonsterSpawnerData_Inner.asset",
+    "sha256": "85FAA4C8F1FB418251E19806A3DE762DDCF00872AC3A53A46E571AF20382A4C4",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Spawning/MonsterSpawnerData_Middle.asset",
+    "sha256": "A63CED25194A6D5FA485E929FC9AA7113F6102B3B5FC32ED44A47DF50EB693D8",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Spawning/MonsterSpawnerData_Outer.asset",
+    "sha256": "1A5485ECE1D15992FF4D9C67BA040089445AE92CC488718E91EC5D7C1AD6E4ED",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Spawning/MonsterSpawnerData_Temp.asset",
+    "sha256": "314BAA7EFDF2DDB79DC623260FEE5CE8192AB712D256B4B763767A722B6C8D59",
+    "gitTracked": false
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Spawning/SpawnerProfile_Inner.asset",
+    "sha256": "19CDD70EBAB4F6C96C797A716F236F2E4320A0D09E5CF52C3B1D97D14F7FDC5B",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Spawning/SpawnerProfile_Middle.asset",
+    "sha256": "282EAA8BA52E035A01E3C299AD5665F48CCCDAB82E003EF571F63598478C082C",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Spawning/SpawnerProfile_Outer.asset",
+    "sha256": "ADAF1A9455CA753B8476085D62FD5D3E913E44C53076E571EB818DE79B98EEF0",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/StormWallConfig_Test.asset",
+    "sha256": "BFAE01EE494006D0C289F872E599FA2ADB123D0F201946557EA2F884D623869F",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/StormWallVisualConfig_Test.asset",
+    "sha256": "C8E924786885DF16F3D4864069B48047491165FDE40EDC48164C8B330A68FB64",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/WaveSlotLayout.asset",
+    "sha256": "BFE27517DB96F9BD49DEB666934B7379F7C2C40D66BD7BD54077D3013293D9DF",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Weather_Calm.asset",
+    "sha256": "A3632A60E200C70991253BAABB9224164D7AD902551214CFCE0D0A86BC930D8C",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Weather_Maelstrom.asset",
+    "sha256": "F654406C8BD3B4D8BB588CDB24425FDAD10B5B01F9C1569F61129C0E625E6752",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Weather_Overcast.asset",
+    "sha256": "1A08F5A77C7082D234FB611D77EAE43ED97F5BDBDA73356288C8485C8A240C6A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Weather_Rain.asset",
+    "sha256": "F64C6BABFE0477E9B1CAA2A4B88C0CDFEFC9C4E4B5D61D9DE84C10D868F36375",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/Weather_Storm.asset",
+    "sha256": "AB4B760BE32344BB1455B551DB24913E87CC4F50FFA3BA47CA90E0D089B11963",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/WeatherCatalog.asset",
+    "sha256": "4A16B56B3B3CC1FCE967D3F5EC3524CC0E000A5898159DFC610CC5E9C5273E4A",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/02.Prefabs/World/Data/WeatherScheduleProfile_Test.asset",
+    "sha256": "29255600721CEE9EE3A1E2BDEA944CE7230AAA0F7B2602E8031394C391A73D26",
+    "gitTracked": true
+  },
+  {
+    "path": "Assets/ThirdParty/World/Final/Island/Island_Crystal/Island_Crystal.prefab",
+    "sha256": "0A01D0546AF90A73404E34AB1CEFFEAE5A9A7A3EAC93CFB7D66B3A96EE0B3FE1",
+    "gitTracked": false
+  },
+  {
+    "path": "Assets/ThirdParty/World/Final/Island/Island_Forest/Island_Forest.prefab",
+    "sha256": "2D98CC997BC5A4A035061D2D36C4BF4646EF31B7E86D4B590649ED810C52AFDA",
+    "gitTracked": false
+  },
+  {
+    "path": "Assets/ThirdParty/World/Final/Island/Island_General/Island_General.prefab",
+    "sha256": "14281B943855966EBDB01631144941BC186EE6D2443556AF416556C7DEBDB37E",
+    "gitTracked": false
+  },
+  {
+    "path": "Assets/ThirdParty/World/Final/Island/Island_Lighthouse/Island_Lighthouse.prefab",
+    "sha256": "4AB63C5B88A634CD26F4CBE72EC91567EBE9DC0CB15E13435B035AA075785FDA",
+    "gitTracked": false
+  },
+  {
+    "path": "Assets/ThirdParty/World/Final/Island/Island_Ore/Island_Ore.prefab",
+    "sha256": "11D0A3BC74AC96627E82C141899D011D43185C9AF18772DAA01A6CD3F6EAC6CD",
+    "gitTracked": false
+  },
+  {
+    "path": "Assets/ThirdParty/World/Final/Island/Island_Sand/Island_Sand.prefab",
+    "sha256": "B182C228D68022632C887AC1FBDBC59551F6DD122408F1BF9BAD4854931560B7",
+    "gitTracked": false
+  }
+]
