@@ -439,6 +439,7 @@ namespace Lighthouse.Workbench.View
             if (isActiveAndEnabled && _workbench)
             {
                 _workbench.Changed -= HandleWorkbenchChanged;
+                _workbench.RecipeCompleted -= HandleRecipeCompleted;
             }
 
             _workbench = workbench;
@@ -447,9 +448,11 @@ namespace Lighthouse.Workbench.View
             _isInRange = false;
             _prompt.SetActive(false);
 
+            // Without the finish call every craft's drop reads as a withdraw and blinks red.
             if (isActiveAndEnabled && _workbench)
             {
                 _workbench.Changed += HandleWorkbenchChanged;
+                _workbench.RecipeCompleted += HandleRecipeCompleted;
             }
         }
 
