@@ -5,6 +5,12 @@ using Lighthouse.World.Query.Rules;
 using Mirror;
 using System.Collections.Generic;
 using UnityEngine;
+using Lighthouse.Network.Session.Net;
+using Lighthouse.Network.Session.Rules;
+using Lighthouse.Network.Session.View;
+using Lighthouse.Player.Recovery.View;
+using Lighthouse.Tower.Net;
+using Lighthouse.Tower.Rules;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(PlayerController))]
@@ -15,6 +21,17 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
 
     [SerializeField, Min(1f)]
     private float _recoveryDuration = 90f;
+
+    [Header("Rescue flare (tunable initial values)")]
+    [SerializeField, Min(0.1f)] private float _flareCooldown = 15f;
+    [SerializeField, Min(0.1f)] private float _flareLifetime = 8f;
+    [SerializeField, Min(0.1f)] private float _flareDirectionDuration = 5f;
+    [SerializeField, Min(1f)] private float _flareHeight = 25f;
+    [SerializeField, Min(0f)] private float _flareDescentSpeed = 1.2f;
+    [SyncVar] private double _nextFlareTime;
+    [SyncVar] private bool _isFlareAvailable;
+    private WreckFlareView _flareView;
+    private TowerMatchNet _flareMatch;
 
     private PlayerController _player;
     private bool _isRecovering;
@@ -60,6 +77,9 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
 
     public PlayerController Player => _player;
     public InteractionTarget RescueTarget => _rescueTarget;
+    public double FlareCooldownRemaining => System.Math.Max(0d, _nextFlareTime - NetworkTime.time);
+    public bool IsFlareHudAvailable => isActiveAndEnabled && isLocalPlayer && _player && _player.IsDowned
+        && _isFlareAvailable && IsFlareMatchInProgress();
 
     private void Awake()
     {
@@ -74,6 +94,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
     {
         ActiveRecoveries.Add(this);
         _player.DownedChanged += HandleDownedChanged;
+        _player.WreckFlareRequested += HandleFlareRequested;
     }
 
     private void Start()
@@ -87,6 +108,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
         if (_player)
         {
             _player.DownedChanged -= HandleDownedChanged;
+            _player.WreckFlareRequested -= HandleFlareRequested;
         }
 
         if (_rescueTarget)
@@ -100,6 +122,98 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
         if (_rescueTarget)
         {
             _rescueTarget.enabled = isDowned;
+        }
+    }
+
+    public override void OnStartLocalPlayer()
+    {
+        base.OnStartLocalPlayer();
+        _flareView = gameObject.AddComponent<WreckFlareView>();
+        _flareView.Initialize(this);
+    }
+
+    public bool IsFlareMatchInProgress()
+    {
+        LighthouseNetworkManager manager = LighthouseNetworkManager.Instance;
+        if (!manager || !NetworkClient.active && !NetworkServer.active)
+        {
+            return false;
+        }
+        if (NetworkServer.active && manager.IsMatchFinished)
+        {
+            return false;
+        }
+        if (manager.IsSessionFlowEnabled
+            && (NetworkServer.active ? manager.Phase : manager.ClientState.Phase) != MatchPhase.InProgress)
+        {
+            return false;
+        }
+        if (!_flareMatch)
+        {
+            if (WorldServices.TryGet<TowerNet>(out TowerNet tower) && tower)
+            {
+                _flareMatch = tower.GetComponent<TowerMatchNet>();
+            }
+            else
+            {
+                // Fixed test scenes may not register a facility in WorldServices.
+                var spawned = NetworkServer.active ? NetworkServer.spawned : NetworkClient.spawned;
+                foreach (NetworkIdentity identity in spawned.Values)
+                {
+                    if (identity && identity.TryGetComponent(out _flareMatch))
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        return !_flareMatch || _flareMatch.Phase != TowerPhase.Ended;
+    }
+
+    private void HandleFlareRequested()
+    {
+        if (!isLocalPlayer || !_player.CanSimulateLocalWorld || !IsFlareHudAvailable
+            || SessionScreen.IsGameplayOverlayOpen || FlareCooldownRemaining > 0d)
+        {
+            return;
+        }
+        CmdRequestFlare();
+    }
+
+    [Command]
+    private void CmdRequestFlare()
+    {
+        if (!_player || !_player.isActiveAndEnabled || !_player.IsDowned
+            || !_isRecovering || _isCompletingRecovery || !_isFlareAvailable
+            || NetworkTime.time >= _recoveryDeadline || NetworkTime.time < _nextFlareTime
+            || !IsFlareMatchInProgress())
+        {
+            return;
+        }
+
+        _nextFlareTime = NetworkTime.time + Mathf.Max(0.1f, _flareCooldown);
+        Vector3 origin = transform.position + Vector3.up;
+        // Route through each recipient's own identity, independent of source visibility or distance.
+        // Only the TargetRpc creates visuals, so the listen host also receives exactly one copy.
+        foreach (NetworkConnectionToClient recipient in NetworkServer.connections.Values)
+        {
+            if (recipient != null && recipient.isReady && recipient.identity
+                && recipient.identity.TryGetComponent(out PlayerWreckRecovery recovery))
+            {
+                recovery.TargetReceiveFlare(recipient, netId, origin, NetworkTime.time,
+                    _flareLifetime, _flareDirectionDuration, _flareHeight, _flareDescentSpeed);
+            }
+        }
+    }
+
+    [TargetRpc]
+    private void TargetReceiveFlare(NetworkConnectionToClient recipient, uint sourceId,
+        Vector3 origin, double firedAt, float lifetime, float directionDuration, float height, float descentSpeed)
+    {
+        if (_flareView && IsFlareMatchInProgress())
+        {
+            _flareView.ShowFlare(origin, firedAt, lifetime, directionDuration,
+                height, descentSpeed, sourceId != netId);
         }
     }
 
@@ -156,6 +270,8 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
         }
 
         _isRecovering = true;
+        _isFlareAvailable = true;
+        _nextFlareTime = 0d;
         _wreckPosition = wreckPosition;
         _recoveryDeadline = NetworkTime.time + _recoveryDuration;
         _hasSettledInventory = false;
@@ -196,6 +312,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
         }
 
         _isCompletingRecovery = true;
+        _isFlareAvailable = false;
         _nextCompletionRetryTime = NetworkTime.time + CompletionRetryInterval;
         _recoveryResult = result;
 

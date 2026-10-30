@@ -6,6 +6,9 @@ public class PlayerInputReader : MonoBehaviour
     public Vector2 MoveInput { get; private set; }
     public Vector2 LookInput { get; private set; }
     public bool RunHeld { get; private set; }
+    public bool InteractHeld => _interactAction != null && _interactAction.IsPressed();
+    private InputAction _interactAction;
+    private bool _isInteractBlockedUntilRelease;
 
     public event Action InteractRequested;
     public event Action HarvestRequested;
@@ -13,6 +16,19 @@ public class PlayerInputReader : MonoBehaviour
     public event Action AbilityRequested;
     public event Action JumpRequested;
     public event Action DashRequested;
+
+    private void OnEnable()
+    {
+        PlayerInput playerInput = GetComponent<PlayerInput>();
+        if (playerInput && playerInput.actions)
+        {
+            _interactAction = playerInput.actions.FindAction("Interact");
+            if (_interactAction != null)
+            {
+                _interactAction.canceled += HandleInteractCanceled;
+            }
+        }
+    }
 
     public void OnMove(InputValue value)
     {
@@ -36,10 +52,21 @@ public class PlayerInputReader : MonoBehaviour
 
     public void OnInteract(InputValue value)
     {
-        if (value.isPressed)
+        if (value.isPressed && !_isInteractBlockedUntilRelease)
         {
             InteractRequested?.Invoke();
         }
+    }
+
+    public void RequireInteractRelease()
+    {
+        _isInteractBlockedUntilRelease = InteractHeld;
+    }
+
+    private void HandleInteractCanceled(InputAction.CallbackContext context)
+    {
+        // PlayerInput.SendMessages does not forward canceled button actions to OnInteract.
+        _isInteractBlockedUntilRelease = false;
     }
 
     public void OnHarvest(InputValue value)
@@ -75,6 +102,11 @@ public class PlayerInputReader : MonoBehaviour
     }
     private void OnDisable()
     {
+        if (_interactAction != null)
+        {
+            _interactAction.canceled -= HandleInteractCanceled;
+            _interactAction = null;
+        }
         MoveInput = Vector2.zero;
         LookInput = Vector2.zero;
         RunHeld = false;
