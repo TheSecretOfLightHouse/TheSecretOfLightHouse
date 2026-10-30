@@ -7,6 +7,7 @@ namespace Lighthouse.Monsters.MosaWhale.Rules
         ProtectionUnavailable,
         BehaviorStopped,
         Dead,
-        Obstacle
+        Obstacle,
+        WaterUnavailable
     }
 }

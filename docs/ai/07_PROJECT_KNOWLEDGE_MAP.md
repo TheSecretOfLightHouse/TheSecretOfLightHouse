@@ -23,6 +23,7 @@
 | 등대·작업대·모듈 | [지훈 시스템 설계](../design/jihun-system-design.md), [기획서](../design/references/game-design-v4.md), [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/04.Lighthouse/` | 모듈·부식 낙하·등대 포함, 기획값 변경 없이 구현 근거 확인 |
 | 플레이어·배·능력·인벤토리 | [아키텍처](../04-architecture.md), [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/05.Player/` | 배 조작·내구도·채집 행동, 이동된 파일의 정확한 위치는 아키텍처에서 확인 |
 | 몬스터 | [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/06.Monsters/` | AI·스폰 실행과 월드 배치 경계 |
+| 몬스터 공통 부력·잠수·표류(BC2) | [부력 재설계](../강민서/2026-10-25/범용부력과-자연파도-재설계-검토.md), [실행 기록](../강민서/2026-10-30/BC2-몬스터-부력-연결.md) | `06.Monsters/AI/Shared/Server/Components/MonsterWaterBody.cs`, `02.World/Ocean/BuoyancyObject.cs`, `Minseo/BC2/MonsterBuoyancyChecks.unity`, `Tools/World/*BC2*.cs` | 호스트 로컬 조건부 통과. M2/4인·실제 대상 전투 종단·배/Player 회귀·성능 미검증. 도약 제어 예외는 기록 참조 |
 | 마피아 | [승패·투표 결정](../design/win-vote-decisions.md), [v4](../design/references/game-design-v4.md), [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/07.Mafia/` (`Voting/Rules/VoteService.cs`) | 시민 표·확인권·누적/공격력 및 비밀 정보 수신 경계. 현재 Rules와 새 규칙의 차이는 로드맵에서 확인 |
 | 시스템·UI·개발 도구 | [코드 소유권](../CODE_OWNERSHIP.md) | `Assets/01.Scripts/08.Systems/`, `09.UI/`, `99.Dev/` (같은 루트) | Systems·UI는 최명기, Dev는 관련 기능 담당 공유 |
 | 개발 씬 | [씬·에셋 안전](../unity/SCENE_AND_ASSET_SAFETY.md) | `Assets/00.Scenes/SampleScene.unity`, `Assets/00.Scenes/Myeongki/Player.unity`, `Assets/00.Scenes/Jihun/JH01TestScene.unity`(빌드 미포함), `Assets/00.Scenes/Jihun/JH07Offline.unity`·`JH07Lobby.unity`·`JH07Game.unity`(빌드 0~2번, 임시) | 씬 소유·역할·빌드 포함 여부는 실제 설정에서 확인 |

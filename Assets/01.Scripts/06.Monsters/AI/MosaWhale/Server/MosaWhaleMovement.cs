@@ -26,6 +26,7 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         private MonsterMotion _motion;
         private SeaMonster _monster;
         private Rigidbody _body;
+        private MonsterWaterBody _water;
         private NetworkTransformBase _networkTransform;
         private MosaWhaleCollision _collision;
         private RigidbodyConstraints _savedConstraints;
@@ -55,6 +56,21 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         public Vector3 HeadPosition => _headPosition;
         public bool IsDescending => _isDescending;
 
+        public bool CanLeaveDepthPhase
+        {
+            get
+            {
+                if (_water == null)
+                {
+                    return true;
+                }
+                bool reached = _water.HasReachedDepth(_water.Buoyancy.TargetDepth);
+                return reached && (_cycle.Phase != MosaWhalePhase.Diving || _water.IsFullySubmerged(0.2f));
+            }
+        }
+
+        public float DepthTransitionTimeout => _water != null ? _water.TransitionTimeout : 15f;
+
         private void Awake()
         {
             _cycle = GetComponent<MosaWhaleCycle>();
@@ -62,6 +78,7 @@ namespace Lighthouse.Monsters.MosaWhale.Server
             _motion = GetComponent<MonsterMotion>();
             _monster = GetComponent<SeaMonster>();
             _body = GetComponent<Rigidbody>();
+            _water = GetComponent<MonsterWaterBody>();
             _networkTransform = GetComponent<NetworkTransformBase>();
             _collision = GetComponent<MosaWhaleCollision>();
         }
@@ -148,18 +165,29 @@ namespace Lighthouse.Monsters.MosaWhale.Server
                 _cycle.StopAtObstacle();
                 return;
             }
-            // 평상시 수평 이동의 기존 속도는 유지하고 높이와 공격 중 위치만 서버에서 확정한다.
+            bool controlsDepth = _water != null && (_cycle.Phase == MosaWhalePhase.Patrol
+                || _cycle.Phase == MosaWhalePhase.Diving || _cycle.Phase == MosaWhalePhase.Telegraph
+                || _cycle.Phase == MosaWhalePhase.Recovering);
+            if (controlsDepth)
+            {
+                _water.Buoyancy.SetTargetDepth(_water.DepthForRoot(SampleSurface(position) - position.y));
+                position.y = _body.position.y;
+            }
+            // Preserve the combat trajectory above water and let buoyancy own underwater height.
             _body.position = position;
             if (_cycle.Phase != MosaWhalePhase.Patrol)
             {
                 _body.rotation = rotation;
-                _body.linearVelocity = Vector3.zero;
+                _body.linearVelocity = controlsDepth ? new Vector3(0f, _body.linearVelocity.y, 0f) : Vector3.zero;
                 _body.angularVelocity = Vector3.zero;
             }
             else
             {
                 Vector3 velocity = _body.linearVelocity;
-                velocity.y = 0f;
+                if (!controlsDepth)
+                {
+                    velocity.y = 0f;
+                }
                 _body.linearVelocity = velocity;
             }
             if (_cycle.Phase == MosaWhalePhase.Rising && HasValidDamagePose)
@@ -202,6 +230,18 @@ namespace Lighthouse.Monsters.MosaWhale.Server
             {
                 _savedConstraints = _body.constraints;
                 _controlsBody = true;
+            }
+            if (_water != null)
+            {
+                bool scripted = phase == MosaWhalePhase.Rising || phase == MosaWhalePhase.Apex
+                    || phase == MosaWhalePhase.Reentering;
+                _water.SetScriptedMotion(scripted);
+                if (!scripted)
+                {
+                    float rootDepth = phase == MosaWhalePhase.Patrol ? _cycle.Settings.PatrolDepth
+                        : phase == MosaWhalePhase.Recovering ? _cycle.Settings.RecoveryDepth : _cycle.Settings.DiveDepth;
+                    _water.Buoyancy.SetTargetDepth(_water.DepthForRoot(rootDepth));
+                }
             }
             _body.constraints = _savedConstraints & ~RigidbodyConstraints.FreezePositionY;
             _hasCrossedSurface = false;
@@ -265,6 +305,10 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         {
             _body.position = position;
             _body.rotation = rotation;
+            if (_water != null)
+            {
+                _water.Buoyancy.InvalidateSamples();
+            }
             if (_networkTransform != null)
             {
                 // Reliable의 직전 송수신 기준은 유지해야 다음 위치 델타에 오프셋이 더해지지 않는다.
@@ -301,6 +345,11 @@ namespace Lighthouse.Monsters.MosaWhale.Server
             _surfaceCrossedAt = 0d;
             _isObstacleReturn = false;
             _isDescending = false;
+            if (_water != null)
+            {
+                _water.SetScriptedMotion(false);
+                _water.RestoreDefaultDepth();
+            }
             if (!_controlsBody)
             {
                 return;

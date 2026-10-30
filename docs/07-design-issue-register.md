@@ -128,7 +128,7 @@
 | [W16](design/references/v4-design-review.md#w16) | 심연 이후의 날짜와 밤 전용 기능이 미정이다 | P1 · 누락 계약 | 부분 결정: 최후전투의 게임기한 패배 없음(5절). 별개인 World시간·일차·일일횟수/효과는 K03 확인 필요 |
 | [W17](design/references/v4-design-review.md#w17) | 안전지대와 소환 및 보스의 예외가 없다 | P1 · 누락 계약 | 부분 결정: 일반 몬스터는 안전지대의 배를 탐지·추적하지 않고 대상 진입 시 공격을 취소한다(2026-10-29 사용자 결정). 구현·격리 검사, 실제 플레이·M2 미검증. 보스·소환·다른 위협의 예외는 계약 확인 필요. [결정](design/monster-safe-zone-decisions.md) · [작업](박태욱/2026-10-29/일반-몬스터-안전지대.md) |
 | [W18](design/references/v4-design-review.md#w18) | 합쳐진 위협과 반복 피해의 상한이 없다 | P1 · 검증 가설 | 가설 검증 필요 |
-| [W19](design/references/v4-design-review.md#w19) | 예보 변경의 시점이 단서의 존재를 결정한다 | P1 · 미정 명시 | 계약 확인 필요 |
+| [W19](design/references/v4-design-review.md#w19) | 예보 변경의 시점이 단서의 존재를 결정한다 | P1 · 미정 명시 | 부분 결정(2026-10-30): 마피아 메뉴에서 안개(현재 Overcast)·폭풍우를 다음 날 날씨로 예약. 예측소가 보여줄 예보·단서 계약은 확인 필요. [결정](design/mafia-ability-menu-decisions.md) |
 | [W20](design/references/v4-design-review.md#w20) | 특수 섬의 사용권과 점유 수명이 없다 | P1 · 미정 명시 | 계약 확인 필요 |
 | [W21](design/references/v4-design-review.md#w21) | 관측소 기준선과 레이더 관측 시간이 없다 | P1 · 누락 계약 | 계약 확인 필요 |
 | [W22](design/references/v4-design-review.md#w22) | 유령선의 출현 기회와 힌트 이용 규칙이 없다 | P1 · 누락 계약 | 2026-10-30 결정: [유령선 힌트 결정](design/ghost-ship-hint-decisions.md)(작업대 인출 날짜별 장부·선착순 1명·최소 1회·소환 후 중지). 코드 구현, 메인 씬 배치·4인 검증 남음 |
