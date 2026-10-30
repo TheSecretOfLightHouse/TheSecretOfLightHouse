@@ -24,6 +24,7 @@ namespace Lighthouse.World.MapGeneration.Rules
             AppendArchetypes(hash, config);
             AppendZones(hash, config.Zones);
             AppendFloors(hash, config);
+            AppendBudget(hash, config.DepositBudget);
             return hash.Value;
         }
 
@@ -96,6 +97,7 @@ namespace Lighthouse.World.MapGeneration.Rules
                 hash.Add(entry != null && entry.Resource != null ? entry.Resource.Id : 0);
                 hash.Add(entry != null ? entry.Weight : 0f);
                 AppendDeposit(hash, entry != null ? entry.Deposit : default);
+                hash.Add(entry != null && entry.PickupPrefab != null ? 1 : 0);
             }
         }
 
@@ -117,6 +119,7 @@ namespace Lighthouse.World.MapGeneration.Rules
                 hash.Add(local.x);
                 hash.Add(local.y);
                 hash.Add(local.z);
+                hash.Add(spots[i].FixedResource != null ? spots[i].FixedResource.Id : 0);
             }
         }
 
@@ -173,6 +176,24 @@ namespace Lighthouse.World.MapGeneration.Rules
         private static int GetResourceId(ResourceFloor floor)
         {
             return floor.Resource != null ? floor.Resource.Id : 0;
+        }
+
+        private static void AppendBudget(StableHash hash, WorldDepositBudget budget)
+        {
+            Dictionary<int, int> totals = new Dictionary<int, int>();
+            if (budget != null)
+            {
+                budget.CollectTotals(totals);
+            }
+
+            List<int> ids = new List<int>(totals.Keys);
+            ids.Sort();
+            hash.Add(ids.Count);
+            for (int i = 0; i < ids.Count; i++)
+            {
+                hash.Add(ids[i]);
+                hash.Add(totals[ids[i]]);
+            }
         }
 
         private static void AppendDeposit(StableHash hash, DepositSpec deposit)

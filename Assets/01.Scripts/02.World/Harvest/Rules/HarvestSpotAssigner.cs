@@ -14,6 +14,17 @@ namespace Lighthouse.World.Harvest.Rules
             SeededRandom random,
             List<SpotAssignment> results)
         {
+            return Assign(catalog, archetype, categories, null, random, results);
+        }
+
+        public static bool Assign(
+            ResourceCatalog catalog,
+            IslandArchetype archetype,
+            IReadOnlyList<HarvestSpotCategory> categories,
+            IReadOnlyList<ResourceDefinition> fixedResources,
+            SeededRandom random,
+            List<SpotAssignment> results)
+        {
             if (results == null)
             {
                 return false;
@@ -25,7 +36,12 @@ namespace Lighthouse.World.Harvest.Rules
                 return false;
             }
 
-            List<Candidate> candidates = CollectCandidates(catalog, archetype);
+            if (fixedResources != null && fixedResources.Count != categories.Count)
+            {
+                return false;
+            }
+
+            List<HarvestCandidate> candidates = HarvestCandidateCollector.Collect(catalog, archetype);
             List<float> weights = new List<float>(candidates.Count);
 
             for (int i = 0; i < categories.Count; i++)
@@ -38,48 +54,43 @@ namespace Lighthouse.World.Harvest.Rules
 
                 int picked = WeightedChoice.Pick(random, weights);
                 float roll = random.NextFloat();
+
+                ResourceDefinition fixedResource = fixedResources != null ? fixedResources[i] : null;
+                if (fixedResource != null)
+                {
+                    results.Add(CreateFixedAssignment(fixedResource, candidates, archetype.SeedVariance, roll));
+                    continue;
+                }
+
                 results.Add(picked >= 0 ? CreateAssignment(candidates[picked], archetype.SeedVariance, roll) : default);
             }
 
             return true;
         }
 
-        private static List<Candidate> CollectCandidates(ResourceCatalog catalog, IslandArchetype archetype)
+        private static SpotAssignment CreateFixedAssignment(
+            ResourceDefinition resource,
+            List<HarvestCandidate> candidates,
+            float seedVariance,
+            float roll)
         {
-            List<Candidate> candidates = new List<Candidate>();
-            IReadOnlyList<IslandResourceEntry> entries = archetype.Resources;
-
-            for (int i = 0; i < entries.Count; i++)
+            int index = HarvestCandidateCollector.IndexOfResource(candidates, resource.Id);
+            if (index >= 0)
             {
-                IslandResourceEntry entry = entries[i];
-                if (entry == null || entry.Resource == null || entry.Weight <= 0f || !entry.Deposit.IsValid
-                    || entry.Resource.SpotCategory == HarvestSpotCategory.None || ContainsId(candidates, entry.Resource.Id))
-                {
-                    continue;
-                }
-
-                candidates.Add(new Candidate(entry.Resource.SpotCategory, entry.Resource.Id, entry.Weight, entry.Deposit, entry.Resource.PickupPrefab));
+                return CreateAssignment(candidates[index], seedVariance, roll);
             }
 
-            List<ResourceDefinition> sorted = new List<ResourceDefinition>();
-            catalog.CollectSortedById(sorted);
-
-            for (int i = 0; i < sorted.Count; i++)
+            if (!resource.DefaultDeposit.IsValid)
             {
-                ResourceDefinition resource = sorted[i];
-                if (!resource.IsUbiquitous || !resource.DefaultDeposit.IsValid
-                    || resource.SpotCategory == HarvestSpotCategory.None || ContainsId(candidates, resource.Id))
-                {
-                    continue;
-                }
-
-                candidates.Add(new Candidate(resource.SpotCategory, resource.Id, 1f, resource.DefaultDeposit, resource.PickupPrefab));
+                return default;
             }
 
-            return candidates;
+            HarvestCandidate fallback = new HarvestCandidate(
+                resource.SpotCategory, resource.Id, 1f, resource.DefaultDeposit, resource.PickupPrefab);
+            return CreateAssignment(fallback, seedVariance, roll);
         }
 
-        private static SpotAssignment CreateAssignment(Candidate candidate, float seedVariance, float roll)
+        private static SpotAssignment CreateAssignment(HarvestCandidate candidate, float seedVariance, float roll)
         {
             float factor = 1f + (roll * 2f - 1f) * seedVariance;
             int initial = Mathf.Clamp(Mathf.RoundToInt(candidate.Spec.InitialAmount * factor), 0, candidate.Spec.MaxAmount);
@@ -90,42 +101,6 @@ namespace Lighthouse.World.Harvest.Rules
                 candidate.Spec.MaxAmount,
                 candidate.Spec.DailyRegenRate,
                 candidate.PickupPrefab);
-        }
-
-        private static bool ContainsId(List<Candidate> candidates, int resourceId)
-        {
-            for (int i = 0; i < candidates.Count; i++)
-            {
-                if (candidates[i].ResourceId == resourceId)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private readonly struct Candidate
-        {
-            public readonly HarvestSpotCategory Category;
-            public readonly int ResourceId;
-            public readonly float Weight;
-            public readonly DepositSpec Spec;
-            public readonly GameObject PickupPrefab;
-
-            public Candidate(
-                HarvestSpotCategory category,
-                int resourceId,
-                float weight,
-                DepositSpec spec,
-                GameObject pickupPrefab)
-            {
-                Category = category;
-                ResourceId = resourceId;
-                Weight = weight;
-                Spec = spec;
-                PickupPrefab = pickupPrefab;
-            }
         }
     }
 }

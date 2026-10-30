@@ -13,6 +13,7 @@ namespace Lighthouse.World.Harvest.Sandbox
             isPassed &= CheckRegistryLifetime();
             isPassed &= CheckPolicy();
             isPassed &= HarvestNotificationChecks.RunAll();
+            isPassed &= DepositDistributorChecks.RunAll();
             return isPassed;
         }
 
