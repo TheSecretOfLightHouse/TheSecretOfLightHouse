@@ -1,3 +1,5 @@
+using System.Collections;
+using Lighthouse.Systems.Audio;
 using Lighthouse.Workbench.Net;
 using Mirror;
 using UnityEngine;
@@ -10,18 +12,20 @@ namespace Lighthouse.Workbench.View
     [DisallowMultipleComponent]
     public sealed class WorkbenchCraftEffects : MonoBehaviour
     {
+        private const int HammerRepeatCount = 3;
+
         [SerializeField]
         private WorkbenchNet _workbench;
         [SerializeField]
         private ParticleSystem _sparks;
         [SerializeField]
         private ParticleSystem _dust;
-        [Tooltip("3D source; its max distance should match the visible distance.")]
         [SerializeField]
-        private AudioSource _audio;
-        [Tooltip("Hammer blows. None chosen yet (2026-10-27); left empty, only the particles play.")]
+        private SoundManager _soundManagerPrefab;
         [SerializeField]
         private AudioClip _hammerClip;
+        [SerializeField, Range(0f, 1f)]
+        private float _hammerVolume = 1f;
         [SerializeField, Min(1f)]
         private float _visibleDistance = 30f;
 
@@ -35,6 +39,8 @@ namespace Lighthouse.Workbench.View
 
         private void OnDisable()
         {
+            StopAllCoroutines();
+
             if (_workbench)
             {
                 _workbench.RecipeCompleted -= HandleRecipeCompleted;
@@ -58,9 +64,32 @@ namespace Lighthouse.Workbench.View
                 _dust.Play(true);
             }
 
-            if (_audio && _hammerClip)
+            if (_hammerClip)
             {
-                _audio.PlayOneShot(_hammerClip);
+                StartCoroutine(PlayHammerSounds());
+            }
+        }
+
+        private IEnumerator PlayHammerSounds()
+        {
+            if (!SoundManager.Instance && _soundManagerPrefab)
+            {
+                Instantiate(_soundManagerPrefab);
+            }
+
+            var interval = new WaitForSecondsRealtime(_hammerClip.length);
+            for (int i = 0; i < HammerRepeatCount; i++)
+            {
+                if (!SoundManager.Instance || !IsLocalPlayerNear())
+                {
+                    yield break;
+                }
+
+                SoundManager.Instance.PlayEffectAt(_hammerClip, transform.position, _hammerVolume);
+                if (i < HammerRepeatCount - 1)
+                {
+                    yield return interval;
+                }
             }
         }
 
