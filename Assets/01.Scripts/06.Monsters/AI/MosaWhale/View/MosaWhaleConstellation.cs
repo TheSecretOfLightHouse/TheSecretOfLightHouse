@@ -12,20 +12,22 @@ public class MosaWhaleConstellation : MonoBehaviour
     private Mesh baked;
     private int[] indices;
     private ParticleSystem.Particle[] particles;
+    private readonly List<Vector3> _vertices = new List<Vector3>();
+    private readonly List<Vector3> _normals = new List<Vector3>();
 
     private void Start()
     {
         if (!body || !stars) { enabled = false; return; }
         baked = new Mesh();
         body.BakeMesh(baked);
-        var vertices = baked.vertices;
-        var normals = baked.normals;
+        baked.GetVertices(_vertices);
+        baked.GetNormals(_normals);
         var bounds = body.bounds;
         var candidates = new List<int>();
-        for (int i = 0; i < vertices.Length; i++)
+        for (int i = 0; i < _vertices.Count; i++)
         {
-            Vector3 world = body.transform.position + body.transform.rotation * vertices[i];
-            Vector3 normal = body.transform.TransformDirection(normals[i]).normalized;
+            Vector3 world = body.transform.position + body.transform.rotation * _vertices[i];
+            Vector3 normal = body.transform.TransformDirection(_normals[i]).normalized;
             Vector3 local = transform.InverseTransformPoint(world);
             Vector3 center = transform.InverseTransformPoint(bounds.center);
             float width = bounds.extents.x / Mathf.Abs(transform.lossyScale.x);
@@ -45,13 +47,13 @@ public class MosaWhaleConstellation : MonoBehaviour
     {
         if (indices == null) return;
         body.BakeMesh(baked);
-        var vertices = baked.vertices;
-        var normals = baked.normals;
+        baked.GetVertices(_vertices);
+        baked.GetNormals(_normals);
         for (int i = 0; i < indices.Length; i++)
         {
             int index = indices[i];
-            Vector3 normal = body.transform.TransformDirection(normals[index]).normalized;
-            particles[i].position = body.transform.position + body.transform.rotation * vertices[index] + normal * 0.06f;
+            Vector3 normal = body.transform.TransformDirection(_normals[index]).normalized;
+            particles[i].position = body.transform.position + body.transform.rotation * _vertices[index] + normal * 0.06f;
             float twinkle = Mathf.Pow(0.5f + 0.5f * Mathf.Sin(Time.time * (1.1f + (i % 5) * 0.23f) + i * 2.17f), 2f);
             particles[i].startSize = starSize * (0.75f + twinkle * 0.65f);
             particles[i].startColor = new Color(0.35f + 0.5f * twinkle, 0.7f + 0.3f * twinkle, 1f, 0.5f + 0.5f * twinkle);
