@@ -5,7 +5,7 @@ namespace Lighthouse.World.Islands.Editor
 {
     internal static class IslandBakedAssetNaming
     {
-        public const string OutputRoot = "Assets/ThirdParty/World/Final/Island";
+        public const string OutputRoot = "Assets/ThirdParty/World/FFinal/LegacyMeshCandidates";
 
         // Moves the folder and renames the assets inside it; GUIDs stay, so scene references survive.
         public static string Rename(string sourceName, string finalName)

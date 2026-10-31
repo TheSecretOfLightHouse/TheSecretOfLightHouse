@@ -7,7 +7,7 @@ namespace Lighthouse.World.Islands.Editor
     internal static class TerrainBakeMenu
     {
         private const string MenuPath = "TheLightHouse/World/Islands/Bake Terrain To Mesh";
-        private const string OutputRoot = "Assets/ThirdParty/World/Final/Island";
+        private const string OutputRoot = "Assets/ThirdParty/World/FFinal/LegacyMeshCandidates";
         private const string GroundRootName = "Ground_Baked";
         private const float VisualStep = 0.05f;
         private const float CollisionStep = 0.25f;
