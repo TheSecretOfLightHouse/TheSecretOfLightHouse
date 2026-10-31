@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 891ecf4f5acdfa44189c037d0ef4791b, type: 3}
   m_Name: BlueMarline_Profile
   m_EditorClassIdentifier: 
-  _maxHealth: 1
+  _maxHealth: 20
   _patrolSpeed: 3
   _chaseSpeed: 5
   _detectionRadius: 15
   _maxChaseDistance: 18
-  _attackDamage: 10
+  _attackDamage: 5
   _attackCooldown: 2

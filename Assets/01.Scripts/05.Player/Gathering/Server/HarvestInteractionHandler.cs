@@ -116,7 +116,8 @@ public sealed class HarvestInteractionHandler
                 reservation.ResourceId,
                 dropAmount,
                 reservation.PickupPrefab,
-                out handle);
+                out handle,
+                player.transform.position);
 
             if (!isSpawned)
             {

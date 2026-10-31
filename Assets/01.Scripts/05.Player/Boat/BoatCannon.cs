@@ -19,6 +19,12 @@ public sealed class BoatCannon : NetworkBehaviour
     [SerializeField, Min(0.01f)]
     private float _damage = 10f;
 
+    [SerializeField, Min(0f)]
+    private float _recoilSpeed = 0f;
+
+    [SerializeField, Min(0f)]
+    private float _propulsionPauseDuration = 0.25f;
+
     private BoatController _boat;
     private Rigidbody _boatBody;
     private Collider[] _boatColliders;
@@ -143,7 +149,7 @@ public sealed class BoatCannon : NetworkBehaviour
         projectile.Initialize(GetLaunchVelocity(), _damage * towerDamageMultiplier, _boatColliders, owner.GetComponentsInChildren<Collider>(true));
 
         NetworkServer.Spawn(projectile.gameObject);
-        RpcPlayFireEffects();
+        RpcPlayFireEffects(_muzzle.forward);
     }
 
     private Vector3 GetLaunchVelocity()
@@ -155,7 +161,8 @@ public sealed class BoatCannon : NetworkBehaviour
             ? _muzzleVelocity
             : _boatBody.GetPointVelocity(_muzzle.position);
 
-        return _muzzle.forward * _launchSpeed + inheritedVelocity;
+        // Firing stops horizontal travel, while buoyancy may still move the muzzle vertically.
+        return _muzzle.forward * _launchSpeed + Vector3.up * inheritedVelocity.y;
     }
 
     private void SampleMuzzleVelocity()
@@ -185,8 +192,9 @@ public sealed class BoatCannon : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void RpcPlayFireEffects()
+    private void RpcPlayFireEffects(Vector3 fireDirection)
     {
+        _boat.ApplyCannonRecoil(fireDirection, _recoilSpeed, _propulsionPauseDuration);
         PlayerController owner = _boat.Owner;
         if (owner && owner.isOwned && owner.TryGetComponent(out PlayerActionEvents actionEvents))
         {

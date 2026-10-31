@@ -15,6 +15,7 @@ public sealed class GatheringFeverRequest : NetworkBehaviour
     private GatheringFeverAbility _ability;
     private GatheringFever _fever;
     private PlayerPassiveController _passives;
+    private Lighthouse.Player.Abilities.View.GatheringFeverPanel _panel;
 
     public bool IsAwaitingResult { get; private set; }
 
@@ -40,6 +41,7 @@ public sealed class GatheringFeverRequest : NetworkBehaviour
         if (!isActiveAndEnabled
             || !_player || !_player.isActiveAndEnabled
             || _player.IsDowned
+            || _player.IsOnBoat
             || !_ability || !_ability.isActiveAndEnabled
             || !_runner || _runner.JobAbility != _ability
             || !_usage || !_usage.isActiveAndEnabled
@@ -109,6 +111,10 @@ public sealed class GatheringFeverRequest : NetworkBehaviour
 
     private void OnDisable()
     {
+        if (_panel)
+        {
+            _panel.Hide();
+        }
         if (_ability)
         {
             _ability.ActivationRequested -= HandleActivationRequested;
@@ -144,8 +150,27 @@ public sealed class GatheringFeverRequest : NetworkBehaviour
             return;
         }
 
+        if (!_panel)
+        {
+            _panel = gameObject.AddComponent<Lighthouse.Player.Abilities.View.GatheringFeverPanel>();
+        }
+
+        _panel.Show();
+    }
+
+    public bool TryConfirm()
+    {
+        if (!isActiveAndEnabled || !isClient || !isOwned
+            || !NetworkClient.ready || IsAwaitingResult
+            || !_ability || !_ability.IsOnLand
+            || !_runner || _runner.CurrentAbility != _ability)
+        {
+            return false;
+        }
+
         // A host can receive its response before the Command returns.
         IsAwaitingResult = true;
         CmdRequestFever();
+        return true;
     }
 }

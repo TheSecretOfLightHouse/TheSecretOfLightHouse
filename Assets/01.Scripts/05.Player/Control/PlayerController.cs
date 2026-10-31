@@ -9,6 +9,7 @@ using Lighthouse.Network.Session.View;
 using Lighthouse.World.Islands.Rules;
 using Lighthouse.World.MapGeneration.Net;
 using Lighthouse.World.Query.Rules;
+using Lighthouse.Player.Control.View;
 
 [RequireComponent(typeof(PlayerInputReader), typeof(PlayerMotor), typeof(PlayerAbilityRunner))]
 public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
@@ -85,6 +86,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private bool _hasSavedCursor;
     private CursorLockMode _savedCursorLockMode;
     private bool _savedCursorVisible;
+    private readonly PlayerCursorAppearance _cursorAppearance = new PlayerCursorAppearance();
 
     private PlayerPassiveController _passiveController;
 
@@ -103,7 +105,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         && HasLocalControlAuthority
         && CanRunLocalWorld();
     public bool CanUseWreckBuoyancy => isActiveAndEnabled && CanProcessLocalInput
-        && !IsOnBoat && IsSessionSimulationReady && _rb && !_rb.isKinematic;
+        && !IsOnBoat && IsSessionSimulationReady && _rb && !_rb.isKinematic
+        && _motor && (IsDowned || _motor.IsOffGround);
     public PlayerHFSM StateMachine => _hfsm;
 
     public PlayerPassiveController PassiveController => _passiveController;
@@ -143,6 +146,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     }
 
     public event Action<PlayerController> InteractionRequested;
+    public event Action WreckFlareRequested;
+    public event Action RescueInteractionRequested;
     public event Action<PlayerController> HarvestRequested;
     public event Action<PlayerController> AbilityRequested;
     public event Action<BoatController> Boarded;
@@ -353,7 +358,16 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         if (!IsDowned && WorldServices.TryGet(out IWalkBoundary walkBoundary))
         {
-            moveDirection = walkBoundary.FilterMove(_rb.position, moveDirection);
+            bool isClimbingShore = !config.InputLocked
+                && TryClimbShore(moveDirection, walkBoundary, fixedDeltaTime);
+            if (isClimbingShore)
+            {
+                SetWreckBuoyancy(false);
+            }
+            else
+            {
+                moveDirection = walkBoundary.FilterMove(_rb.position, moveDirection);
+            }
         }
 
         _motor.Move(moveDirection, config,fixedDeltaTime);
@@ -364,8 +378,39 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         }
     }
 
+    private bool TryClimbShore(Vector3 direction, IWalkBoundary boundary, float fixedDeltaTime)
+    {
+        if (direction.sqrMagnitude < 0.01f
+            || !WorldServices.TryGet(out IWorldQuery world))
+        {
+            return false;
+        }
+
+        float waterHeight = world.SampleWaterHeight(_rb.position);
+        if (!_motor.CanStartShoreClimb(waterHeight)
+            || !WorldServices.TryGet(out IGroundHeightSource ground)
+            || !world.TryFindNearestIsland(_rb.position, out IslandHandle island))
+        {
+            return false;
+        }
+
+        Vector3 target = _rb.position + direction.normalized * _motor.ShoreClimbReach;
+        if (!boundary.IsWalkable(target)
+            || !ground.TryGetGroundHeight(island.Index, target.x, target.z, out float height))
+        {
+            return false;
+        }
+
+        return _motor.TryClimbShore(direction, height, waterHeight, fixedDeltaTime);
+    }
+
     private void LateUpdate()
     {
+        if (_hasSavedCursor)
+        {
+            _cursorAppearance.Refresh();
+        }
+
         if (!IsOnBoat)
         {
             return;
@@ -454,7 +499,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         }
 
         Cursor.lockState = CursorLockMode.Confined;
-        Cursor.visible = false;
+        Cursor.visible = true;
+        _cursorAppearance.Refresh();
     }
 
     private void RestoreCursor()
@@ -465,6 +511,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         }
 
         _hasSavedCursor = false;
+        _cursorAppearance.Release();
         Cursor.lockState = _savedCursorLockMode;
         Cursor.visible = _savedCursorVisible;
     }
@@ -756,6 +803,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         if (value)
         {
+            _inputReader.RequireInteractRelease();
             _abilityRunner.Cancel();
             ClearActionRequests();
 
@@ -805,9 +853,27 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _fireRequested = false;
         _abilityRequested = false;
 
-        if (IsDowned || _isRescuePromptOpen || SessionScreen.IsGameplayOverlayOpen
+        if (SessionScreen.IsGameplayOverlayOpen
             || Time.frameCount <= _rescuePromptClosedFrame)
         {
+            return;
+        }
+
+        if (IsDowned)
+        {
+            if (interactRequested && !_isRescuePromptOpen)
+            {
+                WreckFlareRequested?.Invoke();
+            }
+            return;
+        }
+
+        if (_isRescuePromptOpen)
+        {
+            if (interactRequested)
+            {
+                RescueInteractionRequested?.Invoke();
+            }
             return;
         }
 
@@ -864,7 +930,10 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void HandleInteractRequested()
     {
-        _interactRequested = true;
+        if (CanProcessLocalInput && !SessionScreen.IsGameplayOverlayOpen)
+        {
+            _interactRequested = true;
+        }
     }
 
     private void HandleHarvestRequested()

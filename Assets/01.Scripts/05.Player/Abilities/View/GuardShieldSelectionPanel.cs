@@ -1,3 +1,4 @@
+using Lighthouse.Player.Abilities.View;
 using UnityEngine;
 using Lighthouse.Network.Session.View;
 using Lighthouse.Player.Abilities.Net;
@@ -26,6 +27,8 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
     private readonly UnityEngine.Events.UnityAction[] _clickHandlers =
     new UnityEngine.Events.UnityAction[4];
 
+    private AbilityTargetPresentation _targetPresentation;
+    private UnityEngine.UI.Image[] _targetIcons;
     private Font _runtimeFont;
     private GuardShieldAbility _boundAbility;
     private PlayerController _boundController;
@@ -41,6 +44,8 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
 
     private void Awake()
     {
+        _targetPresentation = Resources.Load<AbilityTargetPresentation>("AbilityTargetPresentation");
+        _targetIcons = AbilityTargetPresentation.CreateIcons(_playerButtons, _playerNames);
         if (_panelRoot)
         {
             // Dynamic OS fonts must be created in each process rather than saved into the scene.
@@ -235,6 +240,11 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
             PlayerController player = i < _players.Count ? _players[i] : null;
             _targets[i] = player;
 
+            if (_targetPresentation && _targetIcons != null && i < _targetIcons.Length)
+            {
+                _targetPresentation.BindIcon(_targetIcons[i], player);
+            }
+
             if (_playerButtons == null || i >= _playerButtons.Length || !_playerButtons[i])
             {
                 continue;
@@ -254,9 +264,7 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
                 continue;
             }
 
-            _playerNames[i].text = player.isLocalPlayer
-                ? $"선원 {player.ActorID} (나)"
-                : $"선원 {player.ActorID}";
+            _playerNames[i].text = AbilityTargetPresentation.GetJobName(player);
 
             BoatController boat = player.OwnedBoat;
             bool canProtect = GuardShieldAbility.IsAboardOwnedBoat(player)

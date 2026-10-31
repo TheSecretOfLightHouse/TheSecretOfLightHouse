@@ -3,6 +3,8 @@ using Mirror;
 using UnityEngine;
 using Lighthouse.Player.Boat.View;
 using Lighthouse.World.Ocean;
+using Lighthouse.World.Ocean.Rules;
+using Lighthouse.World.Query.Rules;
 
 [DefaultExecutionOrder(-200)]
 [DisallowMultipleComponent]
@@ -66,6 +68,7 @@ public sealed class BoatController : NetworkBehaviour
     private float _nextDisembarkTime;
     private float _nextFireTime;
     private float _recoilEndTime;
+    private float _cannonPauseEndTime;
     private bool _isWreckPresentationApplied;
     private bool _offlineIsKinematic;
     private bool _hasLocalAuthority;
@@ -75,6 +78,7 @@ public sealed class BoatController : NetworkBehaviour
     private BoatWreckEffect _wreckEffectPrefab;
 
     public float ReloadDuration => _reloadDuration;
+    public float BoardingDistance => _boardingDistance;
     public PlayerController Owner => IsNetworkActive ? _owner : _offlineOwner;
     private bool IsNetworkActive => NetworkClient.active || NetworkServer.active;
     public bool IsOccupied => _isOccupied;
@@ -112,11 +116,30 @@ public sealed class BoatController : NetworkBehaviour
     [SerializeField, Min(1f)]
     private float _dashAccelerationMultiplier = 4f;
 
+    [SerializeField]
+    private WindBoatProfile _windProfile;
+
+    private bool _isOwnedWindProfile;
+
     private void Awake()
     {
         ResolveReferences();
         _offlineIsKinematic = _rb.isKinematic;
         _dashModule = GetComponent<DashModule>();
+
+        if (!_windProfile)
+        {
+            _windProfile = ScriptableObject.CreateInstance<WindBoatProfile>();
+            _isOwnedWindProfile = true;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (_isOwnedWindProfile && _windProfile)
+        {
+            Destroy(_windProfile);
+        }
     }
 
     private void OnEnable()
@@ -411,7 +434,7 @@ public sealed class BoatController : NetworkBehaviour
         {
             return;
         }
-        if (!CanControl(player))
+        if (!CanControl(player) || Time.time < _cannonPauseEndTime)
         {
             return;
         }
@@ -442,8 +465,11 @@ public sealed class BoatController : NetworkBehaviour
             towerSpeedBonus = player.PassiveController.GetTowerBoatSpeedBonus();
         }
 
-        float targetSpeed = (_speed * config.SpeedMultiplier * passiveMultiplier + towerSpeedBonus) * dashMultiplier;
-        Vector3 targetVelocity = forward * Mathf.Clamp(input.y, -1f, 1f) * targetSpeed;
+        float throttle = Mathf.Clamp(input.y, -1f, 1f);
+        WindBoatEffect wind = config.InputLocked ? WindBoatEffect.None : GetWindEffect(forward * throttle);
+
+        float targetSpeed = (_speed * config.SpeedMultiplier * passiveMultiplier * wind.SpeedMultiplier + towerSpeedBonus) * dashMultiplier;
+        Vector3 targetVelocity = forward * throttle * targetSpeed + wind.Drift + (config.InputLocked ? Vector3.zero : GetCurrentDrift());
         Vector3 velocity = _rb.linearVelocity;
         Vector3 horizontal = new Vector3(velocity.x, 0f, velocity.z);
         if (Time.time >= _recoilEndTime)
@@ -455,7 +481,7 @@ public sealed class BoatController : NetworkBehaviour
             }
             else
             {
-                horizontal = Vector3.MoveTowards(horizontal,targetVelocity,_acceleration* config.AccelerationMultiplier* passiveMultiplier* recovery* fixedDeltaTime);
+                horizontal = Vector3.MoveTowards(horizontal,targetVelocity,_acceleration* config.AccelerationMultiplier* passiveMultiplier* wind.AccelerationMultiplier* recovery* fixedDeltaTime);
             }
         }
         _rb.linearVelocity = new Vector3(horizontal.x, velocity.y, horizontal.z);
@@ -464,6 +490,27 @@ public sealed class BoatController : NetworkBehaviour
         {
             _rb.MoveRotation(rotation);
         }
+    }
+
+    private WindBoatEffect GetWindEffect(Vector3 travelDirection)
+    {
+        if (!WorldServices.TryGet(out IWindSource source))
+        {
+            return WindBoatEffect.None;
+        }
+
+        return WindBoatModel.Evaluate(source.GetWind(Time.timeAsDouble), travelDirection, _windProfile);
+    }
+
+    private Vector3 GetCurrentDrift()
+    {
+        if (!WorldServices.TryGet(out IWaterCurrentSource source))
+        {
+            return Vector3.zero;
+        }
+
+        Vector2 current = source.GetCurrent(_rb.position);
+        return new Vector3(current.x, 0f, current.y);
     }
 
     public bool TrySetHeading(PlayerController player, Quaternion rotation)
@@ -485,6 +532,21 @@ public sealed class BoatController : NetworkBehaviour
     public void PreserveCollisionRecoil(float duration)
     {
         _recoilEndTime = Mathf.Max(_recoilEndTime, Time.time + duration);
+    }
+
+    public void ApplyCannonRecoil(Vector3 fireDirection, float speed, float pauseDuration)
+    {
+        // Only the owning peer simulates boat motion; observers follow NetworkTransform.
+        if (!CanSimulateLocalPhysics || !_rb || _rb.isKinematic || IsWrecked || !IsOccupied)
+        {
+            return;
+        }
+
+        Vector3 recoil = -Vector3.ProjectOnPlane(fireDirection, Vector3.up).normalized * Mathf.Max(0f, speed);
+        _rb.linearVelocity = new Vector3(recoil.x, _rb.linearVelocity.y, recoil.z);
+        _rb.angularVelocity = Vector3.zero;
+        _cannonPauseEndTime = Time.time + Mathf.Max(0f, pauseDuration);
+        PreserveCollisionRecoil(pauseDuration);
     }
 
     public bool TryFire(PlayerController player)
@@ -511,6 +573,7 @@ public sealed class BoatController : NetworkBehaviour
     public void Stop()
     {
         _recoilEndTime = 0f;
+        _cannonPauseEndTime = 0f;
 
         if (!_rb || _rb.isKinematic)
         {
