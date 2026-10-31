@@ -66,6 +66,10 @@ namespace Lighthouse.World.Islands.View
             _indices.Add(plan.Index);
             _instances.Add(instance);
             instance.name = $"Island_{plan.Index}_{plan.Archetype.name}_v{plan.VariantIndex}";
+            if (!instance.TryGetComponent<TerrainCoastWaveView>(out _) && instance.GetComponentInChildren<Terrain>() != null)
+            {
+                instance.AddComponent<TerrainCoastWaveView>();
+            }
 
             if (_coastalShelfMaterial != null && _coastalShelfWidth > 0f && !HasOwnCoastWaves(instance))
             {
