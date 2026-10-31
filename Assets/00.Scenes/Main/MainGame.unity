@@ -9907,6 +9907,8 @@ GameObject:
   m_Component:
   - component: {fileID: 921941373}
   - component: {fileID: 921941372}
+  - component: {fileID: 921941375}
+  - component: {fileID: 921941374}
   m_Layer: 0
   m_Name: OceanShaderBridge
   m_TagString: Untagged
@@ -9942,6 +9944,41 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &921941374
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 921941371}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d8875ba858264b0458c136729ea4ab50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _waves: {fileID: 157755826}
+  _speed: 0.35
+  _maxSpeed: 0.8
+  _fallbackDirection: {x: 1, y: 0}
+--- !u!114 &921941375
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 921941371}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71867c03f7e87814a8f1615c94b4f62e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _seed: 20261031
+  _depth: 0.2
+  _minWavelength: 120
+  _maxWavelength: 320
+  _directionDegrees: 0
+  _spreadDegrees: 55
+  _driftSpeed: 3
 --- !u!1 &931129236
 GameObject:
   m_ObjectHideFlags: 0
