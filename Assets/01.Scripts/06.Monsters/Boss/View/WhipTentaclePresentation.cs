@@ -1,4 +1,5 @@
 using Mirror;
+using Lighthouse.Systems.Audio;
 using UnityEngine;
 
 namespace Lighthouse.Monsters.Boss
@@ -10,6 +11,10 @@ namespace Lighthouse.Monsters.Boss
         [SerializeField] private WhipTentacleSettings _settings;
         [SerializeField] private Animator[] _animators = new Animator[0];
         [SerializeField] private BoxCollider[] _hitBoxes = new BoxCollider[0];
+        [SerializeField] private AudioSource _emergeAudio;
+        [SerializeField] private AudioClip _impactSound;
+        [SerializeField] private SoundManager _soundManagerPrefab;
+        [SerializeField, Range(0f, 1f)] private float _soundVolume = 0.7f;
 
         private WhipTentacleBattleNet _battle;
 
@@ -50,6 +55,16 @@ namespace Lighthouse.Monsters.Boss
 
         private void LateUpdate()
         {
+            if (NetworkClient.active && NetworkClient.ready)
+            {
+                EnsureSoundManager();
+                SoundManager manager = SoundManager.Instance;
+                if (_emergeAudio != null)
+                {
+                    _emergeAudio.volume = manager != null && !manager.IsMuted
+                        ? manager.MasterVolume * manager.EffectVolume * _soundVolume : 0f;
+                }
+            }
             if (!NetworkClient.active || !NetworkClient.ready || _battle == null || !_battle.HasStarted
                 || _settings == null || _battle.AttackCount != Count)
             {
@@ -69,6 +84,28 @@ namespace Lighthouse.Monsters.Boss
                     float time = (float)((now - _battle.CombatStartedAt) % _settings.IdleClip.length);
                     _settings.IdleClip.SampleAnimation(_animators[i].gameObject, Mathf.Max(0f, time));
                 }
+            }
+        }
+        public void PlayImpactSound(Vector3 position, double startedAt)
+        {
+            if (!isActiveAndEnabled || _impactSound == null
+                || NetworkTime.time - startedAt >= _impactSound.length)
+            {
+                return;
+            }
+            EnsureSoundManager();
+            SoundManager manager = SoundManager.Instance;
+            if (manager != null)
+            {
+                manager.PlayEffectAt(_impactSound, position, _soundVolume);
+            }
+        }
+
+        private void EnsureSoundManager()
+        {
+            if (SoundManager.Instance == null && _soundManagerPrefab != null)
+            {
+                Instantiate(_soundManagerPrefab);
             }
         }
     }

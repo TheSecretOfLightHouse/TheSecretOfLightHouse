@@ -1,5 +1,6 @@
 using Lighthouse.Monsters.AI.Server;
 using Lighthouse.Monsters.AI.View;
+using Lighthouse.Systems.Audio;
 using Mirror;
 using UnityEngine;
 
@@ -14,6 +15,10 @@ namespace Lighthouse.Monsters.AI.Net
         [SerializeField] private GameObject _projectilePrefab;
         [SerializeField, Range(0f, 1f)] private float _fireNormalizedTime = 0.5f;
         [SerializeField, Min(0.01f)] private float _playbackSpeed = 1f;
+        [SerializeField] private AudioClip _chargeSound;
+        [SerializeField] private AudioClip _fireSound;
+        [SerializeField] private SoundManager _soundManagerPrefab;
+        [SerializeField, Range(0f, 1f)] private float _soundVolume = 0.7f;
 
         [SyncVar] private double _attackStartedAt;
         [SyncVar] private float _activePlaybackSpeed = 1f;
@@ -35,6 +40,9 @@ namespace Lighthouse.Monsters.AI.Net
         private double _fireAt;
         private double _endsAt;
         private double _nextAttackAt;
+        private AudioSource _chargeSource;
+        private uint _chargeSequence;
+        private uint _firedSoundSequence;
 
         public bool IsAttacking => _isAttacking;
         public bool HasFired => _hasFired;
@@ -71,6 +79,10 @@ namespace Lighthouse.Monsters.AI.Net
 
         private void Update()
         {
+            if (isClient)
+            {
+                UpdateChargeSound();
+            }
             if (!isServer || !_isAttacking)
             {
                 return;
@@ -97,6 +109,7 @@ namespace Lighthouse.Monsters.AI.Net
 
         private void OnDisable()
         {
+            StopChargeSound();
             if (isServer)
             {
                 Finish(false);
@@ -113,6 +126,19 @@ namespace Lighthouse.Monsters.AI.Net
 
         public override void OnStartClient()
         {
+            EnsureSoundManager();
+            if (_chargeSource == null)
+            {
+                var child = new GameObject("BubbleChargeAudio");
+                child.transform.SetParent(_firePoint != null ? _firePoint : transform, false);
+                _chargeSource = child.AddComponent<AudioSource>();
+                _chargeSource.playOnAwake = false;
+                _chargeSource.spatialBlend = 1f;
+                _chargeSource.dopplerLevel = 0f;
+                _chargeSource.rolloffMode = AudioRolloffMode.Linear;
+                _chargeSource.minDistance = 2f;
+                _chargeSource.maxDistance = 40f;
+            }
             // 공용 매니저를 수정하지 않고 거북이 기능에서 투사체 프리팹을 등록한다.
             if (_projectileIdentity != null && _projectileIdentity.assetId != 0)
             {
@@ -201,6 +227,7 @@ namespace Lighthouse.Monsters.AI.Net
             NetworkServer.Spawn(projectile);
             ShotCount++;
             LastFiredAt = now;
+            RpcPlayFireSound(firePosition, now, _attackSequence);
             _nextAttackAt = now + _monster.Profile.AttackCooldown;
         }
 
@@ -220,6 +247,71 @@ namespace Lighthouse.Monsters.AI.Net
             {
                 _motion.SetMovementLocked(false);
                 _motion.Stop();
+            }
+        }
+
+        public override void OnStopClient()
+        {
+            StopChargeSound();
+            _chargeSequence = 0;
+            _firedSoundSequence = 0;
+        }
+
+        private void UpdateChargeSound()
+        {
+            float elapsed = (float)System.Math.Max(0d, NetworkTime.time - _attackStartedAt);
+            if (_chargeSource == null || _chargeSound == null || _monster.IsDead || !_isAttacking
+                || _hasFired || _attackSequence == _firedSoundSequence || _preparationDuration <= 0f
+                || elapsed >= _preparationDuration)
+            {
+                StopChargeSound();
+                return;
+            }
+            SoundManager manager = SoundManager.Instance;
+            _chargeSource.volume = manager != null && !manager.IsMuted
+                ? manager.MasterVolume * manager.EffectVolume * _soundVolume : 0f;
+            if (_chargeSequence != _attackSequence)
+            {
+                _chargeSequence = _attackSequence;
+                _chargeSource.clip = _chargeSound;
+                // Fit the rising charge to the same preparation interval as the bubble effect.
+                _chargeSource.pitch = Mathf.Clamp(_chargeSound.length / _preparationDuration, 0.01f, 3f);
+                _chargeSource.time = Mathf.Min(elapsed * _chargeSource.pitch, _chargeSound.length - 0.001f);
+                _chargeSource.Play();
+            }
+        }
+
+        [ClientRpc]
+        private void RpcPlayFireSound(Vector3 position, double startedAt, uint sequence)
+        {
+            _firedSoundSequence = sequence;
+            StopChargeSound();
+            // A short pop must still be heard when normal network latency exceeds its duration.
+            if (_fireSound == null || NetworkTime.time - startedAt >= Mathf.Max(1f, _fireSound.length))
+            {
+                return;
+            }
+            EnsureSoundManager();
+            SoundManager manager = SoundManager.Instance;
+            if (manager != null)
+            {
+                manager.PlayEffectAt(_fireSound, position, _soundVolume);
+            }
+        }
+
+        private void StopChargeSound()
+        {
+            if (_chargeSource != null)
+            {
+                _chargeSource.Stop();
+            }
+        }
+
+        private void EnsureSoundManager()
+        {
+            if (SoundManager.Instance == null && _soundManagerPrefab != null)
+            {
+                Instantiate(_soundManagerPrefab);
             }
         }
 

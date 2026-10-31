@@ -229,7 +229,11 @@ namespace Lighthouse.Monsters.Boss
                     }
                     // Safety zones deliberately do not filter this boss attack.
                     runtime.HitTargets.Add(target);
-                    target.TryApplyDamage(runtime.Damage);
+                    Vector3 impactPosition = target.transform.position;
+                    if (target.TryApplyDamage(runtime.Damage))
+                    {
+                        RpcPlayImpactSound(impactPosition, NetworkTime.time);
+                    }
                     if (_isStopped)
                     {
                         return;
@@ -237,6 +241,15 @@ namespace Lighthouse.Monsters.Boss
                 }
             }
             runtime.LastFrame = last;
+        }
+
+        [ClientRpc]
+        private void RpcPlayImpactSound(Vector3 position, double startedAt)
+        {
+            if (_presentation != null)
+            {
+                _presentation.PlayImpactSound(position, startedAt);
+            }
         }
 
         private bool Overlaps(BoxCollider box, Bounds bounds, MonsterBoatTarget target)
