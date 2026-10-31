@@ -469,7 +469,7 @@ public sealed class BoatController : NetworkBehaviour
         WindBoatEffect wind = config.InputLocked ? WindBoatEffect.None : GetWindEffect(forward * throttle);
 
         float targetSpeed = (_speed * config.SpeedMultiplier * passiveMultiplier * wind.SpeedMultiplier + towerSpeedBonus) * dashMultiplier;
-        Vector3 targetVelocity = forward * throttle * targetSpeed + wind.Drift;
+        Vector3 targetVelocity = forward * throttle * targetSpeed + wind.Drift + (config.InputLocked ? Vector3.zero : GetCurrentDrift());
         Vector3 velocity = _rb.linearVelocity;
         Vector3 horizontal = new Vector3(velocity.x, 0f, velocity.z);
         if (Time.time >= _recoilEndTime)
@@ -500,6 +500,17 @@ public sealed class BoatController : NetworkBehaviour
         }
 
         return WindBoatModel.Evaluate(source.GetWind(Time.timeAsDouble), travelDirection, _windProfile);
+    }
+
+    private Vector3 GetCurrentDrift()
+    {
+        if (!WorldServices.TryGet(out IWaterCurrentSource source))
+        {
+            return Vector3.zero;
+        }
+
+        Vector2 current = source.GetCurrent(_rb.position);
+        return new Vector3(current.x, 0f, current.y);
     }
 
     public bool TrySetHeading(PlayerController player, Quaternion rotation)
