@@ -6,6 +6,7 @@ using Lighthouse.Modules.Server;
 using Lighthouse.Workbench.Net;
 using Lighthouse.Workbench.Rules;
 using Lighthouse.World.Harvest.Rules;
+using Lighthouse.Systems.Audio;
 using Mirror;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,19 @@ public sealed class PlayerInventory : NetworkBehaviour
 {
     [SerializeField]
     private ResourceCatalog _resourceCatalog;
+
+    [SerializeField] private PickupSoundEntry[] _pickupSounds = Array.Empty<PickupSoundEntry>();
+    [SerializeField, Range(0f, 1f)] private float _pickupVolume = 0.65f;
+
+    [Serializable]
+    private struct PickupSoundEntry
+    {
+        [SerializeField] private int _resourceId;
+        [SerializeField] private AudioClip _clip;
+
+        public int ResourceId => _resourceId;
+        public AudioClip Clip => _clip;
+    }
 
     private readonly InventoryData _data = new InventoryData();
 
@@ -73,6 +87,38 @@ public sealed class PlayerInventory : NetworkBehaviour
 
         //ResourceCountChanged -= HandleTestResourceCountChanged;
         base.OnStopLocalPlayer();
+    }
+
+    [Server]
+    public void NotifyResourcePickedUp(int resourceId)
+    {
+        if (connectionToClient != null)
+        {
+            TargetResourcePickedUp(connectionToClient, resourceId);
+        }
+    }
+
+    [TargetRpc]
+    private void TargetResourcePickedUp(NetworkConnectionToClient target, int resourceId)
+    {
+        AudioClip clip = GetPickupClip(resourceId);
+        SoundManager sound = SoundManager.Instance;
+        if (clip && sound)
+        {
+            sound.PlayEffect(clip, _pickupVolume);
+        }
+    }
+
+    private AudioClip GetPickupClip(int resourceId)
+    {
+        foreach (PickupSoundEntry entry in _pickupSounds)
+        {
+            if (entry.ResourceId == resourceId)
+            {
+                return entry.Clip;
+            }
+        }
+        return null;
     }
 
     private void HandleResourceAdded(int id)

@@ -72,6 +72,9 @@ public sealed class ResourcePickup : NetworkBehaviour
             return false;
         }
 
+        // Notify before pooling resets the pickup identity and resource data.
+        inventory.NotifyResourcePickedUp(_resourceId);
+
         if (RecycleRequested != null)
         {
             RecycleRequested.Invoke(this);

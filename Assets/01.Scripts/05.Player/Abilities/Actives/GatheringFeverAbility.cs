@@ -6,15 +6,22 @@ using System;
 public sealed class GatheringFeverAbility : PlayerAbility
 {
     private GatheringFever _fever;
+    private PlayerController _player;
+    private PlayerMotor _motor;
     private bool _isFinished = true;
 
     public override bool IsFinished => _isFinished;
+
+    public bool IsOnLand => _player && !_player.IsDowned
+        && !_player.IsOnBoat && _motor && !_motor.IsOffGround;
 
     public event Action ActivationRequested;
 
     private void Awake()
     {
         _fever = GetComponent<GatheringFever>();
+        _player = GetComponent<PlayerController>();
+        _motor = GetComponent<PlayerMotor>();
     }
 
     public override bool CanExecute(IPlayerAbilityContext context)
@@ -22,6 +29,7 @@ public sealed class GatheringFeverAbility : PlayerAbility
         return context != null
             && context.Actor == transform
             && !context.IsDowned
+            && IsOnLand
             && _isFinished
             && _fever
             && _fever.isActiveAndEnabled
