@@ -11,6 +11,7 @@ namespace Lighthouse.Monsters.Boss
         [SerializeField] private Animator _animator;
         [SerializeField] private AnimationClip _emergeClip;
         [SerializeField] private AnimationClip _squeezeClip;
+        [SerializeField] private LighthouseImpactParticles _impactParticles;
         [SerializeField, Range(0.01f, 0.99f)] private float _squeezePeakNormalizedTime = 0.3448276f;
 
         private BossTestEnvironment _boss;
@@ -18,6 +19,10 @@ namespace Lighthouse.Monsters.Boss
         public void Bind(BossTestEnvironment boss)
         {
             _boss = boss;
+            if (_impactParticles != null)
+            {
+                _impactParticles.Bind(boss);
+            }
         }
 
         private void LateUpdate()
