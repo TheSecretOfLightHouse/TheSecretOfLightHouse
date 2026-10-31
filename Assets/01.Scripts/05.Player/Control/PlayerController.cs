@@ -105,7 +105,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         && HasLocalControlAuthority
         && CanRunLocalWorld();
     public bool CanUseWreckBuoyancy => isActiveAndEnabled && CanProcessLocalInput
-        && !IsOnBoat && IsSessionSimulationReady && _rb && !_rb.isKinematic;
+        && !IsOnBoat && IsSessionSimulationReady && _rb && !_rb.isKinematic
+        && _motor && (IsDowned || _motor.IsOffGround);
     public PlayerHFSM StateMachine => _hfsm;
 
     public PlayerPassiveController PassiveController => _passiveController;
@@ -357,7 +358,16 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         if (!IsDowned && WorldServices.TryGet(out IWalkBoundary walkBoundary))
         {
-            moveDirection = walkBoundary.FilterMove(_rb.position, moveDirection);
+            bool isClimbingShore = !config.InputLocked
+                && TryClimbShore(moveDirection, walkBoundary, fixedDeltaTime);
+            if (isClimbingShore)
+            {
+                SetWreckBuoyancy(false);
+            }
+            else
+            {
+                moveDirection = walkBoundary.FilterMove(_rb.position, moveDirection);
+            }
         }
 
         _motor.Move(moveDirection, config,fixedDeltaTime);
@@ -366,6 +376,32 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         {
             _motor.TryJump();
         }
+    }
+
+    private bool TryClimbShore(Vector3 direction, IWalkBoundary boundary, float fixedDeltaTime)
+    {
+        if (direction.sqrMagnitude < 0.01f
+            || !WorldServices.TryGet(out IWorldQuery world))
+        {
+            return false;
+        }
+
+        float waterHeight = world.SampleWaterHeight(_rb.position);
+        if (!_motor.CanStartShoreClimb(waterHeight)
+            || !WorldServices.TryGet(out IGroundHeightSource ground)
+            || !world.TryFindNearestIsland(_rb.position, out IslandHandle island))
+        {
+            return false;
+        }
+
+        Vector3 target = _rb.position + direction.normalized * _motor.ShoreClimbReach;
+        if (!boundary.IsWalkable(target)
+            || !ground.TryGetGroundHeight(island.Index, target.x, target.z, out float height))
+        {
+            return false;
+        }
+
+        return _motor.TryClimbShore(direction, height, waterHeight, fixedDeltaTime);
     }
 
     private void LateUpdate()
