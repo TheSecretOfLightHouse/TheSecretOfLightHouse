@@ -71,6 +71,8 @@ StateMachine·State·Transition은 현재 MoveConfig에 의존하므로 Player �
 
 ## 5. 기존 참조 보존
 
+본편 접속 화면은 `MainOffline`(첫 버튼 화면 ↔ 생성/참가 입력 패널) → `MainLobby` → `MainGame`이다(2026-10-31 최신 결정). `SessionTitleView`가 같은 씬에서 패널을 전환하고, 본편의 `SessionEntryScreen` Variant가 기존 `SessionScreen`과 선원 대기실을 상속한다. 별도 MainMenu 씬은 제거했으며 공용 매니저의 offline/online/game 경로는 유지한다. 실행·프리팹·배경과 팀 반영 범위는 [본편 접속 흐름](unity/SESSION_FLOW.md)을 따른다.
+
 기존 스크립트 파일명·타입명·직렬화 필드를 유지한다. 전역 Player 타입 이름도 폴더 이동으로 변경하지 않는다. 신규 코드의 네임스페이스는 도메인을 따른다. 기존 `Lighthouse.Map.Net.*` 계약 9개는 소비하는 코드가 없는 것을 확인하고 도메인 네임스페이스로 이관했다: World 6개(`IslandHandle`, `SeaZone`, `SpotInfo`, `SpawnerPoint`, `ResourceDefinition`, `ResourceRarity`)는 `Lighthouse.World.{기능}.Rules`, `InteractionRequest`·`InteractionAction`은 `Lighthouse.Interaction.Requests.Net`, `ShipPhysicsProfile`은 `Lighthouse.Player.Boat.Rules`.
 
 씬·프리팹 YAML을 직접 변경하지 않는다. 파일과 meta를 함께 이관하고 GUID를 보존한다. 기존 Player 씬의 다섯 스크립트 참조를 대조한다. 어셈블리가 Assembly-CSharp에서 Lighthouse.Runtime으로 바뀌므로 GUID 대조와 별개로 지정 Unity 버전의 컴파일·MonoScript 타입 복원·씬 로드 검증이 필요하다.
