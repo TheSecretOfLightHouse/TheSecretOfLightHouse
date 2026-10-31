@@ -33,6 +33,10 @@ public sealed class GatheringFeverRequest : NetworkBehaviour
     [Server]
     private bool TryStartOnServer()
     {
+        if (Lighthouse.Common.Cinematics.ServerCinematicProtection.IsActive)
+        {
+            return false;
+        }
         if (!isActiveAndEnabled
             || !_player || !_player.isActiveAndEnabled
             || _player.IsDowned

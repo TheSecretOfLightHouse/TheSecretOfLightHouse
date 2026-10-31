@@ -75,6 +75,11 @@ public class PlayerInputReader : MonoBehaviour
     }
     private void OnDisable()
     {
+        ClearInput();
+    }
+
+    public void ClearInput()
+    {
         MoveInput = Vector2.zero;
         LookInput = Vector2.zero;
         RunHeld = false;

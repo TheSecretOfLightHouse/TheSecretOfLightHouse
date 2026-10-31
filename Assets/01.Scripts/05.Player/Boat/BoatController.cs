@@ -406,6 +406,11 @@ public sealed class BoatController : NetworkBehaviour
 
     public void Move(PlayerController player, Vector2 input, MoveConfig config, float fixedDeltaTime)
     {
+        // Do not feed zero target velocity into steering: that would brake a boat during the cutscene.
+        if (Lighthouse.Common.Cinematics.CinematicPresentationLock.IsLocked)
+        {
+            return;
+        }
         if (!CanControl(player))
         {
             return;
@@ -463,6 +468,10 @@ public sealed class BoatController : NetworkBehaviour
 
     public bool TrySetHeading(PlayerController player, Quaternion rotation)
     {
+        if (Lighthouse.Common.Cinematics.CinematicPresentationLock.IsLocked)
+        {
+            return false;
+        }
         if (!CanControl(player))
         {
             return false;
@@ -632,6 +641,10 @@ public sealed class BoatController : NetworkBehaviour
 
     private bool CanAcceptRequest()
     {
+        if (Lighthouse.Common.Cinematics.ServerCinematicProtection.IsActive)
+        {
+            return false;
+        }
         if (IsWrecked || !Owner || !Owner.isActiveAndEnabled || Owner.IsDowned || connectionToClient == null
             || Owner.connectionToClient != connectionToClient
             || connectionToClient.identity != Owner.netIdentity

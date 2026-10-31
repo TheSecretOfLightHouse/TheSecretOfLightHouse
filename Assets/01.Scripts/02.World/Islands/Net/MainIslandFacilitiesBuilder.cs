@@ -117,6 +117,11 @@ namespace Lighthouse.World.Islands.Net
             }
 
             tower.BindWorkbench(workbench);
+            SummonCinematicView cinematic = tower.GetComponent<SummonCinematicView>();
+            if (cinematic != null)
+            {
+                cinematic.BindIsland(_presentation.transform);
+            }
 
             InteractionTarget workbenchTarget = workbench.GetComponent<InteractionTarget>();
             InteractionTarget towerTarget = tower.GetComponent<InteractionTarget>();

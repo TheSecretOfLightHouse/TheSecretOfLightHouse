@@ -41,6 +41,10 @@ public sealed class DashModule : BoatModule
 
     public void RequestDash()
     {
+        if (Lighthouse.Common.Cinematics.CinematicPresentationLock.IsLocked)
+        {
+            return;
+        }
         if (!isClient || !isOwned || !IsApplied)
         {
             return;
@@ -56,6 +60,10 @@ public sealed class DashModule : BoatModule
     [Command]
     private void CmdRequestDash(NetworkConnectionToClient sender = null)
     {
+        if (Lighthouse.Common.Cinematics.ServerCinematicProtection.IsActive)
+        {
+            return;
+        }
         BoatController boat = GetComponent<BoatController>();
         PlayerController player = boat.Owner;
 
