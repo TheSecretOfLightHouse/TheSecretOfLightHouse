@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 226136cc1c7e6fc429c5c5836f21ba30, type: 3}
+  m_Name: Island_Sand
+  m_EditorClassIdentifier: 
+  _prefab: {fileID: 6131740733481004427, guid: 326cc0ebaf98ea14da3e6f28acaadf93, type: 3}
+  _geometry: {fileID: 2800000, guid: 1949d28e4b74a134ea36a716b5d60459, type: 2}
+  _coverage: {fileID: 2800000, guid: 33254c18447948e47b8d02de650506fb, type: 2}
+  _directions: {fileID: 4900000, guid: af8aa83f20945d64bb3982f26443b50d, type: 3}
+  _origin: {x: -24, y: -24}
+  _cellSize: 0.125
