@@ -173,11 +173,11 @@ namespace Lighthouse.UI.SharedMap.Net
             {
                 return false;
             }
-            if (_instance.State.IsEvening && !_instance.State.IsEditing)
+            if (_instance.State.IsNight && !_instance.State.IsEditing)
             {
                 _instance.RequestReady();
             }
-            return _instance.State.IsEvening && !_instance.State.IsEditing;
+            return _instance.State.IsNight && !_instance.State.IsEditing;
         }
 
         public void Submit(SharedMapOperation operation)
@@ -204,7 +204,7 @@ namespace Lighthouse.UI.SharedMap.Net
             CanvasRevision++;
         }
 
-        private bool IsEvening(out int day)
+        private bool IsNight(out int day)
         {
             day = -1;
             if (!WorldServices.TryGet<IGameClock>(out IGameClock clock))
@@ -216,7 +216,7 @@ namespace Lighthouse.UI.SharedMap.Net
                 return false;
             }
             day = clock.DayIndex;
-            return clock.Phase == DayPhase.Dusk;
+            return clock.Phase == DayPhase.Night;
         }
 
         private void TickServer()
@@ -268,12 +268,12 @@ namespace Lighthouse.UI.SharedMap.Net
                 _epoch = ++_epochCounter;
             }
 
-            bool evening = IsEvening(out int day);
+            bool night = IsNight(out int day);
             _removeReady.Clear();
             foreach (int id in _ready)
             {
                 if (!NetworkServer.connections.TryGetValue(id, out NetworkConnectionToClient connection)
-                    || !TryGetPlayer(connection, out PlayerController player) || !IsServerNear(player) || !evening)
+                    || !TryGetPlayer(connection, out PlayerController player) || !IsServerNear(player) || !night)
                 {
                     _removeReady.Add(id);
                 }
@@ -291,7 +291,7 @@ namespace Lighthouse.UI.SharedMap.Net
                     players++;
                 }
             }
-            if (!_editing && SharedMapRules.CanStart(evening, _ready.Count, players, day, _editedDay))
+            if (!_editing && SharedMapRules.CanStart(night, _ready.Count, players, day, _editedDay))
             {
                 _editing = true;
                 _editedDay = day;
@@ -300,7 +300,7 @@ namespace Lighthouse.UI.SharedMap.Net
                 _ready.Clear();
                 Broadcast();
             }
-            if (_editing && (!SharedMapRules.CanEdit(evening, _editing, NetworkTime.time, _deadline)
+            if (_editing && (!SharedMapRules.CanEdit(night, _editing, NetworkTime.time, _deadline)
                 || players != SharedMapRules.RequiredPlayers))
             {
                 _editing = false;
@@ -364,16 +364,16 @@ namespace Lighthouse.UI.SharedMap.Net
             {
                 return;
             }
-            bool evening = IsEvening(out int day);
+            bool night = IsNight(out int day);
             if (request.Action == 1)
             {
-                if (evening && !_editing && day != _editedDay && IsServerNear(player))
+                if (night && !_editing && day != _editedDay && IsServerNear(player))
                 {
                     _ready.Add(connection.connectionId);
                 }
                 return;
             }
-            if (request.Action != 2 || !SharedMapRules.CanEdit(evening, _editing, now, _deadline)
+            if (request.Action != 2 || !SharedMapRules.CanEdit(night, _editing, now, _deadline)
                 || !IsServerNear(player) || _serverOperations.Count >= SharedMapRules.MaxOperations
                 || (_nextWrite.TryGetValue(connection.connectionId, out double nextWrite) && now < nextWrite))
             {
@@ -428,7 +428,7 @@ namespace Lighthouse.UI.SharedMap.Net
                 Epoch = _epoch, Offset = offset, Total = _serverOperations.Count,
                 Operations = Array.Empty<SharedMapOperation>(), Lighthouse = _lighthouse,
                 TablePosition = _tablePosition, Range = _interactionRange, ReadyCount = (byte)_ready.Count,
-                IsEvening = IsEvening(out int _), IsEditing = _editing,
+                IsNight = IsNight(out int _), IsEditing = _editing,
                 Deadline = _deadline, EditSession = _editSession
             };
         }

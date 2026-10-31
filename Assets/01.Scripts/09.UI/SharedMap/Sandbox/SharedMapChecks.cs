@@ -45,7 +45,7 @@ namespace Lighthouse.UI.SharedMap.Sandbox
             var update = new SharedMapUpdate
             {
                 Epoch = 7, Offset = 48, Total = 96, Operations = operations, Lighthouse = Vector2.one * 0.5f,
-                IsEvening = true, IsEditing = true, Deadline = 1234.5d, EditSession = 3, ReadyCount = 4, Range = 3f
+                IsNight = true, IsEditing = true, Deadline = 1234.5d, EditSession = 3, ReadyCount = 4, Range = 3f
             };
             using (NetworkWriterPooled writer = NetworkWriterPool.Get())
             {
@@ -60,7 +60,7 @@ namespace Lighthouse.UI.SharedMap.Sandbox
                     Check(restored.Operations[3].Author == 4 && restored.Operations[3].To == Vector2.one, ref checks);
                 }
             }
-            return $"SharedMapChecks PASS ({checks} checks): four-player gate, evening/day gate, deadline, invalid coordinates, eraser geometry, Mirror chunk roundtrip.";
+            return $"SharedMapChecks PASS ({checks} checks): four-player gate, night/day gate, deadline, invalid coordinates, eraser geometry, Mirror chunk roundtrip.";
         }
 
         private static void Check(bool result, ref int checks)

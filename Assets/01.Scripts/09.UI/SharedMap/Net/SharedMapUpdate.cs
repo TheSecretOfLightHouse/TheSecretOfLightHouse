@@ -14,7 +14,7 @@ namespace Lighthouse.UI.SharedMap.Net
         public Vector3 TablePosition;
         public float Range;
         public byte ReadyCount;
-        public bool IsEvening;
+        public bool IsNight;
         public bool IsEditing;
         public double Deadline;
         public uint EditSession;

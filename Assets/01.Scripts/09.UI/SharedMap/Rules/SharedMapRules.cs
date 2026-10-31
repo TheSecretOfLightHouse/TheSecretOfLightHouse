@@ -17,14 +17,14 @@ namespace Lighthouse.UI.SharedMap.Rules
                 && point.x >= 0f && point.x <= 1f && point.y >= 0f && point.y <= 1f;
         }
 
-        public static bool CanStart(bool isEvening, int ready, int players, int day, int editedDay)
+        public static bool CanStart(bool isNight, int ready, int players, int day, int editedDay)
         {
-            return isEvening && ready == RequiredPlayers && players == RequiredPlayers && day != editedDay;
+            return isNight && ready == RequiredPlayers && players == RequiredPlayers && day != editedDay;
         }
 
-        public static bool CanEdit(bool isEvening, bool isEditing, double now, double deadline)
+        public static bool CanEdit(bool isNight, bool isEditing, double now, double deadline)
         {
-            return isEvening && isEditing && now < deadline;
+            return isNight && isEditing && now < deadline;
         }
 
         public static float DistanceToSegment(Vector2 point, Vector2 from, Vector2 to)

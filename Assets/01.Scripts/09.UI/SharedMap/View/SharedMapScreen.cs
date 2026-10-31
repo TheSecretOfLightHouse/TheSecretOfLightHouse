@@ -1,6 +1,9 @@
 using Lighthouse.Network.Session.View;
 using Lighthouse.UI.SharedMap.Net;
 using Lighthouse.UI.SharedMap.Rules;
+using Lighthouse.World.MapGeneration.Net;
+using Lighthouse.World.MapGeneration.Rules;
+using Lighthouse.World.Query.Rules;
 using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -15,6 +18,12 @@ namespace Lighthouse.UI.SharedMap.View
         private UnityEngine.UI.Text _title, _prompt;
         private UnityEngine.UI.Text _toolLabel;
         private RectTransform _landmark;
+        private RectTransform _boardFrame, _playerMarker;
+        private GameObject _heading, _drawingHint, _footer;
+        private MapLayout _markerLayout;
+        private WorldMapData _markerMap;
+        private UnityEngine.UI.Image _panelFrame;
+        private bool? _presentedEditing;
         private CanvasGroup _toolsGroup;
         private SharedMapSettings _settings;
         private readonly UnityEngine.UI.Image[] _colorButtons = new UnityEngine.UI.Image[4];
@@ -22,6 +31,8 @@ namespace Lighthouse.UI.SharedMap.View
         private UnityEngine.UI.Image _eraseButton;
         private SharedMapGraphic _graphic;
         private Font _font;
+        private Texture2D _parchmentTexture;
+        private Sprite _parchmentSprite;
         private bool _open, _erasing, _drawing, _wasEditing;
         private bool _savedInputEnabled, _savedReaderEnabled, _savedCursorVisible;
         private CursorLockMode _savedCursorLock;
@@ -31,6 +42,7 @@ namespace Lighthouse.UI.SharedMap.View
         private uint _editSession, _epoch, _stroke;
         private byte _color;
         private byte _brushSize = 1;
+        private int _displayedReadyCount = -1;
         private Vector2 _lastPoint;
         private double _nextPoint;
 
@@ -65,11 +77,13 @@ namespace Lighthouse.UI.SharedMap.View
                 SetOpen(false);
             }
             bool near = _runtime.IsNearTable(player);
-            bool showPrompt = !_open && near && state.IsEvening && !state.IsEditing && !SessionScreen.IsGameplayOverlayOpen;
+            bool showPrompt = !_open && near && state.IsNight && !state.IsEditing && !SessionScreen.IsGameplayOverlayOpen;
             _promptPanel.SetActive(showPrompt);
-            _prompt.text = showPrompt
-                ? "E  지도 작성"
-                : string.Empty;
+            if (showPrompt && _displayedReadyCount != state.ReadyCount)
+            {
+                _displayedReadyCount = state.ReadyCount;
+                _prompt.text = $"E  지도 작성 ({state.ReadyCount}/{SharedMapRules.RequiredPlayers})";
+            }
             if (Keyboard.current != null)
             {
                 if (!editing && Keyboard.current.mKey.wasPressedThisFrame)
@@ -91,6 +105,7 @@ namespace Lighthouse.UI.SharedMap.View
             _toolsGroup.interactable = editing;
             _toolsGroup.blocksRaycasts = editing;
             _toolsGroup.alpha = editing ? 1f : 0.45f;
+            SetPresentation(editing);
             string remaining = editing ? $"공동 작성  ·  {Mathf.CeilToInt((float)(state.Deadline - NetworkTime.time))}초" : "공유지도  ·  M / Esc 닫기";
             _title.text = remaining + (_runtime.IsCaughtUp ? string.Empty : "  ·  동기화 중")
                 + (_runtime.Operations.Count >= SharedMapRules.MaxOperations ? "  ·  지도 기록 한도 도달" : string.Empty);
@@ -123,6 +138,14 @@ namespace Lighthouse.UI.SharedMap.View
             if (_font)
             {
                 Destroy(_font);
+            }
+            if (_parchmentSprite)
+            {
+                Destroy(_parchmentSprite);
+            }
+            if (_parchmentTexture)
+            {
+                Destroy(_parchmentTexture);
             }
         }
 
@@ -162,6 +185,10 @@ namespace Lighthouse.UI.SharedMap.View
             _open = open;
             _drawing = false;
             _panel.SetActive(open);
+            if (open)
+            {
+                SetPresentation(_runtime.State.IsEditing && NetworkTime.time < _runtime.State.Deadline);
+            }
             SessionScreen.SetGameplayOverlayOpen(this, open);
             if (open)
             {
@@ -254,6 +281,53 @@ namespace Lighthouse.UI.SharedMap.View
             }
         }
 
+        private void SetPresentation(bool editing)
+        {
+            if (_presentedEditing == editing)
+            {
+                UpdatePlayerMarker();
+                return;
+            }
+            _presentedEditing = editing;
+            _tools.SetActive(editing);
+            _heading.SetActive(editing);
+            _title.gameObject.SetActive(editing);
+            _drawingHint.SetActive(editing);
+            _footer.SetActive(editing);
+            _panelFrame.enabled = editing;
+            _boardFrame.anchoredPosition = editing ? new Vector2(-205f, -15f) : Vector2.zero;
+            UpdatePlayerMarker();
+        }
+
+        private void UpdatePlayerMarker()
+        {
+            _playerMarker.gameObject.SetActive(false);
+            if (!NetworkClient.localPlayer || !WorldServices.TryGet<MapStateNet>(out MapStateNet map)
+                || !map.IsLayoutReady)
+            {
+                _markerLayout = null;
+                _markerMap = null;
+                return;
+            }
+            if (!ReferenceEquals(_markerLayout, map.Layout))
+            {
+                if (!WorldMapDataBuilder.TryBuild(map.Layout, map.Config, WorldMapDataBuilder.DefaultBoundsMargin, out _markerMap))
+                {
+                    return;
+                }
+                _markerLayout = map.Layout;
+            }
+            Vector3 position = NetworkClient.localPlayer.transform.position;
+            if (_markerMap == null || !_markerMap.TryNormalize(new Vector2(position.x, position.z), out Vector2 point))
+            {
+                return;
+            }
+            _playerMarker.anchorMin = point;
+            _playerMarker.anchorMax = point;
+            _playerMarker.anchoredPosition = Vector2.zero;
+            _playerMarker.gameObject.SetActive(true);
+        }
+
         private void Build()
         {
             // Match the existing HUD's OS-font fallback so Korean does not require a new font package.
@@ -287,6 +361,7 @@ namespace Lighthouse.UI.SharedMap.View
             _promptPanel.SetActive(false);
             _panel = Box("SharedMapPanel", _canvas.transform, Vector2.zero, new Vector2(1450f, 1010f), new Color(0.20f, 0.11f, 0.055f)).gameObject;
             UnityEngine.UI.Image frame = _panel.GetComponent<UnityEngine.UI.Image>();
+            _panelFrame = frame;
             if (_settings && _settings.PanelSprite)
             {
                 frame.sprite = _settings.PanelSprite;
@@ -294,19 +369,20 @@ namespace Lighthouse.UI.SharedMap.View
             }
             UnityEngine.UI.Text heading = Label("MapHeading", _panel.transform, new Vector2(-400f, 450f), new Vector2(500f, 60f), 45);
             heading.text = "공 동 항 해 지 도";
+            _heading = heading.gameObject;
             _title = Label("Title", _panel.transform, new Vector2(350f, 450f), new Vector2(560f, 60f), 25);
             UnityEngine.UI.Image boardFrame = Box("PaperFrame", _panel.transform, new Vector2(-205f, -15f), new Vector2(852f, 852f), new Color(0.96f, 0.87f, 0.68f));
+            _boardFrame = boardFrame.rectTransform;
+            BuildParchment(boardFrame);
             UnityEngine.UI.Image paper = Box("Paper", boardFrame.transform, Vector2.zero, new Vector2(826f, 826f), new Color(0.91f, 0.84f, 0.66f));
+            paper.color = Color.clear;
+            BuildChartDecoration(paper.transform);
             var drawing = new GameObject("Drawing", typeof(RectTransform), typeof(CanvasRenderer), typeof(SharedMapGraphic));
             drawing.transform.SetParent(paper.transform, false);
             _graphic = drawing.GetComponent<SharedMapGraphic>();
             _graphic.rectTransform.sizeDelta = new Vector2(826f, 826f);
             _graphic.raycastTarget = true;
             _graphic.Bind(_runtime);
-            UnityEngine.UI.Text north = Label("North", paper.transform, new Vector2(360f, 360f), new Vector2(70f, 70f), 26);
-            north.text = "N ↑";
-            north.color = SharedMapGraphic.InkColors[0];
-            north.transform.SetAsLastSibling();
             UnityEngine.UI.Image landmark = Box("LighthouseLandmark", paper.transform, Vector2.zero, new Vector2(58f, 65f), Color.white);
             landmark.sprite = _settings ? _settings.LighthouseSprite : null;
             landmark.raycastTarget = false;
@@ -315,6 +391,14 @@ namespace Lighthouse.UI.SharedMap.View
             UnityEngine.UI.Text landmarkName = Label("LighthouseName", landmark.transform, new Vector2(0f, -45f), new Vector2(120f, 30f), 19);
             landmarkName.text = "등대섬";
             landmarkName.color = SharedMapGraphic.InkColors[0];
+            UnityEngine.UI.Text playerMarker = Label("LocalPlayerMarker", paper.transform, Vector2.zero, new Vector2(32f, 32f), 28);
+            playerMarker.text = "●";
+            playerMarker.color = new Color(0.05f, 0.48f, 0.65f);
+            UnityEngine.UI.Outline markerOutline = playerMarker.gameObject.AddComponent<UnityEngine.UI.Outline>();
+            markerOutline.effectColor = Color.white;
+            markerOutline.effectDistance = new Vector2(2f, -2f);
+            _playerMarker = playerMarker.rectTransform;
+            _playerMarker.gameObject.SetActive(false);
             _tools = new GameObject("Tools", typeof(RectTransform), typeof(CanvasGroup));
             _tools.transform.SetParent(_panel.transform, false);
             _toolsGroup = _tools.GetComponent<CanvasGroup>();
@@ -339,10 +423,109 @@ namespace Lighthouse.UI.SharedMap.View
             _eraseButton = Button("획 지우개", _tools.transform, new Vector2(445f, -145f), new Vector2(346f, 60f),
                 () => { _erasing = true; _drawing = false; RefreshTools(); });
             _toolLabel = Label("SelectedTool", _tools.transform, new Vector2(445f, -245f), new Vector2(360f, 50f), 23);
-            Label("DrawingHint", _panel.transform, new Vector2(445f, -355f), new Vector2(350f, 125f), 22).text = "마우스를 누른 채 그려보세요\n섬과 이름을 자유롭게 기록하세요";
-            Label("Footer", _panel.transform, new Vector2(-190f, -470f), new Vector2(870f, 40f), 20).text = "함께 남긴 기록을 믿고 항해하세요";
+            UnityEngine.UI.Text drawingHint = Label("DrawingHint", _panel.transform, new Vector2(445f, -355f), new Vector2(350f, 125f), 22);
+            drawingHint.text = "마우스를 누른 채 그려보세요\n섬과 이름을 자유롭게 기록하세요";
+            _drawingHint = drawingHint.gameObject;
+            UnityEngine.UI.Text footer = Label("Footer", _panel.transform, new Vector2(-190f, -470f), new Vector2(870f, 40f), 20);
+            footer.text = "함께 남긴 기록을 믿고 항해하세요";
+            _footer = footer.gameObject;
             RefreshTools();
             _panel.SetActive(false);
+        }
+
+        private void BuildParchment(UnityEngine.UI.Image frame)
+        {
+            const int resolution = 512;
+            var pixels = new Color32[resolution * resolution];
+            for (int y = 0; y < resolution; y++)
+            {
+                for (int x = 0; x < resolution; x++)
+                {
+                    float edge = Mathf.Min(x, y, resolution - 1 - x, resolution - 1 - y);
+                    float grain = Mathf.PerlinNoise(x * 0.31f, y * 0.31f);
+                    float stain = Mathf.PerlinNoise(x * 0.018f, y * 0.018f);
+                    float wear = Mathf.PerlinNoise(x * 0.09f + 17f, y * 0.09f + 43f) * 3f;
+                    float border = 1f - Mathf.SmoothStep(0f, 30f, edge);
+                    Color color = Color.Lerp(new Color(0.88f, 0.80f, 0.61f), new Color(0.97f, 0.91f, 0.74f), stain);
+                    color *= 0.97f + grain * 0.05f;
+                    color = Color.Lerp(color, new Color(0.39f, 0.25f, 0.12f), border * 0.72f);
+                    color.a = Mathf.Clamp01(edge - wear);
+                    pixels[y * resolution + x] = color;
+                }
+            }
+            _parchmentTexture = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false)
+            {
+                name = "NauticalParchment", filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp, hideFlags = HideFlags.DontSave
+            };
+            _parchmentTexture.SetPixels32(pixels);
+            _parchmentTexture.Apply(false, true);
+            _parchmentSprite = Sprite.Create(_parchmentTexture, new Rect(0f, 0f, resolution, resolution), Vector2.one * 0.5f);
+            _parchmentSprite.hideFlags = HideFlags.DontSave;
+            frame.sprite = _parchmentSprite;
+            frame.color = Color.white;
+            UnityEngine.UI.Shadow shadow = frame.gameObject.AddComponent<UnityEngine.UI.Shadow>();
+            shadow.effectColor = new Color(0.05f, 0.035f, 0.02f, 0.5f);
+            shadow.effectDistance = new Vector2(7f, -9f);
+        }
+
+        private void BuildChartDecoration(Transform paper)
+        {
+            Color ink = new Color(0.29f, 0.36f, 0.32f, 0.27f);
+            for (int i = 0; i < 4; i++)
+            {
+                float angle = i * 90f;
+                Vector2 direction = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
+                ChartLine(paper, direction * 397f, new Vector2(794f, 1.5f), angle + 90f, ink);
+                ChartLine(paper, direction * 389f, new Vector2(778f, 0.7f), angle + 90f, ink);
+            }
+            for (int i = 1; i < 10; i++)
+            {
+                float offset = -389f + i * 77.8f;
+                ChartLine(paper, new Vector2(offset, 0f), new Vector2(1f, 778f), 0f, new Color(0.26f, 0.40f, 0.39f, 0.09f));
+                ChartLine(paper, new Vector2(0f, offset), new Vector2(778f, 1f), 0f, new Color(0.26f, 0.40f, 0.39f, 0.09f));
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    ChartLine(paper, new Vector2(offset, side * 393f), new Vector2(1f, 8f), 0f, ink);
+                    ChartLine(paper, new Vector2(side * 393f, offset), new Vector2(8f, 1f), 0f, ink);
+                }
+            }
+            Vector2 compass = new Vector2(297f, -291f);
+            for (int i = 0; i < 64; i++)
+            {
+                float angle = i * Mathf.PI * 2f / 64f;
+                Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                ChartLine(paper, compass + direction * 59f, new Vector2(6.2f, 1f), angle * Mathf.Rad2Deg + 90f, ink);
+            }
+            for (int i = 0; i < 8; i++)
+            {
+                float angle = i * 45f;
+                Vector2 direction = new Vector2(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad));
+                float length = i % 2 == 0 ? 51f : 34f;
+                ChartLine(paper, compass + direction * length * 0.5f, new Vector2(length, i % 2 == 0 ? 3f : 1.5f), angle, ink);
+            }
+            string[] directions = { "E", "N", "W", "S" };
+            for (int i = 0; i < 4; i++)
+            {
+                float angle = i * Mathf.PI * 0.5f;
+                UnityEngine.UI.Text label = Label("Compass" + directions[i], paper,
+                    compass + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * 76f, new Vector2(28f, 28f), 18);
+                label.text = directions[i];
+                label.color = new Color(0.29f, 0.36f, 0.32f, 0.65f);
+            }
+            UnityEngine.UI.Text chartName = Label("ChartInscription", paper, new Vector2(-228f, -351f), new Vector2(290f, 32f), 14);
+            chartName.text = "L I G H T H O U S E   •   S E A   C H A R T";
+            chartName.resizeTextForBestFit = true;
+            chartName.resizeTextMinSize = 10;
+            chartName.resizeTextMaxSize = 14;
+            chartName.color = new Color(0.35f, 0.30f, 0.20f, 0.5f);
+        }
+
+        private void ChartLine(Transform parent, Vector2 position, Vector2 size, float rotation, Color color)
+        {
+            UnityEngine.UI.Image line = Box("ChartEngraving", parent, position, size, color);
+            line.rectTransform.localRotation = Quaternion.Euler(0f, 0f, rotation);
+            line.raycastTarget = false;
         }
 
         private UnityEngine.UI.Image Box(string name, Transform parent, Vector2 position, Vector2 size, Color color)
