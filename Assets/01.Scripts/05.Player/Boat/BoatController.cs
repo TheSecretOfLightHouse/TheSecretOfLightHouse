@@ -76,6 +76,7 @@ public sealed class BoatController : NetworkBehaviour
     private BoatWreckEffect _wreckEffectPrefab;
 
     public float ReloadDuration => _reloadDuration;
+    public float BoardingDistance => _boardingDistance;
     public PlayerController Owner => IsNetworkActive ? _owner : _offlineOwner;
     private bool IsNetworkActive => NetworkClient.active || NetworkServer.active;
     public bool IsOccupied => _isOccupied;
