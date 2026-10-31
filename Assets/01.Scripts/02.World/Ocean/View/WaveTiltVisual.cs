@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace Lighthouse.World.Ocean.View
 {
+    [DefaultExecutionOrder(100)]
     [DisallowMultipleComponent]
     public sealed class WaveTiltVisual : MonoBehaviour
     {
@@ -18,6 +19,58 @@ namespace Lighthouse.World.Ocean.View
 
         private WaterSamplerHost _host;
         private Quaternion _baseLocalRotation;
+        private Quaternion _waveRotation = Quaternion.identity;
+        private Quaternion _recoilRotation = Quaternion.identity;
+        private Object _multiplierOwner;
+        private Object _recoilOwner;
+
+        public float TiltMultiplier { get; private set; } = 1f;
+
+        // Player stabilizer owns this channel; other effects must use a separate channel.
+        public bool TrySetTiltMultiplier(Object owner, float multiplier)
+        {
+            if (!isActiveAndEnabled || owner == null || (_multiplierOwner != null && _multiplierOwner != owner))
+            {
+                return false;
+            }
+            _multiplierOwner = owner;
+            TiltMultiplier = float.IsFinite(multiplier) ? Mathf.Clamp01(multiplier) : 1f;
+            return true;
+        }
+
+        public void ReleaseTiltMultiplier(Object owner)
+        {
+            if (_multiplierOwner == owner)
+            {
+                _multiplierOwner = null;
+                TiltMultiplier = 1f;
+            }
+        }
+
+        public bool TrySetRecoil(Object owner, Transform model, Quaternion rotation)
+        {
+            if (!isActiveAndEnabled || model != _model || owner == null
+                || (_recoilOwner != null && _recoilOwner != owner))
+            {
+                return false;
+            }
+            _recoilOwner = owner;
+            _recoilRotation = rotation;
+            return true;
+        }
+
+        public void ReleaseRecoil(Object owner)
+        {
+            if (_recoilOwner == owner)
+            {
+                _recoilOwner = null;
+                _recoilRotation = Quaternion.identity;
+                if (_model != null)
+                {
+                    _model.localRotation = _waveRotation * _baseLocalRotation;
+                }
+            }
+        }
 
         private void Awake()
         {
@@ -43,42 +96,46 @@ namespace Lighthouse.World.Ocean.View
         {
             if (_model != null)
             {
-                _model.localRotation = _baseLocalRotation;
+                _model.localRotation = _recoilRotation * _baseLocalRotation;
             }
 
             _host = null;
+            _waveRotation = Quaternion.identity;
+            _multiplierOwner = null;
+            TiltMultiplier = 1f;
+        }
+
+        private void OnDestroy()
+        {
+            if (_model != null) _model.localRotation = _baseLocalRotation;
         }
 
         private void LateUpdate()
         {
-            if (_host == null && !WorldServices.TryGet(out _host))
-            {
-                return;
-            }
+            if (_multiplierOwner == null) TiltMultiplier = 1f;
+            if (_recoilOwner == null) _recoilRotation = Quaternion.identity;
+            if (_host == null) WorldServices.TryGet(out _host);
+            Quaternion target = Quaternion.identity;
 
-            Quaternion target = _baseLocalRotation;
-
-            if (IsGateOpen())
+            if (_host != null && IsGateOpen())
             {
                 Vector3 position = transform.position;
 
-                Vector3 normal = WaveModel.NormalAt(
-                    _host.Inputs.Waves,
-                    _host.Inputs.Modifiers,
-                    position.x,
-                    position.z,
-                    (float)_host.CurrentTime);
+                Vector3 normal = _host.SampleSurfaceNormal(position);
 
                 Quaternion tilt = Quaternion.FromToRotation(Vector3.up, normal);
                 tilt = Quaternion.Slerp(Quaternion.identity, tilt, _tiltScale);
                 tilt = Quaternion.RotateTowards(Quaternion.identity, tilt, _maxTiltDegrees);
+                tilt = Quaternion.Slerp(Quaternion.identity, tilt, TiltMultiplier);
 
-                target = Quaternion.Inverse(transform.rotation) * tilt * transform.rotation * _baseLocalRotation;
+                Quaternion parentRotation = _model.parent != null ? _model.parent.rotation : Quaternion.identity;
+                target = Quaternion.Inverse(parentRotation) * tilt * parentRotation;
             }
 
             float blend = 1f - Mathf.Exp(-_followRate * Time.deltaTime);
 
-            _model.localRotation = Quaternion.Slerp(_model.localRotation, target, blend);
+            _waveRotation = Quaternion.Slerp(_waveRotation, target, blend);
+            _model.localRotation = _waveRotation * _recoilRotation * _baseLocalRotation;
         }
 
         private bool IsGateOpen()

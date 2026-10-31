@@ -12,6 +12,21 @@ float4 _OceanWaveB[OCEAN_MAX_WAVES];
 float _OceanWaveCount;
 float _OceanTime;
 
+float2 OceanGerstnerHorizontalAt(float2 rest)
+{
+    float2 displacement=0;
+    float swell=OpenSeaSwellAt(rest,_OceanTime);
+    for(int i=0;i<min((int)_OceanWaveCount,OCEAN_MAX_WAVES);i++)
+    {
+        float4 wave=_OceanWaveA[i];
+        if(wave.z<=0) continue;
+        float k=OCEAN_TWO_PI/wave.z;
+        float phase=k*(dot(wave.xy,rest)-wave.w*_OceanTime);
+        displacement+=wave.xy*(_OceanWaveB[i].y*swell/k*cos(phase));
+    }
+    return displacement;
+}
+
 float3 OceanGerstnerBaseNormal(float3 restPositionWS)
 {
     float slopeX = 0.0;

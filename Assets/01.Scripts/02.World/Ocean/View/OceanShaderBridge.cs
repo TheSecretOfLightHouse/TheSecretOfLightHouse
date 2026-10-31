@@ -84,6 +84,21 @@ namespace Lighthouse.World.Ocean.View
                 Shader.SetGlobalVectorArray(CoastBoundsId, _coasts);
                 Shader.SetGlobalVectorArray("_OceanCoastProfiles", _coastProfiles);
                 Shader.SetGlobalVectorArray(CoastEdgesId, _coastEdges);
+                Vector2 minimum = new Vector2(float.MaxValue, float.MaxValue);
+                Vector2 maximum = new Vector2(float.MinValue, float.MinValue);
+                for (int i = 0; i < _coasts.Length; i++)
+                {
+                    Vector4 coast = _coasts[i];
+                    if (coast.w <= 0f)
+                    {
+                        continue;
+                    }
+                    Vector2 center = new Vector2(coast.x, coast.y);
+                    minimum = Vector2.Min(minimum, center - Vector2.one * coast.z);
+                    maximum = Vector2.Max(maximum, center + Vector2.one * coast.z);
+                }
+                Shader.SetGlobalVector("_OceanCoastWorldBounds", new Vector4(minimum.x, minimum.y, maximum.x, maximum.y));
+                Shader.SetGlobalFloat("_OceanCoastBoundsEnabled", 1f);
                 _coastVersion = CoastWaveRegistry.Version;
             }
             Shader.SetGlobalFloat(CoastEnabledId, 1f);
@@ -127,6 +142,7 @@ namespace Lighthouse.World.Ocean.View
             }
 
             Shader.SetGlobalFloat(CoastEnabledId, 0f);
+            Shader.SetGlobalFloat("_OceanCoastBoundsEnabled", 0f);
             Shader.SetGlobalFloat(WaveCountId, 0f);
             Shader.SetGlobalFloat(ModifierCountId, 0f);
             _active = null;
