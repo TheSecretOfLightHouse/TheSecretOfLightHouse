@@ -65,6 +65,10 @@ namespace Lighthouse.Mafia.SeaSummoning.Net
         [Server]
         public bool CanRequest(NetworkConnectionToClient sender)
         {
+            if (Lighthouse.Common.Cinematics.ServerCinematicProtection.IsActive)
+            {
+                return false;
+            }
             return sender != null && sender.isReady && sender.identity != null
                 && _settings != null && _settings.TryValidate(out _)
                 && TryGetActorId(sender, out uint actorId)

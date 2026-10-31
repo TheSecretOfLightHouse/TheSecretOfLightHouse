@@ -63,6 +63,11 @@ namespace Lighthouse.Tower.Net
         {
             _modules = modules;
             _voting = voting;
+            var boss = GetComponent<Lighthouse.Monsters.Boss.BossTestEnvironment>();
+            if (boss != null)
+            {
+                boss.BindVoting(voting);
+            }
         }
 
         private void Awake()

@@ -1,4 +1,5 @@
 using System;
+using Lighthouse.Common.Cinematics;
 using Mirror;
 using UnityEngine;
 using Lighthouse.Systems.Audio;
@@ -56,7 +57,8 @@ public sealed class BoatDurability : NetworkBehaviour
     [Server]
     public void ApplyDamage(float damage, BoatDamageType damageType = BoatDamageType.None)
     {
-        if (_isWrecked || damage <= 0f || float.IsNaN(damage) || float.IsInfinity(damage))
+        if (ServerCinematicProtection.IsActive || _isWrecked
+            || damage <= 0f || float.IsNaN(damage) || float.IsInfinity(damage))
         {
             return;
         }

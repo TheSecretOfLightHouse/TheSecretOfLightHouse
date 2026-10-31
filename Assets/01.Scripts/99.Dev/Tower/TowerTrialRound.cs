@@ -423,6 +423,10 @@ namespace Lighthouse.Dev.Tower
             float wrap = _bossSettings ? _bossSettings.WrapDuration : 0f;
             float interval = _bossSettings ? _bossSettings.AttackInterval : 3f;
             yield return new WaitForSeconds(wrap);
+            while (_match.Phase == TowerPhase.FinalBattle && _match.IsSummonCinematicPlaying)
+            {
+                yield return null;
+            }
             var wait = new WaitForSeconds(interval);
 
             while (_match.Phase == TowerPhase.FinalBattle)

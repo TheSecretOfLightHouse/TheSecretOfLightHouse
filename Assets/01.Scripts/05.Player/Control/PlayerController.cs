@@ -287,6 +287,12 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         }
 
         Vector2 input = _inputReader.MoveInput;
+        if (Lighthouse.Common.Cinematics.CinematicPresentationLock.IsLocked)
+        {
+            _inputReader.ClearInput();
+            input = Vector2.zero;
+            ClearActionRequests();
+        }
 
         if (!IsOnBoat && _camera)
         {
@@ -321,7 +327,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         MoveConfig config = MoveConfig.Combine(_hfsm.CurrentMoveConfig,_abilityRunner.MovementModifier);
 
-        bool jumpRequested = _jumpRequested && !SessionScreen.IsGameplayOverlayOpen;
+        bool jumpRequested = _jumpRequested && !SessionScreen.IsGameplayOverlayOpen
+            && !Lighthouse.Common.Cinematics.CinematicPresentationLock.IsLocked;
         _jumpRequested = false;
 
         if (IsOnBoat)
@@ -718,6 +725,10 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     public void SetDowned(bool value)
     {
+        if (value && Lighthouse.Common.Cinematics.ServerCinematicProtection.IsActive)
+        {
+            return;
+        }
         if (NetworkClient.active || NetworkServer.active)
         {
             if (!isServer)
@@ -779,6 +790,11 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void ProcessActionRequests()
     {
+        if (Lighthouse.Common.Cinematics.CinematicPresentationLock.IsLocked)
+        {
+            ClearActionRequests();
+            return;
+        }
         bool interactRequested = _interactRequested;
         bool harvestRequested = _harvestRequested;
         bool fireRequested = _fireRequested;

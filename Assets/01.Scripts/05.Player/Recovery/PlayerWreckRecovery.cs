@@ -1,4 +1,5 @@
 using Lighthouse.Interaction.Targets.Net;
+using Lighthouse.Common.Cinematics;
 using Lighthouse.Player.Boat;
 using Lighthouse.World.Debris.Rules;
 using Lighthouse.World.Query.Rules;
@@ -106,22 +107,22 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
     [ServerCallback]
     private void Update()
     {
-        if (!_isRecovering)
+        if (!_isRecovering || ServerCinematicProtection.IsActive)
         {
             return;
         }
 
         if (_isCompletingRecovery)
         {
-            if (NetworkTime.time >= _nextCompletionRetryTime)
+            if (ServerCinematicProtection.RecoveryTime >= _nextCompletionRetryTime)
             {
-                _nextCompletionRetryTime = NetworkTime.time + CompletionRetryInterval;
+                _nextCompletionRetryTime = ServerCinematicProtection.RecoveryTime + CompletionRetryInterval;
                 TryFinishRecovery();
             }
             return;
         }
 
-        if (NetworkTime.time < _recoveryDeadline)
+        if (ServerCinematicProtection.RecoveryTime < _recoveryDeadline)
         {
             return;
         }
@@ -140,6 +141,10 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
     [Server]
     public bool TryBeginRecovery(Vector3 wreckPosition)
     {
+        if (ServerCinematicProtection.IsActive)
+        {
+            return false;
+        }
         BoatController wreckedBoat = _player.OwnedBoat;
         if (_isRecovering || !wreckedBoat || wreckedBoat.Owner != _player
             || !wreckedBoat.IsWrecked || !wreckedBoat.IsOccupied
@@ -157,7 +162,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
 
         _isRecovering = true;
         _wreckPosition = wreckPosition;
-        _recoveryDeadline = NetworkTime.time + _recoveryDuration;
+        _recoveryDeadline = ServerCinematicProtection.RecoveryTime + _recoveryDuration;
         _hasSettledInventory = false;
         _hasDropPlan = false;
         _plannedResources.Clear();
@@ -172,7 +177,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
     [Server]
     public bool TryBeginCompletion(WreckRecoveryResult result)
     {
-        if (!_isRecovering || _isCompletingRecovery)
+        if (ServerCinematicProtection.IsActive || !_isRecovering || _isCompletingRecovery)
         {
             return false;
         }
@@ -196,7 +201,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
         }
 
         _isCompletingRecovery = true;
-        _nextCompletionRetryTime = NetworkTime.time + CompletionRetryInterval;
+        _nextCompletionRetryTime = ServerCinematicProtection.RecoveryTime + CompletionRetryInterval;
         _recoveryResult = result;
 
         if (!TryFinishRecovery())
@@ -257,7 +262,7 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
     [Server]
     private bool TryFinishRecovery()
     {
-        if (!_isCompletingRecovery || !_player || !_boatSpawner || !_boatSpawnPoint || !_boatSpawner.PlayerRecoveryPoint)
+        if (ServerCinematicProtection.IsActive || !_isCompletingRecovery || !_player || !_boatSpawner || !_boatSpawnPoint || !_boatSpawner.PlayerRecoveryPoint)
         {
             return false;
         }

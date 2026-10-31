@@ -98,6 +98,10 @@ namespace Lighthouse.Player.Abilities.Net
         [Server]
         private GuardShieldResult TryApplyShield(uint targetNetId)
         {
+            if (Lighthouse.Common.Cinematics.ServerCinematicProtection.IsActive)
+            {
+                return GuardShieldResult.RequestRejected;
+            }
             LighthouseNetworkManager manager = LighthouseNetworkManager.Instance;
             if (manager && manager.IsSessionFlowEnabled && manager.Phase != MatchPhase.InProgress)
             {

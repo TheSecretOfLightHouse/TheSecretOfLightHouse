@@ -1,18 +1,21 @@
+using Lighthouse.Player.Abilities.Net;
 using Lighthouse.Workbench.Net;
 using Lighthouse.Workbench.Rules;
 using Mirror;
 using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Lighthouse.UI.Hud
 {
     // Always-on HUD from the 2026-10-29 in-game HUD mockup: carried module card and role/boat panel bottom left, key
-    // hints top right. The boat's durability follows the local player's own boat, aboard or not. The card shows the
+    // hints top right (Esc exit, M, Tab, and Q ability only while aboard). The boat's durability follows the local player's own boat, aboard or not. The card shows the
     // module the local player carries, read from the shared workbench (WorkbenchNet.OwnCarriedRecipe; not every scene
     // binds PlayerInventory to it), and hides while none is; the workbench screen's own carry card
-    // shows only while that screen is open. The role is the mockup's fixed picture until role data exists. The
-    // mockup's "E" hint is left out: each station shows its own prompt when in range. Shown while a local player exists.
+    // shows only while that screen is open. The role shows the local player's job, named by the ability request its job
+    // prefab carries (as VotingScreen does). The mockup's "E" hint is left out: each station shows its own prompt when in
+    // range. Shown while a local player exists.
     [DisallowMultipleComponent]
     public sealed class InGameHud : MonoBehaviour
     {
@@ -34,24 +37,44 @@ namespace Lighthouse.UI.Hud
         [SerializeField]
         private Image _cardIcon;
         [SerializeField]
-        private Text _cardName;
+        private TMP_Text _cardName;
         [SerializeField]
-        private Text _cardUse;
+        private TMP_Text _cardUse;
         [Tooltip("The workbench screen's module icons, so the card matches it. A recipe not listed uses its own icon.")]
         [SerializeField]
         private RecipeIcon[] _recipeIcons = new RecipeIcon[0];
+
+        [Header("Role")]
+        [SerializeField]
+        private Image _roleIcon;
+        [SerializeField]
+        private TMP_Text _roleName;
+        [Tooltip("The voting screen's job portraits, so both screens show the same face.")]
+        [SerializeField]
+        private Sprite _navigatorIcon;
+        [SerializeField]
+        private Sprite _mechanicIcon;
+        [SerializeField]
+        private Sprite _guardIcon;
+        [SerializeField]
+        private Sprite _gathererIcon;
 
         [Header("Boat")]
         [SerializeField]
         private Image _boatFill;
         [SerializeField]
-        private Text _boatText;
+        private TMP_Text _boatText;
         [Tooltip("The current durability in \"current / max\", as in the mockup. The max keeps the text colour.")]
         [SerializeField]
         private Color _boatNumberColor = new Color(0.98f, 0.73f, 0.15f);
         [Tooltip("Bar fill change per second while easing toward the synced value.")]
         [SerializeField, Min(0.01f)]
         private float _fillSpeed = 1.2f;
+
+        [Header("Key hints")]
+        [Tooltip("Shown only while the local player is aboard a boat: the Q ability row (2026-10-31).")]
+        [SerializeField]
+        private GameObject[] _boatOnlyHints = new GameObject[0];
 
         [Header("Font")]
         [SerializeField]
@@ -71,6 +94,7 @@ namespace Lighthouse.UI.Hud
         private BoatDurability _durability;
         private int _shownDurability = -1;
         private int _shownMaxDurability = -1;
+        private bool _isBoatHintShown = true;
 
         private void Awake()
         {
@@ -81,6 +105,7 @@ namespace Lighthouse.UI.Hud
 
             _boatNumberHex = ColorUtility.ToHtmlStringRGB(_boatNumberColor);
             _root.SetActive(false);
+            SetBoatHintShown(false);
         }
 
         private void LateUpdate()
@@ -104,9 +129,11 @@ namespace Lighthouse.UI.Hud
                 _boundPlayer = localPlayer;
                 _player = localPlayer.GetComponent<PlayerController>();
                 _shownRecipeId = -1;
+                RefreshRole(localPlayer);
             }
 
             RefreshCard();
+            SetBoatHintShown(_player && _player.IsOnBoat);
 
             // A wrecked boat is replaced by a recovery boat, so the owned boat is checked every frame.
             BoatController boat = _player ? _player.OwnedBoat : null;
@@ -178,6 +205,65 @@ namespace Lighthouse.UI.Hud
             if (_cardUse)
             {
                 _cardUse.text = !recipe ? "" : recipe.IsBoatModule ? "배 모듈" : "등대 모듈";
+            }
+        }
+
+        // Each job prefab carries its own active ability request, so that names the job. The job never changes during
+        // a match, so this runs only when the local player object changes.
+        private void RefreshRole(NetworkIdentity player)
+        {
+            Sprite icon = null;
+            string jobName = "";
+
+            if (player.TryGetComponent(out NavigatorRouteRequest _))
+            {
+                icon = _navigatorIcon;
+                jobName = "항해사";
+            }
+            else if (player.TryGetComponent(out EmergencyRepairRequest _))
+            {
+                icon = _mechanicIcon;
+                jobName = "정비공";
+            }
+            else if (player.TryGetComponent(out GuardShieldRequest _))
+            {
+                icon = _guardIcon;
+                jobName = "경비병";
+            }
+            else if (player.TryGetComponent(out GatheringFeverRequest _))
+            {
+                icon = _gathererIcon;
+                jobName = "채집가";
+            }
+
+            if (_roleIcon)
+            {
+                _roleIcon.sprite = icon;
+                _roleIcon.enabled = icon;
+            }
+
+            if (_roleName)
+            {
+                _roleName.text = jobName;
+            }
+        }
+
+        // The job abilities are used from a boat, so their key hint keeps its row but shows only aboard.
+        private void SetBoatHintShown(bool isShown)
+        {
+            if (isShown == _isBoatHintShown)
+            {
+                return;
+            }
+
+            _isBoatHintShown = isShown;
+
+            for (int i = 0; i < _boatOnlyHints.Length; i++)
+            {
+                if (_boatOnlyHints[i])
+                {
+                    _boatOnlyHints[i].SetActive(isShown);
+                }
             }
         }
 

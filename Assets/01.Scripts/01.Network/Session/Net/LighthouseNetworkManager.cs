@@ -558,8 +558,8 @@ namespace Lighthouse.Network.Session.Net
         }
 
         // A finished match takes the same members back to the lobby scene (user decision 2026-10-29) as soon as one
-        // player confirms the result. The scene is shared, so everyone moves together; the result screen stays up on
-        // its own for those who have not confirmed yet (VictoryScreen).
+        // player confirms the result. The scene is shared, so everyone moves together and the result screen closes for
+        // those who have not confirmed yet (VictoryScreen, 2026-10-30).
         // Game players are removed like the lobby players at loading, so every client re-adds after the scene change
         // and gets a fresh lobby player: readiness starts cleared, and the actor id and nickname carry over.
         [Server]

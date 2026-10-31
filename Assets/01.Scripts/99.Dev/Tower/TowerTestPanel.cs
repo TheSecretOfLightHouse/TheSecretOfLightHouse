@@ -48,6 +48,12 @@ namespace Lighthouse.Dev.Tower
 
         private void OnGUI()
         {
+            if (DevPanelSwitch.IsOn && !_tower)
+            {
+                // The main game spawns its tower from the main island prefab, so it cannot be wired in the scene.
+                _tower = FindAnyObjectByType<TowerNet>();
+            }
+
             // In a build, Mirror keeps scene objects inactive on a client until spawned, and netId is not readable before.
             if (!DevPanelSwitch.IsOn || !_tower || !_tower.isActiveAndEnabled || !NetworkClient.active || !_tower.Layout || !_tower.Workbench)
             {

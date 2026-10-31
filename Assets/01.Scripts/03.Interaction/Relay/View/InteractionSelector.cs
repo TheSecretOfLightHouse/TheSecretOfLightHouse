@@ -17,6 +17,7 @@ namespace Lighthouse.Interaction.Relay.View
         private LayerMask _interactionLayers;
 
         private InteractionRelay _relay;
+        private PlayerController _player;
         private InteractionTarget _selected;
 
         // Local player only. For UI highlight (최명기); null when nothing is in range.
@@ -28,6 +29,7 @@ namespace Lighthouse.Interaction.Relay.View
         private void Awake()
         {
             _relay = GetComponent<InteractionRelay>();
+            _player = GetComponent<PlayerController>();
         }
 
         private void Update()
@@ -92,6 +94,9 @@ namespace Lighthouse.Interaction.Relay.View
         private InteractionTarget FindNearest(Vector3 origin)
         {
             IReadOnlyList<InteractionTarget> targets = InteractionTarget.Active;
+            // The boat being ridden is always nearest, so it would take E from everything at sea such as the ghost
+            // ship (2026-10-31). Its repair stays on the inventory screen's button, which sends its own request.
+            Transform riddenBoat = _player && _player.CurrentBoat ? _player.CurrentBoat.transform : null;
             InteractionTarget nearest = null;
             float nearestSqr = float.PositiveInfinity;
 
@@ -99,7 +104,7 @@ namespace Lighthouse.Interaction.Relay.View
             {
                 InteractionTarget target = targets[i];
 
-                if (!target || target.NetId == 0)
+                if (!target || target.NetId == 0 || (riddenBoat && target.transform.IsChildOf(riddenBoat)))
                 {
                     continue;
                 }
