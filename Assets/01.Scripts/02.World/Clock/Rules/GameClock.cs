@@ -85,6 +85,27 @@ namespace Lighthouse.World.Clock.Rules
             WorldServices.Unregister<IGameClock>(this);
         }
 
+        public bool TryGetCompletedDayCount(out int completedDayCount)
+        {
+            completedDayCount = 0;
+            return _isRunning && _source != null && _config != null
+                && DayCycleMath.TryGetCompletedDayCount(_gameStartTime, _source.Now,
+                    _config.DaySeconds, _config.NightSeconds, out completedDayCount);
+        }
+
+        public bool TryGetCompletedDayBoundary(int completedDaySerial, out double boundaryTime)
+        {
+            boundaryTime = 0.0;
+
+            if (!TryGetCompletedDayCount(out int completedDayCount) || completedDaySerial > completedDayCount)
+            {
+                return false;
+            }
+
+            return DayCycleMath.TryGetMorningBoundary(_gameStartTime, _config.DaySeconds,
+                _config.NightSeconds, completedDaySerial, out boundaryTime);
+        }
+
         public void Stop()
         {
             _isRunning = false;
