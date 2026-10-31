@@ -442,6 +442,19 @@ namespace Lighthouse.Network.Session.View
 
         private void HandleQuit()
         {
+            if (_title.IsEntryScreen && _title.IsEntryOpen)
+            {
+                if (NetworkClient.active)
+                {
+                    HandleCancelJoin();
+                    return;
+                }
+
+                SaveNickname();
+                _title.ShowMenu();
+                return;
+            }
+
             _dialog.Show("게임 종료", "게임을 종료할까요?", "종료", Application.Quit, "취소", null, true);
         }
 
