@@ -20,6 +20,7 @@ namespace Lighthouse.Player.Abilities.View
         private Font _font;
         private SharedMapSettings _skin;
         private bool _isOpen;
+        private int _openedFrame;
         private bool _hasRejectedResponse;
         private bool _wasInputEnabled;
         private CursorLockMode _savedCursorLock;
@@ -51,7 +52,8 @@ namespace Lighthouse.Player.Abilities.View
                 return;
             }
 
-            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            if (Time.frameCount > _openedFrame && Keyboard.current != null
+                && (Keyboard.current.escapeKey.wasPressedThisFrame || Keyboard.current.qKey.wasPressedThisFrame))
             {
                 Hide();
             }
@@ -100,6 +102,7 @@ namespace Lighthouse.Player.Abilities.View
             _wasInputEnabled = _input && _input.enabled;
             _hasRejectedResponse = false;
             _isOpen = true;
+            _openedFrame = Time.frameCount;
             SessionScreen.SetGameplayOverlayOpen(this, true);
             if (_input)
             {
