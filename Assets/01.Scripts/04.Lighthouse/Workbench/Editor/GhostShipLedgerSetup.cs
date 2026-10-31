@@ -1,4 +1,5 @@
 using Lighthouse.Interaction.GhostShipHints.View;
+using Lighthouse.Workbench.View;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -6,25 +7,34 @@ using UnityEngine.UI;
 
 namespace Lighthouse.Workbench.Editor
 {
-    // Builds the ghost ship ledger (2026-10-30 mockup) from the parts cut out of the user's atlas, on a 1920x1080
-    // reference, and hands it to the ghost ship prefab. The board is nine-sliced so it grows with the rows a layout
-    // group stacks: header, then one divider + day row per day. The E prompt copies the workbench's (keycap + label art
-    // at the bottom centre). Kept in this editor assembly so no new asmdef is needed.
+    // Builds the ghost ship ledger (2026-10-31 mockup) from the parts cut out of the user's atlas, on a 1920x1080
+    // reference, and hands it to the ghost ship prefab. The board art carries the title, column titles and footer line,
+    // and is nine-sliced so only its plain middle stretches with the rows a layout group stacks under the header.
+    // Resource icons are copied from the sketch workbench screen so both screens show the same art. The E prompt copies
+    // the workbench's (keycap + label art at the bottom centre). Kept in this editor assembly so no new asmdef is needed.
     // Rebuilding overwrites the prefab, so later look changes made by hand belong in the inspector, not here.
     public static class GhostShipLedgerSetup
     {
         private const string PrefabPath = "Assets/02.Prefabs/UI/GhostShip/GhostShipLedger.prefab";
         private const string ShipPrefabPath = "Assets/02.Prefabs/World/GhostShip/GhostShip.prefab";
+        private const string WorkbenchPrefabPath = "Assets/02.Prefabs/UI/Workbench/WorkbenchScreen_Sketch.prefab";
         private const string Folder = "Assets/03.Images/GhostShipLedger/";
         private const int DayCount = 5;
         public const string PromptCaption = "유령선 확인";
         // This canvas is 1920 wide where the station screens are 1672, so the prompt grows to look the same size.
         public const float PromptUnit = 1920f / 1672f;
-        private const float BoardWidth = 720f;
-        private const float ContentWidth = 560f;
-        // Torn edge and frame of the board art, kept unstretched (source pixels, art is 1041x780).
-        private const float BoardBorder = 130f;
-        private const float BoardArtWidth = 1041f;
+        private const float BoardWidth = 940f;
+        // Board art is 847x721. The top border keeps the printed header down to the column-title line and the bottom
+        // border keeps the footer line, so only the empty middle stretches (source pixels).
+        private const float BoardArtWidth = 847f;
+        private const float BoardTop = 320f;
+        private const float BoardBottom = 72f;
+        private const float BoardSide = 40f;
+        private const float Scale = BoardWidth / BoardArtWidth;
+        private const float ContentWidth = BoardWidth - 100f;
+        // The board prints "사라진 자원" this far right of the content's left edge; the resources line up under it.
+        private const float DayColumnWidth = 272f;
+        private const int ItemColumns = 3;
         private static readonly Color Cream = new Color(0.96f, 0.9f, 0.76f);
         private static readonly Color Shadow = new Color(0.1f, 0.07f, 0.04f, 0.9f);
 
@@ -56,7 +66,7 @@ namespace Lighthouse.Workbench.Editor
                 scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
                 scaler.matchWidthOrHeight = 0.5f;
 
-                GameObject window = BuildWindow(root.transform, out RectTransform rows, out GameObject rowTemplate, out GameObject emptyRow);
+                GameObject window = BuildWindow(root.transform, out RectTransform rows, out GameObject rowTemplate, out GameObject emptyRow, out Button close);
 
                 // Same spot and parts as the workbench's open prompt; the two never share a screen (sea vs island).
                 RectTransform prompt = Rect("Prompt", root.transform, 0f, 0f, 190f, 48f);
@@ -65,13 +75,6 @@ namespace Lighthouse.Workbench.Editor
                 prompt.anchoredPosition = new Vector2(0f, 150f);
                 HudSketchLayout.BuildPrompt(prompt, PromptCaption, PromptUnit);
 
-                Sprite[] days = new Sprite[DayCount];
-
-                for (int i = 0; i < DayCount; i++)
-                {
-                    days[i] = Load(Folder, $"ghl_day_{i + 1}");
-                }
-
                 GhostShipLedgerScreen screen = root.AddComponent<GhostShipLedgerScreen>();
                 SerializedObject serialized = new SerializedObject(screen);
                 Set(serialized, "_prompt", prompt.gameObject);
@@ -79,14 +82,10 @@ namespace Lighthouse.Workbench.Editor
                 Set(serialized, "_rows", rows);
                 Set(serialized, "_rowTemplate", rowTemplate);
                 Set(serialized, "_emptyRow", emptyRow);
-                SerializedProperty daySprites = serialized.FindProperty("_daySprites");
-                daySprites.arraySize = DayCount;
-
-                for (int i = 0; i < DayCount; i++)
-                {
-                    daySprites.GetArrayElementAtIndex(i).objectReferenceValue = days[i];
-                }
-
+                Set(serialized, "_closeButton", close);
+                SetDaySprites(serialized, "_daySprites", "ghl_day_");
+                SetDaySprites(serialized, "_dimDaySprites", "ghl_day_dim_");
+                CopyResourceIcons(serialized);
                 serialized.ApplyModifiedPropertiesWithoutUndo();
                 System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(PrefabPath));
                 GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
@@ -101,66 +100,147 @@ namespace Lighthouse.Workbench.Editor
             }
         }
 
-        private static GameObject BuildWindow(Transform parent, out RectTransform rows, out GameObject rowTemplate, out GameObject emptyRow)
+        private static GameObject BuildWindow(Transform parent, out RectTransform rows, out GameObject rowTemplate, out GameObject emptyRow, out Button close)
         {
-            RectTransform window = Rect("Window", parent, 0f, 0f, BoardWidth, 400f);
+            RectTransform window = Rect("Window", parent, 0f, 0f, BoardWidth, 600f);
             window.anchorMin = window.anchorMax = window.pivot = new Vector2(0.5f, 0.5f);
-            window.anchoredPosition = new Vector2(0f, 40f);
+            window.anchoredPosition = Vector2.zero;
             Image board = window.gameObject.AddComponent<Image>();
             board.sprite = Load(Folder, "ghl_board");
             board.type = Image.Type.Sliced;
             // Draws the sliced frame at the board's on-screen scale instead of the art's full pixel size.
-            board.pixelsPerUnitMultiplier = BoardArtWidth / BoardWidth;
-            board.raycastTarget = false;
+            board.pixelsPerUnitMultiplier = 1f / Scale;
             VerticalLayoutGroup layout = window.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(80, 80, 58, 70);
-            layout.spacing = 6f;
+            layout.padding = new RectOffset(50, 50, Mathf.RoundToInt(BoardTop * Scale) + 6, Mathf.RoundToInt(BoardBottom * Scale) + 14);
             layout.childAlignment = TextAnchor.UpperCenter;
             layout.childControlWidth = true;
             layout.childControlHeight = true;
-            layout.childForceExpandWidth = false;
+            layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = false;
             ContentSizeFitter fitter = window.gameObject.AddComponent<ContentSizeFitter>();
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            Stacked(Picture("Title", window, Folder, "ghl_title", 0f, 0f, 0f, 0f), 334f, 73f);
-            Stacked(Picture("Knot", window, Folder, "ghl_divider_knot", 0f, 0f, 0f, 0f), ContentWidth, ContentWidth * 75f / 825f);
-            Stacked(Picture("Subtitle", window, Folder, "ghl_subtitle", 0f, 0f, 0f, 0f), 278f, 40f);
 
             rows = Rect("Rows", window, 0f, 0f, ContentWidth, 0f);
             VerticalLayoutGroup rowLayout = rows.gameObject.AddComponent<VerticalLayoutGroup>();
             rowLayout.childAlignment = TextAnchor.UpperCenter;
             rowLayout.childControlWidth = true;
             rowLayout.childControlHeight = true;
-            rowLayout.childForceExpandWidth = false;
+            rowLayout.childForceExpandWidth = true;
             rowLayout.childForceExpandHeight = false;
-            Stacked(rows, ContentWidth, -1f);
 
-            emptyRow = Row(rows, "EmptyRow", 80f).gameObject;
-            Picture("Empty", emptyRow.transform, Folder, "ghl_empty", 151f, 34f, 258f, 38f).preserveAspect = true;
+            RectTransform empty = Rect("EmptyRow", rows, 0f, 0f, ContentWidth, 150f);
+            Stacked(empty, -1f, 150f);
+            Image emptyArt = Picture("Empty", empty, Folder, "ghl_empty", 0f, 0f, 350f, 44f);
+            emptyArt.preserveAspect = true;
+            emptyArt.rectTransform.anchorMin = emptyArt.rectTransform.anchorMax = emptyArt.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            emptyArt.rectTransform.anchoredPosition = Vector2.zero;
+            emptyRow = empty.gameObject;
 
-            RectTransform template = Row(rows, "RowTemplate", 72f);
-            Picture("Day", template, Folder, "ghl_day_1", 14f, 30f, 74f, 35f).preserveAspect = true;
-            Label("DayText", template, "6일차:", 26, Cream, 14f, 28f, 90f, 38f, TextAnchor.MiddleLeft);
-            Text resources = Label("Resources", template, "목재 3, 철 2", 24, Cream, 106f, 26f, ContentWidth - 112f, 42f, TextAnchor.MiddleLeft);
-            resources.resizeTextForBestFit = true;
-            resources.resizeTextMinSize = 14;
-            resources.resizeTextMaxSize = 24;
-            resources.horizontalOverflow = HorizontalWrapMode.Wrap;
-            rowTemplate = template.gameObject;
+            rowTemplate = BuildRow(rows);
+            close = BuildClose(window);
+            BuildEscHint(window);
             emptyRow.SetActive(false);
             rowTemplate.SetActive(false);
             window.gameObject.SetActive(false);
             return window.gameObject;
         }
 
-        // A divider across the top, then the row's own parts under it.
-        private static RectTransform Row(Transform parent, string name, float height)
+        // Divider on top (hidden on the first row, where the board prints its own), then day badge | resource grid.
+        private static GameObject BuildRow(Transform parent)
         {
-            RectTransform row = Rect(name, parent, 0f, 0f, ContentWidth, height);
-            Stacked(row, ContentWidth, height);
-            Picture("Line", row, Folder, "ghl_divider_line", 0f, 4f, ContentWidth, ContentWidth * 30f / 802f);
-            return row;
+            RectTransform row = Rect("RowTemplate", parent, 0f, 0f, ContentWidth, 92f);
+            row.gameObject.AddComponent<LayoutElement>().minHeight = 92f;
+            HorizontalLayoutGroup layout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+            layout.padding = new RectOffset(0, 0, 16, 12);
+            layout.childAlignment = TextAnchor.MiddleLeft;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+
+            Image line = Picture("Line", row, Folder, "ghl_divider_line", 0f, 0f, 0f, 12f);
+            line.rectTransform.anchorMin = new Vector2(0f, 1f);
+            line.rectTransform.anchorMax = Vector2.one;
+            line.rectTransform.pivot = new Vector2(0.5f, 1f);
+            line.rectTransform.anchoredPosition = Vector2.zero;
+            line.rectTransform.sizeDelta = new Vector2(0f, 12f);
+            // The mockup's row lines are fainter than the header's.
+            line.color = new Color(1f, 1f, 1f, 0.7f);
+            line.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+
+            RectTransform dayCell = Rect("DayCell", row, 0f, 0f, DayColumnWidth, 64f);
+            Stacked(dayCell, DayColumnWidth, 64f);
+            Image day = Picture("Day", dayCell, Folder, "ghl_day_1", 0f, 0f, 124f, 63f);
+            day.preserveAspect = true;
+            LeftMiddle(day.rectTransform, 26f);
+            Text dayText = Label("DayText", dayCell, "6일차", 28, Cream, 0f, 0f, 160f, 44f, TextAnchor.MiddleLeft);
+            LeftMiddle(dayText.rectTransform, 34f);
+
+            float itemsWidth = ContentWidth - DayColumnWidth;
+            float itemWidth = itemsWidth / ItemColumns;
+            RectTransform items = Rect("Items", row, 0f, 0f, itemsWidth, 58f);
+            GridLayoutGroup grid = items.gameObject.AddComponent<GridLayoutGroup>();
+            grid.cellSize = new Vector2(itemWidth, 58f);
+            grid.spacing = new Vector2(0f, 6f);
+            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            grid.constraintCount = ItemColumns;
+            grid.childAlignment = TextAnchor.MiddleLeft;
+            items.gameObject.AddComponent<LayoutElement>().preferredWidth = itemsWidth;
+
+            RectTransform item = Rect("ItemTemplate", items, 0f, 0f, itemWidth, 58f);
+            RectTransform iconRect = Rect("Icon", item, 0f, 0f, 52f, 52f);
+            Image icon = iconRect.gameObject.AddComponent<Image>();
+            icon.raycastTarget = false;
+            icon.preserveAspect = true;
+            LeftMiddle(iconRect, 0f);
+            Text label = Label("Label", item, "목재 × 12", 28, Cream, 0f, 0f, itemWidth - 66f, 46f, TextAnchor.MiddleLeft);
+            LeftMiddle(label.rectTransform, 60f);
+            label.resizeTextForBestFit = true;
+            label.resizeTextMinSize = 16;
+            label.resizeTextMaxSize = 28;
+            label.horizontalOverflow = HorizontalWrapMode.Wrap;
+            label.verticalOverflow = VerticalWrapMode.Truncate;
+            item.gameObject.SetActive(false);
+
+            Stacked(Picture("Nothing", row, Folder, "ghl_nothing", 0f, 0f, 72f, 47f), 72f, 47f);
+            return row.gameObject;
+        }
+
+        // The mockup's X sits inside the frame's top-right corner and closes like Esc.
+        private static Button BuildClose(Transform window)
+        {
+            Image image = Picture("Close", window, Folder, "ghl_close", 0f, 0f, 46f, 48f);
+            image.raycastTarget = true;
+            image.preserveAspect = true;
+            image.rectTransform.anchorMin = image.rectTransform.anchorMax = Vector2.one;
+            image.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            image.rectTransform.anchoredPosition = new Vector2(-54f, -52f);
+            image.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+            Button button = image.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+            ColorBlock colors = button.colors;
+            colors.highlightedColor = new Color(1f, 0.85f, 0.6f);
+            colors.pressedColor = new Color(0.75f, 0.65f, 0.5f);
+            button.colors = colors;
+            return button;
+        }
+
+        // Esc keycap + "닫기" on the footer line, right side, as in the mockup. A hint only; Esc itself is read in code.
+        private static void BuildEscHint(Transform window)
+        {
+            RectTransform hint = Rect("EscHint", window, 0f, 0f, 98f, 42f);
+            hint.anchorMin = hint.anchorMax = new Vector2(1f, 0f);
+            hint.pivot = new Vector2(1f, 0.5f);
+            hint.anchoredPosition = new Vector2(-58f, 54f);
+            hint.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+            Picture("Esc", hint, Folder, "ghl_esc", 0f, 0f, 46f, 42f).preserveAspect = true;
+            Picture("Label", hint, Folder, "ghl_close_label", 54f, 5f, 44f, 42f).preserveAspect = true;
+        }
+
+        private static void LeftMiddle(RectTransform rect, float x)
+        {
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 0.5f);
+            rect.anchoredPosition = new Vector2(x, 0f);
         }
 
         private static void Stacked(Graphic graphic, float width, float height)
@@ -176,11 +256,42 @@ namespace Lighthouse.Workbench.Editor
         private static void Stacked(RectTransform rect, float width, float height)
         {
             LayoutElement element = rect.gameObject.AddComponent<LayoutElement>();
-            element.preferredWidth = width;
+
+            if (width >= 0f)
+            {
+                element.preferredWidth = width;
+            }
 
             if (height >= 0f)
             {
                 element.preferredHeight = height;
+            }
+        }
+
+        private static void SetDaySprites(SerializedObject serialized, string field, string prefix)
+        {
+            SerializedProperty sprites = serialized.FindProperty(field);
+            sprites.arraySize = DayCount;
+
+            for (int i = 0; i < DayCount; i++)
+            {
+                sprites.GetArrayElementAtIndex(i).objectReferenceValue = Load(Folder, $"{prefix}{i + 1}");
+            }
+        }
+
+        private static void CopyResourceIcons(SerializedObject destination)
+        {
+            WorkbenchScreen workbench = AssetDatabase.LoadAssetAtPath<GameObject>(WorkbenchPrefabPath).GetComponent<WorkbenchScreen>();
+            SerializedProperty source = new SerializedObject(workbench).FindProperty("_resourceIcons");
+            SerializedProperty icons = destination.FindProperty("_resourceIcons");
+            icons.arraySize = source.arraySize;
+
+            for (int i = 0; i < source.arraySize; i++)
+            {
+                SerializedProperty from = source.GetArrayElementAtIndex(i);
+                SerializedProperty to = icons.GetArrayElementAtIndex(i);
+                to.FindPropertyRelative("Resource").objectReferenceValue = from.FindPropertyRelative("Resource").objectReferenceValue;
+                to.FindPropertyRelative("Icon").objectReferenceValue = from.FindPropertyRelative("Icon").objectReferenceValue;
             }
         }
 
@@ -207,7 +318,7 @@ namespace Lighthouse.Workbench.Editor
             foreach (string guid in AssetDatabase.FindAssets("t:Texture2D", new[] { Folder.TrimEnd('/') }))
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
-                Vector4 border = path.EndsWith("ghl_board.png") ? Vector4.one * BoardBorder : Vector4.zero;
+                Vector4 border = path.EndsWith("ghl_board.png") ? new Vector4(BoardSide, BoardBottom, BoardSide, BoardTop) : Vector4.zero;
                 ImportSprite(path, border);
             }
 
