@@ -56,6 +56,7 @@ Shader "Lighthouse/World/ClearOcean"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
             #include "Include/OceanGerstner.hlsl"
             #include "Include/OceanInteraction.hlsl"
+            #include "Include/F3Terrain.hlsl"
             #include "Include/OceanColor.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
@@ -117,7 +118,12 @@ Shader "Lighthouse/World/ClearOcean"
                 OceanGerstnerFieldLagoon_float(restWS, output.positionWS, output.normalWS, output.coast, lagoonReach);
                 output.lagoon = float2(lagoonReach, step(0.01, lagoonReach));
                 output.restWS = restWS;
-                output.normalDelta = output.normalWS - OceanGerstnerBaseNormal(restWS);
+                if (_F3Enabled > 0.5)
+                {
+                    output.positionWS = restWS + F3Displacement(restWS.xz);
+                    output.normalWS = float3(0,1,0);
+                }
+                output.normalDelta = _F3Enabled > 0.5 ? float3(0,0,0) : output.normalWS - OceanGerstnerBaseNormal(restWS);
                 output.positionWS.y += OceanInteraction(output.positionWS.xz).x;
                 output.positionCS = TransformWorldToHClip(output.positionWS);
                 output.fogFactor = ComputeFogFactor(output.positionCS.z);
@@ -135,6 +141,12 @@ Shader "Lighthouse/World/ClearOcean"
             half4 Frag(Varyings input) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+                float4 terrain = F3GeometryAt(input.positionWS.xz);
+                if (_F3Enabled > 0.5 && F3GroundAt(input.positionWS.xz) > 0.5)
+                {
+                    clip(terrain.w - 0.001);
+                    clip(terrain.x + input.positionWS.y - 0.002);
+                }
                 float2 uv = GetNormalizedScreenSpaceUV(input.positionCS);
                 float rawDepth = SampleSceneDepth(uv);
                 float ndcDepth = rawDepth;
@@ -189,7 +201,8 @@ Shader "Lighthouse/World/ClearOcean"
 
                 float3 surfacePosition = input.positionWS;
                 // Per-pixel Gerstner normal: vertex spacing is coarser than the shortest wavelengths.
-                float3 interactionNormal = normalize(OceanGerstnerBaseNormal(input.restWS) + input.normalDelta);
+                float3 interactionNormal = _F3Enabled > 0.5 ? F3Normal(input.positionWS.xz)
+                    : normalize(OceanGerstnerBaseNormal(input.restWS) + input.normalDelta);
                 OceanInteractionDisplace(surfacePosition, interactionNormal);
                 float3 normalWS = RippleNormal(input.positionWS, interactionNormal);
                 float cameraDistance = length(input.positionWS - _WorldSpaceCameraPos);
@@ -239,6 +252,12 @@ Shader "Lighthouse/World/ClearOcean"
                 color += sun.color * sun.shadowAttenuation * _Sparkle_Strength
                     * OceanSparkle(input.positionWS, normalWS, halfway, _OceanTime, footprint) * clarityZ * clarityZ;
                 float phase = CoastPhase(input.coast.z,_OceanTime)/OCEAN_TWO_PI;
+                if (_F3Enabled > 0.5 && _OceanWaveCount > 0)
+                {
+                    float4 path = F3Field(input.restWS.xz);
+                    float4 wave = _OceanWaveA[0];
+                    phase = (dot(wave.xy,input.restWS.xz+path.yz)-wave.w*(_OceanTime-path.w))/max(wave.z,0.001);
+                }
                 float cycle = frac(phase);
                 float crest = 1-smoothstep(0.025,0.095,abs(cycle-0.25));
                 float residue = smoothstep(0.22,0.32,cycle)*(1-smoothstep(0.48,0.78,cycle));
@@ -248,8 +267,9 @@ Shader "Lighthouse/World/ClearOcean"
                 for(int i=0;i<min((int)_OceanWaveCount,OCEAN_MAX_WAVES);i++) energy+=_OceanWaveB[i].x;
                 float shoreDensity = max(crest*0.95,residue*0.6)*shoreWindow*saturate(energy*5);
                 float4 interaction = OceanInteraction(input.positionWS.xz);
+                if (_F3Enabled > 0.5) shoreDensity *= terrain.y * saturate(F3Field(input.restWS.xz).x);
                 float density = max(shoreDensity,interaction.w);
-                float coverage = OceanFoamCoverage(input.positionWS.xz-interaction.yz*0.12,density,_OceanTime);
+                float coverage = OceanFoamCoverage(input.positionWS.xz-interaction.yz*0.12-(_F3Enabled>0.5 ? F3Current(input.positionWS.xz)*_OceanTime : float2(0,0)),density,_OceanTime);
                 float3 foamLight = max(0.025,sun.color*0.85+SampleSH(float3(0,1,0))*0.4);
                 color = lerp(color,foamLight,coverage*saturate(density)*0.82);
                 return half4(MixFog(color, input.fogFactor), 1);
