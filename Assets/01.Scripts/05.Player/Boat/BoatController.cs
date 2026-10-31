@@ -66,6 +66,7 @@ public sealed class BoatController : NetworkBehaviour
     private float _nextDisembarkTime;
     private float _nextFireTime;
     private float _recoilEndTime;
+    private float _cannonPauseEndTime;
     private bool _isWreckPresentationApplied;
     private bool _offlineIsKinematic;
     private bool _hasLocalAuthority;
@@ -411,7 +412,7 @@ public sealed class BoatController : NetworkBehaviour
         {
             return;
         }
-        if (!CanControl(player))
+        if (!CanControl(player) || Time.time < _cannonPauseEndTime)
         {
             return;
         }
@@ -487,6 +488,21 @@ public sealed class BoatController : NetworkBehaviour
         _recoilEndTime = Mathf.Max(_recoilEndTime, Time.time + duration);
     }
 
+    public void ApplyCannonRecoil(Vector3 fireDirection, float speed, float pauseDuration)
+    {
+        // Only the owning peer simulates boat motion; observers follow NetworkTransform.
+        if (!CanSimulateLocalPhysics || !_rb || _rb.isKinematic || IsWrecked || !IsOccupied)
+        {
+            return;
+        }
+
+        Vector3 recoil = -Vector3.ProjectOnPlane(fireDirection, Vector3.up).normalized * Mathf.Max(0f, speed);
+        _rb.linearVelocity = new Vector3(recoil.x, _rb.linearVelocity.y, recoil.z);
+        _rb.angularVelocity = Vector3.zero;
+        _cannonPauseEndTime = Time.time + Mathf.Max(0f, pauseDuration);
+        PreserveCollisionRecoil(pauseDuration);
+    }
+
     public bool TryFire(PlayerController player)
     {
         if (!CanControl(player) || Time.time < _nextFireTime)
@@ -511,6 +527,7 @@ public sealed class BoatController : NetworkBehaviour
     public void Stop()
     {
         _recoilEndTime = 0f;
+        _cannonPauseEndTime = 0f;
 
         if (!_rb || _rb.isKinematic)
         {
