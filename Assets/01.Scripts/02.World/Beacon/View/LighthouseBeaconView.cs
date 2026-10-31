@@ -63,6 +63,11 @@ namespace Lighthouse.World.Beacon.View
             _state = BeaconState.Igniting;
         }
 
+        public void TurnOn(bool isInstant)
+        {
+            TurnOn(Now, isInstant);
+        }
+
         public void TurnOff()
         {
             _state = BeaconState.Off;

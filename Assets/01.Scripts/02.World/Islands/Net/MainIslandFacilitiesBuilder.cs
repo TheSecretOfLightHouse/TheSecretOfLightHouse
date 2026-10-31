@@ -6,6 +6,7 @@ using Lighthouse.Tower.Net;
 using Lighthouse.Tower.View;
 using Lighthouse.Workbench.Net;
 using Lighthouse.Workbench.View;
+using Lighthouse.World.Beacon.Net;
 using Lighthouse.World.Islands.View;
 using Lighthouse.World.MapGeneration.Rules;
 using Lighthouse.World.Query.Rules;
@@ -32,6 +33,7 @@ namespace Lighthouse.World.Islands.Net
         [SerializeField] private MainIslandPlayerSpawns _playerSpawns;
 
         private MainIslandPresentation _presentation;
+        private LighthouseBeaconMatchBinder _beacon;
         private WorkbenchNet _spawnedWorkbench;
         private TowerNet _spawnedTower;
         private bool _isBuilding;
@@ -149,6 +151,12 @@ namespace Lighthouse.World.Islands.Net
                 }
             }
 
+            _beacon = _presentation.GetComponentInChildren<LighthouseBeaconMatchBinder>(true);
+            if (_beacon)
+            {
+                _beacon.Bind(tower.GetComponent<TowerMatchNet>());
+            }
+
             if (_playerSpawns)
             {
                 _playerSpawns.Bind(_presentation.PlayerSpawnPoints, _presentation.BoatSpawnPoints, workbench, _modules, _seed);
@@ -167,6 +175,12 @@ namespace Lighthouse.World.Islands.Net
             _isBound = false;
             Workbench = null;
             Tower = null;
+            if (_beacon)
+            {
+                _beacon.Bind(null);
+            }
+
+            _beacon = null;
             _presentation = null;
             if (_playerSpawns)
             {

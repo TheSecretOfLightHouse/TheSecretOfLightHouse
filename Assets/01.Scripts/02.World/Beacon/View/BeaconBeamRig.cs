@@ -8,10 +8,13 @@ namespace Lighthouse.World.Beacon.View
     public sealed class BeaconBeamRig : MonoBehaviour
     {
         private static readonly int IntensityId = Shader.PropertyToID("_Intensity");
+        private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
 
         [SerializeField] private Light _spotLight;
         [Tooltip("Optional round glow at the lantern. Leave empty to skip it.")]
         [SerializeField] private Light _glowLight;
+        [Tooltip("Optional lantern mesh whose emission follows the level. Its lit emission is read from the material.")]
+        [SerializeField] private Renderer _lanternRenderer;
         [SerializeField] private MeshFilter _beamFilter;
         [SerializeField] private MeshRenderer _beamRenderer;
         [SerializeField, Min(1f)] private float _beamLength = 60f;
@@ -20,6 +23,8 @@ namespace Lighthouse.World.Beacon.View
         [SerializeField, Min(0f)] private float _coneBrightness = 1f;
 
         private MaterialPropertyBlock _block;
+        private MaterialPropertyBlock _lanternBlock;
+        private Color _lanternEmission;
         private Mesh _mesh;
         private float _appliedLevel = -1f;
         private float _tanHalfAngle;
@@ -40,6 +45,13 @@ namespace Lighthouse.World.Beacon.View
             _mesh = BeaconConeMesh.Create();
             _beamFilter.sharedMesh = _mesh;
             _block = new MaterialPropertyBlock();
+
+            if (_lanternRenderer != null)
+            {
+                _lanternBlock = new MaterialPropertyBlock();
+                _lanternEmission = _lanternRenderer.sharedMaterial.GetColor(EmissionColorId);
+            }
+
             Apply(0f);
         }
 
@@ -71,6 +83,13 @@ namespace Lighthouse.World.Beacon.View
             _beamRenderer.GetPropertyBlock(_block);
             _block.SetFloat(IntensityId, _coneBrightness * level);
             _beamRenderer.SetPropertyBlock(_block);
+
+            if (_lanternRenderer != null)
+            {
+                _lanternRenderer.GetPropertyBlock(_lanternBlock);
+                _lanternBlock.SetColor(EmissionColorId, _lanternEmission * level);
+                _lanternRenderer.SetPropertyBlock(_lanternBlock);
+            }
 
             if (_glowLight != null)
             {
