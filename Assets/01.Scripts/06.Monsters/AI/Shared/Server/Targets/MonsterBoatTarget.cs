@@ -9,6 +9,8 @@ namespace Lighthouse.Monsters.AI.Server
     {
         private static readonly List<MonsterBoatTarget> RegisteredTargets = new List<MonsterBoatTarget>();
         public static IReadOnlyList<MonsterBoatTarget> Targets => RegisteredTargets;
+        public static event System.Action<MonsterBoatTarget> TargetRegistered;
+        public static event System.Action<MonsterBoatTarget> TargetUnregistered;
 
         public abstract bool IsEligible { get; }
         public abstract float HitRadius { get; }
@@ -21,6 +23,8 @@ namespace Lighthouse.Monsters.AI.Server
         private static void ResetTargets()
         {
             RegisteredTargets.Clear();
+            TargetRegistered = null;
+            TargetUnregistered = null;
         }
 
         public override void OnStartServer()
@@ -31,7 +35,7 @@ namespace Lighthouse.Monsters.AI.Server
 
         public override void OnStopServer()
         {
-            RegisteredTargets.Remove(this);
+            UnregisterTarget();
             base.OnStopServer();
         }
 
@@ -45,12 +49,12 @@ namespace Lighthouse.Monsters.AI.Server
 
         protected virtual void OnDisable()
         {
-            RegisteredTargets.Remove(this);
+            UnregisterTarget();
         }
 
         protected virtual void OnDestroy()
         {
-            RegisteredTargets.Remove(this);
+            UnregisterTarget();
         }
 
         private void RegisterTarget()
@@ -58,6 +62,15 @@ namespace Lighthouse.Monsters.AI.Server
             if (isActiveAndEnabled && !RegisteredTargets.Contains(this))
             {
                 RegisteredTargets.Add(this);
+                TargetRegistered?.Invoke(this);
+            }
+        }
+
+        private void UnregisterTarget()
+        {
+            if (RegisteredTargets.Remove(this))
+            {
+                TargetUnregistered?.Invoke(this);
             }
         }
     }

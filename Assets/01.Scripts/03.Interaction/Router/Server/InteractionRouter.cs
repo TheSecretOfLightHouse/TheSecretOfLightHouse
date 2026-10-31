@@ -134,6 +134,11 @@ namespace Lighthouse.Interaction.Router.Server
         private static InteractionResultCode Execute(uint actorId, NetworkConnectionToClient sender, Vector3 senderPosition,
             in InteractionRequest request)
         {
+            // Replay is resolved before this point, so approved requests retain their original result.
+            if (Lighthouse.Common.Cinematics.ServerCinematicProtection.IsActive)
+            {
+                return InteractionResultCode.Rejected;
+            }
             InteractionResultCode code = TargetResolver.TryResolve(request, out ResolvedTarget target);
 
             if (code != InteractionResultCode.Success)

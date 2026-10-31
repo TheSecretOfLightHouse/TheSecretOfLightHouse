@@ -15,6 +15,8 @@ GameObject:
   - component: {fileID: 3790091501951660484}
   - component: {fileID: 4616271955834512637}
   - component: {fileID: 4510707530472674975}
+  - component: {fileID: 4919462879288260108}
+  - component: {fileID: 1317765025613706783}
   m_Layer: 0
   m_Name: MainIslandLighthouse
   m_TagString: Untagged
@@ -120,7 +122,6 @@ MonoBehaviour:
   syncInterval: 0
   _modules: {fileID: 0}
   _voting: {fileID: 0}
-  _lobbyReturnSeconds: 10
 --- !u!114 &4510707530472674975
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -136,3 +137,42 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+--- !u!114 &4919462879288260108
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7226236849870676376}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c7b639e9e140414da6839000f76504f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _settings: {fileID: 11400000, guid: 556732e820a224543b60dea7e8e5be52, type: 2}
+  _lighthouseModel: {fileID: 0}
+  _tentacleModel: {fileID: 0}
+  _voting: {fileID: 0}
+  _towerMatch: {fileID: 3790091501951660484}
+  _enableSpecialEnding: 0
+  _useSummonPresentation: 1
+--- !u!114 &1317765025613706783
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7226236849870676376}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 892b20f56a225604799711127448ac5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _settings: {fileID: 11400000, guid: 5ba88640860d6074191697befd0a64e1, type: 2}
+  _tentacleCount: 5

@@ -97,6 +97,10 @@ namespace Lighthouse.Interaction.Relay.Net
         [Client]
         public bool TryCancelSession()
         {
+            if (Lighthouse.Common.Cinematics.CinematicPresentationLock.IsLocked)
+            {
+                return false;
+            }
             if (!isOwned || !_session.IsActive)
             {
                 return false;
@@ -108,6 +112,10 @@ namespace Lighthouse.Interaction.Relay.Net
 
         private bool TrySend(InteractionRequest request)
         {
+            if (Lighthouse.Common.Cinematics.CinematicPresentationLock.IsLocked)
+            {
+                return false;
+            }
             if (!isOwned || _isAwaitingResult)
             {
                 return false;
@@ -129,6 +137,10 @@ namespace Lighthouse.Interaction.Relay.Net
         [Command]
         private void CmdCancelSession(uint sessionId)
         {
+            if (Lighthouse.Common.Cinematics.ServerCinematicProtection.IsActive)
+            {
+                return;
+            }
             InteractionSessions.TryCancel(_actor.ActorId, sessionId, InteractionSessionEndReason.CancelledByPlayer);
         }
 
