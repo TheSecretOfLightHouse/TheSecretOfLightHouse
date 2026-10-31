@@ -1,5 +1,6 @@
 using Mirror;
 using UnityEngine;
+using Lighthouse.Player.Gathering.Rules;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(ResourceDropSpawner))]
@@ -11,7 +12,11 @@ public sealed class HarvestDropSpawner : NetworkBehaviour
     [SerializeField]
     private HarvestTarget _testTarget;
 
+    [SerializeField, Min(0.1f)] private float _flightDuration = 0.65f;
+    [SerializeField, Min(0f)] private float _flightHeight = 0.85f;
+
     private ResourceDropSpawner _resourceDropSpawner;
+    private readonly HarvestLandingResolver _landingResolver = new HarvestLandingResolver();
 
     private void Awake()
     {
@@ -54,7 +59,8 @@ public sealed class HarvestDropSpawner : NetworkBehaviour
         int resourceId,
         int amount,
         GameObject pickupPrefab,
-        out ResourceDropHandle handle)
+        out ResourceDropHandle handle,
+        Vector3? actorPosition = null)
     {
         handle = default;
 
@@ -63,13 +69,22 @@ public sealed class HarvestDropSpawner : NetworkBehaviour
             return false;
         }
 
+        if (!_landingResolver.TryResolve(position, actorPosition ?? position + Vector3.forward,
+                pickupPrefab, out Vector3 start, out Vector3 landing))
+        {
+            return false;
+        }
+
         return _resourceDropSpawner.TrySpawnDrop(
-            position + _dropOffset,
+            start,
             resourceId,
             amount,
             true,
             pickupPrefab,
-            out handle);
+            out handle,
+            landing,
+            _flightDuration,
+            _flightHeight);
     }
 
     [Server]

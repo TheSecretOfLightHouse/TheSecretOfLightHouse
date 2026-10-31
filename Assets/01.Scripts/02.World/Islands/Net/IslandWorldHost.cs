@@ -18,7 +18,8 @@ namespace Lighthouse.World.Islands.Net
         [SerializeField] private IslandHarvestSession _harvestSession;
 
         private readonly List<IslandSpawnPlan> _plans = new List<IslandSpawnPlan>();
-        private readonly List<string> _errors = new List<string>();
+        private readonly List<IslandSpawnPlan> _pendingPlans = new List<IslandSpawnPlan>();
+        private readonly List<string> _pendingErrors = new List<string>();
         private readonly List<HarvestSpot> _spots = new List<HarvestSpot>();
         private MapGenerationConfig _config;
         private readonly List<List<SpotAssignment>> _assignments = new List<List<SpotAssignment>>();
@@ -74,8 +75,6 @@ namespace Lighthouse.World.Islands.Net
 
         public void Begin(MapGenerationConfig config, MapLayout layout, MapSeedInfo info)
         {
-            Cancel();
-
             if (!isActiveAndEnabled || _instances == null)
             {
                 throw new InvalidOperationException("Island builder is unavailable.");
@@ -86,27 +85,37 @@ namespace Lighthouse.World.Islands.Net
                 throw new ArgumentException("Map configuration, layout and seed are required.");
             }
 
-            PickupPrefabRegistrar.Register(config);
-
-            _errors.Clear();
-            if (!IslandSpawnPlanner.TryBuild(config, layout, _plans, _errors))
+            _pendingErrors.Clear();
+            if (!IslandSpawnPlanner.TryBuild(config, layout, _pendingPlans, _pendingErrors))
             {
-                throw new InvalidOperationException(string.Join("\n", _errors));
+                throw new InvalidOperationException(string.Join("\n", _pendingErrors));
             }
 
-            if (_plans.Count == 0)
+            if (_pendingPlans.Count == 0)
             {
                 throw new InvalidOperationException("Island spawn plan is empty.");
             }
 
+            for (int i = 0; i < _pendingPlans.Count; i++)
+            {
+                IslandRotationRules.GetRotation(_pendingPlans[i].Prefab, _pendingPlans[i].YawDegrees);
+                IslandRotationRules.ValidateParent(_pendingPlans[i].Prefab, _instances.transform);
+            }
+
+            if (NetworkServer.active && _harvestSession == null)
+            {
+                throw new InvalidOperationException(
+                    "IslandHarvestSession is required on the server.");
+            }
+
+            // Reject invalid input before releasing the current islands and walk boundary.
+            Cancel();
+            _plans.AddRange(_pendingPlans);
+            _pendingPlans.Clear();
+            PickupPrefabRegistrar.Register(config);
+
             if (NetworkServer.active)
             {
-                if (_harvestSession == null)
-                {
-                    throw new InvalidOperationException(
-                        "IslandHarvestSession is required on the server.");
-                }
-
                 _harvestSession.Begin();
             }
 
@@ -165,7 +174,6 @@ namespace Lighthouse.World.Islands.Net
             _totals.Clear();
             _hasBudget = false;
             _plans.Clear();
-            _errors.Clear();
             _spots.Clear();
 
             if (_instances != null)
