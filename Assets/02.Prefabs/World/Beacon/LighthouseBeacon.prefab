@@ -45,6 +45,7 @@ GameObject:
   - component: {fileID: 3113264412647285086}
   - component: {fileID: 7981207295955597568}
   - component: {fileID: 6179075418999937453}
+  - component: {fileID: 5638640931988105912}
   m_Layer: 0
   m_Name: LighthouseBeacon
   m_TagString: Untagged
@@ -119,6 +120,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _view: {fileID: 7981207295955597568}
+  _camera: {fileID: 0}
+--- !u!114 &5638640931988105912
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 353700771900467596}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9408e0af26475b41aea46c5905b70d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _distance: 34
+  _heightOffset: -7
+  _aimHeightOffset: -2
+  _screenX: 0.32
+  _blendSeconds: 1.8
 --- !u!1 &4611767681142405168
 GameObject:
   m_ObjectHideFlags: 0

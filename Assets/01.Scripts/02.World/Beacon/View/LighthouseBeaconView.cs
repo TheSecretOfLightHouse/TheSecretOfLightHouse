@@ -68,6 +68,12 @@ namespace Lighthouse.World.Beacon.View
             TurnOn(Now, isInstant);
         }
 
+        // The ignition starts delaySeconds from now, e.g. when the epilogue camera arrives.
+        public void TurnOnAfter(float delaySeconds, bool isInstant)
+        {
+            TurnOn(Now + Mathf.Max(0f, delaySeconds), isInstant);
+        }
+
         public void TurnOff()
         {
             _state = BeaconState.Off;

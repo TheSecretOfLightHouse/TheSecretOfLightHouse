@@ -13,6 +13,9 @@ namespace Lighthouse.World.Beacon.Net
     {
         [SerializeField] private LighthouseBeaconView _view;
 
+        [Tooltip("Optional. Left empty, the camera next to the view is used; with none the beam lights without a camera move.")]
+        [SerializeField] private BeaconEpilogueCamera _camera;
+
         private TowerMatchNet _match;
         private bool _hasLooked;
         private bool _isLit;
@@ -23,6 +26,20 @@ namespace Lighthouse.World.Beacon.Net
             {
                 Debug.LogError($"[{nameof(LighthouseBeaconMatchBinder)}] Beacon view is required.");
                 enabled = false;
+                return;
+            }
+
+            if (_camera == null)
+            {
+                _view.TryGetComponent(out _camera);
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_camera != null)
+            {
+                _camera.Release();
             }
         }
 
@@ -42,10 +59,20 @@ namespace Lighthouse.World.Beacon.Net
 
             if (isWin)
             {
-                _view.TurnOn(!_hasLooked);
+                bool isInstant = !_hasLooked;
+                // The camera is best effort: if something else drives it, the beam still lights.
+                float delay = _camera != null && _camera.TryFocus(_view.transform, isInstant) && !isInstant
+                    ? _camera.BlendSeconds
+                    : 0f;
+                _view.TurnOnAfter(delay, isInstant);
             }
             else
             {
+                if (_camera != null)
+                {
+                    _camera.Release();
+                }
+
                 _view.TurnOff();
             }
 
@@ -59,6 +86,11 @@ namespace Lighthouse.World.Beacon.Net
             _match = match;
             _hasLooked = false;
             _isLit = false;
+
+            if (_camera != null)
+            {
+                _camera.Release();
+            }
 
             if (_view != null)
             {
