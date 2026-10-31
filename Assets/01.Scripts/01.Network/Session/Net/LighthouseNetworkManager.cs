@@ -44,7 +44,7 @@ namespace Lighthouse.Network.Session.Net
         private int _startPlayerCount = MaxPlayers;
         [Tooltip("Test value. The match ends if everyone has not loaded the game scene in time.")]
         [SerializeField, Min(1f)]
-        private float _loadTimeoutSeconds = 60f;
+        private float _loadTimeoutSeconds = 300f;
         [Tooltip("Gives the end notice time to reach clients before the host shuts down.")]
         [SerializeField, Min(0f)]
         private float _shutdownDelaySeconds = 0.5f;

@@ -85,6 +85,8 @@ namespace Lighthouse.World.MapGeneration.Net
         {
             WorldServices.Unregister<MapStateNet>(this);
             RaiseLayoutReleased();
+            // Scene unload can disable this object before Mirror invokes its stop callbacks.
+            ReleaseWorldQueries();
         }
 
         public override void OnStartServer()

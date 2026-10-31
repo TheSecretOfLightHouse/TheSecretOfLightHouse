@@ -30,6 +30,11 @@ namespace Lighthouse.World.Query.Rules
 
         public float SampleWaterHeight(Vector3 worldPos)
         {
+            if (F3WaveField.IsActive)
+            {
+                return F3WaveField.HeightAt(_waves.Waves, _waves.Modifiers,
+                    worldPos.x, worldPos.z, (float)_clock.Now);
+            }
             return WaveModel.HeightAt(
                 _waves.Waves, _waves.Modifiers, CoastWaveRegistry.Bounds, CoastWaveRegistry.Edges, CoastWaveRegistry.Profiles,
                 worldPos.x, worldPos.z, (float)_clock.Now);
@@ -46,6 +51,12 @@ namespace Lighthouse.World.Query.Rules
             for (int i = 0; i < points.Length; i++)
             {
                 Vector3 position = points[i];
+                if (F3WaveField.IsActive)
+                {
+                    heights[i] = F3WaveField.HeightAt(_waves.Waves, _waves.Modifiers,
+                        position.x, position.z, time);
+                    continue;
+                }
                 heights[i] = WaveModel.HeightAt(
                     _waves.Waves, _waves.Modifiers, CoastWaveRegistry.Bounds, CoastWaveRegistry.Edges, CoastWaveRegistry.Profiles,
                     position.x, position.z, time);

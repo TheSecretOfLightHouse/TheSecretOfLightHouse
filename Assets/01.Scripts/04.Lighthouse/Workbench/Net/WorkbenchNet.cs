@@ -64,6 +64,9 @@ namespace Lighthouse.Workbench.Net
         // Raised on every machine with the recipe id when a module finishes, for effects. The stock count alone cannot
         // tell a finish from a module put back. Who crafted it is not sent.
         public event Action<int> RecipeCompleted;
+        // Raised only on the crafter's machine with the recipe id. Who crafted stays private (2026-10-31), so the
+        // finish notice is the crafter's alone.
+        public event Action<int> OwnRecipeCompleted;
 
         private void Awake()
         {
@@ -420,6 +423,12 @@ namespace Lighthouse.Workbench.Net
 
             ModuleCompleted?.Invoke(actorId, recipeId, moduleId);
             RpcRecipeCompleted(recipeId);
+            LighthouseNetworkManager manager = LighthouseNetworkManager.Instance;
+
+            if (manager && manager.Connections.TryGetConnection(actorId, out NetworkConnectionToClient connection))
+            {
+                TargetOwnRecipeCompleted(connection, recipeId);
+            }
         }
 
         [Server]
@@ -504,6 +513,12 @@ namespace Lighthouse.Workbench.Net
         private void RpcRecipeCompleted(int recipeId)
         {
             RecipeCompleted?.Invoke(recipeId);
+        }
+
+        [TargetRpc]
+        private void TargetOwnRecipeCompleted(NetworkConnectionToClient target, int recipeId)
+        {
+            OwnRecipeCompleted?.Invoke(recipeId);
         }
     }
 }

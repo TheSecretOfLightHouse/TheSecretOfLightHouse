@@ -204,6 +204,11 @@ namespace Lighthouse.Tower.View
                 root.GetComponentsInChildren(true, _behaviours);
                 foreach (Behaviour behaviour in _behaviours)
                 {
+                    // A component whose script is missing comes back null, e.g. a dev-only script left out of a release build.
+                    if (behaviour == null)
+                    {
+                        continue;
+                    }
                     if (_rig != null && behaviour.transform.IsChildOf(_rig.transform))
                     {
                         continue;

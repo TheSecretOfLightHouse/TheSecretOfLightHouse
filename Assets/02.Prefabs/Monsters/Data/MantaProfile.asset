@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 891ecf4f5acdfa44189c037d0ef4791b, type: 3}
   m_Name: MantaProfile
   m_EditorClassIdentifier: 
-  _maxHealth: 1
+  _maxHealth: 20
   _patrolSpeed: 3
   _chaseSpeed: 6
   _detectionRadius: 35
   _maxChaseDistance: 40
-  _attackDamage: 20
+  _attackDamage: 5
   _attackCooldown: 2

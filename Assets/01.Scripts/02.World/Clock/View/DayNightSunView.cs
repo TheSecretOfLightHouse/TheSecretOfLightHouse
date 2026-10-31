@@ -1,11 +1,13 @@
 using System;
 using Lighthouse.World.Clock.Rules;
 using Lighthouse.World.Query.Rules;
+using Lighthouse.World.Environment.View;
 using UnityEngine;
 
 namespace Lighthouse.World.Clock.View
 {
     [DisallowMultipleComponent]
+    [DefaultExecutionOrder(1200)]
     public sealed class DayNightSunView : MonoBehaviour
     {
         private const float HalfRotation = 180f;
@@ -14,12 +16,15 @@ namespace Lighthouse.World.Clock.View
         [SerializeField] private GameClock _gameClock;
         [SerializeField] private Light _sun;
         [SerializeField] private DayNightSunConfig _config;
+        [SerializeField] private EnvironmentSkyView _environment;
+        [SerializeField, Min(0f)] private float _maxFlashIntensity = 2f;
 
         private IClock _clock;
         private Quaternion _initialRotation;
         private float _initialIntensity;
         private bool _hasInitialState;
         private float _initialSkyNightBlend;
+        private float _flashIntensity;
 
         private void OnEnable()
         {
@@ -88,19 +93,29 @@ namespace Lighthouse.World.Clock.View
                 0f, 1f, Mathf.InverseLerp(-twilightElevation, twilightElevation, elevation));
 
             _sun.transform.rotation = Quaternion.Euler(angle, _config.Azimuth, 0f);
+            float weatherScale = _environment != null && _environment.HasState
+                ? _environment.WeatherLightScale : 1f;
             _sun.intensity = Mathf.Lerp(
-                _config.NightIntensity, _config.DayIntensity, daylight);
+                _config.NightIntensity, _config.DayIntensity, daylight) * weatherScale +
+                Mathf.Clamp(_flashIntensity, 0f, _maxFlashIntensity);
             Shader.SetGlobalFloat(SkyNightBlendId, 1f - skyDaylight);
         }
 
         private void OnDisable()
         {
+            _flashIntensity = 0f;
             Shader.SetGlobalFloat(SkyNightBlendId, _initialSkyNightBlend);
             if (_sun != null && _hasInitialState)
             {
                 _sun.transform.rotation = _initialRotation;
                 _sun.intensity = _initialIntensity;
             }
+        }
+
+        public void SetWeatherFlash(float intensity)
+        {
+            _flashIntensity = float.IsNaN(intensity) || float.IsInfinity(intensity)
+                ? 0f : Mathf.Clamp(intensity, 0f, _maxFlashIntensity);
         }
     }
 }

@@ -29,6 +29,7 @@ namespace Lighthouse.World.Weather
 
             _field = new WindField(_source, _forceCoefficient);
             _registry.Register(_field, false);
+            WorldServices.Register<IWindSource>(_source);
         }
 
         private void OnDisable()
@@ -38,6 +39,7 @@ namespace Lighthouse.World.Weather
                 return;
             }
 
+            WorldServices.Unregister<IWindSource>(_source);
             _service.RemoveListener(_source);
             _registry.Unregister(_field);
             _source = null;

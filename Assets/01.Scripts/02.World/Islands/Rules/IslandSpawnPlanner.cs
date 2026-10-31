@@ -52,6 +52,12 @@ namespace Lighthouse.World.Islands.Rules
                 return false;
             }
 
+            if (!IslandRotationRules.IsValidYaw(prefab, placement.YawDegrees))
+            {
+                errors.Add($"섬 {placement.Index}: 유효하지 않은 yaw (Terrain은 0 필요)");
+                return false;
+            }
+
             return true;
         }
     }

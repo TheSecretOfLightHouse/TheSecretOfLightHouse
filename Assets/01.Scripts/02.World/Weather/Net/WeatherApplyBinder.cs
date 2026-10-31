@@ -22,7 +22,9 @@ namespace Lighthouse.World.Weather.Net
 
         public void Submit(WeatherTransitionInfo info)
         {
-            if (!info.IsSet || info.Equals(_applied))
+            if (!info.IsSet || info.Generation != 0 &&
+                (info.Generation <= _applied.Generation || _hasPending && info.Generation <= _pending.Generation) ||
+                info.Generation == 0 && info.Equals(_applied))
             {
                 return;
             }
@@ -53,7 +55,9 @@ namespace Lighthouse.World.Weather.Net
             _hasPending = false;
             _applied = _pending;
 
-            bool isApplied = system.Apply(_applied.From, _applied.To, _applied.StartTime, _applied.Duration);
+            bool isApplied = _applied.HasOrigin
+                ? system.Apply(in _applied)
+                : system.Apply(_applied.From, _applied.To, _applied.StartTime, _applied.Duration);
             TransitionApplied?.Invoke(_applied, isApplied);
         }
 

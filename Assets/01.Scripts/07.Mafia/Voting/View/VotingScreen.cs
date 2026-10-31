@@ -7,6 +7,7 @@ using Lighthouse.Network.Session.Net;
 using Lighthouse.Network.Session.Rules;
 using Lighthouse.Network.Session.View;
 using Lighthouse.Player.Abilities.Net;
+using Lighthouse.UI.Hud;
 using Mirror;
 using TMPro;
 using UnityEngine;
@@ -320,7 +321,8 @@ namespace Lighthouse.Mafia.Voting.View
 
             if (!_isOpen)
             {
-                if (keyboard[_openKey].wasPressedThisFrame)
+                // A folded HUD (HudReveal) keeps the key from opening the screen.
+                if (keyboard[_openKey].wasPressedThisFrame && HudReveal.AllowsShortcuts)
                 {
                     Open();
                 }
