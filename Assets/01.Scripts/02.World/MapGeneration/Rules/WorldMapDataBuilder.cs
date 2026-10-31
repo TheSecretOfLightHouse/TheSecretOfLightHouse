@@ -40,6 +40,13 @@ namespace Lighthouse.World.MapGeneration.Rules
             {
                 IslandPlacement placement = layout.Islands[i];
                 bool hasArchetype = config.TryGetArchetype(placement.ArchetypeId, out IslandArchetype archetype);
+                if (!hasArchetype || placement.VariantIndex >= archetype.Variants.Count
+                    || archetype.Variants[placement.VariantIndex] == null
+                    || !IslandRotationRules.IsValidYaw(archetype.Variants[placement.VariantIndex].Prefab, placement.YawDegrees))
+                {
+                    return false;
+                }
+
                 bool isLighthouse = config.LighthouseIsland != null
                     && config.LighthouseIsland.Id == placement.ArchetypeId;
 
