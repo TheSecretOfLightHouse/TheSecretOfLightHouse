@@ -1008,15 +1008,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _player: {fileID: 0}
   _probeDistance: 20
-  _reach: 3
+  _reach: 1
   _probeMask:
     serializedVersion: 2
     m_Bits: 4294967295
   _relay: {fileID: 0}
   _actionEvents: {fileID: 4551537670135925495}
   _impactPrefab: {fileID: 3384508783347067857, guid: 2744e3c6e54425945bf57279dc1c9766, type: 3}
-  _impactScale: 0.35
+  _treeImpactPrefab: {fileID: 7265441576466223459, guid: fa2f0a0a7d0f6ea42ba498583aa40e2e, type: 3}
+  _sandImpactPrefab: {fileID: 5839498082368057545, guid: f95668862f3677d40aea8ba30a08bbdc, type: 3}
+  _crystalImpactPrefab: {fileID: 2437349483837635550, guid: 95a7fea8f640dee468ce1051e25f365b, type: 3}
+  _oreImpactPrefab: {fileID: 8915639706122736994, guid: 7017a4dc4f04ed541a035cdd17df7c8d, type: 3}
+  _rockHitClip: {fileID: 8300000, guid: 380fdc492c54cd04da995cc90b63522a, type: 3}
+  _treeHitClip: {fileID: 8300000, guid: bb93ac6253443d14fb91505c0e53b4ae, type: 3}
+  _sandHitClip: {fileID: 8300000, guid: 27c50b3803257e34598012da7ca0894e, type: 3}
+  _crystalHitClip: {fileID: 8300000, guid: 097e746250bf88a45a9a107fe53433d5, type: 3}
+  _oreHitClip: {fileID: 8300000, guid: f38778290eb1ec54ab28f683fb38b8a2, type: 3}
+  _hitVolume: 0.65
+  _impactScale: 0.65
   _impactCleanupDelay: 3
+  _impactSurfaceOffset: 0.025
 --- !u!114 &6160787239745288586
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1033,6 +1044,18 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   _resourceCatalog: {fileID: 11400000, guid: 66c600a3b8a9d5140aa198f8483a1cb4, type: 2}
+  _pickupSounds:
+  - _resourceId: 1
+    _clip: {fileID: 8300000, guid: 0be8151b01af9c74dbba63a11cd16093, type: 3}
+  - _resourceId: 2
+    _clip: {fileID: 8300000, guid: 6630ef41cb883834ca29893554727606, type: 3}
+  - _resourceId: 4
+    _clip: {fileID: 8300000, guid: 80b027d78acc3ce459acc500191ce64e, type: 3}
+  - _resourceId: 5
+    _clip: {fileID: 8300000, guid: f9371d50552ee6c4c8b71c2f2a9e5bd3, type: 3}
+  - _resourceId: 6
+    _clip: {fileID: 8300000, guid: 30ff0817dac07cb40983c24418e6d961, type: 3}
+  _pickupVolume: 0.65
   _testResourceId: 0
   _testWreckModuleRecipeId: 101
 --- !u!114 &8732883557693441853
@@ -1211,6 +1234,15 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   _recoveryDuration: 90
+  _flareCooldown: 15
+  _flareLifetime: 8
+  _flareDirectionDuration: 5
+  _flareHeight: 7
+  _flareDescentSpeed: 0.4
+  _navigatorFlareColor: {r: 0.1, g: 0.4, b: 1, a: 1}
+  _mechanicFlareColor: {r: 1, g: 0.4, b: 0.05, a: 1}
+  _guardFlareColor: {r: 1, g: 0.12, b: 0.06, a: 1}
+  _gathererFlareColor: {r: 0.1, g: 1, b: 0.25, a: 1}
 --- !u!114 &4236460642741354347
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1325,6 +1357,8 @@ MonoBehaviour:
     _heaveBaselineSeconds: 4
     _maxSinkDepth: 0.27
     _minSinkDepth: 0.19
+    _targetStrength: 0
+    _targetMaxAcceleration: 40
   _pool: 1
   _divisions: {x: 2, y: 2, z: 2}
   _manualPoints:

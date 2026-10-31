@@ -20,6 +20,8 @@ public sealed class GatheringFever : NetworkBehaviour
         ? (float)(_endsAt - NetworkTime.time)
         : 0f;
 
+    public float Duration => _duration;
+
     private void Awake()
     {
         syncMode = SyncMode.Owner;

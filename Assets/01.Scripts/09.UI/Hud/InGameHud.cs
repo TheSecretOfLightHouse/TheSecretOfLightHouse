@@ -10,7 +10,7 @@ using UnityEngine.UI;
 namespace Lighthouse.UI.Hud
 {
     // Always-on HUD from the 2026-10-29 in-game HUD mockup: carried module card and role/boat panel bottom left, key
-    // hints top right (Esc exit, M, Tab, and Q ability only while aboard). The boat's durability follows the local player's own boat, aboard or not. The card shows the
+    // hints top right (Esc exit, M, Tab, and Q by job: gatherer on land, others aboard). The boat's durability follows the local player's own boat, aboard or not. The card shows the
     // module the local player carries, read from the shared workbench (WorkbenchNet.OwnCarriedRecipe; not every scene
     // binds PlayerInventory to it), and hides while none is; the workbench screen's own carry card
     // shows only while that screen is open. The role shows the local player's job, named by the ability request its job
@@ -72,7 +72,7 @@ namespace Lighthouse.UI.Hud
         private float _fillSpeed = 1.2f;
 
         [Header("Key hints")]
-        [Tooltip("Shown only while the local player is aboard a boat: the Q ability row (2026-10-31).")]
+        [Tooltip("Q ability row: gatherer on land, other jobs aboard a boat.")]
         [SerializeField]
         private GameObject[] _boatOnlyHints = new GameObject[0];
 
@@ -86,6 +86,7 @@ namespace Lighthouse.UI.Hud
         private bool _isShown;
         private NetworkIdentity _boundPlayer;
         private PlayerController _player;
+        private GatheringFeverAbility _gatheringAbility;
         private WorkbenchNet _workbench;
         private float _nextWorkbenchLookup;
         private int _shownRecipeId = -1;
@@ -128,12 +129,14 @@ namespace Lighthouse.UI.Hud
             {
                 _boundPlayer = localPlayer;
                 _player = localPlayer.GetComponent<PlayerController>();
+                _gatheringAbility = localPlayer.GetComponent<GatheringFeverAbility>();
                 _shownRecipeId = -1;
                 RefreshRole(localPlayer);
             }
 
             RefreshCard();
-            SetBoatHintShown(_player && _player.IsOnBoat);
+            SetBoatHintShown(_player && !_player.IsDowned
+                && (_gatheringAbility ? _gatheringAbility.IsOnLand : _player.IsOnBoat));
 
             // A wrecked boat is replaced by a recovery boat, so the owned boat is checked every frame.
             BoatController boat = _player ? _player.OwnedBoat : null;
@@ -248,7 +251,7 @@ namespace Lighthouse.UI.Hud
             }
         }
 
-        // The job abilities are used from a boat, so their key hint keeps its row but shows only aboard.
+        // Keep the serialized row references while choosing visibility by job.
         private void SetBoatHintShown(bool isShown)
         {
             if (isShown == _isBoatHintShown)

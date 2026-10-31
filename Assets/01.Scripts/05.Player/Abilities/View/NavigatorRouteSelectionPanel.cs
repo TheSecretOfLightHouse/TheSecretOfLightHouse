@@ -1,3 +1,4 @@
+using Lighthouse.Player.Abilities.View;
 using Lighthouse.Network.Session.View;
 using Mirror;
 using System.Collections.Generic;
@@ -31,6 +32,8 @@ public sealed class NavigatorRouteSelectionPanel : MonoBehaviour
     private readonly UnityAction[] _clickHandlers =
         new UnityAction[4];
 
+    private AbilityTargetPresentation _targetPresentation;
+    private UnityEngine.UI.Image[] _targetIcons;
     private Font _runtimeFont;
     private NetworkIdentity _boundPlayer;
     private NavigatorRouteAbility _ability;
@@ -44,6 +47,8 @@ public sealed class NavigatorRouteSelectionPanel : MonoBehaviour
 
     private void Awake()
     {
+        _targetPresentation = Resources.Load<AbilityTargetPresentation>("AbilityTargetPresentation");
+        _targetIcons = AbilityTargetPresentation.CreateIcons(_playerButtons, _playerNames);
         if (_panelRoot)
         {
             // OS fonts must be created separately in each process.
@@ -276,6 +281,11 @@ public sealed class NavigatorRouteSelectionPanel : MonoBehaviour
 
             _targets[i] = player;
 
+            if (_targetPresentation && _targetIcons != null && i < _targetIcons.Length)
+            {
+                _targetPresentation.BindIcon(_targetIcons[i], player);
+            }
+
             if (_playerButtons != null
                 && i < _playerButtons.Length
                 && _playerButtons[i])
@@ -302,9 +312,7 @@ public sealed class NavigatorRouteSelectionPanel : MonoBehaviour
                 continue;
             }
 
-            string name = player.isLocalPlayer
-                ? $"선원 {player.ActorID} (나)"
-                : $"선원 {player.ActorID}";
+            string name = AbilityTargetPresentation.GetJobName(player);
 
             _playerNames[i].text = CanSelectTarget(player)
                 ? $"{name} · 구조 대기"

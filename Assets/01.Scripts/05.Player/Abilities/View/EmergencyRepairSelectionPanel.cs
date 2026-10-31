@@ -1,3 +1,4 @@
+using Lighthouse.Player.Abilities.View;
 using System;
 using System.Collections.Generic;
 using Lighthouse.Network.Session.View;
@@ -29,6 +30,8 @@ public sealed class EmergencyRepairSelectionPanel : MonoBehaviour
         new List<PlayerController>(4);
     private readonly UnityAction[] _clickHandlers = new UnityAction[4];
 
+    private AbilityTargetPresentation _targetPresentation;
+    private UnityEngine.UI.Image[] _targetIcons;
     private Font _runtimeFont;
     private EmergencyRepairAbility _boundAbility;
     private NetworkIdentity _boundPlayer;
@@ -43,6 +46,8 @@ public sealed class EmergencyRepairSelectionPanel : MonoBehaviour
 
     private void Awake()
     {
+        _targetPresentation = Resources.Load<AbilityTargetPresentation>("AbilityTargetPresentation");
+        _targetIcons = AbilityTargetPresentation.CreateIcons(_playerButtons, _playerNames);
         if (_panelRoot)
         {
             // Dynamic OS fonts must be created in each process.
@@ -274,6 +279,11 @@ public sealed class EmergencyRepairSelectionPanel : MonoBehaviour
 
             _targets[i] = player;
 
+            if (_targetPresentation && _targetIcons != null && i < _targetIcons.Length)
+            {
+                _targetPresentation.BindIcon(_targetIcons[i], player);
+            }
+
             if (_playerButtons == null
                 || i >= _playerButtons.Length
                 || !_playerButtons[i])
@@ -297,9 +307,7 @@ public sealed class EmergencyRepairSelectionPanel : MonoBehaviour
                 continue;
             }
 
-            _playerNames[i].text = player.isLocalPlayer
-                ? $"선원 {player.ActorID} (나)"
-                : $"선원 {player.ActorID}";
+            _playerNames[i].text = AbilityTargetPresentation.GetJobName(player);
 
             BoatController boat = player.OwnedBoat;
 
