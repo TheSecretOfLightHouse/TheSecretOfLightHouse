@@ -9,6 +9,7 @@ using Lighthouse.Network.Session.View;
 using Lighthouse.World.Islands.Rules;
 using Lighthouse.World.MapGeneration.Net;
 using Lighthouse.World.Query.Rules;
+using Lighthouse.Player.Control.View;
 
 [RequireComponent(typeof(PlayerInputReader), typeof(PlayerMotor), typeof(PlayerAbilityRunner))]
 public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
@@ -85,6 +86,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     private bool _hasSavedCursor;
     private CursorLockMode _savedCursorLockMode;
     private bool _savedCursorVisible;
+    private readonly PlayerCursorAppearance _cursorAppearance = new PlayerCursorAppearance();
 
     private PlayerPassiveController _passiveController;
 
@@ -143,6 +145,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
     }
 
     public event Action<PlayerController> InteractionRequested;
+    public event Action WreckFlareRequested;
+    public event Action RescueInteractionRequested;
     public event Action<PlayerController> HarvestRequested;
     public event Action<PlayerController> AbilityRequested;
     public event Action<BoatController> Boarded;
@@ -366,6 +370,11 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void LateUpdate()
     {
+        if (_hasSavedCursor)
+        {
+            _cursorAppearance.Refresh();
+        }
+
         if (!IsOnBoat)
         {
             return;
@@ -454,7 +463,8 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         }
 
         Cursor.lockState = CursorLockMode.Confined;
-        Cursor.visible = false;
+        Cursor.visible = true;
+        _cursorAppearance.Refresh();
     }
 
     private void RestoreCursor()
@@ -465,6 +475,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         }
 
         _hasSavedCursor = false;
+        _cursorAppearance.Release();
         Cursor.lockState = _savedCursorLockMode;
         Cursor.visible = _savedCursorVisible;
     }
@@ -756,6 +767,7 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
         if (value)
         {
+            _inputReader.RequireInteractRelease();
             _abilityRunner.Cancel();
             ClearActionRequests();
 
@@ -805,9 +817,27 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
         _fireRequested = false;
         _abilityRequested = false;
 
-        if (IsDowned || _isRescuePromptOpen || SessionScreen.IsGameplayOverlayOpen
+        if (SessionScreen.IsGameplayOverlayOpen
             || Time.frameCount <= _rescuePromptClosedFrame)
         {
+            return;
+        }
+
+        if (IsDowned)
+        {
+            if (interactRequested && !_isRescuePromptOpen)
+            {
+                WreckFlareRequested?.Invoke();
+            }
+            return;
+        }
+
+        if (_isRescuePromptOpen)
+        {
+            if (interactRequested)
+            {
+                RescueInteractionRequested?.Invoke();
+            }
             return;
         }
 
@@ -864,7 +894,10 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
 
     private void HandleInteractRequested()
     {
-        _interactRequested = true;
+        if (CanProcessLocalInput && !SessionScreen.IsGameplayOverlayOpen)
+        {
+            _interactRequested = true;
+        }
     }
 
     private void HandleHarvestRequested()

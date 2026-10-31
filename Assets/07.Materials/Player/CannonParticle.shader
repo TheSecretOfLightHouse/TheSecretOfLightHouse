@@ -2,7 +2,8 @@ Shader "Lighthouse/Player/CannonParticle"
 {
     Properties
     {
-        [Enum(Smoke,0,Flash,1)] _EffectType("Effect Type", Float) = 0
+        [Enum(Smoke,0,Flash,1,MeshSmoke,2)] _EffectType("Effect Type", Float) = 0
+        [Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull", Float) = 0
     }
     SubShader
     {
@@ -11,7 +12,7 @@ Shader "Lighthouse/Player/CannonParticle"
         {
             Blend One OneMinusSrcAlpha
             ZWrite Off
-            Cull Off
+            Cull [_Cull]
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Frag
@@ -26,6 +27,7 @@ Shader "Lighthouse/Player/CannonParticle"
                 float4 positionOS : POSITION;
                 float4 color : COLOR;
                 float2 uv : TEXCOORD0;
+                float3 normalOS : NORMAL;
             };
 
             struct Varyings
@@ -33,6 +35,8 @@ Shader "Lighthouse/Player/CannonParticle"
                 float4 positionCS : SV_POSITION;
                 float4 color : COLOR;
                 float2 uv : TEXCOORD0;
+                float3 positionWS : TEXCOORD1;
+                float3 normalWS : TEXCOORD2;
             };
 
             Varyings Vert(Attributes input)
@@ -41,6 +45,16 @@ Shader "Lighthouse/Player/CannonParticle"
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
                 output.color = input.color;
                 output.uv = input.uv;
+                output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                if (_EffectType > 1.5)
+                {
+                    float3 samplePosition = output.positionWS * 9.0;
+                    float distortion = sin(samplePosition.x + sin(samplePosition.z))
+                        * sin(samplePosition.y * 0.8 + samplePosition.z) * 0.09;
+                    output.positionWS += output.normalWS * distortion;
+                    output.positionCS = TransformWorldToHClip(output.positionWS);
+                }
                 return output;
             }
 
@@ -69,7 +83,20 @@ Shader "Lighthouse/Player/CannonParticle"
                 float2 p = input.uv * 2.0 - 1.0;
                 float alpha;
                 float3 color;
-                if (_EffectType > 0.5)
+                if (_EffectType > 1.5)
+                {
+                    float3 smokePosition = input.positionWS * 3.0;
+                    float drift = _Time.y * 0.25;
+                    float density = (Cloud(smokePosition.xy + drift) + Cloud(smokePosition.yz - drift)
+                        + Cloud(smokePosition.zx + drift * 0.7)) / 3.0;
+                    float3 normal = normalize(input.normalWS);
+                    float3 view = normalize(GetWorldSpaceViewDir(input.positionWS));
+                    float edge = pow(saturate(abs(dot(normal, view))), 1.6);
+                    alpha = edge * smoothstep(0.2, 0.75, density) * 0.7;
+                    float light = saturate(dot(normal, normalize(float3(-0.4, 0.8, 0.3))));
+                    color = (0.48 + density * 0.35 + light * 0.3).xxx;
+                }
+                else if (_EffectType > 0.5)
                 {
                     float2 stretched = p * float2(0.82, 1.25);
                     float radius = length(stretched);

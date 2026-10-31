@@ -128,6 +128,7 @@ namespace Lighthouse.Player.Recovery.View
                     {
                         _boundPlayer = player;
                         _controller = controller;
+                        _controller.RescueInteractionRequested += HandleRescueClicked;
                         _prompt = prompt;
                         _relay = relay;
                         _prompt.TargetChanged += HandleTargetChanged;
@@ -143,6 +144,10 @@ namespace Lighthouse.Player.Recovery.View
         private void UnbindPlayer()
         {
             SetVisible(false);
+            if (_controller)
+            {
+                _controller.RescueInteractionRequested -= HandleRescueClicked;
+            }
 
             if (_prompt)
             {
@@ -164,7 +169,7 @@ namespace Lighthouse.Player.Recovery.View
 
         private void HandleTargetChanged(PlayerWreckRecovery target)
         {
-            _promptText.text = "난파된 동료를 구조할까요?";
+            _promptText.text = "[E] 난파된 동료를 구조할까요?";
             SetVisible(target);
         }
 

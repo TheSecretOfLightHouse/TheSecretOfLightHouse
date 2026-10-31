@@ -1,4 +1,5 @@
 using Mirror;
+using Lighthouse.Monsters.AI.Net;
 using Lighthouse.World.Query.Rules;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -23,6 +24,7 @@ namespace Lighthouse.Player.Boat.View
         private BoatController _boat;
         private Rigidbody _body;
         private Collider _hull;
+        private BoatCannonFeedback _feedback;
         private float _nextLocalTime;
         private double _nextServerTime;
 
@@ -31,6 +33,7 @@ namespace Lighthouse.Player.Boat.View
             _boat = GetComponent<BoatController>();
             _body = GetComponent<Rigidbody>();
             _hull = GetComponent<Collider>();
+            _feedback = GetComponent<BoatCannonFeedback>();
         }
 
         private void OnCollisionEnter(Collision collision)
@@ -96,16 +99,17 @@ namespace Lighthouse.Player.Boat.View
                 normal = towardBoat.normalized;
             }
             float strength = Mathf.InverseLerp(_minimumSpeed, _fullStrengthSpeed, speed);
-            PlaySplash(position, normal, strength);
+            bool rockHull = other.GetComponentInParent<MonsterBase>();
+            PlaySplash(position, normal, strength, rockHull);
             if (NetworkClient.active && isClient && isOwned)
             {
-                CmdReportSplash(position, normal, strength);
+                CmdReportSplash(position, normal, strength, rockHull);
             }
             return true;
         }
 
         [Command]
-        private void CmdReportSplash(Vector3 position, Vector3 normal, float strength,
+        private void CmdReportSplash(Vector3 position, Vector3 normal, float strength, bool rockHull,
             NetworkConnectionToClient sender = null)
         {
             if (!CanRelaySplash(position, normal, strength, sender))
@@ -115,7 +119,7 @@ namespace Lighthouse.Player.Boat.View
 
             _nextServerTime = NetworkTime.time + _cooldown;
             RpcPlaySplash(position, Vector3.ProjectOnPlane(normal, Vector3.up).normalized,
-                Mathf.Clamp01(strength));
+                Mathf.Clamp01(strength), rockHull);
         }
 
         private bool CanRelaySplash(Vector3 position, Vector3 normal, float strength,
@@ -138,13 +142,17 @@ namespace Lighthouse.Player.Boat.View
         }
 
         [ClientRpc(includeOwner = false)]
-        private void RpcPlaySplash(Vector3 position, Vector3 normal, float strength)
+        private void RpcPlaySplash(Vector3 position, Vector3 normal, float strength, bool rockHull)
         {
-            PlaySplash(position, normal, strength);
+            PlaySplash(position, normal, strength, rockHull);
         }
 
-        private void PlaySplash(Vector3 position, Vector3 normal, float strength)
+        private void PlaySplash(Vector3 position, Vector3 normal, float strength, bool rockHull)
         {
+            if (rockHull && _feedback)
+            {
+                _feedback.PlayCollisionRock(normal, strength);
+            }
             if (!_effectPrefab)
             {
                 return;

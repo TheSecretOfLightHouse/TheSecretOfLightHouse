@@ -14,6 +14,12 @@ public enum PlayerAnimationAction
 public class PlayerActionEvents : MonoBehaviour
 {
     public event Action<PlayerAnimationAction> Performed;
+    public event Action HarvestImpact;
+
+    public void PublishHarvestImpact()
+    {
+        HarvestImpact?.Invoke();
+    }
 
     public void Publish(PlayerAnimationAction action)
     {
