@@ -1185,9 +1185,13 @@ MonoBehaviour:
   _lightning: {fileID: 114770902}
   _fogLayerHeight: 12
   _fogCloudSize: 22
-  _volumeExtinction: 0.65
+  _volumeExtinction: 0.04
   _fogColor: {r: 0.82, g: 0.85, b: 0.85, a: 1}
+  _nightFogColor: {r: 0.34, g: 0.4, b: 0.52, a: 1}
   _abyssFogColor: {r: 0.035, g: 0.085, b: 0.065, a: 1}
+  _fogLightFloor: 0.65
+  _densityScale: 0.2
+  _cloudAlpha: 0.12
   _density:
     serializedVersion: 2
     m_Curve:
@@ -1264,11 +1268,15 @@ MonoBehaviour:
   _events: {fileID: 298522319}
   _sun: {fileID: 1552991791}
   _material: {fileID: 2100000, guid: 9670e16a7f644e34d90b6f849bad174f, type: 2}
+  _boltMaterial: {fileID: 2100000, guid: 06a99253e7b97dd4dbab32b969857793, type: 2}
   _thunderClip: {fileID: 0}
   _flashSeconds: 0.28
   _flashIntensity: 0.65
   _thunderRange: 500
   _thunderVolume: 0.5
+  _boltHeight: 220
+  _boltWidth: 3
+  _boltDistanceScale: 2.2
 --- !u!114 &114770903
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3738,6 +3746,7 @@ MonoBehaviour:
   _lightning: {fileID: 114770902}
   _events: {fileID: 298522319}
   _transitionSeconds: 10
+  _victoryCalmSeconds: 7
 --- !u!1 &321940266
 GameObject:
   m_ObjectHideFlags: 0
