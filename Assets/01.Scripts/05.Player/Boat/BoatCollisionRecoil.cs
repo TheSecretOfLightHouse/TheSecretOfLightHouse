@@ -1,4 +1,5 @@
 using Mirror;
+using Lighthouse.Monsters.AI.Net;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,11 +16,13 @@ public sealed class BoatCollisionRecoil : MonoBehaviour
 
     private BoatController _boat;
     private Rigidbody _rb;
+    private StabilizerModule _stabilizer;
 
     private void Awake()
     {
         _boat = GetComponent<BoatController>();
         _rb = GetComponent<Rigidbody>();
+        _stabilizer = GetComponent<StabilizerModule>();
     }
 
     private void OnDisable()
@@ -33,6 +36,9 @@ public sealed class BoatCollisionRecoil : MonoBehaviour
         {
             return;
         }
+
+        float pushMultiplier = GetPushMultiplier(collision.collider);
+        ReduceContactPush(collision, pushMultiplier);
 
         BoatCollisionRecoilSource source = collision.collider.GetComponentInParent<BoatCollisionRecoilSource>();
 
@@ -57,7 +63,7 @@ public sealed class BoatCollisionRecoil : MonoBehaviour
         direction.Normalize();
         _nextRecoilTimes[source] = Time.time + source.Cooldown;
 
-        ApplyRecoil(direction, source.RecoilSpeed);
+        ApplyRecoil(direction, source.RecoilSpeed, pushMultiplier);
 
         PlayerController owner = _boat.Owner;
         if (_boat.IsOccupied && owner && owner.CurrentBoat == _boat && !owner.IsDowned
@@ -65,6 +71,40 @@ public sealed class BoatCollisionRecoil : MonoBehaviour
         {
             actionEvents.Publish(PlayerAnimationAction.Stumble);
         }
+    }
+
+    private void OnCollisionStay(Collision collision)
+    {
+        if (CanApplyRecoil() && collision.contactCount > 0)
+        {
+            ReduceContactPush(collision, GetPushMultiplier(collision.collider));
+        }
+    }
+
+    private float GetPushMultiplier(Collider other)
+    {
+        return _stabilizer && other.GetComponentInParent<MonsterBase>()
+            ? _stabilizer.CollisionPushMultiplier : 1f;
+    }
+
+    private void ReduceContactPush(Collision collision, float multiplier)
+    {
+        if (multiplier >= 1f)
+        {
+            return;
+        }
+
+        Vector3 direction = Vector3.ProjectOnPlane(collision.GetContact(0).normal, Vector3.up);
+        if (direction.sqrMagnitude < DirectionEpsilon)
+        {
+            return;
+        }
+
+        direction.Normalize();
+        // Cancel only the outward velocity added by this contact, preserving propulsion and buoyancy.
+        // Unity flips contact normals for the recipient, but keeps the pair impulse unchanged.
+        float outwardImpulse = Mathf.Abs(Vector3.Dot(collision.impulse, direction));
+        _rb.linearVelocity -= direction * (outwardImpulse / _rb.mass * (1f - multiplier));
     }
 
     private bool CanApplyRecoil()
@@ -79,7 +119,7 @@ public sealed class BoatCollisionRecoil : MonoBehaviour
         return !isNetworkActive || (_boat.isClient && _boat.isOwned);
     }
 
-    private void ApplyRecoil(Vector3 direction, float speed)
+    private void ApplyRecoil(Vector3 direction, float speed, float pushMultiplier)
     {
         Vector3 velocity = _rb.linearVelocity;
         float inwardSpeed = Vector3.Dot(velocity, direction);
@@ -89,7 +129,7 @@ public sealed class BoatCollisionRecoil : MonoBehaviour
             _rb.linearVelocity = velocity - direction * inwardSpeed;
         }
 
-        _rb.AddForce(direction * speed, ForceMode.VelocityChange);
-        _boat.PreserveCollisionRecoil(_propulsionPauseDuration);
+        _rb.AddForce(direction * (speed * pushMultiplier), ForceMode.VelocityChange);
+        _boat.PreserveCollisionRecoil(_propulsionPauseDuration * pushMultiplier);
     }
 }

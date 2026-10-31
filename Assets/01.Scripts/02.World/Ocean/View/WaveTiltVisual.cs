@@ -19,6 +19,8 @@ namespace Lighthouse.World.Ocean.View
         private WaterSamplerHost _host;
         private Quaternion _baseLocalRotation;
 
+        public float TiltMultiplier { get; set; } = 1f;
+
         private void Awake()
         {
             if (_model == null)
@@ -72,6 +74,7 @@ namespace Lighthouse.World.Ocean.View
                 Quaternion tilt = Quaternion.FromToRotation(Vector3.up, normal);
                 tilt = Quaternion.Slerp(Quaternion.identity, tilt, _tiltScale);
                 tilt = Quaternion.RotateTowards(Quaternion.identity, tilt, _maxTiltDegrees);
+                tilt = Quaternion.Slerp(Quaternion.identity, tilt, Mathf.Clamp01(TiltMultiplier));
 
                 target = Quaternion.Inverse(transform.rotation) * tilt * transform.rotation * _baseLocalRotation;
             }
