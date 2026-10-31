@@ -206,6 +206,14 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
         UnsubscribeActions();
     }
 
+    public void PlayHarvestImpact()
+    {
+        if (_actionEvents && _controller && !_controller.IsDowned && !_controller.IsOnBoat)
+        {
+            _actionEvents.PublishHarvestImpact();
+        }
+    }
+
     public void PlayFootstep(AnimationEvent animationEvent)
     {
         if (!CanPlaySound || !_animator || !_animator.runtimeAnimatorController
