@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Lighthouse.Workbench.Editor
 {
-    // Puts the craft effects (sparks, dust, a 3D sound source) on the workbench in the open scene (2026-10-27).
+    // Puts the craft effects (sparks, dust and SoundManager audio) on the workbench in the open scene (2026-10-27).
     // They sit on top of the bench's model, built from code so no particle asset is needed; the material is the URP
     // package's own particle material. Running it again rebuilds them in place. The shared Workbench prefab is left
     // alone until it is decided to carry them. Only the open scene changes, and nothing is saved.
@@ -52,26 +52,22 @@ namespace Lighthouse.Workbench.Editor
 
             ParticleSystem sparks = CreateSparks(root.transform, material);
             ParticleSystem dust = CreateDust(root.transform, material);
-            AudioSource audio = root.AddComponent<AudioSource>();
-            audio.playOnAwake = false;
-            audio.spatialBlend = 1f;
-            audio.rolloffMode = AudioRolloffMode.Linear;
-            audio.minDistance = 2f;
-            audio.maxDistance = VisibleDistance;
-
             WorkbenchCraftEffects effects = root.AddComponent<WorkbenchCraftEffects>();
             SerializedObject serialized = new SerializedObject(effects);
             serialized.FindProperty("_workbench").objectReferenceValue = bench;
             serialized.FindProperty("_sparks").objectReferenceValue = sparks;
             serialized.FindProperty("_dust").objectReferenceValue = dust;
-            serialized.FindProperty("_audio").objectReferenceValue = audio;
+            serialized.FindProperty("_soundManagerPrefab").objectReferenceValue = AssetDatabase.LoadAssetAtPath<Lighthouse.Systems.Audio.SoundManager>(
+                "Assets/02.Prefabs/Player/PlayerSoundManager.prefab");
+            serialized.FindProperty("_hammerClip").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>(
+                "Assets/08.Audio/Workbench/Pickaxe_Ring_A15.wav");
             serialized.FindProperty("_visibleDistance").floatValue = VisibleDistance;
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
             Undo.CollapseUndoOperations(group);
             EditorSceneManager.MarkSceneDirty(bench.gameObject.scene);
             Selection.activeObject = root;
-            Debug.Log($"[{nameof(WorkbenchCraftEffectsSetup)}] Craft effects added under {bench.name}. No hammer clip is set yet.");
+            Debug.Log($"[{nameof(WorkbenchCraftEffectsSetup)}] Craft effects added under {bench.name}.");
         }
 
         // Three quick bursts, like hammer blows, of short orange streaks thrown up and falling back.
