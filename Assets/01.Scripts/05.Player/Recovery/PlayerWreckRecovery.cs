@@ -10,6 +10,7 @@ using Lighthouse.Network.Session.Net;
 using Lighthouse.Network.Session.Rules;
 using Lighthouse.Network.Session.View;
 using Lighthouse.Player.Recovery.View;
+using Lighthouse.Player.Abilities.Net;
 using Lighthouse.Tower.Net;
 using Lighthouse.Tower.Rules;
 
@@ -27,8 +28,12 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
     [SerializeField, Min(0.1f)] private float _flareCooldown = 15f;
     [SerializeField, Min(0.1f)] private float _flareLifetime = 8f;
     [SerializeField, Min(0.1f)] private float _flareDirectionDuration = 5f;
-    [SerializeField, Min(1f)] private float _flareHeight = 25f;
-    [SerializeField, Min(0f)] private float _flareDescentSpeed = 1.2f;
+    [SerializeField, Min(1f)] private float _flareHeight = 7f;
+    [SerializeField, Min(0f)] private float _flareDescentSpeed = 0.4f;
+    [SerializeField] private Color _navigatorFlareColor = new Color(0.1f, 0.4f, 1f);
+    [SerializeField] private Color _mechanicFlareColor = new Color(1f, 0.4f, 0.05f);
+    [SerializeField] private Color _guardFlareColor = new Color(1f, 0.12f, 0.06f);
+    [SerializeField] private Color _gathererFlareColor = new Color(0.1f, 1f, 0.25f);
     [SyncVar] private double _nextFlareTime;
     [SyncVar] private bool _isFlareAvailable;
     private WreckFlareView _flareView;
@@ -194,6 +199,10 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
 
         _nextFlareTime = NetworkTime.time + Mathf.Max(0.1f, _flareCooldown);
         Vector3 origin = transform.position + Vector3.up;
+        Color signalColor = _player.TryGetComponent(out NavigatorRouteRequest _) ? _navigatorFlareColor
+            : _player.TryGetComponent(out EmergencyRepairRequest _) ? _mechanicFlareColor
+            : _player.TryGetComponent(out GuardShieldRequest _) ? _guardFlareColor
+            : _player.TryGetComponent(out GatheringFeverRequest _) ? _gathererFlareColor : Color.white;
         // Route through each recipient's own identity, independent of source visibility or distance.
         // Only the TargetRpc creates visuals, so the listen host also receives exactly one copy.
         foreach (NetworkConnectionToClient recipient in NetworkServer.connections.Values)
@@ -202,19 +211,20 @@ public sealed class PlayerWreckRecovery : NetworkBehaviour
                 && recipient.identity.TryGetComponent(out PlayerWreckRecovery recovery))
             {
                 recovery.TargetReceiveFlare(recipient, netId, origin, NetworkTime.time,
-                    _flareLifetime, _flareDirectionDuration, _flareHeight, _flareDescentSpeed);
+                    _flareLifetime, _flareDirectionDuration, _flareHeight, _flareDescentSpeed, signalColor);
             }
         }
     }
 
     [TargetRpc]
     private void TargetReceiveFlare(NetworkConnectionToClient recipient, uint sourceId,
-        Vector3 origin, double firedAt, float lifetime, float directionDuration, float height, float descentSpeed)
+        Vector3 origin, double firedAt, float lifetime, float directionDuration, float height, float descentSpeed,
+        Color signalColor)
     {
         if (_flareView && IsFlareMatchInProgress())
         {
             _flareView.ShowFlare(origin, firedAt, lifetime, directionDuration,
-                height, descentSpeed, sourceId != netId);
+                height, descentSpeed, sourceId != netId, signalColor);
         }
     }
 

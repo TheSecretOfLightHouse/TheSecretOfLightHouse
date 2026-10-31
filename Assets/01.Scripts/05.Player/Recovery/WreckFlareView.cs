@@ -8,14 +8,19 @@ namespace Lighthouse.Player.Recovery.View
     public sealed class WreckFlareView : MonoBehaviour
     {
         private const int SignalCapacity = 4;
-        private const float RiseDuration = 1.2f;
+        private const float RiseDuration = 0.8f;
         private const float EdgePadding = 70f;
-        private static readonly Color SignalColor = new Color(1f, 0.12f, 0.06f, 1f);
 
-        [SerializeField, Min(0.01f)] private float _coreSize = 0.2f;
-        [SerializeField, Min(0.1f)] private float _glowSize = 1.8f;
+        [SerializeField, Min(0.01f)] private float _coreSize = 0.9f;
+        [SerializeField, Min(0.1f)] private float _glowSize = 4.8f;
         [SerializeField, Min(0f)] private float _sparkRate = 24f;
-        [SerializeField, Min(0f)] private float _smokeRate = 8f;
+        [SerializeField, Min(0f)] private float _smokeRate = 18f;
+        [SerializeField, Min(1)] private int _burstCount = 24;
+        [SerializeField, Min(0f)] private float _burstSpeed = 2.5f;
+        [SerializeField, Min(0.1f)] private float _burstLifetime = 2f;
+        [SerializeField, Min(0.01f)] private float _burstSize = 0.42f;
+        [SerializeField, Min(0.01f)] private float _flashDuration = 0.25f;
+        [SerializeField, Min(1f)] private float _flashScale = 3f;
 
         private sealed class Signal
         {
@@ -23,6 +28,8 @@ namespace Lighthouse.Player.Recovery.View
             public Light Light;
             public ParticleSystem Glow;
             public ParticleSystem Core;
+            public ParticleSystem Burst;
+            public bool HasBurst;
             public UnityEngine.UI.Text Arrow;
             public Vector3 Origin;
             public double FiredAt;
@@ -76,13 +83,16 @@ namespace Lighthouse.Player.Recovery.View
                     ? signal.Height * Mathf.SmoothStep(0f, 1f, age / riseTime)
                     : Mathf.Max(0f, signal.Height - (age - riseTime) * signal.DescentSpeed);
                 signal.Effect.transform.position = signal.Origin + Vector3.up * altitude;
-                signal.Light.intensity = 5f * Mathf.Clamp01((signal.Lifetime - age) / 0.6f);
+                float burstAge = age - riseTime;
+                UpdateBurst(signal, burstAge);
+                float flash = burstAge >= 0f ? Mathf.Clamp01(1f - burstAge / _flashDuration) : 0f;
+                signal.Light.intensity = (5f + 10f * flash) * Mathf.Clamp01((signal.Lifetime - age) / 0.6f);
                 float fade = Mathf.Clamp01((signal.Lifetime - age) / 0.6f);
                 float flicker = 1f + 0.07f * Mathf.Sin(age * 37f) + 0.04f * Mathf.Sin(age * 61f);
                 ParticleSystem.MainModule glow = signal.Glow.main;
-                glow.startSize = _glowSize * flicker * fade;
+                glow.startSize = _glowSize * flicker * fade * Mathf.Lerp(1f, _flashScale, flash);
                 ParticleSystem.MainModule core = signal.Core.main;
-                core.startSize = _coreSize * flicker * fade;
+                core.startSize = _coreSize * flicker * fade * Mathf.Lerp(1f, _flashScale, flash);
                 bool showDirection = signal.HasDirection && age < signal.DirectionDuration && _camera;
                 signal.Arrow.gameObject.SetActive(showDirection);
                 if (showDirection)
@@ -152,7 +162,6 @@ namespace Lighthouse.Player.Recovery.View
             {
                 UnityEngine.UI.Text arrow = CreateLabel("RescueDirection", 48, new Vector2(64f, 64f));
                 arrow.text = "▲";
-                arrow.color = SignalColor;
                 arrow.gameObject.SetActive(false);
                 _signals[i] = new Signal { Arrow = arrow };
             }
@@ -160,7 +169,7 @@ namespace Lighthouse.Player.Recovery.View
         }
 
         public void ShowFlare(Vector3 origin, double firedAt, float lifetime, float directionDuration,
-            float height, float descentSpeed, bool hasDirection)
+            float height, float descentSpeed, bool hasDirection, Color signalColor)
         {
             if (NetworkTime.time - firedAt >= lifetime)
             {
@@ -187,21 +196,44 @@ namespace Lighthouse.Player.Recovery.View
             signal.Height = height;
             signal.DescentSpeed = descentSpeed;
             signal.HasDirection = hasDirection;
+            signal.HasBurst = false;
+            signalColor.a = 1f;
+            signal.Arrow.color = signalColor;
             signal.Effect = new GameObject("RescueFlare");
             signal.Effect.name = "RescueFlare";
             signal.Effect.transform.SetParent(transform, true);
             signal.Effect.transform.position = origin;
             signal.Effect.transform.localScale = Vector3.one;
-            signal.Glow = CreateParticles(signal.Effect.transform, "RedHalo", false,
-                new Color(1f, 0.055f, 0.015f, 0.26f), _glowSize, 0.16f, 18f, 0f);
+            signal.Glow = CreateParticles(signal.Effect.transform, "SignalHalo", false,
+                new Color(signalColor.r, signalColor.g, signalColor.b, 0.55f), _glowSize, 0.16f, 18f, 0f);
             signal.Core = CreateParticles(signal.Effect.transform, "HotCore", false,
-                new Color(1f, 0.88f, 0.52f, 1f), _coreSize, 0.12f, 24f, 0f);
+                Color.Lerp(signalColor, Color.white, 0.08f), _coreSize, 0.12f, 24f, 0f);
             ParticleSystem sparks = CreateParticles(signal.Effect.transform, "BurningSparks", true,
-                new Color(1f, 0.32f, 0.045f, 0.85f), 0.075f, 0.65f, _sparkRate, 1.1f);
+                new Color(signalColor.r, signalColor.g, signalColor.b, 1f), 0.19f, 0.65f, _sparkRate, 1.1f);
             ParticleSystem.MainModule sparkMain = sparks.main;
             sparkMain.gravityModifier = 0.16f;
+            signal.Burst = CreateParticles(signal.Effect.transform, "ApexFirework", true,
+                signalColor, _burstSize, _burstLifetime, 0f, _burstSpeed);
+            ParticleSystem.MainModule burstMain = signal.Burst.main;
+            burstMain.startSpeed = new ParticleSystem.MinMaxCurve(_burstSpeed * 0.6f, _burstSpeed);
+            burstMain.startLifetime = new ParticleSystem.MinMaxCurve(_burstLifetime * 0.7f, _burstLifetime);
+            burstMain.gravityModifier = 0.22f;
+            burstMain.maxParticles = _burstCount;
+            ParticleSystem.ShapeModule burstShape = signal.Burst.shape;
+            burstShape.shapeType = ParticleSystemShapeType.Cone;
+            burstShape.angle = 35f;
+            burstShape.rotation = new Vector3(-90f, 0f, 0f);
+            ParticleSystem.LimitVelocityOverLifetimeModule burstDrag = signal.Burst.limitVelocityOverLifetime;
+            burstDrag.enabled = true;
+            burstDrag.limit = _burstSpeed * 0.3f;
+            burstDrag.dampen = 0.12f;
+            ParticleSystem.TrailModule burstTrails = signal.Burst.trails;
+            burstTrails.enabled = true;
+            burstTrails.lifetime = 0.18f;
+            burstTrails.widthOverTrail = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 0f));
+            signal.Burst.GetComponent<ParticleSystemRenderer>().trailMaterial = _material;
             ParticleSystem smoke = CreateParticles(signal.Effect.transform, "ThinSmoke", true,
-                new Color(0.46f, 0.39f, 0.36f, 0.12f), 0.4f, 1.8f, _smokeRate, 0.3f);
+                new Color(0.72f, 0.68f, 0.57f, 0.3f), 1.1f, 3f, _smokeRate, 0.15f);
             ParticleSystem.SizeOverLifetimeModule smokeSize = smoke.sizeOverLifetime;
             smokeSize.enabled = true;
             smokeSize.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.35f, 1f, 3f));
@@ -210,20 +242,48 @@ namespace Lighthouse.Player.Recovery.View
             drift.space = ParticleSystemSimulationSpace.World;
             drift.x = new ParticleSystem.MinMaxCurve(0.25f);
             drift.y = new ParticleSystem.MinMaxCurve(0.35f);
+            ParticleSystem.NoiseModule smokeNoise = smoke.noise;
+            smokeNoise.enabled = true;
+            smokeNoise.strength = 0.15f;
+            smokeNoise.frequency = 0.8f;
+            smokeNoise.scrollSpeed = 0.3f;
             signal.Light = signal.Effect.AddComponent<Light>();
             signal.Light.type = LightType.Point;
-            signal.Light.color = SignalColor;
+            signal.Light.color = signalColor;
             signal.Light.range = 18f;
             signal.Light.intensity = 5f;
             signal.Light.shadows = LightShadows.None;
             var trail = signal.Effect.AddComponent<TrailRenderer>();
             trail.sharedMaterial = _material;
             trail.time = 0.25f;
-            trail.startWidth = 0.075f;
+            trail.startWidth = 0.2f;
             trail.endWidth = 0f;
-            trail.startColor = new Color(1f, 0.5f, 0.12f, 0.7f);
-            trail.endColor = new Color(1f, 0.07f, 0.015f, 0f);
+            trail.startColor = new Color(signalColor.r, signalColor.g, signalColor.b, 1f);
+            trail.endColor = new Color(signalColor.r, signalColor.g, signalColor.b, 0f);
             trail.minVertexDistance = 0.1f;
+        }
+
+        private void UpdateBurst(Signal signal, float burstAge)
+        {
+            if (signal.HasBurst || burstAge < 0f)
+            {
+                return;
+            }
+
+            signal.HasBurst = true;
+            if (burstAge >= _burstLifetime)
+            {
+                return;
+            }
+
+            signal.Burst.transform.position = signal.Origin + Vector3.up * signal.Height;
+            signal.Burst.Emit(_burstCount);
+            if (burstAge > 0f)
+            {
+                // Catch up delayed recipients without replaying an old explosion.
+                signal.Burst.Simulate(burstAge, false, false, true);
+                signal.Burst.Play(false);
+            }
         }
 
         private Texture2D CreateSoftTexture()
