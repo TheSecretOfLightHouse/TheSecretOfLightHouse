@@ -142,7 +142,7 @@
 | [N03](design/references/v4-design-review.md#n03) | 공개 난수와 비밀 난수의 경계가 없다 | P1 · 누락 계약 | 계약 확인 필요 |
 | [N04](design/references/v4-design-review.md#n04) | 당사자라는 말만으로 비밀 수신자를 정할 수 없다 | P0 · 누락 계약 | 부분 결정: 개인 표 본인만, 봉인/심해 서버전용, 확인성공/소진 마피아만, 실패무고 공개(7절). 다른 비밀필드·종료후공개 정책과 실제 Net전송 검증은 남음 |
 | [N05](design/references/v4-design-review.md#n05) | 안개와 익명 레이더의 정보 경계를 정해야 한다 | P1 · 누락 계약 | 계약 확인 필요 |
-| [N06](design/references/v4-design-review.md#n06) | 개인 환영과 공유 몬스터의 경계가 없다 | P1 · 누락 계약 | 계약 확인 필요 |
+| [N06](design/references/v4-design-review.md#n06) | 개인 환영과 공유 몬스터의 경계가 없다 | P1 · 누락 계약 | 일반 계약 확인 필요. 2026-10-31 아귀의4직군 위장 외형은 서버가 생성 때1회 선택해 모두에게 같은 인덱스로 동기화하도록 구현. 관찰자별 공개표현과 구별하며 다른 개인환영 정책까지 확정하지 않음. 직렬화/격리검사, 본편·원격M2 대기. [결정](design/angler-disguise-decisions.md) · [기록](박태욱/2026-10-31/아귀-직군별-랜덤위장.md) |
 | [N07](design/references/v4-design-review.md#n07) | 배 입력과 최종 물리 권위가 미정이다 | P0 · 미정 명시 | 부분 결정(2026-10-13): 플레이어·배 이동 위치는 소유 클라이언트 권위(NetworkTransform ClientToServer), 서버는 보고 위치를 판정 입력으로 사용([네트워크 권위 §4](unity/NETWORK_AUTHORITY.md#4-이동과-물리-권위)). 피해 원인별 판정 위치·판정 수단·경계 검사는 팀 합의 대기 제안, 허용 오차 수치는 시험 후 결정 |
 | [N08](design/references/v4-design-review.md#n08) | 같은 파도와 같은 물리 결과는 별도 계약이다 | P1 · 누락 계약 | 계약 확인 필요 |
 | [N09](design/references/v4-design-review.md#n09) | 공유 자원 거래의 부분 성공과 중복을 막아야 한다 | P0 · 누락 계약 | 부분 결정(2026-10-22): [채집 결정](design/resource-gathering-decisions.md)에 따라 원본별 공유 잔량, 돌 총 3회·마지막 1회 중복 생성 금지. 개인 잔량 코드는 미변경. World/Player 연결·생성 실패 복구 계약·다인 검증은 후속이며 다른 공유 거래 계약까지 해결된 것은 아님 |

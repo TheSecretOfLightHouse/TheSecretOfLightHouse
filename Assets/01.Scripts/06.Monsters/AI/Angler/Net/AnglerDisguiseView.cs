@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Mirror;
 using Lighthouse.Monsters.AI.Rules;
+using Lighthouse.Monsters.AI.Server;
+using Lighthouse.World.Query.Rules;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -12,8 +14,11 @@ namespace Lighthouse.Monsters.AI.Net
     {
         [SerializeField] private GameObject _boatVisual;
         [SerializeField] private GameObject _fishVisual;
+        [SerializeField] private GameObject[] _boatVariants = new GameObject[0];
         [SerializeField, Min(0.01f)] private float _revealDistance = 12f;
         [SerializeField, Min(0.01f)] private float _transitionSeconds = 0.7f;
+        [SerializeField, Min(0.01f)] private float _revealedDepth = 0.1f;
+        [SerializeField] private float _boatWaterlineOffset = -0.15f;
 
         private readonly List<FadeRenderer> _boatRenderers = new List<FadeRenderer>();
         private readonly List<FadeRenderer> _fishRenderers = new List<FadeRenderer>();
@@ -22,16 +27,52 @@ namespace Lighthouse.Monsters.AI.Net
         private bool _hasPresentation;
         private bool _isRevealed;
         private float _blend;
+        private Vector3 _boatLocalPosition;
+        private SeaMonster _monster;
+        private MonsterWaterBody _waterBody;
+        [SyncVar(hook = nameof(HandleDisguiseChanged))] private int _disguiseIndex = -1;
 
         public bool IsRevealed => _hasPresentation && _isRevealed;
         public float RevealDistance => _revealDistance;
+        public int DisguiseIndex => _disguiseIndex;
 
         private void Awake()
         {
+            _monster = GetComponent<SeaMonster>();
+            _waterBody = GetComponent<MonsterWaterBody>();
+            if (_boatVisual != null)
+            {
+                _boatLocalPosition = _boatVisual.transform.localPosition;
+            }
             CacheRenderers(_boatVisual, _boatRenderers);
             CacheRenderers(_fishVisual, _fishRenderers);
             CacheFishEffects();
+            ApplyDisguiseVariant();
             HidePresentation();
+        }
+
+        public override void OnStartServer()
+        {
+            base.OnStartServer();
+            _disguiseIndex = _boatVariants.Length > 0 ? Random.Range(0, _boatVariants.Length) : -1;
+        }
+
+        public override void OnStartClient()
+        {
+            base.OnStartClient();
+            ApplyDisguiseVariant();
+        }
+
+        [ServerCallback]
+        private void FixedUpdate()
+        {
+            if (_monster == null || !_monster.IsInitialized || _monster.IsDead
+                || _waterBody == null || !_waterBody.isActiveAndEnabled)
+            {
+                return;
+            }
+
+            UpdateTargetDepth(HasNearbyObserver());
         }
 
         private void LateUpdate()
@@ -56,12 +97,21 @@ namespace Lighthouse.Monsters.AI.Net
                     Time.deltaTime / Mathf.Max(0.01f, _transitionSeconds));
             }
 
+            UpdateBoatSurfacePosition();
             ApplyPresentation();
         }
 
         private void OnDisable()
         {
+            if (isServer && _waterBody != null && _monster != null && !_monster.IsDead)
+            {
+                _waterBody.RestoreDefaultDepth();
+            }
             HidePresentation();
+            if (_boatVisual != null)
+            {
+                _boatVisual.transform.localPosition = _boatLocalPosition;
+            }
         }
 
         private void OnDestroy()
@@ -73,6 +123,77 @@ namespace Lighthouse.Monsters.AI.Net
         public bool ShouldReveal(Vector3 observerPosition)
         {
             return AnglerDisguiseRules.ShouldReveal(transform.position, observerPosition, _revealDistance);
+        }
+
+        private void HandleDisguiseChanged(int oldIndex, int newIndex)
+        {
+            ApplyDisguiseVariant();
+        }
+
+        private void ApplyDisguiseVariant()
+        {
+            int selected = _disguiseIndex >= 0 && _disguiseIndex < _boatVariants.Length
+                ? _disguiseIndex : 0;
+            for (int i = 0; i < _boatVariants.Length; i++)
+            {
+                if (_boatVariants[i] != null)
+                {
+                    _boatVariants[i].SetActive(i == selected);
+                }
+            }
+        }
+
+        private bool HasNearbyObserver()
+        {
+            // The physical body is shared, so remote observers must also trigger surfacing.
+            foreach (NetworkConnectionToClient connection in NetworkServer.connections.Values)
+            {
+                if (connection != null && connection.isReady && connection.identity != null
+                    && ShouldReveal(connection.identity.transform.position))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void UpdateTargetDepth(bool revealed)
+        {
+            if (revealed)
+            {
+                // A positive target keeps depth control active; zero disables it.
+                _waterBody.Buoyancy.SetTargetDepth(_revealedDepth);
+            }
+            else
+            {
+                _waterBody.RestoreDefaultDepth();
+            }
+        }
+
+        private void UpdateBoatSurfacePosition()
+        {
+            if (_boatVisual == null || !WorldServices.TryGet<IWorldQuery>(out IWorldQuery world))
+            {
+                return;
+            }
+
+            Transform boat = _boatVisual.transform;
+            Transform parent = boat.parent;
+            if (parent == null)
+            {
+                return;
+            }
+
+            // The model pivot is at the hull bottom, so use a waterline offset instead of its setup height.
+            Vector3 offset = parent.TransformVector(_boatLocalPosition);
+            Vector3 position = parent.position + offset;
+            float surfaceHeight = world.SampleWaterHeight(position);
+            if (float.IsNaN(surfaceHeight) || float.IsInfinity(surfaceHeight))
+            {
+                return;
+            }
+            position.y = surfaceHeight + _boatWaterlineOffset;
+            boat.position = position;
         }
 
         private void ApplyPresentation()
