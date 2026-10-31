@@ -3,6 +3,7 @@ using Lighthouse.Mafia.IdentityCheck.Rules;
 using Lighthouse.Mafia.Voting.Net;
 using Lighthouse.Network.Session.View;
 using Mirror;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -10,7 +11,7 @@ using UnityEngine.UI;
 namespace Lighthouse.Mafia.IdentityCheck.View
 {
     // The mafia's identity check and summon (2026-10-23 sketch): two buttons above the vote button, a confirm box in the
-    // vote screen's style before either request, and a notice with the server's answer. Only the mafia receives the
+    // vote screen's style before a check (the summon goes straight out), and a notice with the server's answer. Only the mafia receives the
     // identity state, so the buttons never show for a citizen. The server decides; this screen only asks.
     [DisallowMultipleComponent]
     public sealed class IdentityActionScreen : MonoBehaviour
@@ -39,7 +40,7 @@ namespace Lighthouse.Mafia.IdentityCheck.View
         [SerializeField]
         private Button _summonButton;
         [SerializeField]
-        private Text _status;
+        private TMP_Text _status;
         [Tooltip("Tint of a button that cannot be pressed now.")]
         [SerializeField]
         private Color _unavailableColor = new Color(0.55f, 0.55f, 0.55f, 0.6f);
@@ -230,9 +231,15 @@ namespace Lighthouse.Mafia.IdentityCheck.View
             OpenConfirm(Action.Check);
         }
 
+        // The summon asks at once (2026-10-30): a box would spend the 10 second right's seconds on reading it.
         private void HandleSummonClicked()
         {
-            OpenConfirm(Action.Summon);
+            if (_isOverlayOpen || _awaitedAction != Action.None || SessionScreen.IsGameplayOverlayOpen)
+            {
+                return;
+            }
+
+            SendRequest(Action.Summon);
         }
 
         private void OpenConfirm(Action action)
@@ -243,57 +250,28 @@ namespace Lighthouse.Mafia.IdentityCheck.View
             }
 
             _confirmAction = action;
-            bool isCheck = action == Action.Check;
-            _confirmTitle.text = isCheck ? "정체 확인" : "크툴루 소환";
-            _confirmMessage.text = isCheck ? "지금 정체를 확인할까요?" : "크툴루를 소환할까요?";
-            _confirmWarning.text = isCheck
-                ? "성공하면 10초 동안 소환할 수 있고, 실패하면 무고한 시민 한 명이 공개됩니다"
-                : "소환하면 내 정체가 모두에게 공개되고 최후 전투가 시작됩니다";
-            _acceptLabel.text = isCheck ? "확인하기" : "소환하기";
+            _confirmTitle.text = "정체 확인";
+            _confirmMessage.text = "지금 정체를 확인할까요?";
+            _confirmWarning.text = "성공하면 10초 동안 소환할 수 있고, 실패하면 무고한 시민 한 명이 공개됩니다";
+            _acceptLabel.text = "확인하기";
             _shownConfirmValue = -1;
             OpenOverlay(_confirm);
             RefreshConfirm(_voting.OwnIdentityState);
         }
 
-        // The right can run out or the last check can go while the box is open; then the box closes with the reason.
+        // The last check can go while the box is open; then the box closes with the reason.
         private void RefreshConfirm(in IdentityResponse state)
         {
-            if (_confirmAction == Action.Check)
+            if (!state.CanCheck)
             {
-                if (!state.CanCheck)
-                {
-                    ShowNotice("정체 확인", "지금은 정체를 확인할 수 없습니다.");
-                    return;
-                }
-
-                if (state.RemainingCheckCount != _shownConfirmValue)
-                {
-                    _shownConfirmValue = state.RemainingCheckCount;
-                    _confirmDetail.text = $"남은 확인 <color={Highlight}>{_shownConfirmValue}회</color>";
-                }
-
+                ShowNotice("정체 확인", "지금은 정체를 확인할 수 없습니다.");
                 return;
             }
 
-            if (!IsRightLive(in state))
+            if (state.RemainingCheckCount != _shownConfirmValue)
             {
-                ShowNotice("크툴루 소환", "소환 권리 시간이 지났습니다.");
-                return;
-            }
-
-            // The right still runs but something else blocks it, such as being downed.
-            if (!state.CanSummon)
-            {
-                ShowNotice("크툴루 소환", "지금은 소환할 수 없습니다.");
-                return;
-            }
-
-            int seconds = SecondsLeft(state.SummonExpiresAt);
-
-            if (seconds != _shownConfirmValue)
-            {
-                _shownConfirmValue = seconds;
-                _confirmDetail.text = $"소환 권리 <color={Highlight}>{seconds}초</color> 남음";
+                _shownConfirmValue = state.RemainingCheckCount;
+                _confirmDetail.text = $"남은 확인 <color={Highlight}>{_shownConfirmValue}회</color>";
             }
         }
 
@@ -301,7 +279,11 @@ namespace Lighthouse.Mafia.IdentityCheck.View
         {
             Action action = _confirmAction;
             CloseOverlay();
+            SendRequest(action);
+        }
 
+        private void SendRequest(Action action)
+        {
             if (!_voting || !_voting.HasOwnIdentityState)
             {
                 return;

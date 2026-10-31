@@ -65,6 +65,8 @@ namespace Lighthouse.Common.UI
         private RectTransform _textRect;
         private Vector2 _textWithGauge;
         private Vector2 _textAlone;
+        private Vector2 _textSizeWithGauge;
+        private Vector2 _textSizeAlone;
         private RectTransform _gainRect;
         private Vector2 _gainPosition;
 
@@ -79,13 +81,21 @@ namespace Lighthouse.Common.UI
 
             _fillColor = _gaugeFill ? _gaugeFill.color : Color.white;
 
-            // Without a gauge the text moves down to the strip's middle.
+            // Private notices can be longer than install notices; keep both inside the same board.
             if (_text)
             {
                 _textRect = _text.rectTransform;
                 _textWithGauge = _textRect.anchoredPosition;
+                _textSizeWithGauge = _textRect.sizeDelta;
                 RectTransform strip = (RectTransform)_group.transform;
-                _textAlone = new Vector2(_textWithGauge.x, -(strip.rect.height - _textRect.rect.height) * 0.5f);
+                float padding = -_textWithGauge.y;
+                _textAlone = _textWithGauge;
+                _textSizeAlone = new Vector2(_textSizeWithGauge.x, strip.rect.height - padding * 2f);
+                _text.horizontalOverflow = HorizontalWrapMode.Wrap;
+                _text.verticalOverflow = VerticalWrapMode.Truncate;
+                _text.resizeTextForBestFit = true;
+                _text.resizeTextMaxSize = _text.fontSize;
+                _text.resizeTextMinSize = Mathf.Min(18, _text.fontSize);
             }
 
             if (_gain)
@@ -180,6 +190,7 @@ namespace Lighthouse.Common.UI
                 _text.text = _current.Text;
                 _text.color = _current.Style == ScreenNoticeStyle.Gold ? _goldText : isWarning ? _warningText : _normalText;
                 _textRect.anchoredPosition = _current.HasGauge ? _textWithGauge : _textAlone;
+                _textRect.sizeDelta = _current.HasGauge ? _textSizeWithGauge : _textSizeAlone;
             }
 
             if (_backing)

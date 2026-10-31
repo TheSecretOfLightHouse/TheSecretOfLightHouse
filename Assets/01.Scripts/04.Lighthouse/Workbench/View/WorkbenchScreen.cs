@@ -61,8 +61,6 @@ namespace Lighthouse.Workbench.View
         [SerializeField]
         private GameObject _prompt;
         [SerializeField]
-        private Text _promptText;
-        [SerializeField]
         private Button[] _closeButtons = new Button[0];
         [SerializeField]
         private Text _message;
@@ -173,6 +171,23 @@ namespace Lighthouse.Workbench.View
         [SerializeField]
         private WorkbenchScreenEffects.Settings _effectSettings = new WorkbenchScreenEffects.Settings();
 
+        [Header("Hold to deposit (2026-10-30): E held keeps depositing, faster the longer it is held")]
+        [Tooltip("Seconds E must stay held after the first unit before repeating starts.")]
+        [SerializeField]
+        private float _holdDelay = 0.35f;
+        [Tooltip("Units per second when repeating starts.")]
+        [SerializeField]
+        private float _holdStartRate = 5f;
+        [Tooltip("Units per second once fully sped up.")]
+        [SerializeField]
+        private float _holdMaxRate = 25f;
+        [Tooltip("Seconds of repeating to go from the start rate to the max rate.")]
+        [SerializeField]
+        private float _holdRampSeconds = 1.5f;
+        [Tooltip("Most units one request carries while held.")]
+        [SerializeField]
+        private int _holdMaxBatch = 10;
+
         private readonly List<WorkbenchRecipeCard> _cards = new List<WorkbenchRecipeCard>();
         private readonly List<WorkbenchIngredientRow> _rows = new List<WorkbenchIngredientRow>();
         private readonly List<bool> _wasCardReady = new List<bool>();
@@ -191,7 +206,13 @@ namespace Lighthouse.Workbench.View
         private int _ownCredit;
         private float _ownCreditUntil;
         private bool _isDepositAwaiting;
+        private int _pendingDepositAmount;
         private int _pendingRecipeId;
+        // E held on the deposit pane: the relay takes one request at a time, so units owed by the hold rate pile up
+        // while a request is out and go together in the next one. This keeps the speed whatever the round trip.
+        private bool _isDepositHeld;
+        private float _depositHeldSeconds;
+        private float _depositOwed;
         // Who crafted is not sent either, and this player's result and the finish call (sent to everyone) may arrive in
         // either order. A finish for the recipe this player asked to craft waits for the result: a success makes it
         // this player's own, a failure means someone else got there first. A success that comes first leaves one
@@ -418,6 +439,7 @@ namespace Lighthouse.Workbench.View
             if (isActiveAndEnabled && _workbench)
             {
                 _workbench.Changed -= HandleWorkbenchChanged;
+                _workbench.RecipeCompleted -= HandleRecipeCompleted;
             }
 
             _workbench = workbench;
@@ -426,9 +448,11 @@ namespace Lighthouse.Workbench.View
             _isInRange = false;
             _prompt.SetActive(false);
 
+            // Without the finish call every craft's drop reads as a withdraw and blinks red.
             if (isActiveAndEnabled && _workbench)
             {
                 _workbench.Changed += HandleWorkbenchChanged;
+                _workbench.RecipeCompleted += HandleRecipeCompleted;
             }
         }
 
@@ -468,6 +492,7 @@ namespace Lighthouse.Workbench.View
             _openCount--;
             SessionScreen.SetGameplayOverlayOpen(this, false);
             _effects.StopAll();
+            _isDepositHeld = false;
             _ownCredit = 0;
             _craftShowRecipeId = 0;
             _stockPulseRecipeId = 0;
@@ -490,7 +515,14 @@ namespace Lighthouse.Workbench.View
                 else
                 {
                     HandleSelectedDepositClicked();
+                    _isDepositHeld = true;
+                    _depositHeldSeconds = 0f;
+                    _depositOwed = 0f;
                 }
+            }
+            else if (_isDepositHeld)
+            {
+                TickDepositHold(keyboard.eKey.isPressed, Time.unscaledDeltaTime);
             }
             else if (keyboard.fKey.wasPressedThisFrame && _craftButton.interactable)
             {
@@ -503,6 +535,41 @@ namespace Lighthouse.Workbench.View
             else if (keyboard.rKey.wasPressedThisFrame)
             {
                 HandleSelectedWithdrawClicked();
+            }
+        }
+
+        // The first unit goes on the press; after a short delay the rate climbs from start to max. Stops when E is let
+        // go, the selection changes away from deposit, or nothing more can go in.
+        private void TickDepositHold(bool isPressed, float deltaTime)
+        {
+            if (!isPressed || _isStockFocused || !CanDepositSelected())
+            {
+                _isDepositHeld = false;
+                return;
+            }
+
+            _depositHeldSeconds += deltaTime;
+            float repeatSeconds = _depositHeldSeconds - _holdDelay;
+
+            if (repeatSeconds <= 0f)
+            {
+                return;
+            }
+
+            float ramp = _holdRampSeconds > 0f ? Mathf.Clamp01(repeatSeconds / _holdRampSeconds) : 1f;
+            _depositOwed = Mathf.Min(_depositOwed + Mathf.Lerp(_holdStartRate, _holdMaxRate, ramp) * deltaTime, _holdMaxBatch);
+
+            if (_depositOwed < 1f || _relay.IsAwaitingResult)
+            {
+                return;
+            }
+
+            int amount = Mathf.Min((int)_depositOwed, Held(_selectedResourceId), _workbench.GetRemaining(_viewedRecipe.Id, _selectedResourceId));
+
+            if (SendDeposit(_selectedResourceId, amount))
+            {
+                _depositOwed -= amount;
+                Refresh();
             }
         }
 
@@ -1222,20 +1289,33 @@ namespace Lighthouse.Workbench.View
                 return;
             }
 
-            int amount = Mathf.Max(1, isAll ? _workbench.GetRemaining(_viewedRecipe.Id, resourceId) : 1);
+            SendDeposit(resourceId, isAll ? _workbench.GetRemaining(_viewedRecipe.Id, resourceId) : 1);
+        }
 
-            if (Send(InteractionAction.Deposit, _viewedRecipe.Id, resourceId, amount))
+        private bool SendDeposit(int resourceId, int requestedAmount)
+        {
+            int amount = Mathf.Max(1, requestedAmount);
+
+            if (!Send(InteractionAction.Deposit, _viewedRecipe.Id, resourceId, amount))
             {
-                _pendingResourceId = resourceId;
-                _pendingRecipeId = _viewedRecipe.Id;
-                _pendingRecipeName = _viewedRecipe.DisplayName;
-                _isDepositAwaiting = true;
-                // The server clamps to what is held and still missing, so this never exceeds the real deposit.
-                _ownCreditRecipeId = _viewedRecipe.Id;
-                _ownCreditIndex = _viewedRecipe.IndexOf(resourceId);
-                _ownCredit = Mathf.Min(amount, Held(resourceId));
-                _ownCreditUntil = float.PositiveInfinity;
+                return false;
             }
+
+            int index = _viewedRecipe.IndexOf(resourceId);
+            // A held E sends again right after each result, possibly before the last amount was matched; that part
+            // stays this player's own.
+            int unmatched = _ownCredit > 0 && _ownCreditRecipeId == _viewedRecipe.Id && _ownCreditIndex == index ? _ownCredit : 0;
+            _pendingResourceId = resourceId;
+            _pendingRecipeId = _viewedRecipe.Id;
+            _pendingRecipeName = _viewedRecipe.DisplayName;
+            _isDepositAwaiting = true;
+            // The server clamps to what is held and still missing, so this never exceeds the real deposit.
+            _pendingDepositAmount = Mathf.Min(amount, Held(resourceId));
+            _ownCreditRecipeId = _viewedRecipe.Id;
+            _ownCreditIndex = index;
+            _ownCredit = unmatched + _pendingDepositAmount;
+            _ownCreditUntil = float.PositiveInfinity;
+            return true;
         }
 
         private void HandleCraftClicked()
@@ -1392,6 +1472,12 @@ namespace Lighthouse.Workbench.View
             if (slot)
             {
                 _effects.PlayPunch(slot.CountRect, _effectSettings.PunchStrength);
+            }
+
+            // A held E sends several at once; the count says how many went in with this flight.
+            if (_pendingDepositAmount > 1)
+            {
+                _effects.PlayGain(row.CountRect, _pendingDepositAmount);
             }
 
             if (from)

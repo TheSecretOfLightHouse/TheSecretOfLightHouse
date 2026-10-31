@@ -1,11 +1,11 @@
 # 파일 경로별 리뷰 담당. 마지막으로 일치한 패턴을 적용한다.
 # 각 기능의 Rules/Net/Server/View는 같은 담당자다. 전역 Net/Server 소유권 덮어쓰기는 하지 않는다.
 # 강민서: @ri-ver-1 — 월드
-# 김지훈: @zhun0922 — 네트워크·상호작용·등대
-# 최명기: @cmg6991 — 플레이어·배·인벤토리·채집·시스템&UI
+# 김지훈: @zhun0922 — 네트워크·상호작용·등대·UI
+# 최명기: @cmg6991 — 플레이어·배·인벤토리(화면·배 모듈 장착 UI 포함)·채집·시스템
 # 박태욱: @awe46566 — 몬스터·투표·심해
 # 김민성: @AidenKim923 — 다른 팀에서 온 일시 AX 지원. 게임 코드 소유자 아님.
-# 시스템&UI도 최명기 @cmg6991 담당. 포괄 코드 기본 담당은 두지 않는다.
+# 시스템은 최명기 @cmg6991, UI는 김지훈 @zhun0922 담당 (2026-10-30 사용자 결정). 포괄 코드 기본 담당은 두지 않는다.
 
 # AX: 문서·작업 절차·템플릿 (게임 코드와 기획 결정 권한은 부여하지 않음)
 /docs/                              @AidenKim923
@@ -57,14 +57,17 @@
 /Assets/01.Scripts/06.Monsters.meta  @awe46566
 /Assets/01.Scripts/07.Mafia/         @awe46566
 /Assets/01.Scripts/07.Mafia.meta     @awe46566
+# 비밀 투표 화면은 김지훈이 작성·유지한다 (2026-10-30 사용자 결정).
+/Assets/01.Scripts/07.Mafia/Voting/View/  @zhun0922
 /Assets/00.Scenes/TaeWook/           @awe46566
 /Assets/00.Scenes/TaeWook.meta       @awe46566
 
-# 최명기: 시스템&UI
+# 최명기: 시스템
 /Assets/01.Scripts/08.Systems/       @cmg6991
 /Assets/01.Scripts/08.Systems.meta   @cmg6991
-/Assets/01.Scripts/09.UI/            @cmg6991
-/Assets/01.Scripts/09.UI.meta        @cmg6991
+# 김지훈: UI. 인벤토리 화면·배 모듈 장착 UI는 05.Player/Inventory/View/로 최명기 담당 (2026-10-30 사용자 결정).
+/Assets/01.Scripts/09.UI/            @zhun0922
+/Assets/01.Scripts/09.UI.meta        @zhun0922
 # 공유 개발·검증 도구: 해당 기능 작성자가 구현하고 김지훈이 통합 시험을 조율한다.
 /Assets/01.Scripts/99.Dev/           @ri-ver-1 @zhun0922 @cmg6991 @awe46566
 /Assets/01.Scripts/99.Dev.meta       @ri-ver-1 @zhun0922 @cmg6991 @awe46566

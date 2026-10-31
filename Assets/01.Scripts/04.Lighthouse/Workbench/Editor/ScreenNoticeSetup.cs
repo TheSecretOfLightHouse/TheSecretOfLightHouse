@@ -22,7 +22,8 @@ namespace Lighthouse.Workbench.Editor
         private static readonly Color Cream = new Color(0.96f, 0.89f, 0.74f);
         private static readonly Color Gold = new Color(0.98f, 0.73f, 0.15f);
         private static readonly Color Shadow = new Color(0.1f, 0.07f, 0.04f, 0.85f);
-        private static readonly Color Backing = new Color(0.04f, 0.06f, 0.09f, 0.72f);
+        private static readonly Color Backing = Color.white;
+        private static readonly Color WarningBacking = new Color(1f, 0.6f, 0.55f);
 
         [MenuItem("Lighthouse/UI/Build Screen Notice Prefab")]
         public static void Build()
@@ -58,11 +59,18 @@ namespace Lighthouse.Workbench.Editor
                 group.blocksRaycasts = false;
                 group.interactable = false;
                 Image backing = strip.gameObject.AddComponent<Image>();
+                backing.sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/03.Images/VotingUiSketch/vt_board.png");
+                backing.type = Image.Type.Sliced;
                 backing.color = Backing;
                 backing.raycastTarget = false;
                 Image icon = Picture("Icon", strip, "fb_icon_lighthouse", 22f, 12f, 54f, 72f);
                 icon.preserveAspect = true;
                 Text text = Label("Text", strip, "알림", 26, Cream, 92f, 10f, 520f, 38f, TextAnchor.MiddleLeft);
+                text.horizontalOverflow = HorizontalWrapMode.Wrap;
+                text.verticalOverflow = VerticalWrapMode.Truncate;
+                text.resizeTextForBestFit = true;
+                text.resizeTextMinSize = 18;
+                text.resizeTextMaxSize = 26;
                 RectTransform gauge = Rect("Gauge", strip, 92f, 54f, BarWidth, BarHeight);
                 Image fill = Bar(gauge);
                 Text gain = Label("Gain", strip, "+0%", 24, Gold, 404f, 50f, 140f, 36f, TextAnchor.MiddleLeft);
@@ -77,6 +85,8 @@ namespace Lighthouse.Workbench.Editor
                 Set(serialized, "_gaugeFill", fill);
                 Set(serialized, "_gain", gain);
                 Set(serialized, "_defaultIcon", icon.sprite);
+                serialized.FindProperty("_normalBacking").colorValue = Backing;
+                serialized.FindProperty("_warningBacking").colorValue = WarningBacking;
                 serialized.ApplyModifiedPropertiesWithoutUndo();
                 System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(PrefabPath));
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);

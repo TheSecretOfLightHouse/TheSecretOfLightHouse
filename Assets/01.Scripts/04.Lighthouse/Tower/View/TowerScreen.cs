@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using Lighthouse.Common.UI;
 using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Interaction.Requests.Rules;
@@ -38,6 +40,9 @@ namespace Lighthouse.Tower.View
         private Key _openKey = Key.E;
         [SerializeField]
         private Key _installKey = Key.F;
+        [Tooltip("Optional: the camera moves to the lighthouse before the screen shows. Without it the screen opens at once.")]
+        [SerializeField]
+        private TowerFocusCamera _focusCamera;
 
         [Header("Screen")]
         [SerializeField]
@@ -102,14 +107,19 @@ namespace Lighthouse.Tower.View
         private PlayerInput _playerInput;
         private bool _isOpen;
         private bool _isInRange;
+        private bool _isPlayerLocked;
         private bool _hasSavedCursor;
         private CursorLockMode _savedLockMode;
         private bool _savedCursorVisible;
         private bool _wasPlayerInputEnabled;
+        // The camera returns after the screen closes, so the unlock may come after the local player was rebound.
+        private PlayerInput _lockedInput;
         private bool _isPending;
         private int _pendingSlot = -1;
         private string _pendingName;
         private WorkbenchScreenEffects _effects;
+        private Canvas _canvas;
+        private readonly List<Canvas> _hiddenCanvases = new List<Canvas>();
         // This player's install, on its own screen only: from the click the slot keeps waiting and the count stays,
         // until the module icon has flown in from the carried panel (the host hears of the slot before the result).
         private int _landingSlot = -1;
@@ -126,6 +136,7 @@ namespace Lighthouse.Tower.View
                 ApplyOsFont();
             }
 
+            _canvas = GetComponent<Canvas>();
             _installButton.onClick.AddListener(HandleInstallClicked);
             _effects = new WorkbenchScreenEffects(_effectSettings, (RectTransform)_window.transform, _message.font, null, null);
             _window.SetActive(false);
@@ -175,7 +186,7 @@ namespace Lighthouse.Tower.View
 
             // The workbench shares the open key and stands within reach, so only the nearer one answers it.
             bool isFocused = _isInRange && StationScreenFocus.IsNearest(this);
-            _prompt.SetActive(isFocused && !_isOpen && !SessionScreen.IsGameplayOverlayOpen);
+            _prompt.SetActive(isFocused && !_isOpen && !_isPlayerLocked && !SessionScreen.IsGameplayOverlayOpen);
             Keyboard keyboard = Keyboard.current;
 
             if (keyboard == null)
@@ -187,7 +198,7 @@ namespace Lighthouse.Tower.View
             {
                 Close();
             }
-            else if (_isOpen && keyboard[_installKey].wasPressedThisFrame)
+            else if (_isOpen && _window.activeSelf && keyboard[_installKey].wasPressedThisFrame)
             {
                 HandleInstallClicked();
             }
@@ -254,11 +265,16 @@ namespace Lighthouse.Tower.View
             _isOpen = true;
             SessionScreen.SetGameplayOverlayOpen(this, true);
             _isPending = false;
-            _window.SetActive(true);
             _prompt.SetActive(false);
             SetMessage(string.Empty, _messageSuccessColor);
             LockPlayer(true);
-            Refresh();
+            HideOtherScreens(true);
+
+            // Esc or the open key can still back out during the move; installing waits for the window.
+            if (!_focusCamera || !_focusCamera.Focus(_tower.transform, ShowWindow))
+            {
+                ShowWindow();
+            }
         }
 
         public void Close()
@@ -274,7 +290,75 @@ namespace Lighthouse.Tower.View
             _landingSlot = -1;
             _landingAt = 0f;
             _window.SetActive(false);
+
+            if (_focusCamera)
+            {
+                _focusCamera.Return(HandleViewReturned);
+            }
+            else
+            {
+                HandleViewReturned();
+            }
+        }
+
+        private void ShowWindow()
+        {
+            if (!_isOpen)
+            {
+                return;
+            }
+
+            _window.SetActive(true);
+            Refresh();
+        }
+
+        private void HandleViewReturned()
+        {
             LockPlayer(false);
+            HideOtherScreens(false);
+        }
+
+        // Every other screen-space canvas steps aside while this screen holds the view (2026-10-30), so only the
+        // lighthouse and this screen show; they come back with the player's camera. Inactive canvases are left alone.
+        private void HideOtherScreens(bool isHidden)
+        {
+            if (!isHidden)
+            {
+                for (int i = 0; i < _hiddenCanvases.Count; i++)
+                {
+                    if (_hiddenCanvases[i])
+                    {
+                        _hiddenCanvases[i].enabled = true;
+                    }
+                }
+
+                _hiddenCanvases.Clear();
+                return;
+            }
+
+            // Reopened while the camera was on its way back: those canvases are still hidden.
+            if (_hiddenCanvases.Count > 0)
+            {
+                return;
+            }
+
+            Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+
+            for (int i = 0; i < canvases.Length; i++)
+            {
+                Canvas canvas = canvases[i];
+
+                // Notices and match effects answer what happens on this screen (an install, a finished floor), so
+                // they stay: hidden, a notice would run out its time unseen.
+                if (canvas == _canvas || !canvas.enabled || !canvas.isRootCanvas || canvas.renderMode == RenderMode.WorldSpace
+                    || canvas.TryGetComponent(out ScreenNotice _) || canvas.TryGetComponent(out TowerMatchEffects _))
+                {
+                    continue;
+                }
+
+                canvas.enabled = false;
+                _hiddenCanvases.Add(canvas);
+            }
         }
 
         private void BindLocalPlayer(NetworkIdentity player)
@@ -323,6 +407,14 @@ namespace Lighthouse.Tower.View
         // Same stand-in input lock as the workbench screen until the player side has one.
         private void LockPlayer(bool isLocked)
         {
+            // Reopening while the camera is still on its way back keeps the lock it already holds.
+            if (isLocked == _isPlayerLocked)
+            {
+                return;
+            }
+
+            _isPlayerLocked = isLocked;
+
             if (isLocked)
             {
                 if (!_hasSavedCursor)
@@ -335,10 +427,12 @@ namespace Lighthouse.Tower.View
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
 
-                if (_playerInput)
+                _lockedInput = _playerInput;
+
+                if (_lockedInput)
                 {
-                    _wasPlayerInputEnabled = _playerInput.enabled;
-                    _playerInput.enabled = false;
+                    _wasPlayerInputEnabled = _lockedInput.enabled;
+                    _lockedInput.enabled = false;
                 }
 
                 return;
@@ -351,10 +445,12 @@ namespace Lighthouse.Tower.View
                 Cursor.visible = _savedCursorVisible;
             }
 
-            if (_playerInput && _wasPlayerInputEnabled)
+            if (_lockedInput && _wasPlayerInputEnabled)
             {
-                _playerInput.enabled = true;
+                _lockedInput.enabled = true;
             }
+
+            _lockedInput = null;
         }
 
         private void Refresh()

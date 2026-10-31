@@ -39,6 +39,12 @@ namespace Lighthouse.Dev.Workbench
 
         private void OnGUI()
         {
+            if (DevPanelSwitch.IsOn && !_workbench)
+            {
+                // The main game spawns its bench from the main island prefab, so it cannot be wired in the scene.
+                _workbench = FindAnyObjectByType<WorkbenchNet>();
+            }
+
             // In a build, Mirror keeps scene objects inactive on a client until spawned, and netId is not readable before.
             if (!DevPanelSwitch.IsOn || !_workbench || !_workbench.isActiveAndEnabled || !NetworkClient.active || !_workbench.Catalog)
             {

@@ -11,8 +11,8 @@ using UnityEngine.UI;
 namespace Lighthouse.Tower.View
 {
     // Screen-only effects for the lighthouse match (UI effects plan 2026-10-26): lines on the shared ScreenNotice strip
-    // for installs, finished floors, the last part and finished modules; a centre title for full repair, ritual,
-    // summon and falling health; the end fade under the VictoryScreen; the ritual countdown; and an edge flash standing in for camera shake (the
+    // for installs, finished floors, the last part, finished modules, summon and falling health; a centre title for full repair and ritual;
+    // the end fade under the VictoryScreen; the ritual countdown; and an edge flash standing in for camera shake (the
     // camera is the Player part's). Who installed or crafted is never shown, since only the carrier knows they held a
     // module.
     // Installs and finished modules arrive as events on every machine. Phase and health are SyncVars without hooks and
@@ -22,6 +22,9 @@ namespace Lighthouse.Tower.View
     [DisallowMultipleComponent]
     public sealed class TowerMatchEffects : MonoBehaviour
     {
+        private const float MatchLookupInterval = 1f;
+
+        [Tooltip("Optional. Left empty, the match is looked up once a second, for scenes that spawn the tower at match start.")]
         [SerializeField]
         private TowerMatchNet _match;
 
@@ -51,7 +54,7 @@ namespace Lighthouse.Tower.View
         private Color _readyColor = new Color(1f, 0.8f, 0.3f);
         [SerializeField]
         private Color _summonColor = new Color(0.85f, 0.08f, 0.08f);
-        [Tooltip("Below this share of health the edge keeps pulsing red during the final battle, and the first drop below it gets a title.")]
+        [Tooltip("Below this share of health the edge keeps pulsing red during the final battle, and the first drop below it gets a notice.")]
         [SerializeField, Range(0f, 1f)]
         private float _lowHealthRatio = 0.3f;
 
@@ -105,6 +108,7 @@ namespace Lighthouse.Tower.View
         private bool _isReadyPending;
         private TowerNet _tower;
         private WorkbenchNet _workbench;
+        private float _nextMatchLookup;
 
         private void Awake()
         {
@@ -130,32 +134,39 @@ namespace Lighthouse.Tower.View
 
         private void OnEnable()
         {
-            _tower = _match ? _match.Tower : null;
-
-            // Awake of the match may run after this one, so fall back to the component beside it.
-            if (!_tower && _match)
-            {
-                _tower = _match.GetComponent<TowerNet>();
-            }
-
-            _workbench = _tower ? _tower.Workbench : null;
-
-            if (_tower)
-            {
-                _tower.SlotInstalled += HandleSlotInstalled;
-            }
-
-            if (_workbench)
-            {
-                _workbench.RecipeCompleted += HandleRecipeCompleted;
-            }
+            Subscribe();
         }
 
         private void LateUpdate()
         {
+            // A tower left wired to a disabled scene object (the retired main island facilities) never reports anything.
+            if (_match && !_match.gameObject.activeInHierarchy)
+            {
+                Unsubscribe();
+                _match = null;
+            }
+
+            // The main island spawns its tower at match start, so there is nothing to wire in the scene (2026-10-30).
+            if (!_match && Time.unscaledTime >= _nextMatchLookup)
+            {
+                _nextMatchLookup = Time.unscaledTime + MatchLookupInterval;
+                _match = FindAnyObjectByType<TowerMatchNet>();
+
+                if (_match)
+                {
+                    Subscribe();
+                }
+            }
+
             if (!_match)
             {
                 return;
+            }
+
+            // The spawned tower gets its workbench bound after it appears.
+            if (_tower && !_workbench)
+            {
+                SubscribeWorkbench();
             }
 
             ObservePhase();
@@ -168,6 +179,11 @@ namespace Lighthouse.Tower.View
 
         private void OnDisable()
         {
+            Unsubscribe();
+        }
+
+        private void Unsubscribe()
+        {
             if (_tower)
             {
                 _tower.SlotInstalled -= HandleSlotInstalled;
@@ -176,6 +192,37 @@ namespace Lighthouse.Tower.View
             if (_workbench)
             {
                 _workbench.RecipeCompleted -= HandleRecipeCompleted;
+            }
+
+            _tower = null;
+            _workbench = null;
+        }
+
+        private void Subscribe()
+        {
+            _tower = _match ? _match.Tower : null;
+
+            // Awake of the match may run after this one, so fall back to the component beside it.
+            if (!_tower && _match)
+            {
+                _tower = _match.GetComponent<TowerNet>();
+            }
+
+            if (_tower)
+            {
+                _tower.SlotInstalled += HandleSlotInstalled;
+            }
+
+            SubscribeWorkbench();
+        }
+
+        private void SubscribeWorkbench()
+        {
+            _workbench = _tower ? _tower.Workbench : null;
+
+            if (_workbench)
+            {
+                _workbench.RecipeCompleted += HandleRecipeCompleted;
             }
         }
 
@@ -278,7 +325,7 @@ namespace Lighthouse.Tower.View
                     Play(_ritualClip);
                     break;
                 case TowerPhase.FinalBattle:
-                    ShowTitle("심해의 괴물이 깨어났다", false);
+                    ScreenNotice.Show(new ScreenNoticeRequest("크툴루가 깨어났다 — 최후 전투 시작", ScreenNoticeStyle.Warning));
                     FlashEdge(_summonColor, 0.9f, 2f);
                     Play(_summonClip);
                     break;
@@ -305,7 +352,8 @@ namespace Lighthouse.Tower.View
                     && _shownHealth / max >= _lowHealthRatio)
                 {
                     _hasWarnedLowHealth = true;
-                    ShowTitle("등대가 무너지고 있다", false);
+                    ScreenNotice.Show(new ScreenNoticeRequest("등대가 무너지고 있다", ScreenNoticeStyle.Warning)
+                        .WithGauge(Mathf.Clamp01(_shownHealth / max), Mathf.Clamp01(health / max)));
                     FlashEdge(_summonColor, 0.6f, 1.4f);
                 }
             }
