@@ -110,13 +110,18 @@ namespace Lighthouse.World.Weather.Sandbox
             system.Tick(100.0);
             isPassed &= system.Target == WeatherType.Maelstrom && Matches(in system.Snapshot, in maelstrom);
 
-            isPassed &= !system.Apply(WeatherType.Maelstrom, WeatherType.Calm, 200.0, 10f);
-            isPassed &= !system.Apply(WeatherType.Storm, WeatherType.Calm, 201.0, 10f);
+            isPassed &= !system.Apply(WeatherType.Maelstrom, WeatherType.Storm, 200.0, 10f);
+            isPassed &= !system.Apply(WeatherType.Maelstrom, WeatherType.Rain, 200.5, 10f);
+            isPassed &= !system.Apply(WeatherType.Storm, WeatherType.Rain, 201.0, 10f);
             isPassed &= system.Apply(WeatherType.Maelstrom, WeatherType.Maelstrom, 202.0, 10f);
             system.Tick(300.0);
             isPassed &= system.Target == WeatherType.Maelstrom && Matches(in system.Snapshot, in maelstrom);
 
-            WeatherCheckLog.Report("MaelstromLock", isPassed, "no way out of maelstrom");
+            isPassed &= system.Apply(WeatherType.Maelstrom, WeatherType.Calm, 400.0, 10f);
+            system.Tick(500.0);
+            isPassed &= system.Target == WeatherType.Calm && !system.IsTransitioning;
+
+            WeatherCheckLog.Report("MaelstromLock", isPassed, "only the victory calm leaves maelstrom");
             return isPassed;
         }
 

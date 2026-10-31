@@ -17,6 +17,8 @@ namespace Lighthouse.World.Weather.Net
         [SerializeField] private WeatherLightningView _lightning;
         [SerializeField] private WeatherLightningNet _events;
         [SerializeField, Min(0f)] private float _transitionSeconds = 10f;
+        [Tooltip("How long the sea takes to settle into calm after a citizens' win.")]
+        [SerializeField, Min(0f)] private float _victoryCalmSeconds = 7f;
         private WeatherStateNet _weather;
         private TowerMatchNet _subscribed;
 
@@ -38,7 +40,7 @@ namespace Lighthouse.World.Weather.Net
             }
             if (isClient && _match != null && _match.Phase == TowerPhase.Ended)
             {
-                StopPresentation();
+                StopEndedPresentation(_match.Outcome);
             }
         }
 
@@ -103,13 +105,42 @@ namespace Lighthouse.World.Weather.Net
             _weather.BeginTransition(WeatherType.Maelstrom, _transitionSeconds);
         }
 
+        [Server]
         private void HandleEnded(TowerOutcome outcome, TowerEndReason reason)
         {
             if (_events != null)
             {
                 _events.StopEvents();
             }
+            if (outcome == TowerOutcome.CitizensWin)
+            {
+                _weather.BeginCalmRelease(_victoryCalmSeconds);
+            }
+            StopEndedPresentation(outcome);
+        }
+
+        // A citizens' win keeps the sky and sea views running so the storm fades into calm instead of cutting out;
+        // only the lightning stops.
+        private void StopEndedPresentation(TowerOutcome outcome)
+        {
+            if (outcome == TowerOutcome.None)
+            {
+                return;
+            }
+            if (outcome == TowerOutcome.CitizensWin)
+            {
+                StopLightning();
+                return;
+            }
             StopPresentation();
+        }
+
+        private void StopLightning()
+        {
+            if (_lightning != null)
+            {
+                _lightning.enabled = false;
+            }
         }
 
         private void StopPresentation()
@@ -118,10 +149,7 @@ namespace Lighthouse.World.Weather.Net
             {
                 _presentation.enabled = false;
             }
-            if (_lightning != null)
-            {
-                _lightning.enabled = false;
-            }
+            StopLightning();
         }
     }
 }
