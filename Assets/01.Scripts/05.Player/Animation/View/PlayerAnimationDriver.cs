@@ -83,6 +83,8 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
     private PlayerMotor _motor;
     private Rigidbody _body;
     private BuoyancyObject _buoyancy;
+    private Collider _waterBounds;
+    private bool _hasWaterReading;
     private bool _isInWater;
     private float _fallDuration;
     private int _lastStumbleSequence;
@@ -125,6 +127,7 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
         _motor = GetComponentInParent<PlayerMotor>();
         _body = GetComponentInParent<Rigidbody>();
         _buoyancy = GetComponentInParent<BuoyancyObject>();
+        _waterBounds = GetComponentInParent<CapsuleCollider>();
 
         if (_actionEvents == null)
         {
@@ -440,17 +443,17 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
     private void UpdateWater()
     {
         // Only the movement owner writes parameters; remote views consume NetworkAnimator.
-        if (_source == null || !_controller || !_controller.CanProcessBoatInput || !_buoyancy
+        if (_source == null || !_controller || !_controller.CanProcessBoatInput
             || !_animator || !_animator.runtimeAnimatorController)
         {
             return;
         }
 
         bool canSwim = _source.Current != PlayerAnimationState.OnBoat;
-        BuoyancyReading reading = _buoyancy.Reading;
+        _hasWaterReading = TryGetWaterFraction(out float submergedFraction);
         float threshold = _isInWater ? _waterExitFraction : _waterEnterFraction;
         bool wasInWater = _isInWater;
-        _isInWater = canSwim && reading.IsValid && reading.SubmergedFraction >= threshold;
+        _isInWater = canSwim && _hasWaterReading && submergedFraction >= threshold;
         if (!wasInWater && _isInWater)
         {
             PlaySound(SfxType.PlayerWaterEnter, _actionVolume);
@@ -465,10 +468,36 @@ public sealed class PlayerAnimationDriver : MonoBehaviour
         }
     }
 
+    private bool TryGetWaterFraction(out float fraction)
+    {
+        fraction = 0f;
+        if (_buoyancy && _buoyancy.IsSimulating && _buoyancy.Reading.IsValid)
+        {
+            fraction = _buoyancy.Reading.SubmergedFraction;
+            return true;
+        }
+
+        // Grounded wading disables float forces, but its pose and sounds still need water contact.
+        if (!_waterBounds || !_body || !WorldServices.TryGet(out IWorldQuery world))
+        {
+            return false;
+        }
+
+        float surface = world.SampleWaterHeight(_body.position);
+        if (float.IsNaN(surface) || float.IsInfinity(surface))
+        {
+            return false;
+        }
+
+        Bounds bounds = _waterBounds.bounds;
+        fraction = Mathf.Clamp01((surface - bounds.min.y) / Mathf.Max(bounds.size.y, 0.01f));
+        return true;
+    }
+
     private void UpdateSwimMovementSound()
     {
         if (!CanPlaySound || !_controller.CanProcessBoatInput || !_swimMovementClip
-            || !_isInWater || !_body || !_buoyancy || !_buoyancy.Reading.IsValid
+            || !_isInWater || !_body || !_hasWaterReading
             || _source == null || _source.Current == PlayerAnimationState.OnBoat)
         {
             StopSwimMovementSound();
