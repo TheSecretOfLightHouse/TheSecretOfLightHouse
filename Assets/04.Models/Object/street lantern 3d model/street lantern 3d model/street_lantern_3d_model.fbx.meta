@@ -7,6 +7,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: StreetLanternFlame
+    second: {fileID: 2100000, guid: 5626eccdb3352bc4fa4405eb511e2346, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: StreetLanternGlass
     second: {fileID: 2100000, guid: 29ecfa5ef7223574c9c6d4c53ad26347, type: 2}
   materials:

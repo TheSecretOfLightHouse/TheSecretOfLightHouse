@@ -11,11 +11,13 @@ using UnityEngine.UI;
 namespace Lighthouse.Tower.View
 {
     // Screen-only effects for the lighthouse match (UI effects plan 2026-10-26): lines on the shared ScreenNotice strip
-    // for installs, finished floors, the last part, finished modules, summon and falling health; a centre title for full repair and ritual;
+    // for installs, finished floors, unlocked rewards, the last part, finished modules, summon and falling health; a
+    // centre title for full repair and ritual;
     // the end fade under the VictoryScreen; the ritual countdown; and an edge flash standing in for camera shake (the
     // camera is the Player part's). Who installed or crafted is never shown, since only the carrier knows they held a
-    // module.
-    // Installs and finished modules arrive as events on every machine. Phase and health are SyncVars without hooks and
+    // module: the install and finish lines show only on the machine of the player who did it (2026-10-31); the tower's
+    // own news (a finished floor, a reward, the last part) shows on every machine.
+    // Installs arrive as events on every machine. Phase and health are SyncVars without hooks and
     // several of them change together (phase first), so they are read here every frame; by LateUpdate the whole change
     // has landed on host and client alike. The first phase seen is taken as it is, so a late joiner gets the steady
     // state without replays.
@@ -191,7 +193,7 @@ namespace Lighthouse.Tower.View
 
             if (_workbench)
             {
-                _workbench.RecipeCompleted -= HandleRecipeCompleted;
+                _workbench.OwnRecipeCompleted -= HandleOwnRecipeCompleted;
             }
 
             _tower = null;
@@ -222,35 +224,61 @@ namespace Lighthouse.Tower.View
 
             if (_workbench)
             {
-                _workbench.RecipeCompleted += HandleRecipeCompleted;
+                _workbench.OwnRecipeCompleted += HandleOwnRecipeCompleted;
             }
         }
 
+        // Every install is shown to all four players (2026-10-31, the installer-only notice was dropped). The full repair
+        // gets the centre title instead; it is decided in LateUpdate, since a remote client may see the slot before the
+        // phase that goes with it.
         private void HandleSlotInstalled(int slot)
         {
             TowerLayout layout = _tower.Layout;
+            int count = _tower.InstalledCount;
 
-            if (!layout || slot < 0 || slot >= layout.SlotCount)
+            if (!layout || slot < 0 || slot >= layout.SlotCount || count <= 0)
             {
                 return;
             }
 
-            int count = _tower.InstalledCount;
             int total = layout.SlotCount;
+
+            if (count == total)
+            {
+                _isReadyPending = true;
+            }
+
             float before = layout.GetRepairRatio(count - 1);
             float after = layout.GetRepairRatio(count);
             ScreenNotice.Show(new ScreenNoticeRequest($"등대 부품 장착 ({count}/{total})")
                 .WithGauge(before, after, $"+{(after - before) * 100f:0.#}%"));
             Play(_installClip);
+            ShowInstallNews(layout, slot, count);
+        }
 
+        // What an install unlocked: the reward, floor and last part lines.
+        private void ShowInstallNews(TowerLayout layout, int slot, int count)
+        {
+            int total = layout.SlotCount;
+            float after = layout.GetRepairRatio(count);
             int floor = layout[slot].Floor;
+            int tierBefore = layout.GetRewardTier(count - 1);
+            int tierAfter = layout.GetRewardTier(count);
+            // Rewards are frozen at the summon, so a tier reached in the final battle unlocks nothing.
+            bool isReward = tierAfter > tierBefore && _match.Phase != TowerPhase.FinalBattle;
+
+            // Without a gauge the line gets the whole board and wraps or shrinks to fit, so the reward name stays inside.
+            for (int tier = tierBefore; isReward && tier < tierAfter; tier++)
+            {
+                ScreenNotice.Show(new ScreenNoticeRequest(
+                    $"수리 {layout.GetRewardPercent(tier)}% 보상 해금 — {layout.GetRewardName(tier)}", ScreenNoticeStyle.Gold));
+                Play(_floorClip);
+            }
 
             // The top floor finishing is the full repair, which gets the centre title instead.
-            if (count < total && _tower.IsFloorComplete(floor))
+            if (!isReward && count < total && _tower.IsFloorComplete(floor))
             {
-                bool isReward = layout.GetRewardTier(count) > layout.GetRewardTier(count - 1);
-                string text = isReward ? $"{layout.GetFloorName(floor)} 수리 완료 — 보상 해금" : $"{layout.GetFloorName(floor)} 수리 완료";
-                ScreenNotice.Show(new ScreenNoticeRequest(text, ScreenNoticeStyle.Gold).WithGauge(after, after));
+                ScreenNotice.Show(new ScreenNoticeRequest($"{layout.GetFloorName(floor)} 수리 완료", ScreenNoticeStyle.Gold).WithGauge(after, after));
                 Play(_floorClip);
             }
 
@@ -258,16 +286,11 @@ namespace Lighthouse.Tower.View
             {
                 ScreenNotice.Show(new ScreenNoticeRequest("마지막 부품 — 1칸 남음", ScreenNoticeStyle.Gold).WithGauge(after, after));
             }
-
-            // Decided in LateUpdate: a remote client may see the slot before the phase that goes with it.
-            if (count == total)
-            {
-                _isReadyPending = true;
-            }
         }
 
-        // An open workbench screen already shows the finish on its stock, so the strip is left out there (2026-10-27).
-        private void HandleRecipeCompleted(int recipeId)
+        // Only the crafter hears of it. An open workbench screen already shows the finish on its stock, so the strip is
+        // left out there (2026-10-27).
+        private void HandleOwnRecipeCompleted(int recipeId)
         {
             if (WorkbenchScreen.IsAnyOpen)
             {
@@ -310,7 +333,8 @@ namespace Lighthouse.Tower.View
                 }
             }
 
-            if (phase == _shownPhase)
+            // The summon's notice waits for the cinematic to hand the camera back; it would play under it otherwise.
+            if (phase == _shownPhase || (phase == TowerPhase.FinalBattle && !_match.IsFinalBattleRevealed))
             {
                 return;
             }
@@ -418,7 +442,8 @@ namespace Lighthouse.Tower.View
                 return;
             }
 
-            bool isRitual = _shownPhase == TowerPhase.Ritual;
+            // The shown phase stays Ritual while a summon's cinematic plays, but the timer is already gone.
+            bool isRitual = _shownPhase == TowerPhase.Ritual && _match.Phase == TowerPhase.Ritual;
 
             if (_countdownText.enabled != isRitual)
             {
