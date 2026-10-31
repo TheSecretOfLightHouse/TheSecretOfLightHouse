@@ -107,6 +107,11 @@ public class PlayerInputReader : MonoBehaviour
             _interactAction.canceled -= HandleInteractCanceled;
             _interactAction = null;
         }
+        ClearInput();
+    }
+
+    public void ClearInput()
+    {
         MoveInput = Vector2.zero;
         LookInput = Vector2.zero;
         RunHeld = false;

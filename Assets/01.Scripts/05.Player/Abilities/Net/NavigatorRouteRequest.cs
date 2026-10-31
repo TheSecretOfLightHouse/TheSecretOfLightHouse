@@ -128,6 +128,11 @@ public sealed class NavigatorRouteRequest : NetworkBehaviour
     {
         route = Array.Empty<Vector2>();
 
+        if (Lighthouse.Common.Cinematics.ServerCinematicProtection.IsActive)
+        {
+            return NavigatorRouteResult.RequestRejected;
+        }
+
         LighthouseNetworkManager manager =
             LighthouseNetworkManager.Instance;
 

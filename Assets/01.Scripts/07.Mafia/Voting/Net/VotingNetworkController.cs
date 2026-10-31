@@ -470,7 +470,9 @@ namespace Lighthouse.Mafia.Voting.Net
                 return;
             }
 
-            VoteChangeResult result = _votes.ChangeVote(actorId, targetActorId, NetworkTime.time);
+            VoteChangeResult result = Lighthouse.Common.Cinematics.ServerCinematicProtection.IsActive
+                ? VoteChangeResult.VotingLocked
+                : _votes.ChangeVote(actorId, targetActorId, NetworkTime.time);
             TargetVoteResponded(sender, CreateResponse(actorId, result));
         }
 

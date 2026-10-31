@@ -65,6 +65,10 @@ public sealed class BoatCannon : NetworkBehaviour
 
     private void HandleCannonFired(PlayerController player)
     {
+        if (Lighthouse.Common.Cinematics.CinematicPresentationLock.IsLocked)
+        {
+            return;
+        }
         if (!isClient || !isOwned || player != _boat.Owner)
         {
             return;
@@ -76,6 +80,10 @@ public sealed class BoatCannon : NetworkBehaviour
     [Command]
     private void CmdRequestFire(NetworkConnectionToClient sender = null)
     {
+        if (Lighthouse.Common.Cinematics.ServerCinematicProtection.IsActive)
+        {
+            return;
+        }
         LighthouseNetworkManager manager = LighthouseNetworkManager.Instance;
 
         if (!manager)

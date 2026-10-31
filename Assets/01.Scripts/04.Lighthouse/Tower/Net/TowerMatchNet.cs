@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using Lighthouse.Common.Cinematics;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Interaction.Requests.Rules;
 using Lighthouse.Interaction.Router.Server;
@@ -35,6 +37,18 @@ namespace Lighthouse.Tower.Net
         [SyncVar]
         private TowerEndReason _endReason;
 
+        [SyncVar] private bool _isSummonCinematicPlaying;
+        [SyncVar] private double _summonCinematicStartedAt;
+        [SyncVar] private double _summonCinematicEndsAt;
+        [SyncVar] private SummonCinematicPhase _cinematicPhase;
+        [SyncVar] private uint _cinematicSequence;
+        [SyncVar] private double _cinematicLoadDeadline;
+        [SyncVar] private double _combatStartsAt;
+        private double _returnDeadline;
+        private readonly HashSet<int> _cinematicParticipants = new HashSet<int>();
+        private readonly HashSet<int> _preparedParticipants = new HashSet<int>();
+        private readonly HashSet<int> _returnedParticipants = new HashSet<int>();
+
         private TowerNet _tower;
 
         // Server-only.
@@ -52,6 +66,13 @@ namespace Lighthouse.Tower.Net
         public float MaxHealth => _maxHealth;
         public TowerOutcome Outcome => _outcome;
         public TowerEndReason EndReason => _endReason;
+        public bool IsSummonCinematicPlaying => _isSummonCinematicPlaying;
+        public double SummonCinematicStartedAt => _summonCinematicStartedAt;
+        public double SummonCinematicEndsAt => _summonCinematicEndsAt;
+        public SummonCinematicPhase CinematicPhase => _cinematicPhase;
+        public uint CinematicSequence => _cinematicSequence;
+        public double CinematicLoadDeadline => _cinematicLoadDeadline;
+        public double CombatStartsAt => _combatStartsAt;
         public bool CanStartRitual => _phase == TowerPhase.Repairing && _tower && _tower.IsComplete;
 
         // Server-only.
@@ -62,10 +83,20 @@ namespace Lighthouse.Tower.Net
         private void Awake()
         {
             _tower = GetComponent<TowerNet>();
+            var view = GetComponent<Lighthouse.Tower.View.SummonCinematicView>();
+            if (view == null)
+            {
+                view = gameObject.AddComponent<Lighthouse.Tower.View.SummonCinematicView>();
+            }
+            view.Initialize(this);
         }
 
         private void Update()
         {
+            if (isServer && _isSummonCinematicPlaying)
+            {
+                TickSummonCinematic();
+            }
             if (!isServer || _phase != TowerPhase.Ritual || NetworkTime.time < _ritualEndsAt)
             {
                 return;
@@ -98,6 +129,7 @@ namespace Lighthouse.Tower.Net
 
         public override void OnStopServer()
         {
+            FinishSummonCinematic();
             if (_isStartRitualRegistered)
             {
                 InteractionRouter.UnregisterHandler(InteractionAction.StartRitual, this);
@@ -139,6 +171,24 @@ namespace Lighthouse.Tower.Net
             _ritualEndsAt = 0;
             _maxHealth = _settings.MaxHealth;
             _health = _maxHealth;
+            _cinematicSequence++;
+            _cinematicPhase = SummonCinematicPhase.Preparing;
+            _cinematicLoadDeadline = NetworkTime.time + _settings.CinematicLoadTimeout;
+            _summonCinematicStartedAt = 0d;
+            _summonCinematicEndsAt = 0d;
+            _combatStartsAt = 0d;
+            _cinematicParticipants.Clear();
+            _preparedParticipants.Clear();
+            _returnedParticipants.Clear();
+            foreach (NetworkConnectionToClient connection in NetworkServer.connections.Values)
+            {
+                if (connection != null && connection.isReady && connection.identity != null)
+                {
+                    _cinematicParticipants.Add(connection.connectionId);
+                }
+            }
+            _isSummonCinematicPlaying = true;
+            ServerCinematicProtection.Begin(this);
             FinalBattleStarted?.Invoke();
             return true;
         }
@@ -147,7 +197,8 @@ namespace Lighthouse.Tower.Net
         [Server]
         public void ApplyDamage(float amount)
         {
-            if (_phase != TowerPhase.FinalBattle || amount <= 0f || float.IsNaN(amount) || float.IsInfinity(amount))
+            if (_phase != TowerPhase.FinalBattle || _isSummonCinematicPlaying
+                || amount <= 0f || float.IsNaN(amount) || float.IsInfinity(amount))
             {
                 return;
             }
@@ -170,10 +221,87 @@ namespace Lighthouse.Tower.Net
             }
 
             _phase = TowerPhase.Ended;
+            FinishSummonCinematic();
             _outcome = outcome;
             _endReason = reason;
             Ended?.Invoke(outcome, reason);
             return true;
+        }
+
+        private void OnDisable()
+        {
+            if (isServer)
+            {
+                FinishSummonCinematic();
+            }
+        }
+
+        private void FinishSummonCinematic()
+        {
+            if (_isSummonCinematicPlaying)
+            {
+                _cinematicPhase = SummonCinematicPhase.Cancelled;
+            }
+            _isSummonCinematicPlaying = false;
+            ServerCinematicProtection.End(this);
+        }
+
+        private void TickSummonCinematic()
+        {
+            double now = NetworkTime.time;
+            if (_cinematicPhase == SummonCinematicPhase.Preparing
+                && (_preparedParticipants.Count == _cinematicParticipants.Count || now >= _cinematicLoadDeadline))
+            {
+                _summonCinematicStartedAt = now + _settings.CinematicStartLead;
+                _summonCinematicEndsAt = _summonCinematicStartedAt + _settings.SummonCinematicSeconds;
+                _cinematicPhase = SummonCinematicPhase.Playing;
+            }
+            else if (_cinematicPhase == SummonCinematicPhase.Playing && now >= _summonCinematicEndsAt)
+            {
+                _returnDeadline = now + _settings.CinematicReturnTimeout;
+                _cinematicPhase = SummonCinematicPhase.Returning;
+            }
+            else if (_cinematicPhase == SummonCinematicPhase.Returning)
+            {
+                if (_combatStartsAt == 0d
+                    && (_returnedParticipants.Count == _cinematicParticipants.Count || now >= _returnDeadline))
+                {
+                    _combatStartsAt = now + _settings.CinematicReturnGrace;
+                }
+                if (_combatStartsAt > 0d && now >= _combatStartsAt)
+                {
+                    _cinematicPhase = SummonCinematicPhase.Combat;
+                    _isSummonCinematicPlaying = false;
+                    ServerCinematicProtection.End(this);
+                }
+            }
+        }
+
+        [Command(requiresAuthority = false)]
+        public void CmdReportCinematicPrepared(uint sequence, NetworkConnectionToClient sender = null)
+        {
+            if (_cinematicPhase == SummonCinematicPhase.Preparing && IsCinematicParticipant(sequence, sender))
+            {
+                // A skipped presentation is also prepared; it never advances combat on its own.
+                _preparedParticipants.Add(sender.connectionId);
+            }
+        }
+
+        [Command(requiresAuthority = false)]
+        public void CmdReportCinematicReturned(uint sequence, NetworkConnectionToClient sender = null)
+        {
+            if (_cinematicPhase == SummonCinematicPhase.Returning && IsCinematicParticipant(sequence, sender))
+            {
+                _returnedParticipants.Add(sender.connectionId);
+            }
+        }
+
+        private bool IsCinematicParticipant(uint sequence, NetworkConnectionToClient sender)
+        {
+            return sequence == _cinematicSequence && sender != null && sender.identity != null && sender.isReady
+                && _cinematicParticipants.Contains(sender.connectionId)
+                && NetworkServer.connections.TryGetValue(sender.connectionId, out NetworkConnectionToClient current)
+                && current == sender;
         }
 
         public InteractionResultCode Handle(in InteractionContext context)

@@ -14,15 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _ritualSeconds: 60
   _ritualRequiredVotes: 2
-  _baseHealth: 300
   _maxHealth: 1000
-  _specialEndingAttack: 100
-  _ignitionsToWin: 4
-  _crystalsPerIgnition: 1
-  _ignitionCost:
-  - _resource: {fileID: 11400000, guid: 8c7a2775b55dec340a1dfce8185c7fb5, type: 2}
-    _amount: 1
-  - _resource: {fileID: 11400000, guid: d08359d5654970348842cc01ffeb88bf, type: 2}
-    _amount: 1
-  _crystalRespawnSeconds: 20
+  _summonCinematicSeconds: 12
+  _summonPresentationPrefab: {fileID: 7819751319815717236, guid: fe5e0640d15251544a54171cabb57070, type: 3}
+  _cinematicLoadTimeout: 10
+  _cinematicReturnTimeout: 5
+  _cinematicStartLead: 0.5
+  _cinematicReturnGrace: 0.5
   _isTestValue: 1
