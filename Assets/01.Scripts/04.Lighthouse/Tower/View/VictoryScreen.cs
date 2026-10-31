@@ -1,5 +1,6 @@
 using Lighthouse.Network.Session.Net;
 using Lighthouse.Network.Session.Rules;
+using Lighthouse.Systems.Audio;
 using Lighthouse.Tower.Net;
 using Lighthouse.Tower.Rules;
 using UnityEngine;
@@ -40,6 +41,14 @@ namespace Lighthouse.Tower.View
         private GameObject _citizensTitle;
         [SerializeField]
         private GameObject _citizensSubtitle;
+
+        [Header("Citizens Victory Audio")]
+        [SerializeField]
+        private SoundManager _soundManagerPrefab;
+        [SerializeField]
+        private AudioClip _citizensVictoryClip;
+        [SerializeField, Range(0f, 1f)]
+        private float _citizensVictoryVolume = 0.9f;
 
         [Header("Mafia")]
         [SerializeField]
@@ -199,6 +208,29 @@ namespace Lighthouse.Tower.View
             _root.interactable = true;
             Animate();
             HoldCursor();
+
+            if (isCitizens)
+            {
+                PlayCitizensVictorySound();
+            }
+        }
+
+        private void PlayCitizensVictorySound()
+        {
+            if (!_citizensVictoryClip)
+            {
+                return;
+            }
+
+            if (!SoundManager.Instance && _soundManagerPrefab)
+            {
+                Instantiate(_soundManagerPrefab);
+            }
+
+            if (SoundManager.Instance)
+            {
+                SoundManager.Instance.PlayEffect(_citizensVictoryClip, _citizensVictoryVolume);
+            }
         }
 
         private void Confirm()
