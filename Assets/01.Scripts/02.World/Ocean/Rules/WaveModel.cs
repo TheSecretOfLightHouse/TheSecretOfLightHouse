@@ -29,13 +29,21 @@ namespace Lighthouse.World.Ocean.Rules
             ReadOnlySpan<Vector4> coasts, ReadOnlySpan<Vector4> edges, ReadOnlySpan<Vector4> profiles,
             float x, float z, float time)
         {
+            return HeightAt(waves, modifiers, coasts, edges, profiles, CoastWaveRegistry.Lagoons, x, z, time);
+        }
+
+        public static float HeightAt(
+            ReadOnlySpan<WaveParams> waves, ReadOnlySpan<WaveModifierData> modifiers,
+            ReadOnlySpan<Vector4> coasts, ReadOnlySpan<Vector4> edges, ReadOnlySpan<Vector4> profiles,
+            ReadOnlySpan<Vector4> lagoons, float x, float z, float time)
+        {
             float height = HeightAt(waves, modifiers, x, z, time);
             float energy = 0f;
             for (int i = 0; i < waves.Length; i++)
             {
                 energy += waves[i].Amplitude;
             }
-            return CoastWaveModel.Apply(coasts, edges, profiles, x, z, time, height, energy, CoastWaveRegistry.Lagoons);
+            return CoastWaveModel.Apply(coasts, edges, profiles, x, z, time, height, energy, lagoons);
         }
 
         public static Vector3 NormalAt(
