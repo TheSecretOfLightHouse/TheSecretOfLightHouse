@@ -21,6 +21,8 @@ namespace Lighthouse.World.Ocean.Rules
 
         public Vector2 Drive => _drive;
 
+        public float MaxSpeed => _maxSpeed;
+
         public Vector4 SampleBasis(Vector3 worldPos)
         {
             for (int i = 0; i < _count; i++)
