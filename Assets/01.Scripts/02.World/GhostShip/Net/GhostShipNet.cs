@@ -33,7 +33,6 @@ namespace Lighthouse.World.GhostShip.Net
         [SyncVar(hook = nameof(OnPhaseChanged))]
         private GhostShipPhase _phase;
 
-        private NetworkTransformBase _networkTransform;
         private GhostShipRoute _route;
         private IGameClock _clock;
         private float _phaseTime;
@@ -60,7 +59,6 @@ namespace Lighthouse.World.GhostShip.Net
 
         private void Awake()
         {
-            _networkTransform = GetComponent<NetworkTransformBase>();
             if (_body != null)
             {
                 _wasBodyKinematic = _body.isKinematic;
@@ -403,14 +401,12 @@ namespace Lighthouse.World.GhostShip.Net
             }
         }
 
+        // Not ServerTeleport: it resets NetworkTransformReliable's delta baseline on both sides, and the server's delta
+        // built after it was read against the old baseline on clients, so remote windows saw the ship offset by the
+        // jump (2026-10-31, measured: about the spawn point off, deep under the sea). The jumps here go between two
+        // spots deep enough that the view hides the ship, so the clients interpolating across them shows nothing.
         private void Teleport(Vector3 position, Quaternion rotation)
         {
-            if (_networkTransform != null)
-            {
-                _networkTransform.ServerTeleport(position, rotation);
-                return;
-            }
-
             transform.SetPositionAndRotation(position, rotation);
         }
 
