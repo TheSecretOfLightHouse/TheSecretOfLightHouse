@@ -5,6 +5,7 @@
 #define OCEAN_TWO_PI 6.28318530718
 #include "OceanModifiers.hlsl"
 #include "OceanCoasts.hlsl"
+#include "OpenSeaSwell.hlsl"
 
 float4 _OceanWaveA[OCEAN_MAX_WAVES];
 float4 _OceanWaveB[OCEAN_MAX_WAVES];
@@ -20,14 +21,15 @@ float3 OceanGerstnerBaseNormal(float3 restPositionWS)
     float stretchXZ = 0.0;
 
     int count = min((int)_OceanWaveCount, OCEAN_MAX_WAVES);
+    float swell = OpenSeaSwellAt(restPositionWS.xz, _OceanTime);
 
     for (int i = 0; i < count; i++)
     {
         float2 direction = _OceanWaveA[i].xy;
         float wavelength = _OceanWaveA[i].z;
         float speed = _OceanWaveA[i].w;
-        float amplitude = _OceanWaveB[i].x;
-        float steepness = _OceanWaveB[i].y;
+        float amplitude = _OceanWaveB[i].x * swell;
+        float steepness = _OceanWaveB[i].y * swell;
 
         if (wavelength <= 0.0)
         {
@@ -62,14 +64,15 @@ void OceanGerstnerFieldLagoon_float(float3 restPositionWS, out float3 positionWS
     float energy = 0.0;
 
     int count = min((int)_OceanWaveCount, OCEAN_MAX_WAVES);
+    float swell = OpenSeaSwellAt(restPositionWS.xz, _OceanTime);
 
     for (int i = 0; i < count; i++)
     {
         float2 direction = _OceanWaveA[i].xy;
         float wavelength = _OceanWaveA[i].z;
         float speed = _OceanWaveA[i].w;
-        float amplitude = _OceanWaveB[i].x;
-        float steepness = _OceanWaveB[i].y;
+        float amplitude = _OceanWaveB[i].x * swell;
+        float steepness = _OceanWaveB[i].y * swell;
         energy += amplitude;
 
         if (wavelength <= 0.0)
