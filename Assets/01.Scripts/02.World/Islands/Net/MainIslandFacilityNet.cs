@@ -10,11 +10,13 @@ namespace Lighthouse.World.Islands.Net
     {
         private WorkbenchNet _workbench;
         private TowerNet _tower;
+        private TowerMatchNet _match;
 
         private void Awake()
         {
             _workbench = GetComponent<WorkbenchNet>();
             _tower = GetComponent<TowerNet>();
+            _match = GetComponent<TowerMatchNet>();
         }
 
         public override void OnStartServer()
@@ -48,6 +50,10 @@ namespace Lighthouse.World.Islands.Net
             {
                 WorldServices.Register<TowerNet>(_tower);
             }
+            if (_match)
+            {
+                WorldServices.Register<TowerMatchNet>(_match);
+            }
         }
 
         private void Unregister()
@@ -60,6 +66,10 @@ namespace Lighthouse.World.Islands.Net
             if (_tower)
             {
                 WorldServices.Unregister<TowerNet>(_tower);
+            }
+            if (_match)
+            {
+                WorldServices.Unregister<TowerMatchNet>(_match);
             }
         }
     }
