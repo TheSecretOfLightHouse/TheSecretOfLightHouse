@@ -148,6 +148,7 @@ namespace Lighthouse.Workbench.Editor
                 SetArray(serialized, "_floorLabels", floorLabels);
                 SetRecipeIcons(serialized);
                 serialized.ApplyModifiedPropertiesWithoutUndo();
+                ConfigureRitualButton(root);
                 window.gameObject.SetActive(false);
                 prompt.gameObject.SetActive(false);
                 System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(PrefabPath));
@@ -160,6 +161,60 @@ namespace Lighthouse.Workbench.Editor
                 UnityEngine.SceneManagement.SceneManager.SetActiveScene(previousScene);
                 EditorSceneManager.CloseScene(buildScene, true);
             }
+        }
+
+        [MenuItem("Lighthouse/Tower/Add Ritual Button To Sketch Prefab")]
+        public static void AddRitualButton()
+        {
+            // A prefab-only update is safe while a main scene is open; never save that scene as a side effect.
+            GameObject root = PrefabUtility.LoadPrefabContents(PrefabPath);
+            try
+            {
+                ConfigureRitualButton(root);
+                PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        private static void ConfigureRitualButton(GameObject root)
+        {
+            Transform frame = root.transform.Find("Window/Frame");
+            Transform source = frame.Find("Carry/Install");
+            Transform existing = frame.Find("StartRitual");
+            GameObject buttonObject = existing ? existing.gameObject : Object.Instantiate(source.gameObject, frame, false);
+            buttonObject.name = "StartRitual";
+            RectTransform rect = (RectTransform)buttonObject.transform;
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = new Vector2(1128f, -720f);
+            rect.sizeDelta = new Vector2(200f, 60f);
+            Text caption = buttonObject.GetComponentInChildren<Text>(true);
+            caption.text = "의식 시작";
+            caption.fontSize = 24;
+            caption.resizeTextForBestFit = true;
+            caption.resizeTextMinSize = 18;
+            caption.resizeTextMaxSize = 24;
+            caption.horizontalOverflow = HorizontalWrapMode.Wrap;
+            caption.verticalOverflow = VerticalWrapMode.Truncate;
+            caption.rectTransform.anchorMin = Vector2.zero;
+            caption.rectTransform.anchorMax = Vector2.one;
+            caption.rectTransform.offsetMin = new Vector2(10f, 6f);
+            caption.rectTransform.offsetMax = new Vector2(-10f, -6f);
+            Text hint = frame.Find("RitualHint") ? frame.Find("RitualHint").GetComponent<Text>()
+                : Label("RitualHint", frame, string.Empty, 18, 1128f, 790f, 200f, 64f);
+            hint.text = "수리 100% 후 시작 가능\n시작하면 투표가 잠깁니다";
+            hint.horizontalOverflow = HorizontalWrapMode.Wrap;
+            hint.verticalOverflow = VerticalWrapMode.Truncate;
+            hint.resizeTextForBestFit = true;
+            hint.resizeTextMinSize = 14;
+            hint.resizeTextMaxSize = 18;
+            var serialized = new SerializedObject(root.GetComponent<TowerScreen>());
+            Set(serialized, "_ritualButton", buttonObject.GetComponent<Button>());
+            Set(serialized, "_ritualBackground", buttonObject.GetComponent<Image>());
+            Set(serialized, "_ritualText", caption);
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         // Moves the saved prefab to the 2026-10-30 layout without rebuilding it, so pieces changed by hand stay: the
