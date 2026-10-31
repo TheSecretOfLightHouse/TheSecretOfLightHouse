@@ -73,6 +73,10 @@ namespace Lighthouse.Tower.Net
         public uint CinematicSequence => _cinematicSequence;
         public double CinematicLoadDeadline => _cinematicLoadDeadline;
         public double CombatStartsAt => _combatStartsAt;
+        // The final battle as the screen shows it: from the summon cinematic handing the camera back (Returning), not
+        // from the summon itself, so the battle UI is not spent under the cinematic (2026-10-31).
+        public bool IsFinalBattleRevealed => _phase == TowerPhase.FinalBattle
+            && (!_isSummonCinematicPlaying || _cinematicPhase == SummonCinematicPhase.Returning);
         public bool CanStartRitual => _phase == TowerPhase.Repairing && _tower && _tower.IsComplete;
 
         // Server-only.

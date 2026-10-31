@@ -310,7 +310,8 @@ namespace Lighthouse.Tower.View
                 }
             }
 
-            if (phase == _shownPhase)
+            // The summon's notice waits for the cinematic to hand the camera back; it would play under it otherwise.
+            if (phase == _shownPhase || (phase == TowerPhase.FinalBattle && !_match.IsFinalBattleRevealed))
             {
                 return;
             }
@@ -418,7 +419,8 @@ namespace Lighthouse.Tower.View
                 return;
             }
 
-            bool isRitual = _shownPhase == TowerPhase.Ritual;
+            // The shown phase stays Ritual while a summon's cinematic plays, but the timer is already gone.
+            bool isRitual = _shownPhase == TowerPhase.Ritual && _match.Phase == TowerPhase.Ritual;
 
             if (_countdownText.enabled != isRitual)
             {
