@@ -46,6 +46,9 @@ Shader "Lighthouse/World/EnvironmentSky"
                 float _EnvironmentTime;
             CBUFFER_END
 
+            float _SkyLightning;
+            float4 _SkyLightningDir;
+
             struct Attributes
             {
                 float4 positionOS : POSITION;
@@ -128,6 +131,11 @@ Shader "Lighthouse/World/EnvironmentSky"
                 sky = lerp(sky, _Horizon.rgb * 0.35, below);
 
                 return float4(max(sky, 0.0), 1.0);
+                float boltFacing = pow(saturate(dot(direction, _SkyLightningDir.xyz)), 14.0);
+                float3 lightningColor = float3(0.5, 0.3, 1.0);
+                sky += lightningColor * _SkyLightning * boltFacing *
+                    (cloudMask * 1.5 + 0.03);
+
             }
             ENDHLSL
         }
