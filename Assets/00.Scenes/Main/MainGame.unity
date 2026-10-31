@@ -774,7 +774,7 @@ PrefabInstance:
       value: SM_Env_Water_Plane_01 1 (13)
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -1128,7 +1128,7 @@ PrefabInstance:
       value: OceanTile_-100_-500
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -1146,6 +1146,154 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
   m_PrefabInstance: {fileID: 104729577}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &114770899
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 114770901}
+  - component: {fileID: 114770900}
+  - component: {fileID: 114770903}
+  - component: {fileID: 114770902}
+  m_Layer: 0
+  m_Name: WeatherPresentation
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &114770900
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 114770899}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a80534b3b11cac74289a4e3ffa22a479, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _observer: {fileID: 232147341}
+  _sky: {fileID: 261610336}
+  _cloudMaterial: {fileID: 2100000, guid: 92fb2f81b5cac3a4392742353937b2dd, type: 2}
+  _volumeShader: {fileID: 4800000, guid: ce67008b9e5a7fb45b6e463aae23eacf, type: 3}
+  _rain: {fileID: 114770903}
+  _lightning: {fileID: 114770902}
+  _fogLayerHeight: 12
+  _fogCloudSize: 22
+  _volumeExtinction: 0.65
+  _fogColor: {r: 0.82, g: 0.85, b: 0.85, a: 1}
+  _abyssFogColor: {r: 0.035, g: 0.085, b: 0.065, a: 1}
+  _density:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.1
+      value: 0.001
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.3
+      value: 0.006
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.9
+      value: 0.015
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _maxClouds: 64
+  _cloudRadius: 120
+  _cloudHeight: 3
+  _observerTimeout: 1
+--- !u!4 &114770901
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 114770899}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &114770902
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 114770899}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f22edbb87185374e8a9eadcdd39ce51, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _events: {fileID: 298522319}
+  _sun: {fileID: 1552991791}
+  _material: {fileID: 2100000, guid: 9670e16a7f644e34d90b6f849bad174f, type: 2}
+  _thunderClip: {fileID: 0}
+  _flashSeconds: 0.28
+  _flashIntensity: 0.65
+  _thunderRange: 500
+  _thunderVolume: 0.5
+--- !u!114 &114770903
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 114770899}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57db25b02afc72c40be44a8567c5a7ed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dropMaterial: {fileID: 2100000, guid: f3d1310d63c8b69419427501cc254aa5, type: 2}
+  _splashMaterial: {fileID: 2100000, guid: 7748f2a8fd1523b45b9e4c3d89e8fcc6, type: 2}
+  _rainClip: {fileID: 0}
+  _maxDrops: 1800
+  _radius: 18
+  _height: 13
+  _fallSpeed: 22
+  _probeInterval: 0.15
+  _dropsPerSecond: 1100
+  _rainVolume: 0.24
+  _coverMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!1 &120362610
 GameObject:
   m_ObjectHideFlags: 0
@@ -1792,11 +1940,13 @@ MonoBehaviour:
     Direction: {x: 1, y: 0}
     Steepness: 0.3
     Speed: 3
+    Response: 0
   - Amplitude: 0.25
     Wavelength: 9
     Direction: {x: 0.6, y: 0.8}
     Steepness: 0.2
     Speed: 2.2
+    Response: 0
 --- !u!4 &157755827
 Transform:
   m_ObjectHideFlags: 0
@@ -1873,7 +2023,7 @@ PrefabInstance:
       value: OceanTile_300_500
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -1962,7 +2112,8 @@ MonoBehaviour:
     m_VerticalOverflow: 0
     m_LineSpacing: 1
   m_Text: "\uC218\uB9AC\uD560 \uC120\uC6D0\uC744 \uC120\uD0DD\uD558\uC138\uC694 \xB7
-    \uAC70\uB9AC \uC81C\uD55C \uC5C6\uC74C \xB7 \uB0B4 \uBC30\uB3C4 \uC120\uD0DD \uAC00\uB2A5"
+    \uAC70\uB9AC \uC81C\uD55C \uC5C6\uC74C \xB7 \uB0B4 \uBC30\uB3C4 \uC120\uD0DD
+    \uAC00\uB2A5"
 --- !u!222 &178905887
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2032,7 +2183,7 @@ PrefabInstance:
       value: SM_Env_Water_Plane_01 1 (3)
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -2111,7 +2262,7 @@ PrefabInstance:
       value: OceanTile_100_-500
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -2201,12 +2352,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1549951432661751042, guid: 7fd0708557ecc444c953e2f60d05dbd9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 192750475}
-    - targetCorrespondingSourceObject: {fileID: 2041389920494052378, guid: 7fd0708557ecc444c953e2f60d05dbd9, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 192750474}
-    - targetCorrespondingSourceObject: {fileID: 4450687229929015694, guid: 7fd0708557ecc444c953e2f60d05dbd9, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1705688169}
     - targetCorrespondingSourceObject: {fileID: 644255567831048984, guid: 7fd0708557ecc444c953e2f60d05dbd9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 57886913}
@@ -2255,16 +2400,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 644255567831048984, guid: 7fd0708557ecc444c953e2f60d05dbd9, type: 3}
   m_PrefabInstance: {fileID: 192750463}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &192750468 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4450687229929015694, guid: 7fd0708557ecc444c953e2f60d05dbd9, type: 3}
-  m_PrefabInstance: {fileID: 192750463}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &192750469 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2041389920494052378, guid: 7fd0708557ecc444c953e2f60d05dbd9, type: 3}
-  m_PrefabInstance: {fileID: 192750463}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &192750470 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1549951432661751042, guid: 7fd0708557ecc444c953e2f60d05dbd9, type: 3}
@@ -2285,29 +2420,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 6607984952467572728, guid: 7fd0708557ecc444c953e2f60d05dbd9, type: 3}
   m_PrefabInstance: {fileID: 192750463}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &192750474
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 192750469}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Version: 3
-  m_UsePipelineSettings: 1
-  m_AdditionalLightsShadowResolutionTier: 2
-  m_LightLayerMask: 1
-  m_RenderingLayers: 1
-  m_CustomShadowLayers: 0
-  m_ShadowLayerMask: 1
-  m_ShadowRenderingLayers: 1
-  m_LightCookieSize: {x: 1, y: 1}
-  m_LightCookieOffset: {x: 0, y: 0}
-  m_SoftShadowQuality: 0
 --- !u!114 &192750475
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2547,7 +2659,7 @@ PrefabInstance:
       value: OceanTile_-100_500
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -2706,7 +2818,7 @@ PrefabInstance:
       value: OceanTile_100_500
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -3364,7 +3476,7 @@ PrefabInstance:
       value: SM_Env_Water_Plane_01 1 (9)
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -3443,7 +3555,7 @@ PrefabInstance:
       value: SM_Env_Water_Plane_01 1 (14)
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -3475,6 +3587,8 @@ GameObject:
   - component: {fileID: 298522315}
   - component: {fileID: 298522314}
   - component: {fileID: 298522313}
+  - component: {fileID: 298522319}
+  - component: {fileID: 298522320}
   m_Layer: 0
   m_Name: WorldState
   m_TagString: Untagged
@@ -3588,6 +3702,42 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &298522319
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 298522312}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81027a86a04c03a47bd5ef39789f77ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _eventRadius: 180
+--- !u!114 &298522320
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 298522312}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 814d424446e204b4c9fb8e4f2a520d58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _match: {fileID: 0}
+  _presentation: {fileID: 114770900}
+  _lightning: {fileID: 114770902}
+  _events: {fileID: 298522319}
+  _transitionSeconds: 10
 --- !u!1 &321940266
 GameObject:
   m_ObjectHideFlags: 0
@@ -4295,12 +4445,12 @@ MonoBehaviour:
   _islands: {fileID: 1398708801}
   _waves: {fileID: 157755826}
   _data:
-  - {fileID: 11400000, guid: 380ba8c7c3988ca479106df2a0ba320c, type: 2}
+  - {fileID: 11400000, guid: aabb7c0601d354b4ba5aae90384dcd8e, type: 2}
+  - {fileID: 11400000, guid: 8f5e5514919e7ca4a8ea1000de176e93, type: 2}
+  - {fileID: 11400000, guid: 58cb95fced258c64392f444e76ecbb29, type: 2}
   - {fileID: 11400000, guid: 3be8eb0efc8a27b4f88ab386f619ad5a, type: 2}
   - {fileID: 11400000, guid: 48cc677d64509c849a999972ef7c0ccc, type: 2}
-  - {fileID: 11400000, guid: 58cb95fced258c64392f444e76ecbb29, type: 2}
-  - {fileID: 11400000, guid: 8f5e5514919e7ca4a8ea1000de176e93, type: 2}
-  - {fileID: 11400000, guid: aabb7c0601d354b4ba5aae90384dcd8e, type: 2}
+  - {fileID: 11400000, guid: 380ba8c7c3988ca479106df2a0ba320c, type: 2}
   _surfPrefab: {fileID: 4062759677897159060, guid: fbae633dc0a5c16488c3364c25374323, type: 3}
   _cellsPerFrame: 65536
   _retargetDegrees: 2
@@ -4733,7 +4883,7 @@ PrefabInstance:
       value: SM_Env_Water_Plane_01 1 (2)
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -5158,7 +5308,7 @@ PrefabInstance:
       value: OceanTile_500_100
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -5237,7 +5387,7 @@ PrefabInstance:
       value: SM_Env_Water_Plane_01 1 (10)
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -5592,7 +5742,7 @@ PrefabInstance:
       value: OceanTile_-500_100
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -6173,7 +6323,7 @@ PrefabInstance:
       value: SM_Env_Water_Plane_01 1 (11)
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -6951,7 +7101,7 @@ PrefabInstance:
       value: OceanTile_500_500
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -7369,7 +7519,7 @@ PrefabInstance:
       value: OceanTile_-500_-100
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -8835,7 +8985,7 @@ PrefabInstance:
       value: SM_Env_Water_Plane_01 1 (4)
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -8990,7 +9140,7 @@ PrefabInstance:
       value: OceanTile_300_-500
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -9069,7 +9219,7 @@ PrefabInstance:
       value: OceanTile_500_-100
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -9544,7 +9694,7 @@ PrefabInstance:
       value: OceanTile_-500_500
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -9907,8 +10057,8 @@ GameObject:
   m_Component:
   - component: {fileID: 921941373}
   - component: {fileID: 921941372}
-  - component: {fileID: 921941375}
   - component: {fileID: 921941374}
+  - component: {fileID: 921941375}
   m_Layer: 0
   m_Name: OceanShaderBridge
   m_TagString: Untagged
@@ -9953,22 +10103,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 921941371}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d8875ba858264b0458c136729ea4ab50, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _waves: {fileID: 157755826}
-  _speed: 0.35
-  _maxSpeed: 0.8
-  _fallbackDirection: {x: 1, y: 0}
---- !u!114 &921941375
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 921941371}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 71867c03f7e87814a8f1615c94b4f62e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -9979,6 +10113,22 @@ MonoBehaviour:
   _directionDegrees: 0
   _spreadDegrees: 55
   _driftSpeed: 3
+--- !u!114 &921941375
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 921941371}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d8875ba858264b0458c136729ea4ab50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _waves: {fileID: 157755826}
+  _speed: 0.35
+  _maxSpeed: 0.8
+  _fallbackDirection: {x: 1, y: 0}
 --- !u!1 &931129236
 GameObject:
   m_ObjectHideFlags: 0
@@ -10516,15 +10666,15 @@ PrefabInstance:
       value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 3674689093612217926, guid: 87a8d063ed5d18449902479c6cfb41f0, type: 3}
-      propertyPath: _supportedActions.Array.data[3]
+      propertyPath: '_supportedActions.Array.data[3]'
       value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 3674689093612217926, guid: 87a8d063ed5d18449902479c6cfb41f0, type: 3}
-      propertyPath: _supportedActions.Array.data[4]
+      propertyPath: '_supportedActions.Array.data[4]'
       value: 16
       objectReference: {fileID: 0}
     - target: {fileID: 3674689093612217926, guid: 87a8d063ed5d18449902479c6cfb41f0, type: 3}
-      propertyPath: _supportedActions.Array.data[5]
+      propertyPath: '_supportedActions.Array.data[5]'
       value: 17
       objectReference: {fileID: 0}
     - target: {fileID: 6115409022524302734, guid: 87a8d063ed5d18449902479c6cfb41f0, type: 3}
@@ -10714,7 +10864,7 @@ PrefabInstance:
       value: SM_Env_Water_Plane_01 1 (1)
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -10868,7 +11018,7 @@ PrefabInstance:
       value: SM_Env_Water_Plane_01 1 (12)
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -11879,7 +12029,7 @@ PrefabInstance:
       value: OceanTile_-300_-500
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -12198,7 +12348,7 @@ PrefabInstance:
       value: OceanTile_-300_500
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -12517,7 +12667,7 @@ PrefabInstance:
       value: SM_Env_Water_Plane_01 1 (15)
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -12627,7 +12777,7 @@ PrefabInstance:
       value: SM_Env_Water_Plane_01 1 (5)
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -13100,7 +13250,7 @@ PrefabInstance:
       value: OceanTile_500_-300
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -13617,7 +13767,7 @@ PrefabInstance:
       value: OceanTile_-500_-500
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -14537,6 +14687,8 @@ MonoBehaviour:
   syncInterval: 0
   _dropOffset: {x: 0, y: 1, z: 0}
   _testTarget: {fileID: 0}
+  _flightDuration: 0.65
+  _flightHeight: 0.85
 --- !u!114 &1469272919
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15172,7 +15324,7 @@ PrefabInstance:
       value: SM_Env_Water_Plane_01 1 (8)
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -15454,6 +15606,8 @@ MonoBehaviour:
   _gameClock: {fileID: 548526264}
   _sun: {fileID: 1552991788}
   _config: {fileID: 11400000, guid: 6e7d02c1c6174cc458fd68ce7733d6d0, type: 2}
+  _environment: {fileID: 261610336}
+  _maxFlashIntensity: 2
 --- !u!1 &1565635765
 GameObject:
   m_ObjectHideFlags: 0
@@ -15687,7 +15841,7 @@ PrefabInstance:
       value: SM_Env_Water_Plane_01 1 (6)
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -17173,29 +17327,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1705688169
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 192750468}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Version: 3
-  m_UsePipelineSettings: 1
-  m_AdditionalLightsShadowResolutionTier: 2
-  m_LightLayerMask: 1
-  m_RenderingLayers: 1
-  m_CustomShadowLayers: 0
-  m_ShadowLayerMask: 1
-  m_ShadowRenderingLayers: 1
-  m_LightCookieSize: {x: 1, y: 1}
-  m_LightCookieOffset: {x: 0, y: 0}
-  m_SoftShadowQuality: 0
 --- !u!1 &1711990096
 GameObject:
   m_ObjectHideFlags: 0
@@ -17336,7 +17467,7 @@ PrefabInstance:
       value: SM_Env_Water_Plane_01 1 (7)
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -17800,7 +17931,7 @@ PrefabInstance:
       value: OceanTile_500_300
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -18202,7 +18333,7 @@ PrefabInstance:
       value: OceanTile_-500_-300
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -18649,7 +18780,7 @@ PrefabInstance:
       value: OceanTile_-500_300
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -20707,7 +20838,7 @@ PrefabInstance:
       value: SM_Env_Water_Plane_01 1
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -21177,7 +21308,7 @@ PrefabInstance:
       value: OceanTile_500_-500
       objectReference: {fileID: 0}
     - target: {fileID: 5862777521056687919, guid: 93e74d0dda2da7a4691b5da3c6910d6b, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
     m_RemovedComponents: []
@@ -22907,3 +23038,4 @@ SceneRoots:
   - {fileID: 1544360232}
   - {fileID: 1702175367}
   - {fileID: 480112626}
+  - {fileID: 114770901}
