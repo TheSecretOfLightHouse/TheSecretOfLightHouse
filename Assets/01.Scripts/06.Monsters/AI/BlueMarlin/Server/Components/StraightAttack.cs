@@ -30,6 +30,7 @@ namespace Lighthouse.Monsters.AI.Server
 
         private readonly HashSet<MonsterBoatTarget> _hitTargets = new HashSet<MonsterBoatTarget>();
         private SeaMonster _monster;
+        private MonsterAttackAudio _attackAudio;
         private MonsterMotion _motion;
         private SeaMonsterSensor _sensor;
         private Rigidbody _body;
@@ -75,6 +76,7 @@ namespace Lighthouse.Monsters.AI.Server
         private void Awake()
         {
             _monster = GetComponent<SeaMonster>();
+            _attackAudio = GetComponent<MonsterAttackAudio>();
             _motion = GetComponent<MonsterMotion>();
             _sensor = GetComponent<SeaMonsterSensor>();
             _body = GetComponent<Rigidbody>();
@@ -388,7 +390,11 @@ namespace Lighthouse.Monsters.AI.Server
 
             if (_recoveryCompletesCharge && _hitTargets.Add(target) && IsPositive(_monster.Profile.AttackDamage))
             {
-                target.TryApplyDamage(_monster.Profile.AttackDamage);
+                Vector3 impactPosition = target.transform.position;
+                if (target.TryApplyDamage(_monster.Profile.AttackDamage) && _attackAudio != null)
+                {
+                    _attackAudio.PlayImpact(impactPosition);
+                }
             }
 
             if (!_isRecovering)

@@ -26,6 +26,7 @@ GameObject:
   - component: {fileID: 1550432124945366363}
   - component: {fileID: 2645406364049660158}
   - component: {fileID: 4855700159710922371}
+  - component: {fileID: 8746641557229338320}
   m_Layer: 2
   m_Name: Manta
   m_TagString: Untagged
@@ -434,6 +435,26 @@ MonoBehaviour:
   - {x: 0, y: -0.99999994, z: 0}
   - {x: 0, y: 0.000000059604645, z: 0}
   - {x: 0, y: 1, z: 0}
+--- !u!114 &8746641557229338320
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1600035957298383073}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f174fef924a91d04d86404ef7bc793f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _attackClip: {fileID: 8300000, guid: aa981e14ecf380748a1a85da41104319, type: 3}
+  _soundManagerPrefab: {fileID: 6939255676364778467, guid: 291f5116af82d294792d1145de158327, type: 3}
+  _volume: 0.7
+  _minDistance: 2
+  _maxDistance: 40
 --- !u!1 &1644724051019218317
 GameObject:
   m_ObjectHideFlags: 0
