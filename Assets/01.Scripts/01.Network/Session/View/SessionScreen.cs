@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Lighthouse.Network.Session.Net;
 using Lighthouse.Network.Session.Rules;
 using Lighthouse.Systems.Audio;
+using Lighthouse.UI.PlayGuide;
 using Mirror;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -54,6 +55,7 @@ namespace Lighthouse.Network.Session.View
         private Mode _mode;
         private bool _hasMode;
         private bool _isMenuMusicPlaying;
+        private PlayGuideScreen _playGuide;
 
         // Join attempt tracking: a client that never reached the lobby gets no end record from the manager.
         private bool _isAttempting;
@@ -109,6 +111,7 @@ namespace Lighthouse.Network.Session.View
             _gameMenuLeave.onClick.AddListener(ShowLeaveMatch);
 
             _dialog.Hide();
+            _playGuide = PlayGuideScreen.Create(transform);
             ApplyMode(Mode.Hidden);
             RefreshEventSystem();
             SceneManager.sceneLoaded += HandleSceneLoaded;
@@ -127,6 +130,7 @@ namespace Lighthouse.Network.Session.View
 
             if (!manager)
             {
+                _playGuide.Tick(false, false, false);
                 return;
             }
 
@@ -164,7 +168,11 @@ namespace Lighthouse.Network.Session.View
                     break;
             }
 
-            HandleEscape(mode);
+            _playGuide.Tick(mode == Mode.Lobby, mode == Mode.InGame, _dialog.IsOpen);
+            if (!_playGuide.BlocksSessionEscape)
+            {
+                HandleEscape(mode);
+            }
         }
 
         private void OnDestroy()
@@ -245,6 +253,10 @@ namespace Lighthouse.Network.Session.View
 
         private void ApplyMode(Mode mode)
         {
+            if (_playGuide)
+            {
+                _playGuide.Close();
+            }
             bool wasOffline = !_hasMode || _mode == Mode.Title || _mode == Mode.Hidden;
             _mode = mode;
             _hasMode = true;
