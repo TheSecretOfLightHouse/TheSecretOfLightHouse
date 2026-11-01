@@ -239,6 +239,11 @@ public static class BuildStagedBoatWreck
             bowArray.arraySize = damagedBows.Length;
             for (int i = 0; i < damagedBows.Length; i++) { bowArray.GetArrayElementAtIndex(i).objectReferenceValue = damagedBows[i]; }
             serialized.ApplyModifiedPropertiesWithoutUndo();
+            // Tiny wreck fragments must not project scattered shadow-map pixels onto the water.
+            foreach (Renderer wreckRenderer in root.GetComponentsInChildren<Renderer>(true))
+            {
+                wreckRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
             PrefabUtility.SaveAsPrefabAsset(root, _prefabPath);
             GameObject boatRoot = PrefabUtility.LoadPrefabContents(boatPath);
             try
@@ -457,17 +462,26 @@ public static class BuildStagedBoatWreck
     private static void AddTriangle(Vertex a, Vertex b, Vertex c, List<Vector3> positions,
         List<Vector3> normals, List<Vector2> uvs, List<int> indices)
     {
+        Vector3 face = Vector3.Cross(b.Position - a.Position, c.Position - a.Position);
+        float length = Mathf.Sqrt(face.sqrMagnitude);
+        // Vector3.normalized drops tiny fracture faces to zero, which breaks shader normalization.
+        Vector3 fallback = length > 1e-15f ? face / length : Vector3.up;
         foreach (Vertex vertex in new[] { a, b, c })
         {
             indices.Add(positions.Count);
             positions.Add(vertex.Position);
-            normals.Add(vertex.Normal);
+            normals.Add(vertex.Normal.sqrMagnitude > 1e-8f ? vertex.Normal : fallback);
             uvs.Add(vertex.Uv);
         }
     }
 
     private static Mesh SaveMesh(Mesh mesh, string path)
     {
+        // Split meshes keep normal-mapped exterior materials and therefore need a tangent basis.
+        if (mesh.uv.Length == mesh.vertexCount)
+        {
+            mesh.RecalculateTangents();
+        }
         mesh.name = System.IO.Path.GetFileNameWithoutExtension(path);
         Mesh existing = AssetDatabase.LoadAssetAtPath<Mesh>(path);
         if (existing)
