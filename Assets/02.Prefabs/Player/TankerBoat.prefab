@@ -521,6 +521,7 @@ MonoBehaviour:
   _requestInterval: 0.2
   _wreckEffectPrefab: {fileID: 1354090552607619971, guid: f8bc0baa7df78534ea6761ea623114c8, type: 3}
   _dashAccelerationMultiplier: 4
+  _windProfile: {fileID: 0}
 --- !u!114 &8262838324486348243
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -783,6 +784,10 @@ MonoBehaviour:
   syncInterval: 0
   _angularDamping: 2
   _maxAngularAcceleration: 5
+  _waveTiltReduction: 0.3
+  _collisionTiltReduction: 0.5
+  _collisionDampingMultiplier: 1.5
+  _collisionPushReduction: 0.5
 --- !u!114 &4840133022902548340
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -920,6 +925,8 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   _effectPrefab: {fileID: 5001030518475604775, guid: 5f63cec88d728c54ebc9214da5ace6b2, type: 3}
+  _boatImpactClip: {fileID: 8300000, guid: 09a5803ab9b293d44953a61e50c7c94f, type: 3}
+  _boatImpactVolume: 1
   _effectOffset: {x: 0, y: 0, z: 0}
   _effectScale: 1.5
   _useWaterSurface: 1

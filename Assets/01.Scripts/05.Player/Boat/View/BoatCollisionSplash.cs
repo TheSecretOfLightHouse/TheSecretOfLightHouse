@@ -1,4 +1,6 @@
 using Mirror;
+using System.Collections.Generic;
+using Lighthouse.Systems.Audio;
 using Lighthouse.Monsters.AI.Net;
 using Lighthouse.World.Query.Rules;
 using UnityEngine;
@@ -11,6 +13,8 @@ namespace Lighthouse.Player.Boat.View
     public sealed class BoatCollisionSplash : NetworkBehaviour
     {
         [SerializeField] private BoatCollisionSplashEffect _effectPrefab;
+        [SerializeField] private AudioClip _boatImpactClip;
+        [SerializeField, Range(0f, 1f)] private float _boatImpactVolume = 1f;
         [Tooltip("Offset in world metres from the contact: X along the surface, Y up, Z away from the obstacle.")]
         [SerializeField] private Vector3 _effectOffset = Vector3.zero;
         [SerializeField, Min(0.1f)] private float _effectScale = 1.5f;
@@ -27,6 +31,7 @@ namespace Lighthouse.Player.Boat.View
         private BoatCannonFeedback _feedback;
         private float _nextLocalTime;
         private double _nextServerTime;
+        private readonly Dictionary<uint, double> _nextBoatImpactTimes = new Dictionary<uint, double>();
 
         private void Awake()
         {
@@ -103,13 +108,19 @@ namespace Lighthouse.Player.Boat.View
             PlaySplash(position, normal, strength, rockHull);
             if (NetworkClient.active && isClient && isOwned)
             {
-                CmdReportSplash(position, normal, strength, rockHull);
+                BoatController otherBoat = other.GetComponentInParent<BoatController>();
+                CmdReportSplash(position, normal, strength, rockHull, otherBoat ? otherBoat.netId : 0);
+            }
+            else if (!NetworkClient.active && !NetworkServer.active
+                && other.GetComponentInParent<BoatController>())
+            {
+                PlayBoatImpact(position);
             }
             return true;
         }
 
         [Command]
-        private void CmdReportSplash(Vector3 position, Vector3 normal, float strength, bool rockHull,
+        private void CmdReportSplash(Vector3 position, Vector3 normal, float strength, bool rockHull, uint otherBoatId,
             NetworkConnectionToClient sender = null)
         {
             if (!CanRelaySplash(position, normal, strength, sender))
@@ -120,6 +131,42 @@ namespace Lighthouse.Player.Boat.View
             _nextServerTime = NetworkTime.time + _cooldown;
             RpcPlaySplash(position, Vector3.ProjectOnPlane(normal, Vector3.up).normalized,
                 Mathf.Clamp01(strength), rockHull);
+            RelayBoatImpact(otherBoatId, position);
+        }
+
+        private void RelayBoatImpact(uint otherBoatId, Vector3 position)
+        {
+            if (otherBoatId == netId || !NetworkServer.spawned.TryGetValue(otherBoatId, out NetworkIdentity identity)
+                || !identity.TryGetComponent(out BoatCollisionSplash other) || !other._hull
+                || other._boat.IsWrecked
+                || other._hull.bounds.SqrDistance(position) > _contactAllowance * _contactAllowance)
+            {
+                return;
+            }
+            double now = NetworkTime.time;
+            if (_nextBoatImpactTimes.TryGetValue(otherBoatId, out double nextTime) && now < nextTime)
+            {
+                return;
+            }
+            // Both owners report the same contact; reserve the pair on both boats before broadcasting.
+            double next = now + _cooldown;
+            _nextBoatImpactTimes[otherBoatId] = next;
+            other._nextBoatImpactTimes[netId] = next;
+            RpcPlayBoatImpact(position);
+        }
+
+        [ClientRpc]
+        private void RpcPlayBoatImpact(Vector3 position)
+        {
+            PlayBoatImpact(position);
+        }
+
+        private void PlayBoatImpact(Vector3 position)
+        {
+            if (_boatImpactClip && SoundManager.Instance)
+            {
+                SoundManager.Instance.PlayEffectAt(_boatImpactClip, position, _boatImpactVolume);
+            }
         }
 
         private bool CanRelaySplash(Vector3 position, Vector3 normal, float strength,
