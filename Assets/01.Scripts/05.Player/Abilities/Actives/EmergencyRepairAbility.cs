@@ -10,8 +10,8 @@ public sealed class EmergencyRepairAbility : PlayerAbility
 
     public override bool CanExecute(IPlayerAbilityContext context)
     {
-        return context != null
-            && !context.IsDowned
+        return context is PlayerController player
+            && GuardShieldAbility.IsAboardOwnedBoat(player)
             && _isFinished;
     }
 
