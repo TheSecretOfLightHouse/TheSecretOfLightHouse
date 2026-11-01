@@ -14,7 +14,8 @@ namespace Lighthouse.Tower.Net
     //   Ritual (win/vote decisions 3·4): anyone starts it at 100% repair; when its time runs out the votes decide.
     //   Summon (JH04 repair-carryover proposal, 2026-10-22): the repair and the installed modules carry over and the
     //   health starts at the same fixed maximum whatever the repair. Citizens win by finishing the repair, the mafia
-    //   by bringing the health to 0. A summon at 100% repair is already that citizens' win. No special ending.
+    //   by bringing the health to 0. A summon at 100% repair is already that citizens' win.
+    //   The boss selects the special presentation branch; its outcome is resolved separately.
     // It reports the result through Ended; in the full game the match result owner (MK06) commits it.
     // Requests: StartRitual targets this object.
     [DisallowMultipleComponent]
@@ -50,6 +51,7 @@ namespace Lighthouse.Tower.Net
         private readonly HashSet<int> _returnedParticipants = new HashSet<int>();
 
         private TowerNet _tower;
+        private Lighthouse.Monsters.Boss.BossTestEnvironment _boss;
 
         // Server-only.
         private IRitualVoteJudge _judge;
@@ -83,6 +85,7 @@ namespace Lighthouse.Tower.Net
         private void Awake()
         {
             _tower = GetComponent<TowerNet>();
+            _boss = GetComponent<Lighthouse.Monsters.Boss.BossTestEnvironment>();
             var view = GetComponent<Lighthouse.Tower.View.SummonCinematicView>();
             if (view == null)
             {
@@ -249,11 +252,19 @@ namespace Lighthouse.Tower.Net
         private void TickSummonCinematic()
         {
             double now = NetworkTime.time;
+            // The boss freezes the gauge one frame after the summon; do not select a clip before that decision.
+            if (_cinematicPhase == SummonCinematicPhase.Preparing && _boss != null && !_boss.HasSummoned
+                && now < _cinematicLoadDeadline)
+            {
+                return;
+            }
             if (_cinematicPhase == SummonCinematicPhase.Preparing
                 && (_preparedParticipants.Count == _cinematicParticipants.Count || now >= _cinematicLoadDeadline))
             {
                 _summonCinematicStartedAt = now + _settings.CinematicStartLead;
-                _summonCinematicEndsAt = _summonCinematicStartedAt + _settings.SummonCinematicSeconds;
+                bool isSpecial = _boss != null && _boss.IsSpecialEnding;
+                float duration = isSpecial ? _settings.SpecialEndingCinematicSeconds : _settings.SummonCinematicSeconds;
+                _summonCinematicEndsAt = _summonCinematicStartedAt + duration;
                 _cinematicPhase = SummonCinematicPhase.Playing;
             }
             else if (_cinematicPhase == SummonCinematicPhase.Playing && now >= _summonCinematicEndsAt)

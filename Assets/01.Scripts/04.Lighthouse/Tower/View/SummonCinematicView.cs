@@ -21,16 +21,23 @@ namespace Lighthouse.Tower.View
         private TowerMatchNet _match;
         private Coroutine _routine;
         private MainSceneSummonPresentation _rig;
+        private MainSceneSummonPresentation _specialRig;
+        private Lighthouse.Monsters.Boss.BossTestEnvironment _boss;
         private Transform _island;
         private bool _ownsRig;
+        private bool _ownsSpecialRig;
+        private bool _isSpecial;
         private uint _sequence;
         private bool _active;
         private bool _showing;
         private float _nextScanAt;
 
+        private MainSceneSummonPresentation CurrentRig => _isSpecial ? _specialRig : _rig;
+
         public void Initialize(TowerMatchNet match)
         {
             _match = match;
+            _boss = match != null ? match.GetComponent<Lighthouse.Monsters.Boss.BossTestEnvironment>() : null;
         }
 
         /// <summary>Binds the presentation to the actual locally constructed island.</summary>
@@ -45,9 +52,26 @@ namespace Lighthouse.Tower.View
             {
                 Destroy(_rig.gameObject);
             }
+            if (_ownsSpecialRig && _specialRig != null)
+            {
+                Destroy(_specialRig.gameObject);
+            }
             _island = island;
-            _rig = island.GetComponentInChildren<MainSceneSummonPresentation>(true);
+            _rig = null;
+            _specialRig = null;
+            foreach (MainSceneSummonPresentation candidate in island.GetComponentsInChildren<MainSceneSummonPresentation>(true))
+            {
+                if (candidate.GetComponent<Lighthouse.Monsters.Boss.SpecialEndingIslandBinding>() != null)
+                {
+                    _specialRig = candidate;
+                }
+                else
+                {
+                    _rig = candidate;
+                }
+            }
             _ownsRig = false;
+            _ownsSpecialRig = false;
             if (_rig == null && _match != null && _match.Settings != null && _match.Settings.SummonPresentationPrefab != null)
             {
                 GameObject instance = Instantiate(_match.Settings.SummonPresentationPrefab, island, false);
@@ -56,9 +80,28 @@ namespace Lighthouse.Tower.View
                 _rig = instance.GetComponent<MainSceneSummonPresentation>();
                 _ownsRig = true;
             }
+            if (_specialRig == null && _match != null && _match.Settings != null
+                && _match.Settings.SpecialEndingPresentationPrefab != null)
+            {
+                GameObject instance = Instantiate(_match.Settings.SpecialEndingPresentationPrefab, island, false);
+                _specialRig = instance.GetComponent<MainSceneSummonPresentation>();
+                _ownsSpecialRig = true;
+            }
+            if (_specialRig != null)
+            {
+                var binding = _specialRig.GetComponent<Lighthouse.Monsters.Boss.SpecialEndingIslandBinding>();
+                if (binding != null)
+                {
+                    binding.Bind(island);
+                }
+            }
             if (_rig != null && _match != null && _match.CinematicPhase == SummonCinematicPhase.Combat)
             {
-                _rig.Finish(true);
+                _isSpecial = _boss != null && _boss.IsSpecialEnding;
+                if (CurrentRig != null)
+                {
+                    CurrentRig.Finish(true);
+                }
             }
             if (_rig != null && _match != null)
             {
@@ -81,6 +124,10 @@ namespace Lighthouse.Tower.View
             if (_ownsRig && _rig != null)
             {
                 Destroy(_rig.gameObject);
+            }
+            if (_ownsSpecialRig && _specialRig != null)
+            {
+                Destroy(_specialRig.gameObject);
             }
         }
 
@@ -131,20 +178,29 @@ namespace Lighthouse.Tower.View
 
         private IEnumerator Present()
         {
-            while (IsCurrent && (_rig == null || !_rig.IsReady)
+            // Tower and boss SyncVars can arrive in separate messages; wait for the public branch decision.
+            while (IsCurrent && _boss != null && !_boss.HasSummoned
+                && NetworkTime.time < _match.CinematicLoadDeadline)
+            {
+                yield return null;
+            }
+            _isSpecial = _boss != null && _boss.IsSpecialEnding;
+            MainSceneSummonPresentation rig = CurrentRig;
+            while (IsCurrent && (rig == null || !rig.IsReady)
                 && _match.CinematicPhase == SummonCinematicPhase.Preparing
                 && NetworkTime.time < _match.CinematicLoadDeadline)
             {
                 yield return null;
+                rig = CurrentRig;
             }
             if (!IsCurrent)
             {
                 yield break;
             }
-            bool skipped = _rig == null || !_rig.IsReady;
+            bool skipped = rig == null || !rig.IsReady;
             if (!skipped)
             {
-                _rig.MatchCamera(Camera.main);
+                rig.MatchCamera(Camera.main);
             }
             _match.CmdReportCinematicPrepared(_sequence);
             while (IsCurrent && _match.CinematicPhase == SummonCinematicPhase.Preparing)
@@ -163,7 +219,7 @@ namespace Lighthouse.Tower.View
                             CaptureScenes();
                             _showing = true;
                         }
-                        _rig.Synchronize(elapsed);
+                        rig.Synchronize(elapsed);
                     }
                     catch (Exception)
                     {
@@ -204,7 +260,8 @@ namespace Lighthouse.Tower.View
                 root.GetComponentsInChildren(true, _behaviours);
                 foreach (Behaviour behaviour in _behaviours)
                 {
-                    if (_rig != null && behaviour.transform.IsChildOf(_rig.transform))
+                    if ((_rig != null && behaviour.transform.IsChildOf(_rig.transform))
+                        || (_specialRig != null && behaviour.transform.IsChildOf(_specialRig.transform)))
                     {
                         continue;
                     }
@@ -225,11 +282,11 @@ namespace Lighthouse.Tower.View
         private void RestoreVisuals()
         {
             _showing = false;
-            if (_rig != null)
+            if (CurrentRig != null)
             {
                 bool completed = _match != null && (_match.CinematicPhase == SummonCinematicPhase.Returning
                     || _match.CinematicPhase == SummonCinematicPhase.Combat);
-                _rig.Finish(completed);
+                CurrentRig.Finish(completed);
             }
             foreach (KeyValuePair<Behaviour, bool> entry in _saved)
             {

@@ -25,6 +25,8 @@ namespace Lighthouse.Tower.Rules
         private float _summonCinematicSeconds = 12f;
 
         [SerializeField] private GameObject _summonPresentationPrefab;
+        [SerializeField] private GameObject _specialEndingPresentationPrefab;
+        [SerializeField, Min(0.1f)] private float _specialEndingCinematicSeconds = 22.958333f;
         [SerializeField, Min(0.1f)] private float _cinematicLoadTimeout = 10f;
         [SerializeField, Min(0.1f)] private float _cinematicReturnTimeout = 5f;
         [SerializeField, Min(0.1f)] private float _cinematicStartLead = 0.5f;
@@ -39,6 +41,8 @@ namespace Lighthouse.Tower.Rules
         public float MaxHealth => _maxHealth;
         public float SummonCinematicSeconds => _summonCinematicSeconds;
         public GameObject SummonPresentationPrefab => _summonPresentationPrefab;
+        public GameObject SpecialEndingPresentationPrefab => _specialEndingPresentationPrefab;
+        public float SpecialEndingCinematicSeconds => _specialEndingCinematicSeconds;
         public float CinematicLoadTimeout => _cinematicLoadTimeout;
         public float CinematicReturnTimeout => _cinematicReturnTimeout;
         public float CinematicStartLead => _cinematicStartLead;
@@ -48,6 +52,11 @@ namespace Lighthouse.Tower.Rules
         // Returns the first problem, or null.
         public string Validate()
         {
+            if (_specialEndingPresentationPrefab != null && (float.IsNaN(_specialEndingCinematicSeconds)
+                || float.IsInfinity(_specialEndingCinematicSeconds) || _specialEndingCinematicSeconds <= 0f))
+            {
+                return $"{name}: special ending duration must be positive and finite.";
+            }
             foreach (float duration in new[] { _cinematicLoadTimeout, _cinematicReturnTimeout, _cinematicStartLead, _cinematicReturnGrace })
             {
                 if (float.IsNaN(duration) || float.IsInfinity(duration) || duration <= 0f)

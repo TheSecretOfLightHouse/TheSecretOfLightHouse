@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: SpecialEnding_StormSky
+  m_Shader: {fileID: 4800000, guid: 2f4469a291ef2ba41abafd809c35e38f, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _BoltWidth: 0.0018
+    - _CloudCoverage: 0.78
+    - _CloudOpacity: 0.95
+    - _CloudScale: 1.5
+    - _CloudShading: 2.5
+    - _CloudSoftness: 0.22
+    - _GradientHeight: 0.5
+    - _HorizonFogBlend: 1
+    - _MistHeight: 0.16
+    - _MistOpacity: 0.65
+    - _MoonGlowFalloff: 3
+    - _MoonHaloFalloff: 12
+    - _MoonOpacity: 0
+    - _MoonSize: 0.03
+    - _ScudCoverage: 0.45
+    - _ScudOpacity: 0.75
+    - _ScudScale: 1.8
+    - _ScudSpeed: 2.5
+    - _StarBrightness: 0
+    - _StarDensity: 0.2
+    - _StarTwinkleSpeed: 3
+    m_Colors:
+    - _BoltColor: {r: 3.2, g: 3.6, b: 4.2, a: 1}
+    - _CloudDarkColor: {r: 0.015, g: 0.026, b: 0.045, a: 1}
+    - _CloudLitColor: {r: 0.17, g: 0.23, b: 0.32, a: 1}
+    - _CloudWind: {r: 0.025, g: 0.006, b: 0, a: 0}
+    - _FlashColor: {r: 0.54999995, g: 0.65, b: 0.8, a: 1}
+    - _HorizonColor: {r: 0.07, g: 0.1, b: 0.14, a: 1}
+    - _MoonColor: {r: 0.8, g: 0.86, b: 0.9, a: 1}
+    - _MoonDirection: {r: 0.2, g: 0.4, b: 0.9, a: 0}
+    - _MoonHaloColor: {r: 0.14, g: 0.22, b: 0.34, a: 1}
+    - _ScudColor: {r: 0.02, g: 0.035, b: 0.055, a: 1}
+    - _ZenithColor: {r: 0.025, g: 0.045, b: 0.075, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
