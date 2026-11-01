@@ -4,6 +4,7 @@ namespace Lighthouse.Dev
 {
     // One on/off button for the dev windows (resource grant, tower, workbench). Hidden by default; the button is drawn
     // bottom-left only while at least one of those windows is in the scene, so it needs no scene object of its own.
+    // While on, a frame readout sits beside the button for checking stutter in multi-window tests.
     public static class DevPanelSwitch
     {
         private static int _panelCount;
@@ -50,6 +51,36 @@ namespace Lighthouse.Dev
     {
         private const float Width = 140f;
         private const float Height = 28f;
+        private const float FrameLabelWidth = 300f;
+
+        // Long enough for a steady average, short enough to catch a hitch while moving.
+        private const float FrameSampleSeconds = 0.5f;
+
+        private int _frameCount;
+        private float _frameTime;
+        private float _worstFrameTime;
+        private string _frameText = string.Empty;
+
+        // Frame stats are counted even while the dev windows are off so the first reading is already filled in.
+        private void Update()
+        {
+            float deltaTime = Time.unscaledDeltaTime;
+            _frameCount++;
+            _frameTime += deltaTime;
+            _worstFrameTime = Mathf.Max(_worstFrameTime, deltaTime);
+
+            if (_frameTime < FrameSampleSeconds)
+            {
+                return;
+            }
+
+            // The worst frame shows stutter that a 60 average hides; focus shows whether this window is the active one.
+            _frameText = $"FPS {_frameCount / _frameTime:0.0} / 목표 {Application.targetFrameRate}  " +
+                $"최악 {_worstFrameTime * 1000f:0.0}ms  {(Application.isFocused ? "활성 창" : "비활성 창")}";
+            _frameCount = 0;
+            _frameTime = 0f;
+            _worstFrameTime = 0f;
+        }
 
         private void OnGUI()
         {
@@ -63,6 +94,11 @@ namespace Lighthouse.Dev
             if (GUI.Button(rect, DevPanelSwitch.IsOn ? "개발자 창 끄기" : "개발자 창 켜기"))
             {
                 DevPanelSwitch.Toggle();
+            }
+
+            if (DevPanelSwitch.IsOn)
+            {
+                GUI.Label(new Rect(rect.xMax + 10f, rect.y, FrameLabelWidth, Height), _frameText, GUI.skin.box);
             }
         }
     }
