@@ -43,6 +43,13 @@ namespace Lighthouse.Player.Boat.View
 
         public void ApplyPose(float elapsed)
         {
+            // Floating timber keeps the effect alive, so completed sinking pieces need their own visibility cutoff.
+            bool isVisible = _stayAfloat || elapsed < _sinkTime + Mathf.Max(0.01f, _sinkDuration);
+            if (gameObject.activeSelf != isVisible)
+            {
+                gameObject.SetActive(isVisible);
+            }
+
             if (_visibleObject && _hideUntilRelease)
             {
                 _visibleObject.SetActive(elapsed >= _releaseTime);
