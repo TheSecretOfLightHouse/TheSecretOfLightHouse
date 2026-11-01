@@ -695,10 +695,28 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  _requirements:
-  - _resourceId: 1
-    _amount: 1
-  _repairAmount: 30
+  _recipes:
+  - _displayName: "\uAC04\uC774 \uC218\uB9AC"
+    _repairAmount: 10
+    _requirements:
+    - _resourceId: 2
+      _amount: 1
+  - _displayName: "\uC77C\uBC18 \uC218\uB9AC"
+    _repairAmount: 30
+    _requirements:
+    - _resourceId: 2
+      _amount: 2
+    - _resourceId: 3
+      _amount: 1
+  - _displayName: "\uBCF4\uAC15 \uC218\uB9AC"
+    _repairAmount: 50
+    _requirements:
+    - _resourceId: 2
+      _amount: 3
+    - _resourceId: 4
+      _amount: 1
+    - _resourceId: 3
+      _amount: 1
 --- !u!114 &4491607475818582504
 MonoBehaviour:
   m_ObjectHideFlags: 0

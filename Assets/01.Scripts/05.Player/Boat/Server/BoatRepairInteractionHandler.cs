@@ -53,6 +53,6 @@ public sealed class BoatRepairInteractionHandler : NetworkBehaviour, IInteractio
             return InteractionResultCode.Rejected;
         }
 
-        return repair.TryRepair(player) ? InteractionResultCode.Success : InteractionResultCode.Rejected;
+        return repair.TryRepair(player, context.Arg0) ? InteractionResultCode.Success : InteractionResultCode.Rejected;
     }
 }

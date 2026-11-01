@@ -39,6 +39,9 @@ namespace Lighthouse.Player.Inventory.View
         private readonly UnityEngine.UI.Image[] _repairIcons = new UnityEngine.UI.Image[8];
         private readonly UnityEngine.UI.Text[] _repairRows = new UnityEngine.UI.Text[8];
         private readonly UnityEngine.UI.Text[] _repairAmounts = new UnityEngine.UI.Text[8];
+        private readonly UnityEngine.UI.Button[] _repairRecipeButtons = new UnityEngine.UI.Button[3];
+        private readonly UnityEngine.UI.Text[] _repairRecipeLabels = new UnityEngine.UI.Text[3];
+        private readonly InventoryFrameGraphic[] _repairRecipeFrames = new InventoryFrameGraphic[3];
         private UnityEngine.UI.Text _capacityLabel;
         private UnityEngine.UI.Text _carriedLabel;
         private UnityEngine.UI.Text _loadoutCarriedLabel;
@@ -55,6 +58,7 @@ namespace Lighthouse.Player.Inventory.View
         private Texture2D _roundedTexture;
         private Sprite _roundedSprite;
         private int _selectedTab;
+        private int _selectedRepairRecipe;
         private int _lastShipHash;
         private float _nextShipRefresh;
         private bool _isRepairing;
@@ -149,12 +153,22 @@ namespace Lighthouse.Player.Inventory.View
             _durabilityLabel = MakeText("Durability", page, "배 정보 없음", 265f, 316f, 305f, 36f, 22, Cream, TextAnchor.MiddleRight);
             Transform bar = MakeFrame("Track", page, 20f, 359f, 550f, 26f, Color.clear, Muted).transform;
             _durabilityFill = MakePanel("Fill", bar, 4f, 4f, 542f, 18f, Gold);
-            MakeText("RecipeHeading", page, "수리 재료", 640f, 0f, 270f, 38f, 25, Cream);
+            MakeText("RecipeHeading", page, "수리 레시피", 640f, 0f, 270f, 38f, 25, Cream);
             MakePanel("RecipeLine", page, 640f, 48f, 270f, 1f, Muted);
+            for (int i = 0; i < _repairRecipeButtons.Length; i++)
+            {
+                int recipeIndex = i;
+                UnityEngine.UI.Button button = MakeButton("RepairRecipe" + i, page, "", 640f + i * 92f, 62f, 86f, 54f,
+                    () => SelectRepairRecipe(recipeIndex));
+                _repairRecipeButtons[i] = button;
+                _repairRecipeLabels[i] = button.GetComponentInChildren<UnityEngine.UI.Text>();
+                _repairRecipeLabels[i].fontSize = 16;
+                _repairRecipeFrames[i] = MakeFrame("Border", button.transform, 0f, 0f, 86f, 54f, Color.clear, Muted);
+            }
             for (int i = 0; i < _repairRows.Length; i++)
             {
                 float x = 640f + i % 4 * 68f;
-                float y = 66f + i / 4 * 105f;
+                float y = 132f + i / 4 * 105f;
                 Transform cell = MakeRect("Material" + i, page, x, y, 64f, 100f);
                 _repairIcons[i] = MakePanel("Icon", cell, 4f, 0f, 56f, 56f, Color.white);
                 _repairIcons[i].type = UnityEngine.UI.Image.Type.Simple;
@@ -162,7 +176,7 @@ namespace Lighthouse.Player.Inventory.View
                 _repairRows[i] = MakeText("Name", cell, "", 0f, 56f, 64f, 19f, 11, Muted, TextAnchor.MiddleCenter);
                 _repairAmounts[i] = MakeText("Amount", cell, "", 0f, 76f, 64f, 24f, 17, Cream, TextAnchor.MiddleCenter);
             }
-            _repairDescription = MakeText("RepairAmount", page, "", 640f, 282f, 270f, 35f, 22, Gold);
+            _repairDescription = MakeText("RepairAmount", page, "", 640f, 244f, 270f, 76f, 17, Gold);
             _repairButton = MakeButton("Repair", page, "수리", 650f, 334f, 250f, 56f, HandleRepairClicked);
             _repairStatus = MakeText("Status", page, "", 20f, 395f, 550f, 30f, 13, Muted);
         }
@@ -303,6 +317,7 @@ namespace Lighthouse.Player.Inventory.View
             _displayBoat = boat;
             _boatDurability = boat ? boat.GetComponent<BoatDurability>() : null;
             _boatRepair = boat ? boat.GetComponent<BoatRepair>() : null;
+            _selectedRepairRecipe = _boatRepair && _boatRepair.HasPendingMaterials ? _boatRepair.ActiveRecipeIndex : 0;
             _equipment = boat ? boat.GetComponent<BoatModuleEquipment>() : null;
             _lastShipHash = int.MinValue;
         }
@@ -319,7 +334,13 @@ namespace Lighthouse.Player.Inventory.View
             {
                 BindBoat(boat);
             }
+            if (_boatRepair && _boatRepair.HasPendingMaterials)
+            {
+                _selectedRepairRecipe = _boatRepair.ActiveRecipeIndex;
+            }
             int hash = _boatDurability ? _boatDurability.CurrentDurability.GetHashCode() ^ _boatDurability.MaxDurability.GetHashCode() : 0;
+            hash = hash * 31 + _selectedRepairRecipe;
+            hash = hash * 31 + (_boatRepair ? _boatRepair.ActiveRecipeIndex : -1);
             hash = hash * 31 + (_player && _player.IsOnBoat ? 1 : 0);
             hash = hash * 31 + (_inventory ? _inventory.ModuleRecipeId : 0);
             hash = hash * 31 + (_relay && _relay.IsAwaitingResult ? 1 : 0);
@@ -333,9 +354,9 @@ namespace Lighthouse.Player.Inventory.View
             }
             if (_boatRepair)
             {
-                for (int i = 0; i < _boatRepair.RequirementCount; i++)
+                for (int i = 0; i < _boatRepair.GetRequirementCount(_selectedRepairRecipe); i++)
                 {
-                    int id = _boatRepair.GetRequirementResourceId(i);
+                    int id = _boatRepair.GetRequirementResourceId(_selectedRepairRecipe, i);
                     hash = hash * 31 + _boatRepair.GetDepositedAmount(id);
                     hash = hash * 31 + (_inventory ? _inventory.GetSyncedCount(id) : 0);
                 }
@@ -357,46 +378,59 @@ namespace Lighthouse.Player.Inventory.View
             float ratio = maximum > 0f ? current / maximum : 0f;
             _durabilityLabel.text = _boatDurability ? $"{current:0} / {maximum:0}" : "배 정보 없음";
             _durabilityFill.rectTransform.sizeDelta = new Vector2(542f * Mathf.Clamp01(ratio), 18f);
-            _durabilityFill.color = ratio < 0.3f ? new Color(0.9f, 0.35f, 0.28f) : Teal;
+            _durabilityFill.color = current * 5f < maximum ? new Color(0.9f, 0.35f, 0.28f) : Teal;
+            bool isPending = _boatRepair && _boatRepair.HasPendingMaterials;
+            bool isBusy = _isRepairing || _isInstalling || (_relay && _relay.IsAwaitingResult);
+            int requirementCount = _boatRepair ? _boatRepair.GetRequirementCount(_selectedRepairRecipe) : 0;
+            for (int i = 0; i < _repairRecipeButtons.Length; i++)
+            {
+                bool valid = _boatRepair && i < _boatRepair.RecipeCount;
+                _repairRecipeButtons[i].interactable = valid && !isPending && !isBusy;
+                _repairRecipeLabels[i].text = valid ? $"{_boatRepair.GetRecipeName(i)}\n+{_boatRepair.GetRepairAmount(i):0.#}" : "";
+                _repairRecipeLabels[i].color = i == _selectedRepairRecipe ? Gold : Muted;
+                _repairRecipeFrames[i].Configure(i == _selectedRepairRecipe ? Gold : Muted);
+            }
             bool hasMaterials = false;
             for (int i = 0; i < _repairRows.Length; i++)
             {
-                bool valid = _boatRepair && i < _boatRepair.RequirementCount;
+                bool valid = _boatRepair && i < requirementCount;
                 _repairRows[i].transform.parent.gameObject.SetActive(valid);
                 _repairAmounts[i].gameObject.SetActive(valid);
                 if (!valid)
                 {
                     continue;
                 }
-                int id = _boatRepair.GetRequirementResourceId(i);
+                int id = _boatRepair.GetRequirementResourceId(_selectedRepairRecipe, i);
                 int owned = _inventory ? _inventory.GetSyncedCount(id) : 0;
                 int deposited = _boatRepair.GetDepositedAmount(id);
-                int required = _boatRepair.GetRequiredAmount(id);
+                int required = _boatRepair.GetRequiredAmount(_selectedRepairRecipe, id);
                 _repairRows[i].text = _inventory ? _inventory.GetResourceDisplayName(id) : "자원";
                 _repairAmounts[i].text = deposited > 0 ? $"{owned}+{deposited} / {required}" : $"{owned} / {required}";
                 _repairIcons[i].sprite = GetResourceIcon(id);
                 _repairIcons[i].enabled = _repairIcons[i].sprite;
-                int columns = Mathf.Min(4, _boatRepair.RequirementCount);
+                int columns = Mathf.Min(4, requirementCount);
                 RectTransform cell = (RectTransform)_repairRows[i].transform.parent;
                 float spacing = 270f / Mathf.Max(1, columns);
-                cell.anchoredPosition = new Vector2(640f + i % 4 * spacing + (spacing - 64f) * 0.5f, -66f - i / 4 * 105f);
+                cell.anchoredPosition = new Vector2(640f + i % 4 * spacing + (spacing - 64f) * 0.5f, -132f - i / 4 * 105f);
                 _repairRows[i].color = owned + deposited >= required ? Teal : Cream;
                 _repairAmounts[i].color = _repairRows[i].color;
                 hasMaterials |= owned > 0 && deposited < required;
             }
             float multiplier = GetDisplayedRepairMultiplier();
-            _repairDescription.text = _boatRepair
-                ? $"수리량  +{_boatRepair.RepairAmount * multiplier:0.#}" : "";
+            float repairAmount = _boatRepair ? _boatRepair.GetRepairAmount(_selectedRepairRecipe) * multiplier : 0f;
+            _repairDescription.text = _boatRepair ? $"수리량 +{repairAmount:0.#}" : "";
             if (_boatRepair && multiplier > 1f)
             {
                 _repairDescription.text += $"  (×{multiplier:0.##})";
             }
             bool aboard = _player && _player.IsOnBoat && _player.CurrentBoat == _displayBoat;
             _repairStatus.text = !_boatDurability ? "소유한 배 정보가 없습니다." : _boatDurability.IsWrecked ? "난파한 배는 일반 수리를 할 수 없습니다."
-                : ratio < 0.3f ? "내구도 30% 미만 · 일반 수리 불가" : ratio >= 1f ? "선체 상태가 완전합니다."
-                : !aboard ? "자기 배에 탑승하면 수리할 수 있습니다." : !hasMaterials ? "투입할 수리 재료가 부족합니다." : "수리 가능 · 보유 재료를 투입하세요.";
-            _repairButton.interactable = _boatRepair && _boatRepair.RequirementCount > 0 && _boatDurability && !_boatDurability.IsWrecked
-                && ratio >= 0.3f && ratio < 1f && aboard && hasMaterials && _inventory && _relay && !_relay.IsAwaitingResult
+                : current * 5f < maximum ? "내구도 20% 미만 · 일반 수리 불가" : ratio >= 1f ? "선체 상태가 완전합니다."
+                : !aboard ? "자기 배에 탑승하면 수리할 수 있습니다."
+                : isPending ? "부분 투입 중 · 현재 수리를 완료해야 레시피를 바꿀 수 있습니다."
+                : !hasMaterials ? "투입할 수리 재료가 부족합니다." : "수리 가능 · 보유 재료를 투입하세요.";
+            _repairButton.interactable = _boatRepair && requirementCount > 0 && _boatDurability && !_boatDurability.IsWrecked
+                && maximum > 0f && current * 5f >= maximum && ratio < 1f && aboard && hasMaterials && _inventory && _relay && !_relay.IsAwaitingResult
                 && !_isRepairing && !_isInstalling && NetworkClient.ready;
         }
 
@@ -404,6 +438,17 @@ namespace Lighthouse.Player.Inventory.View
         {
             return _player && _player.PassiveController && _displayBoat
                 ? _player.PassiveController.GetRepairAmountMultiplier(_displayBoat) : 1f;
+        }
+
+        private void SelectRepairRecipe(int recipeIndex)
+        {
+            if (!_boatRepair || _boatRepair.HasPendingMaterials || _isRepairing || _isInstalling
+                || (_relay && _relay.IsAwaitingResult) || recipeIndex < 0 || recipeIndex >= _boatRepair.RecipeCount)
+            {
+                return;
+            }
+            _selectedRepairRecipe = recipeIndex;
+            UpdateShipPanels(true);
         }
 
         private void HandleRepairClicked()
@@ -415,7 +460,7 @@ namespace Lighthouse.Player.Inventory.View
             _isRepairing = true;
             _repairButton.interactable = false;
             _message.text = "수리 재료 투입 요청 중...";
-            if (!_relay.TrySendToNetworkTarget(_displayBoat.netId, InteractionAction.RepairBoat))
+            if (!_relay.TrySendToNetworkTarget(_displayBoat.netId, InteractionAction.RepairBoat, _selectedRepairRecipe))
             {
                 _isRepairing = false;
                 _message.text = "요청을 보내지 못했습니다.";

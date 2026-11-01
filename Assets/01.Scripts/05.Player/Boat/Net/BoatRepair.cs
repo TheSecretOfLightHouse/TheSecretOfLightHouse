@@ -18,13 +18,48 @@ public sealed class BoatRepair : NetworkBehaviour
 
         public int ResourceId => _resourceId;
         public int Amount => _amount;
+
+        public MaterialRequirement(int resourceId, int amount)
+        {
+            _resourceId = resourceId;
+            _amount = amount;
+        }
+    }
+
+    [Serializable]
+    private sealed class RepairRecipe
+    {
+        [SerializeField]
+        private string _displayName;
+
+        [SerializeField, Min(0.01f)]
+        private float _repairAmount;
+
+        [SerializeField]
+        private MaterialRequirement[] _requirements;
+
+        public string DisplayName => _displayName;
+        public float RepairAmount => _repairAmount;
+        public MaterialRequirement[] Requirements => _requirements;
+
+        public RepairRecipe(string displayName, float repairAmount, params MaterialRequirement[] requirements)
+        {
+            _displayName = displayName;
+            _repairAmount = repairAmount;
+            _requirements = requirements;
+        }
     }
 
     [SerializeField]
-    private MaterialRequirement[] _requirements;
+    private RepairRecipe[] _recipes =
+    {
+        new RepairRecipe("간이 수리", 10f, new MaterialRequirement(2, 1)),
+        new RepairRecipe("일반 수리", 30f, new MaterialRequirement(2, 2), new MaterialRequirement(3, 1)),
+        new RepairRecipe("보강 수리", 50f, new MaterialRequirement(2, 3), new MaterialRequirement(4, 1), new MaterialRequirement(3, 1))
+    };
 
-    [SerializeField, Min(0.01f)]
-    private float _repairAmount = 30f;
+    [SyncVar]
+    private int _activeRecipeIndex = -1;
 
     private readonly SyncDictionary<int, int> _deposited = new SyncDictionary<int, int>();
 
@@ -32,13 +67,33 @@ public sealed class BoatRepair : NetworkBehaviour
     private BoatDurability _durability;
     private bool _isConfigured;
 
-    public int RequirementCount => _requirements == null ? 0 : _requirements.Length;
-    public float RepairAmount => _repairAmount;
+    public int RecipeCount => _recipes == null ? 0 : _recipes.Length;
+    public int ActiveRecipeIndex => _activeRecipeIndex;
+    public bool HasPendingMaterials => _activeRecipeIndex >= 0;
 
-    public int GetRequirementResourceId(int index)
+    public string GetRecipeName(int recipeIndex)
     {
-        return _requirements != null && index >= 0 && index < _requirements.Length && _requirements[index] != null
-            ? _requirements[index].ResourceId : 0;
+        RepairRecipe recipe = GetRecipe(recipeIndex);
+        return recipe == null ? string.Empty : recipe.DisplayName;
+    }
+
+    public float GetRepairAmount(int recipeIndex)
+    {
+        RepairRecipe recipe = GetRecipe(recipeIndex);
+        return recipe == null ? 0f : recipe.RepairAmount;
+    }
+
+    public int GetRequirementCount(int recipeIndex)
+    {
+        RepairRecipe recipe = GetRecipe(recipeIndex);
+        return recipe == null || recipe.Requirements == null ? 0 : recipe.Requirements.Length;
+    }
+
+    public int GetRequirementResourceId(int recipeIndex, int index)
+    {
+        RepairRecipe recipe = GetRecipe(recipeIndex);
+        return recipe != null && recipe.Requirements != null && index >= 0 && index < recipe.Requirements.Length
+            && recipe.Requirements[index] != null ? recipe.Requirements[index].ResourceId : 0;
     }
 
     private void Awake()
@@ -52,6 +107,7 @@ public sealed class BoatRepair : NetworkBehaviour
         base.OnStartServer();
 
         _deposited.Clear();
+        _activeRecipeIndex = -1;
         _isConfigured = ValidateConfiguration();
         _durability.Wrecked += HandleWrecked;
 
@@ -76,14 +132,15 @@ public sealed class BoatRepair : NetworkBehaviour
         return _deposited.TryGetValue(resourceId, out int amount) ? amount : 0;
     }
 
-    public int GetRequiredAmount(int resourceId)
+    public int GetRequiredAmount(int recipeIndex, int resourceId)
     {
-        if (_requirements == null)
+        RepairRecipe recipe = GetRecipe(recipeIndex);
+        if (recipe == null || recipe.Requirements == null)
         {
             return 0;
         }
 
-        foreach (MaterialRequirement requirement in _requirements)
+        foreach (MaterialRequirement requirement in recipe.Requirements)
         {
             if (requirement != null && requirement.ResourceId == resourceId)
             {
@@ -95,9 +152,11 @@ public sealed class BoatRepair : NetworkBehaviour
     }
 
     [Server]
-    public bool TryRepair(PlayerController player)
+    public bool TryRepair(PlayerController player, int recipeIndex = 0)
     {
-        if (!_isConfigured || !player)
+        RepairRecipe recipe = GetRecipe(recipeIndex);
+        if (!_isConfigured || !player || recipe == null
+            || (HasPendingMaterials && _activeRecipeIndex != recipeIndex))
         {
             return false;
         }
@@ -111,7 +170,8 @@ public sealed class BoatRepair : NetworkBehaviour
         float current = _durability.CurrentDurability;
         float maximum = _durability.MaxDurability;
 
-        if (_durability.IsWrecked || current < maximum * 0.3f || current >= maximum)
+        // Integer factors keep the inclusive 20% boundary free of 0.2f rounding.
+        if (_durability.IsWrecked || maximum <= 0f || current * 5f < maximum || current >= maximum)
         {
             return false;
         }
@@ -125,7 +185,7 @@ public sealed class BoatRepair : NetworkBehaviour
 
         bool hasDeposited = false;
 
-        foreach (MaterialRequirement requirement in _requirements)
+        foreach (MaterialRequirement requirement in recipe.Requirements)
         {
             int deposited = GetDepositedAmount(requirement.ResourceId);
 
@@ -143,6 +203,7 @@ public sealed class BoatRepair : NetworkBehaviour
             }
 
             _deposited[requirement.ResourceId] = deposited + removed;
+            _activeRecipeIndex = recipeIndex;
             hasDeposited = true;
         }
 
@@ -151,7 +212,7 @@ public sealed class BoatRepair : NetworkBehaviour
             return false;
         }
 
-        if (HasAllMaterials())
+        if (HasAllMaterials(recipe))
         {
             float repairMultiplier = 1f;
 
@@ -160,15 +221,15 @@ public sealed class BoatRepair : NetworkBehaviour
                 repairMultiplier = passiveController.GetRepairAmountMultiplier(_boat);
             }
 
-            float repairAmount = _repairAmount * repairMultiplier;
+            float repairAmount = recipe.RepairAmount * repairMultiplier;
 
-            Debug.Log($"{repairAmount}");
             _durability.RestoreDurability(repairAmount);
             if (_durability.CurrentDurability > current)
             {
                 NotifyRepaired();
             }
             _deposited.Clear();
+            _activeRecipeIndex = -1;
         }
 
         return true;
@@ -189,9 +250,14 @@ public sealed class BoatRepair : NetworkBehaviour
         }
     }
 
-    private bool HasAllMaterials()
+    private RepairRecipe GetRecipe(int recipeIndex)
     {
-        foreach (MaterialRequirement requirement in _requirements)
+        return _recipes != null && recipeIndex >= 0 && recipeIndex < _recipes.Length ? _recipes[recipeIndex] : null;
+    }
+
+    private bool HasAllMaterials(RepairRecipe recipe)
+    {
+        foreach (MaterialRequirement requirement in recipe.Requirements)
         {
             if (GetDepositedAmount(requirement.ResourceId) < requirement.Amount)
             {
@@ -206,32 +272,39 @@ public sealed class BoatRepair : NetworkBehaviour
     private void HandleWrecked()
     {
         _deposited.Clear();
+        _activeRecipeIndex = -1;
     }
 
     private bool ValidateConfiguration()
     {
-        if (_requirements == null || _requirements.Length == 0
-            || _repairAmount <= 0f
-            || float.IsNaN(_repairAmount)
-            || float.IsInfinity(_repairAmount))
+        if (_recipes == null || _recipes.Length == 0)
         {
             return false;
         }
 
-        for (int i = 0; i < _requirements.Length; i++)
+        foreach (RepairRecipe recipe in _recipes)
         {
-            MaterialRequirement requirement = _requirements[i];
-
-            if (requirement == null || requirement.Amount <= 0)
+            if (recipe == null || string.IsNullOrWhiteSpace(recipe.DisplayName)
+                || recipe.Requirements == null || recipe.Requirements.Length == 0
+                || recipe.RepairAmount <= 0f || float.IsNaN(recipe.RepairAmount) || float.IsInfinity(recipe.RepairAmount))
             {
                 return false;
             }
 
-            for (int j = 0; j < i; j++)
+            for (int i = 0; i < recipe.Requirements.Length; i++)
             {
-                if (_requirements[j].ResourceId == requirement.ResourceId)
+                MaterialRequirement requirement = recipe.Requirements[i];
+                if (requirement == null || requirement.ResourceId <= 0 || requirement.Amount <= 0)
                 {
                     return false;
+                }
+
+                for (int j = 0; j < i; j++)
+                {
+                    if (recipe.Requirements[j].ResourceId == requirement.ResourceId)
+                    {
+                        return false;
+                    }
                 }
             }
         }
