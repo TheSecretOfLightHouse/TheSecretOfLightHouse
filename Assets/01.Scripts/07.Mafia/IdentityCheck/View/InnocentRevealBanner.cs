@@ -42,7 +42,7 @@ namespace Lighthouse.Mafia.IdentityCheck.View
         [SerializeField]
         private AudioClip _revealClip;
         [SerializeField, Range(0f, 1f)]
-        private float _revealVolume = 1f;
+        private float _revealVolume = 0.6f;
 
         [Header("Parts")]
         [SerializeField]

@@ -1,6 +1,7 @@
 using Lighthouse.Network.Session.Net;
 using Lighthouse.Network.Session.Rules;
 using Lighthouse.Player.Abilities.Net;
+using Lighthouse.Systems.Audio;
 using Mirror;
 using UnityEngine;
 using UnityEngine.UI;
@@ -35,6 +36,14 @@ namespace Lighthouse.UI.Hud
 
         private const string MafiaName = "마피아";
         private const string CitizenName = "선원";
+
+        [Header("Reveal Audio")]
+        [SerializeField]
+        private SoundManager _soundManagerPrefab;
+        [SerializeField]
+        private AudioClip _revealClip;
+        [SerializeField, Range(0f, 1f)]
+        private float _revealVolume = 0.6f;
 
         [Header("Sprites")]
         [SerializeField]
@@ -207,6 +216,25 @@ namespace Lighthouse.UI.Hud
             _isShowing = true;
             _banner.gameObject.SetActive(true);
             Animate(0f);
+            PlayRevealSound();
+        }
+
+        private void PlayRevealSound()
+        {
+            if (!_revealClip)
+            {
+                return;
+            }
+
+            if (!SoundManager.Instance && _soundManagerPrefab)
+            {
+                Instantiate(_soundManagerPrefab);
+            }
+
+            if (SoundManager.Instance)
+            {
+                SoundManager.Instance.PlayEffect(_revealClip, _revealVolume);
+            }
         }
 
         private void Hide()
