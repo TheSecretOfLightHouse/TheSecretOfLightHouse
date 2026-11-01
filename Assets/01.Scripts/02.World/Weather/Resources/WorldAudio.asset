@@ -14,29 +14,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _calm:
     _sea: {fileID: 0}
-    _wind: {fileID: 0}
+    _wind: {fileID: 8300000, guid: f3407f87e499fd147a6f61b7ae830c8c, type: 3}
     _rain: {fileID: 0}
-    _shore: {fileID: 0}
+    _shore: {fileID: 8300000, guid: 6e137d0707eba6544a7bba48e786d392, type: 3}
   _overcast:
     _sea: {fileID: 0}
-    _wind: {fileID: 0}
+    _wind: {fileID: 8300000, guid: f3407f87e499fd147a6f61b7ae830c8c, type: 3}
     _rain: {fileID: 0}
-    _shore: {fileID: 0}
+    _shore: {fileID: 8300000, guid: 6e137d0707eba6544a7bba48e786d392, type: 3}
   _rain:
     _sea: {fileID: 0}
     _wind: {fileID: 0}
-    _rain: {fileID: 0}
-    _shore: {fileID: 0}
+    _rain: {fileID: 8300000, guid: a3db630f362df0642873b4a69aaf70b8, type: 3}
+    _shore: {fileID: 8300000, guid: 057714594e440824fa1358d59d6520ff, type: 3}
   _storm:
     _sea: {fileID: 0}
     _wind: {fileID: 0}
-    _rain: {fileID: 0}
-    _shore: {fileID: 0}
+    _rain: {fileID: 8300000, guid: 1b842554c8c4f8143b3ab4ec8e066598, type: 3}
+    _shore: {fileID: 8300000, guid: 057714594e440824fa1358d59d6520ff, type: 3}
   _maelstrom:
     _sea: {fileID: 0}
-    _wind: {fileID: 0}
-    _rain: {fileID: 0}
-    _shore: {fileID: 0}
+    _wind: {fileID: 8300000, guid: 7efcd6454d1ec8849b2bd1a2f3b8245d, type: 3}
+    _rain: {fileID: 8300000, guid: 1b842554c8c4f8143b3ab4ec8e066598, type: 3}
+    _shore: {fileID: 8300000, guid: 057714594e440824fa1358d59d6520ff, type: 3}
   _islandShores: []
   _thunder: []
   _abyssThunder: []
@@ -48,3 +48,5 @@ MonoBehaviour:
   _fadeSeconds: 3
   _shoreFadeDistance: 20
   _impactRange: 80
+  _shoreVolumeRatio: 0.4
+  _shoreInlandRatio: 0.3
