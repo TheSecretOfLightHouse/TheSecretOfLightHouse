@@ -44,9 +44,11 @@ Material:
     - _Sky_Light: 0
     - _Smoothness: 0.9
     - _Sparkle_Strength: 1.3
+    - _Surface_Caustic: 0
     - _Very_Deep_Height: 22
     m_Colors:
     - _Deep_Color: {r: 0.03, g: 0.7, b: 0.95, a: 1}
+    - _Night_Sky_Tint: {r: 0.089999996, g: 0.079999976, b: 0.29999998, a: 1}
     - _Shallow_Color: {r: 0.12, g: 0.95, b: 0.85, a: 1}
     - _Very_Deep_Color: {r: 0.02, g: 0.42, b: 0.92, a: 1}
     - _Zone_Radii: {r: 200, g: 360, b: 490, a: 60}

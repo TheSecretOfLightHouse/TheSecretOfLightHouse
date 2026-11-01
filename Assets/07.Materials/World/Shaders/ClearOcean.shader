@@ -23,8 +23,10 @@ Shader "Lighthouse/World/ClearOcean"
         _Clarity ("Open Sea Clarity", Range(0, 1)) = 0
         _Lagoon_Reach ("Island Lagoon Reach Metres", Range(2, 14)) = 11
         _Shallow_Caustic ("Surface Shallow Caustic", Range(0, 0.4)) = 0.22
+        _Surface_Caustic ("Open Water Light Net", Range(0, 0.2)) = 0.06
         _Shore_Foam ("Shore Foam Strength", Range(0, 1)) = 1
         _Sky_Light ("Sky Light", Range(0, 2)) = 0
+        _Night_Sky_Tint ("Night Sky Reflection Tint", Color) = (0.09, 0.08, 0.3, 1)
         _Zone_Radii ("Zone Outer Radii + Blend Half Width", Vector) = (200, 360, 490, 60)
         _Zone_Tint0 ("Inner Tint + Clarity Scale", Vector) = (1, 1, 1, 1)
         _Zone_Tint1 ("Middle Tint + Clarity Scale", Vector) = (1, 1, 1, 1)
@@ -40,7 +42,7 @@ Shader "Lighthouse/World/ClearOcean"
             Tags { "LightMode" = "UniversalForward" }
             Blend One Zero
             ZWrite Off
-            Cull Back
+            Cull Off
 
             HLSLPROGRAM
             #pragma vertex Vert
@@ -85,14 +87,28 @@ Shader "Lighthouse/World/ClearOcean"
                 float _Clarity;
                 float _Lagoon_Reach;
                 float _Shallow_Caustic;
+                float _Surface_Caustic;
                 float _Shore_Foam;
                 float _Sky_Light;
+                float4 _Night_Sky_Tint;
                 float4 _Zone_Radii;
                 float4 _Zone_Tint0;
                 float4 _Zone_Tint1;
                 float4 _Zone_Tint2;
                 float4 _Zone_Sky;
             CBUFFER_END
+
+            // xyz = moon direction, w = calm-night weight (0 by day and in storms). Set by OceanAppearanceView.
+            float4 _OceanMoon;
+            // x = night silhouette floor weight (survives storms). Set by OceanAppearanceView.
+            float4 _OceanNightFloor;
+            // Back faces seen from above are drawn only this close to the camera (the near plane clipping the mesh).
+            static const float NearSurfaceReach = 3.0;
+
+            // x = underwater blend, y = camera-near-surface factor, z = camera depth below the surface. Set by UnderwaterCameraState.
+            float4 _OceanUnderwater;
+            // rgb = underwater body / fog colour at the camera. Set by UnderwaterCameraState.
+            float4 _OceanUnderwaterColor;
 
             struct Attributes
             {
@@ -172,7 +188,29 @@ Shader "Lighthouse/World/ClearOcean"
                 specular += radiance * nDotL * pow(saturate(dot(normalWS, halfway)), specularPower);
             }
 
-            half4 Frag(Varyings input) : SV_Target
+            // The surface seen from below: a bright Snell window onto the sky, total internal reflection of the water body outside it.
+            half4 UnderSurface(Varyings input)
+            {
+                float3 interactionNormal = _F3Enabled > 0.5 ? normalize(input.normalWS)
+                    : normalize(OceanGerstnerBaseNormal(input.restWS) + input.normalDelta);
+                float3 normalWS = RippleNormal(input.positionWS, interactionNormal);
+                float3 rayWS = -GetWorldSpaceNormalizeViewDir(input.positionWS);
+                float cosIncident = saturate(dot(rayWS, normalWS));
+                float sinIncident = sqrt(saturate(1.0 - cosIncident * cosIncident));
+                float critical = sinIncident * 1.33;
+                float window = 1.0 - smoothstep(0.9, 1.0, critical);
+                float3 refracted = refract(rayWS, -normalWS, 1.33);
+                float3 skyDir = lerp(float3(rayWS.x, 0.2, rayWS.z), refracted, window);
+                float2 uv = GetNormalizedScreenSpaceUV(input.positionCS);
+                float3 sky = GlossyEnvironmentReflection(skyDir, input.positionWS, 0.4, 1, uv);
+                float3 body = _OceanUnderwaterColor.rgb;
+                sky *= lerp(float3(1, 1, 1), saturate(body * 3.0 + 0.35), 0.5);
+                sky *= 1.0 + 0.5 * smoothstep(0.7, 1.0, critical) * window;
+                float3 color = lerp(body, sky, window);
+                return half4(MixFog(color, input.fogFactor), 1);
+            }
+
+            half4 Frag(Varyings input, FRONT_FACE_TYPE isFront : FRONT_FACE_SEMANTIC) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
                 float4 terrain = F3GeometryAt(input.positionWS.xz);
@@ -180,6 +218,18 @@ Shader "Lighthouse/World/ClearOcean"
                 {
                     clip(terrain.w - 0.001);
                     clip(terrain.x + input.positionWS.y - 0.002);
+                }
+                [branch] if (!IS_FRONT_VFACE(isFront, true, false))
+                {
+                    // Back faces were culled before; they only draw while the camera is in or at the water.
+                    // From above, steep far waves also present back faces; those must stay culled, so the
+                    // near-surface case (near plane cutting the mesh) is limited to the camera's immediate surroundings.
+                    float backCameraDistance = length(input.positionWS - _WorldSpaceCameraPos);
+                    if (_OceanUnderwater.x <= 0.001 && (_OceanUnderwater.y <= 0.001 || backCameraDistance > NearSurfaceReach))
+                    {
+                        discard;
+                    }
+                    return UnderSurface(input);
                 }
                 float2 uv = GetNormalizedScreenSpaceUV(input.positionCS);
                 float rawDepth = SampleSceneDepth(uv);
@@ -265,11 +315,15 @@ Shader "Lighthouse/World/ClearOcean"
                 illumination += SampleSH(normalWS) * 0.35;
                 float luminance = dot(waterColor, float3(0.2126, 0.7152, 0.0722));
                 float3 color = sceneColor * transmission + waterColor * illumination * (1 - transmission);
-                float fresnel = 0.02 + 0.98 * pow(1 - saturate(dot(lerp(interactionNormal, normalWS, 0.5), viewWS)), 5);
+                // Far away, vertex normals vary faster than a pixel can resolve; left alone they make the fresnel flicker and
+                // expose the body colour as angular specks. Flatten them by distance and by pixel footprint.
+                float normalFlatten = saturate(smoothstep(80.0, 500.0, cameraDistance) * 0.9 + smoothstep(0.8, 5.0, footprint));
+                float3 stableNormal = normalize(lerp(normalize(lerp(interactionNormal, normalWS, 0.5)), float3(0, 1, 0), normalFlatten));
+                float fresnel = 0.02 + 0.98 * pow(1 - saturate(dot(stableNormal, viewWS)), 5);
                 // Sky reflection uses a calmer normal than the lighting one, so ripples read as soft bends of the sky.
-                float3 reflectNormal = normalize(lerp(interactionNormal, normalWS, 0.5));
+                float3 reflectNormal = stableNormal;
                 float3 reflected = GlossyEnvironmentReflection(reflect(-viewWS, reflectNormal), input.positionWS, 1 - _Smoothness, 1, uv);
-                float reflectionWeight = fresnel * _Reflection_Strength * saturate(luminance * 6);
+                float reflectionWeight = fresnel * _Reflection_Strength * saturate(luminance * 6 + _OceanMoon.w * 0.6);
                 color = lerp(color, reflected, reflectionWeight);
                 color += OceanAmbientGlow(waterColor, _Shallow_Color.rgb * zoneTint, fresnel, skyLightZ);
                 float3 halfway = SafeNormalize(sun.direction + viewWS);
@@ -300,7 +354,7 @@ Shader "Lighthouse/World/ClearOcean"
                 color += sun.color * sun.shadowAttenuation * specular * 0.05 * clarityZ;
                 float causticFade = 1.0 - smoothstep(0.3, 1.2, footprint);
                 float causticMask = saturate(clarityPatch * 1.6 - 0.3) * clarityZ * clarityZ * causticFade;
-                color += sun.color * sun.shadowAttenuation * causticMask * 0.06
+                color += sun.color * sun.shadowAttenuation * causticMask * _Surface_Caustic
                     * OceanCaustic(input.positionWS.xz, normalWS.xz, _OceanTime) * (1 - transmission.g);
                 float shallowCaustic = OceanCaustic(input.positionWS.xz, normalWS.xz, _OceanTime)
                     * transmission.g * clarityZ * clarityZ * causticFade;
@@ -309,6 +363,21 @@ Shader "Lighthouse/World/ClearOcean"
                     input.positionWS.y - input.restWS.y, _Path_Tint);
                 color += sun.color * sun.shadowAttenuation * _Sparkle_Strength
                     * OceanSparkle(input.positionWS, normalWS, halfway, _OceanTime, footprint) * clarityZ * clarityZ;
+                [branch] if (_OceanMoon.w > 0.001)
+                {
+                    float nightW = _OceanMoon.w;
+                    float3 moonHalf = SafeNormalize(_OceanMoon.xyz + viewWS);
+                    float glint = pow(saturate(dot(normalWS, moonHalf)), 700.0) * 0.9;
+                    float moonPath = pow(saturate(dot(reflectNormal, moonHalf)), 60.0) * 0.22;
+                    color += float3(0.72, 0.8, 1.0) * (glint + moonPath) * nightW;
+                    float3 nightSheen = _Night_Sky_Tint.rgb * (0.3 + 0.7 * fresnel);
+                    color += nightSheen * 0.35 * nightW;
+                }
+                // Keeps hulls and shores readable against the water: the surface never drops below this floor, storms included.
+                [branch] if (_OceanNightFloor.x > 0.001)
+                {
+                    color = max(color, _Night_Sky_Tint.rgb * (0.3 + 0.7 * fresnel) * 0.6 * _OceanNightFloor.x);
+                }
                 float phase = CoastPhase(input.coast.z,_OceanTime)/OCEAN_TWO_PI;
                 if (_F3Enabled > 0.5 && _OceanWaveCount > 0)
                 {
@@ -353,6 +422,13 @@ Shader "Lighthouse/World/ClearOcean"
                 foamLight *= lerp(float3(1,1,1),saturate(_Shallow_Color.rgb*1.1+0.4),0.3);
                 foamLight += additionalDiffuse * 0.85;
                 color = lerp(color,foamLight,coverage*smoothstep(0.0,0.5,density)*0.72);
+                // Camera straddling the surface: the near plane clips the mesh, so nearby water takes the body colour.
+                [branch] if (_OceanUnderwater.y > 0.001)
+                {
+                    color = lerp(color, _OceanUnderwaterColor.rgb, _OceanUnderwater.y * 0.6 * (1.0 - smoothstep(0.4, 3.0, cameraDistance)));
+                }
+                // Guard against a stray NaN/Inf: a comparison with NaN is false, so this also catches NaN.
+                color = all(abs(color) < 1.0e4) ? color : waterColor;
                 return half4(MixFog(color, input.fogFactor), 1);
             }
             ENDHLSL

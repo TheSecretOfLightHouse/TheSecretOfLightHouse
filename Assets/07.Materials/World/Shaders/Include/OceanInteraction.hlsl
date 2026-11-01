@@ -20,7 +20,10 @@ float4 OceanInteraction(float2 p)
     float2 uv = (p-_OceanInteractionArea.xy)/max(0.01,_OceanInteractionArea.z);
     float edge = min(min(uv.x,uv.y),min(1-uv.x,1-uv.y));
     float fade = smoothstep(0.015,0.1,edge);
-    return SAMPLE_TEXTURE2D_LOD(_OceanInteractionState,sampler_OceanInteractionState,saturate(uv),0)*fade;
+    float4 state = SAMPLE_TEXTURE2D_LOD(_OceanInteractionState,sampler_OceanInteractionState,saturate(uv),0);
+    // Non-finite cells must never reach the surface normal or colour.
+    state = all(abs(state) < 1.0e4) ? state : 0;
+    return state*fade;
 }
 
 void OceanInteractionDisplace(inout float3 position,inout float3 normal)
