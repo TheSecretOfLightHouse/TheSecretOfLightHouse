@@ -22,11 +22,17 @@ namespace Lighthouse.World.Ocean.Rules
         private JobHandle _handle;
         private NativeArray<Vector4> _f3Fallback;
         private NativeArray<Vector4> _f3GeometryFallback;
+        private NativeArray<ushort> _f3DirectionFallback;
         private bool _isDisposed;
+        private NativeArray<Vector3> _queryPoints;
+        private NativeArray<float> _queryHeights;
 
         public WaterSampler(int shipCapacity, int driftCapacity)
         {
+            _queryPoints = new NativeArray<Vector3>(4, Allocator.Persistent);
+            _queryHeights = new NativeArray<float>(4, Allocator.Persistent);
             _f3Fallback = new NativeArray<Vector4>(1, Allocator.Persistent);
+            _f3DirectionFallback = new NativeArray<ushort>(1, Allocator.Persistent);
             _f3GeometryFallback = new NativeArray<Vector4>(1, Allocator.Persistent);
             _profiles = new NativeArray<Vector4>(CoastWaveRegistry.Capacity, Allocator.Persistent);
             _lagoons = new NativeArray<Vector4>(CoastWaveRegistry.Capacity, Allocator.Persistent);
@@ -130,13 +136,24 @@ namespace Lighthouse.World.Ocean.Rules
                 _coastVersion = CoastWaveRegistry.Version;
             }
 
-            var job = new WaterSampleJob
+            WaterSampleJob job = CreateJob(_points, _heights, waveCount, modifierCount, time);
+
+            _handle = job.Schedule(_slots.ActiveLength, BatchSize);
+            return _handle;
+        }
+
+        private WaterSampleJob CreateJob(NativeArray<Vector3> points, NativeArray<float> heights,
+            int waveCount, int modifierCount, float time)
+        {
+            return new WaterSampleJob
             {
-                Points = _points,
+                Points = points,
                 Terrain = F3WaveField.IsActive ? F3WaveField.Cells : _f3Fallback,
                 TerrainLayout = F3WaveField.Layout,
                 TerrainRegions = F3WaveField.Regions.IsCreated ? F3WaveField.Regions : _f3Fallback,
                 TerrainRegionExtent = F3WaveField.RegionExtent,
+                TerrainDirections = F3WaveField.DirectionData.IsCreated ? F3WaveField.DirectionData : _f3DirectionFallback,
+                TerrainDirectionInfo = F3WaveField.DirectionInfo.IsCreated ? F3WaveField.DirectionInfo : _f3Fallback,
                 TerrainGeometry = F3WaveField.IsActive ? F3WaveField.Geometry : _f3GeometryFallback,
                 TerrainGeometrySize = F3WaveField.IsActive ? F3WaveField.GeometrySize : 0,
                 TerrainSize = F3WaveField.IsActive ? F3WaveField.Size : 0,
@@ -146,14 +163,49 @@ namespace Lighthouse.World.Ocean.Rules
                 CoastLagoons = _lagoons,
                 Waves = _waves,
                 Modifiers = _modifiers,
-                Heights = _heights,
+                Heights = heights,
                 WaveCount = waveCount,
                 ModifierCount = modifierCount,
                 SampleTime = time
             };
 
-            _handle = job.Schedule(_slots.ActiveLength, BatchSize);
-            return _handle;
+        }
+
+        public float SampleF3Height(ReadOnlySpan<WaveParams> waves, ReadOnlySpan<WaveModifierData> modifiers, Vector3 position, float time)
+        {
+            _queryPoints[0] = position;
+            RunImmediate(waves, modifiers, time, 1);
+            return _queryHeights[0];
+        }
+
+        public Vector3 SampleF3Normal(ReadOnlySpan<WaveParams> waves, ReadOnlySpan<WaveModifierData> modifiers, Vector3 position, float time)
+        {
+            const float Step = 0.1f;
+            _queryPoints[0] = position + new Vector3(Step, 0f, 0f);
+            _queryPoints[1] = position - new Vector3(Step, 0f, 0f);
+            _queryPoints[2] = position + new Vector3(0f, 0f, Step);
+            _queryPoints[3] = position - new Vector3(0f, 0f, Step);
+            RunImmediate(waves, modifiers, time, 4);
+            return new Vector3(-(_queryHeights[0] - _queryHeights[1]), 2f * Step,
+                -(_queryHeights[2] - _queryHeights[3])).normalized;
+        }
+
+        private void RunImmediate(ReadOnlySpan<WaveParams> waves, ReadOnlySpan<WaveModifierData> modifiers, float time, int count)
+        {
+            // Immediate queries share the immutable field, but never overlap a scheduled sampler write.
+            _handle.Complete();
+            int waveCount = Math.Min(waves.Length, WaveModel.MaxWaves);
+            int modifierCount = Math.Min(modifiers.Length, WaveModifierModel.MaxModifiers);
+            for (int i = 0; i < waveCount; i++)
+            {
+                _waves[i] = waves[i];
+            }
+            for (int i = 0; i < modifierCount; i++)
+            {
+                _modifiers[i] = modifiers[i];
+            }
+            WaterSampleJob job = CreateJob(_queryPoints, _queryHeights, waveCount, modifierCount, time);
+            job.Run(count);
         }
 
         public void Complete()
@@ -179,7 +231,10 @@ namespace Lighthouse.World.Ocean.Rules
 
             _handle.Complete();
             _isDisposed = true;
+            _queryPoints.Dispose();
+            _queryHeights.Dispose();
             _f3Fallback.Dispose();
+            _f3DirectionFallback.Dispose();
             _f3GeometryFallback.Dispose();
             _coasts.Dispose();
             _edges.Dispose();

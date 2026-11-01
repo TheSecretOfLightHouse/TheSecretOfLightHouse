@@ -19,6 +19,8 @@ namespace Lighthouse.World.Ocean.Rules
         [ReadOnly] public NativeArray<Vector4> Terrain;
         [ReadOnly] public NativeArray<Vector4> TerrainGeometry;
         [ReadOnly] public NativeArray<Vector4> TerrainRegions;
+        [ReadOnly] public NativeArray<ushort> TerrainDirections;
+        [ReadOnly] public NativeArray<Vector4> TerrainDirectionInfo;
         public float TerrainRegionExtent;
         public int TerrainGeometrySize;
         public Vector4 TerrainLayout;
@@ -34,7 +36,7 @@ namespace Lighthouse.World.Ocean.Rules
             ReadOnlySpan<WaveModifierData> modifiers = Modifiers.AsReadOnlySpan().Slice(0, ModifierCount);
             Vector3 point = Points[index];
             Heights[index] = TerrainSize > 1
-                ? F3WaveField.Height(waves, modifiers, Terrain, TerrainLayout, TerrainSize, point.x, point.z, SampleTime, TerrainGeometry, TerrainGeometrySize, TerrainRegions, TerrainRegionExtent)
+                ? F3WaveField.Height(waves, modifiers, Terrain, TerrainLayout, TerrainSize, point.x, point.z, SampleTime, TerrainGeometry, TerrainGeometrySize, TerrainRegions, TerrainRegionExtent, TerrainDirections, TerrainDirectionInfo)
                 : WaveModel.HeightAt(waves, modifiers, Coasts.AsReadOnlySpan(), CoastEdges.AsReadOnlySpan(), CoastProfiles.AsReadOnlySpan(), CoastLagoons.AsReadOnlySpan(), point.x, point.z, SampleTime);
         }
     }

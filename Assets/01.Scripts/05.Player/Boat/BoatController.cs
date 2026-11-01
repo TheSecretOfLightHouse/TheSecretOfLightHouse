@@ -642,6 +642,17 @@ public sealed class BoatController : NetworkBehaviour
             return;
         }
 
+        IDockDisembarkGate gate = dock.GetComponentInParent<IDockDisembarkGate>();
+        if (gate != null && gate.Evaluate(Owner, out float gateDamage))
+        {
+            if (gateDamage > 0f && _durability)
+            {
+                _durability.ApplyDamage(gateDamage, BoatDamageType.Monster);
+            }
+
+            return;
+        }
+
         Vector3 position;
         bool hasLandingPosition;
 

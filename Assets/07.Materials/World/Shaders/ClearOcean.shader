@@ -118,14 +118,33 @@ Shader "Lighthouse/World/ClearOcean"
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
                 float3 restWS = TransformObjectToWorld(input.positionOS);
                 float lagoonReach;
-                OceanGerstnerFieldLagoon_float(restWS, output.positionWS, output.normalWS, output.coast, lagoonReach);
-                output.lagoon = float2(lagoonReach, step(0.01, lagoonReach));
+                output.coast=0;
+                lagoonReach=0;
                 output.restWS = restWS;
                 if (_F3Enabled > 0.5)
                 {
-                    output.positionWS = restWS + F3Displacement(restWS.xz);
-                    output.normalWS = float3(0,1,0);
+                    float shoreLift;
+                    float2 coastPoint=restWS.xz+OceanGerstnerHorizontalAt(restWS.xz);
+                    OceanCoastMetadataAt(coastPoint,output.coast,lagoonReach,shoreLift);
+                    float2 fieldPoint=restWS.xz;
+                    bool hasField=_F3RegionExtent>0 ? F3MapPoint(fieldPoint) : F3Inside(restWS.xz);
+                    if(!hasField)
+                    {
+                        float3 displacement;
+                        F3OpenSeaSurface(restWS.xz,displacement,output.normalWS);
+                        output.positionWS=restWS+displacement;
+                    }
+                    else
+                    {
+                        output.positionWS = restWS + F3Displacement(restWS.xz);
+                        output.normalWS = F3RestNormal(restWS.xz);
+                    }
                 }
+                else
+                {
+                    OceanGerstnerFieldLagoon_float(restWS, output.positionWS, output.normalWS, output.coast, lagoonReach);
+                }
+                output.lagoon = float2(lagoonReach, step(0.01, lagoonReach));
                 output.normalDelta = _F3Enabled > 0.5 ? float3(0,0,0) : output.normalWS - OceanGerstnerBaseNormal(restWS);
                 output.positionWS.y += OceanInteraction(output.positionWS.xz).x;
                 output.positionCS = TransformWorldToHClip(output.positionWS);
@@ -213,8 +232,8 @@ Shader "Lighthouse/World/ClearOcean"
                 waterColor = lerp(waterColor, lerp(_Shallow_Color.rgb, _Deep_Color.rgb, smoothstep(0.0, 1.0, lagoonT)), lagoonMix);
 
                 float3 surfacePosition = input.positionWS;
-                // Per-pixel Gerstner normal: vertex spacing is coarser than the shortest wavelengths.
-                float3 interactionNormal = _F3Enabled > 0.5 ? F3Normal(input.positionWS.xz)
+                // Interpolate normals from the same displaced surface instead of four per-pixel inverse solves.
+                float3 interactionNormal = _F3Enabled > 0.5 ? normalize(input.normalWS)
                     : normalize(OceanGerstnerBaseNormal(input.restWS) + input.normalDelta);
                 OceanInteractionDisplace(surfacePosition, interactionNormal);
                 float3 normalWS = RippleNormal(input.positionWS, interactionNormal);
@@ -289,9 +308,13 @@ Shader "Lighthouse/World/ClearOcean"
                 float phase = CoastPhase(input.coast.z,_OceanTime)/OCEAN_TWO_PI;
                 if (_F3Enabled > 0.5 && _OceanWaveCount > 0)
                 {
-                    float4 path = F3Field(input.restWS.xz);
-                    float4 wave = _OceanWaveA[0];
-                    phase = (dot(wave.xy,input.restWS.xz+path.yz)-wave.w*(_OceanTime-path.w))/max(wave.z,0.001);
+                    int primary=0;
+                    for(int i=1;i<min((int)_OceanWaveCount,OCEAN_MAX_WAVES);i++)
+                        if(_OceanWaveB[i].x>_OceanWaveB[primary].x) primary=i;
+                    float4 wave = _OceanWaveA[primary];
+                    float4 path = F3DirectionAt(input.restWS.xz,wave.xy,F3Field(input.restWS.xz));
+                    phase = (dot(wave.xy,input.restWS.xz+path.yz)-wave.w*(_OceanTime-path.w))/max(wave.z,0.001)
+                        + F3PhaseOffset(wave.z)/OCEAN_TWO_PI;
                 }
                 float cycle = frac(phase);
                 float crest = 1-smoothstep(0.025,0.095,abs(cycle-0.25));
@@ -304,7 +327,19 @@ Shader "Lighthouse/World/ClearOcean"
                 float4 interaction = OceanInteraction(input.positionWS.xz);
                 if (_F3Enabled > 0.5) shoreDensity *= terrain.y * saturate(F3Field(input.restWS.xz).x);
                 float density = max(shoreDensity,interaction.w);
-                float coverage = OceanFoamCoverage(input.positionWS.xz-interaction.yz*0.12-(_F3Enabled>0.5 ? F3Current(input.positionWS.xz)*_OceanTime : float2(0,0)),density,_OceanTime);
+                float2 foamPoint=input.positionWS.xz-interaction.yz*0.12;
+                float coverage;
+                if(_F3Enabled>0.5)
+                {
+                    // Two bounded backtraces avoid a time*velocity jump when the drive turns.
+                    float cycleTime=frac(_OceanTime/8.0);
+                    float firstAge=cycleTime*8.0;
+                    float secondAge=frac(cycleTime+0.5)*8.0;
+                    float weight=abs(cycleTime*2-1);
+                    coverage=lerp(OceanFoamCoverage(F3Advect(foamPoint,-firstAge),density,_OceanTime),
+                        OceanFoamCoverage(F3Advect(foamPoint,-secondAge),density,_OceanTime),weight);
+                }
+                else coverage=OceanFoamCoverage(foamPoint,density,_OceanTime);
                 float3 foamLight = max(0.025,sun.color*0.85+SampleSH(float3(0,1,0))*0.4);
                 foamLight += additionalDiffuse * 0.85;
                 color = lerp(color,foamLight,coverage*saturate(density)*0.82);

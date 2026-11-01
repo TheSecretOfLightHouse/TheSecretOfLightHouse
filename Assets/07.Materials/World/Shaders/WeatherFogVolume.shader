@@ -82,13 +82,15 @@ Shader "Lighthouse/World/WeatherFogVolume"
                 exit = min(exit, eyeDepth / max(0.001, viewZ));
                 if (exit <= entry || _Density <= 0) { return 0; }
 
-                const int Steps = 32;
-                float stepLength = (exit - entry) / Steps;
+                // Resolve the smallest noise octave conservatively; short rays do not need the full 32 samples.
+                float sampleLength = max(0.25, _NoiseScale / (2.7 * 8));
+                int steps = clamp((int)ceil((exit - entry) / sampleLength), 8, 32);
+                float stepLength = (exit - entry) / steps;
                 float distance = entry + stepLength * 0.5;
                 float transmittance = 1;
                 float scattering = 0;
                 float3 drift = float3(_WindTime.x, 0, _WindTime.y) * _WindTime.z * 0.12;
-                [loop] for (int i = 0; i < Steps; i++)
+                [loop] for (int i = 0; i < steps; i++)
                 {
                     float3 world = camera + direction * distance;
                     float3 local = originOS + directionOS * distance;
@@ -104,6 +106,7 @@ Shader "Lighthouse/World/WeatherFogVolume"
                     float light = lerp(0.62, 1, saturate((local.y + 0.4) / 0.7));
                     scattering += transmittance * (1 - attenuation) * light;
                     transmittance *= attenuation;
+                    if (transmittance < 0.001) break;
                     distance += stepLength;
                 }
                 float alpha = 1 - transmittance;

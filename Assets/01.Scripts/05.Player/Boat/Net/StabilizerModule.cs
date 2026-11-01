@@ -70,27 +70,34 @@ public sealed class StabilizerModule : BoatModule
         _body = GetComponent<Rigidbody>();
     }
 
-    private void Start()
-    {
-        // WaterBody may add the visual during Awake, after this module has initialized.
-        _waveTilt = GetComponent<WaveTiltVisual>();
-    }
-
     private void Update()
     {
+        // WaterBody adds this dynamically; retry after destruction/replacement as well as at startup.
+        if (!_waveTilt)
+        {
+            TryGetComponent(out _waveTilt);
+        }
+
         if (!_waveTilt)
         {
             return;
         }
 
         // Observers use the same replicated equipment and occupancy, not local input authority.
-        _waveTilt.TiltMultiplier = IsVisualStabilizing ? 1f - Mathf.Clamp01(_waveTiltReduction) : 1f;
+        if (IsVisualStabilizing && _waveTilt.isActiveAndEnabled)
+        {
+            _waveTilt.TrySetTiltMultiplier(this, 1f - Mathf.Clamp01(_waveTiltReduction));
+        }
+        else
+        {
+            _waveTilt.ReleaseTiltMultiplier(this);
+        }
     }
 
     protected override void OnDisable()
     {
+        ReleaseWaveTilt();
         base.OnDisable();
-        ResetWaveTilt();
     }
 
     private void FixedUpdate()
@@ -118,17 +125,17 @@ public sealed class StabilizerModule : BoatModule
 
     protected override void RemoveEffect()
     {
-        ResetWaveTilt();
+        ReleaseWaveTilt();
         Debug.Log(
             $"[{nameof(StabilizerModule)}] Stabilizer effect removed.",
             this);
     }
 
-    private void ResetWaveTilt()
+    private void ReleaseWaveTilt()
     {
         if (_waveTilt)
         {
-            _waveTilt.TiltMultiplier = 1f;
+            _waveTilt.ReleaseTiltMultiplier(this);
         }
     }
 }
