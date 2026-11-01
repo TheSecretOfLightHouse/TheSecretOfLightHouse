@@ -172,6 +172,17 @@ namespace Lighthouse.Workbench.View
         [SerializeField]
         private WorkbenchScreenEffects.Settings _effectSettings = new WorkbenchScreenEffects.Settings();
 
+        // Sounds as each of this player's deposits starts its flight to the row (the server accepted it), so a held E
+        // plays it once per request that goes in.
+        // Other crew's deposits stay silent.
+        [Header("Deposit Audio (2026-11-01)")]
+        [SerializeField]
+        private SoundManager _soundManagerPrefab;
+        [SerializeField]
+        private AudioClip _depositClip;
+        [SerializeField, Range(0f, 1f)]
+        private float _depositVolume = 1f;
+
         [Header("Hold to deposit (2026-10-30): E held keeps depositing, faster the longer it is held")]
         [Tooltip("Seconds E must stay held after the first unit before repeating starts.")]
         [SerializeField]
@@ -1496,6 +1507,7 @@ namespace Lighthouse.Workbench.View
                 return;
             }
 
+            PlayDepositSound();
             WorkbenchItemSlot slot = FindResourceSlot(_pendingResourceId);
             RectTransform from = slot ? slot.IconRect
                 : _depositButton && _depositButton.gameObject.activeInHierarchy ? (RectTransform)_depositButton.transform
@@ -1960,6 +1972,26 @@ namespace Lighthouse.Workbench.View
         private void HandleEffectCued(WorkbenchEffectCue cue)
         {
             EffectCued?.Invoke(cue);
+        }
+
+        private void PlayDepositSound()
+        {
+            if (!_depositClip)
+            {
+                return;
+            }
+
+            if (!SoundManager.Instance && _soundManagerPrefab)
+            {
+                Instantiate(_soundManagerPrefab);
+            }
+
+            if (SoundManager.Instance)
+            {
+                // The clip has a long tail; a held E would stack it across every effect voice, so each landing restarts it.
+                SoundManager.Instance.StopEffect(_depositClip);
+                SoundManager.Instance.PlayEffect(_depositClip, _depositVolume);
+            }
         }
 
         private string DescribeRejection(InteractionResultCode code)

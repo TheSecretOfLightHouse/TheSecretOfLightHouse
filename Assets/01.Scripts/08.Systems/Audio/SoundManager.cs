@@ -180,6 +180,23 @@ namespace Lighthouse.Systems.Audio
             }
         }
 
+        // Stops only the voices playing this clip, leaving every other effect running.
+        public void StopEffect(AudioClip clip)
+        {
+            if (clip == null || _effects == null)
+            {
+                return;
+            }
+            foreach (AudioSource source in _effects)
+            {
+                if (source.clip == clip)
+                {
+                    source.Stop();
+                    source.clip = null;
+                }
+            }
+        }
+
         public void ToggleSound()
         {
             SetMuted(!IsMuted);
