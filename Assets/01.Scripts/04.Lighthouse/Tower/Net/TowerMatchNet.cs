@@ -14,7 +14,8 @@ namespace Lighthouse.Tower.Net
     //   Ritual (win/vote decisions 3·4): anyone starts it at 100% repair; when its time runs out the votes decide.
     //   Summon (JH04 repair-carryover proposal, 2026-10-22): the repair and the installed modules carry over and the
     //   health starts at the same fixed maximum whatever the repair. Citizens win by finishing the repair, the mafia
-    //   by bringing the health to 0. A summon at 100% repair is already that citizens' win. No special ending.
+    //   by bringing the health to 0. A summon at 100% repair is already that citizens' win.
+    //   Entering the special presentation reserves the mafia win; its result is published at the server deadline.
     // It reports the result through Ended; in the full game the match result owner (MK06) commits it.
     // Requests: StartRitual targets this object.
     [DisallowMultipleComponent]
@@ -45,11 +46,13 @@ namespace Lighthouse.Tower.Net
         [SyncVar] private double _cinematicLoadDeadline;
         [SyncVar] private double _combatStartsAt;
         private double _returnDeadline;
+        private bool _hasReservedSpecialEnding;
         private readonly HashSet<int> _cinematicParticipants = new HashSet<int>();
         private readonly HashSet<int> _preparedParticipants = new HashSet<int>();
         private readonly HashSet<int> _returnedParticipants = new HashSet<int>();
 
         private TowerNet _tower;
+        private Lighthouse.Monsters.Boss.BossTestEnvironment _boss;
 
         // Server-only.
         private IRitualVoteJudge _judge;
@@ -73,6 +76,10 @@ namespace Lighthouse.Tower.Net
         public uint CinematicSequence => _cinematicSequence;
         public double CinematicLoadDeadline => _cinematicLoadDeadline;
         public double CombatStartsAt => _combatStartsAt;
+        // Server-only reservation; clients receive the outcome only after the cinematic deadline.
+        public bool IsSpecialEndingCompletionDue => _hasReservedSpecialEnding && _phase == TowerPhase.FinalBattle
+            && _isSummonCinematicPlaying && _cinematicPhase == SummonCinematicPhase.Playing
+            && _summonCinematicEndsAt > 0d && NetworkTime.time >= _summonCinematicEndsAt;
         // The final battle as the screen shows it: from the summon cinematic handing the camera back (Returning), not
         // from the summon itself, so the battle UI is not spent under the cinematic (2026-10-31).
         public bool IsFinalBattleRevealed => _phase == TowerPhase.FinalBattle
@@ -87,6 +94,7 @@ namespace Lighthouse.Tower.Net
         private void Awake()
         {
             _tower = GetComponent<TowerNet>();
+            _boss = GetComponent<Lighthouse.Monsters.Boss.BossTestEnvironment>();
             var view = GetComponent<Lighthouse.Tower.View.SummonCinematicView>();
             if (view == null)
             {
@@ -127,6 +135,7 @@ namespace Lighthouse.Tower.Net
             _phase = TowerPhase.Repairing;
             _outcome = TowerOutcome.None;
             _endReason = TowerEndReason.None;
+            _hasReservedSpecialEnding = false;
             _tower.ModuleInstalled += HandleModuleInstalled;
             _isStartRitualRegistered = InteractionRouter.RegisterHandler(InteractionAction.StartRitual, this);
         }
@@ -197,6 +206,21 @@ namespace Lighthouse.Tower.Net
             return true;
         }
 
+        // The accepted special branch locks the server's winner without publishing it to clients yet.
+        [Server]
+        public bool TryReserveSpecialEnding(Lighthouse.Monsters.Boss.BossTestEnvironment source)
+        {
+            if (!isActiveAndEnabled || _phase != TowerPhase.FinalBattle || !_isSummonCinematicPlaying
+                || _cinematicPhase != SummonCinematicPhase.Preparing || _hasReservedSpecialEnding
+                || source == null || source != _boss || !source.IsSpecialEnding
+                || source.Phase != Lighthouse.Monsters.Boss.BossPhase.SpecialEndingReady)
+            {
+                return false;
+            }
+            _hasReservedSpecialEnding = true;
+            return true;
+        }
+
         // One valid hit from the monster side. Health never comes back during the final battle.
         [Server]
         public void ApplyDamage(float amount)
@@ -220,6 +244,19 @@ namespace Lighthouse.Tower.Net
         public bool TryEnd(TowerOutcome outcome, TowerEndReason reason)
         {
             if (_phase == TowerPhase.Ended || outcome == TowerOutcome.None)
+            {
+                return false;
+            }
+            if (_hasReservedSpecialEnding)
+            {
+                // Neither a queued repair nor another end request may reveal or replace the reserved result.
+                if (outcome != TowerOutcome.MafiaWin || reason != TowerEndReason.SpecialEnding
+                    || !IsSpecialEndingCompletionDue)
+                {
+                    return false;
+                }
+            }
+            else if (reason == TowerEndReason.SpecialEnding)
             {
                 return false;
             }
@@ -247,21 +284,39 @@ namespace Lighthouse.Tower.Net
                 _cinematicPhase = SummonCinematicPhase.Cancelled;
             }
             _isSummonCinematicPlaying = false;
+            _hasReservedSpecialEnding = false;
             ServerCinematicProtection.End(this);
         }
 
         private void TickSummonCinematic()
         {
             double now = NetworkTime.time;
+            // The boss freezes the gauge one frame after the summon; do not select a clip before that decision.
+            if (_cinematicPhase == SummonCinematicPhase.Preparing && _boss != null && !_boss.HasSummoned
+                && now < _cinematicLoadDeadline)
+            {
+                return;
+            }
             if (_cinematicPhase == SummonCinematicPhase.Preparing
                 && (_preparedParticipants.Count == _cinematicParticipants.Count || now >= _cinematicLoadDeadline))
             {
                 _summonCinematicStartedAt = now + _settings.CinematicStartLead;
-                _summonCinematicEndsAt = _summonCinematicStartedAt + _settings.SummonCinematicSeconds;
+                bool isSpecial = _boss != null && _boss.IsSpecialEnding;
+                float duration = isSpecial ? _settings.SpecialEndingCinematicSeconds : _settings.SummonCinematicSeconds;
+                _summonCinematicEndsAt = _summonCinematicStartedAt + duration;
                 _cinematicPhase = SummonCinematicPhase.Playing;
             }
             else if (_cinematicPhase == SummonCinematicPhase.Playing && now >= _summonCinematicEndsAt)
             {
+                if (_hasReservedSpecialEnding)
+                {
+                    if (_boss != null)
+                    {
+                        _boss.TryCompleteSpecialEnding();
+                    }
+                    TryEnd(TowerOutcome.MafiaWin, TowerEndReason.SpecialEnding);
+                    return;
+                }
                 _returnDeadline = now + _settings.CinematicReturnTimeout;
                 _cinematicPhase = SummonCinematicPhase.Returning;
             }

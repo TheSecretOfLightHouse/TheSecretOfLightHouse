@@ -1,0 +1,78 @@
+// Unity MCP execute_code action=execute body; run only in isolated Play with no active network.
+// Uses real Mirror server and project components. Deadline fields are advanced for boundary tests.
+// Server-only/UI-consumption fixture; does not replace MainGame or remote replication testing.
+if(!Application.isPlaying||Mirror.NetworkServer.active||Mirror.NetworkClient.active)return "Requires isolated Play with no active network";
+var preview=UnityEngine.Object.FindFirstObjectByType<Lighthouse.Dev.Cinematics.SummonCinematicPreview>(FindObjectsInactive.Include);
+bool previewEnabled=preview!=null&&preview.enabled;if(preview!=null)preview.enabled=false;
+var priorTransport=Mirror.Transport.active;
+var transportObject=new GameObject("SpecialEndingContractTransport");
+var transport=transportObject.AddComponent<kcp2k.KcpTransport>();transport.Port=7897;Mirror.Transport.active=transport;
+var flags=System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance;
+var objects=new System.Collections.Generic.List<GameObject>();
+var report=new System.Text.StringBuilder();int checks=0;
+System.Action<bool,string> assert=(condition,message)=>{if(!condition)throw new System.InvalidOperationException("FAILED: "+message);checks++;report.AppendLine("PASS "+message);};
+System.Action<object,string,object> set=(target,name,value)=>target.GetType().GetField(name,flags).SetValue(target,value);
+System.Action<UnityEngine.Object,string,UnityEngine.Object> assign=(target,name,value)=>{var so=new SerializedObject(target);so.FindProperty(name).objectReferenceValue=value;so.ApplyModifiedPropertiesWithoutUndo();};
+var settings=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<Lighthouse.Tower.Rules.TowerBattleSettings>("Assets/02.Prefabs/Lighthouse/Data/Trial/TowerBattleSettings_JH04Trial.asset"));
+System.Func<string,GameObject> create=name=>{
+var root=new GameObject(name);root.SetActive(false);objects.Add(root);root.AddComponent<Mirror.NetworkIdentity>();
+var bench=root.AddComponent<Lighthouse.Workbench.Net.WorkbenchNet>();assign(bench,"_catalog",AssetDatabase.LoadMainAssetAtPath("Assets/02.Prefabs/Lighthouse/Data/Trial/ModuleRecipeCatalog_JH04Trial.asset"));
+var tower=root.AddComponent<Lighthouse.Tower.Net.TowerNet>();assign(tower,"_layout",AssetDatabase.LoadMainAssetAtPath("Assets/02.Prefabs/Lighthouse/Data/Trial/TowerLayout_JH04Trial.asset"));assign(tower,"_workbench",bench);
+var match=root.AddComponent<Lighthouse.Tower.Net.TowerMatchNet>();assign(match,"_settings",settings);
+var voting=root.AddComponent<Lighthouse.Mafia.Voting.Net.VotingNetworkController>();
+var boss=root.AddComponent<Lighthouse.Monsters.Boss.BossTestEnvironment>();assign(boss,"_settings",AssetDatabase.LoadMainAssetAtPath("Assets/02.Prefabs/Monsters/Data/BossTestSettings.asset"));assign(boss,"_towerMatch",match);assign(boss,"_voting",voting);
+var so=new SerializedObject(boss);so.FindProperty("_useSummonPresentation").boolValue=true;so.FindProperty("_enableSpecialEnding").boolValue=true;so.ApplyModifiedPropertiesWithoutUndo();
+root.SetActive(true);Mirror.NetworkServer.Spawn(root);match.Configure(null);return root;};
+System.Action<GameObject> destroy=root=>{Mirror.NetworkServer.Destroy(root);objects.Remove(root);};
+try{
+Mirror.NetworkServer.Listen(4);assert(Mirror.NetworkServer.active,"real isolated Mirror server started");
+var root=create("SpecialReservationFixture");var match=root.GetComponent<Lighthouse.Tower.Net.TowerMatchNet>();var boss=root.GetComponent<Lighthouse.Monsters.Boss.BossTestEnvironment>();int ended=0,completed=0;match.Ended+=(outcome,reason)=>ended++;boss.SpecialEndingCompleted+=()=>completed++;
+assert(match.TryBeginFinalBattle(),"summon accepted");boss.BeginBattle(100);
+assert(boss.IsSpecialEnding&&boss.Phase==Lighthouse.Monsters.Boss.BossPhase.SpecialEndingPlaying,"threshold100 reserves special branch on entry");
+assert((bool)match.GetType().GetField("_hasReservedSpecialEnding",flags).GetValue(match),"winner reservation stored server-side");
+assert(match.Outcome==Lighthouse.Tower.Rules.TowerOutcome.None&&ended==0,"entry does not publish outcome");
+assert(!boss.TryStartSpecialEnding(),"duplicate special start rejected");
+var uiObject=new GameObject("SpecialEndingResultUiFixture");uiObject.transform.SetParent(root.transform,false);uiObject.SetActive(false);
+var screen=uiObject.AddComponent<Lighthouse.Tower.View.VictoryScreen>();
+var panel=new GameObject("ResultPanel",typeof(RectTransform),typeof(CanvasGroup));panel.transform.SetParent(uiObject.transform,false);
+var mafiaTitle=new GameObject("MafiaTitle");mafiaTitle.transform.SetParent(panel.transform,false);var citizenTitle=new GameObject("CitizensTitle");citizenTitle.transform.SetParent(panel.transform,false);
+assign(screen,"_match",match);assign(screen,"_root",panel.GetComponent<CanvasGroup>());assign(screen,"_mafiaTitle",mafiaTitle);assign(screen,"_citizensTitle",citizenTitle);uiObject.SetActive(true);
+screen.GetType().GetMethod("ObservePhase",flags).Invoke(screen,null);
+assert(!(bool)screen.GetType().GetField("_isOpen",flags).GetValue(screen),"existing victory UI stays closed before result publication");
+match.GetType().GetMethod("TickSummonCinematic",flags).Invoke(match,null);
+assert(match.CinematicPhase==Lighthouse.Common.Cinematics.SummonCinematicPhase.Playing&&System.Math.Abs((match.SummonCinematicEndsAt-match.SummonCinematicStartedAt)-31)<0.001,"server schedules special31seconds");
+assert(!boss.TryCompleteSpecialEnding(),"early completion rejected");
+assert(!match.TryEnd(Lighthouse.Tower.Rules.TowerOutcome.CitizensWin,Lighthouse.Tower.Rules.TowerEndReason.RepairCompleted),"citizen result cannot replace reservation");
+assert(!match.TryEnd(Lighthouse.Tower.Rules.TowerOutcome.MafiaWin,Lighthouse.Tower.Rules.TowerEndReason.Deadline),"other end reason cannot reveal reservation early");
+assert(!match.TryEnd(Lighthouse.Tower.Rules.TowerOutcome.MafiaWin,Lighthouse.Tower.Rules.TowerEndReason.SpecialEnding),"special result cannot publish early");
+var tower=root.GetComponent<Lighthouse.Tower.Net.TowerNet>();var installed=(Mirror.SyncList<bool>)tower.GetType().GetField("_installed",flags).GetValue(tower);for(int i=0;i<installed.Count;i++)installed[i]=true;
+match.GetType().GetMethod("HandleModuleInstalled",flags).Invoke(match,new object[]{1u,0,1u});
+assert(tower.IsComplete&&match.Phase==Lighthouse.Tower.Rules.TowerPhase.FinalBattle&&match.Outcome==Lighthouse.Tower.Rules.TowerOutcome.None,"queued100percent repair event leaves reservation and outcome hidden");
+float hp=match.Health;match.ApplyDamage(99999);assert(match.Health==hp,"cinematic damage protection retained");
+set(match,"_summonCinematicEndsAt",Mirror.NetworkTime.time+10);match.GetType().GetMethod("TickSummonCinematic",flags).Invoke(match,null);assert(ended==0&&completed==0,"before server deadline no result or completion event");
+set(match,"_summonCinematicEndsAt",Mirror.NetworkTime.time-0.01);match.GetType().GetMethod("TickSummonCinematic",flags).Invoke(match,null);
+assert(match.Phase==Lighthouse.Tower.Rules.TowerPhase.Ended&&match.Outcome==Lighthouse.Tower.Rules.TowerOutcome.MafiaWin&&match.EndReason==Lighthouse.Tower.Rules.TowerEndReason.SpecialEnding,"deadline publishes reserved mafia win");
+assert(boss.Phase==Lighthouse.Monsters.Boss.BossPhase.SpecialEndingCompleted&&ended==1&&completed==1,"boss completion and match end each occur once");
+screen.GetType().GetMethod("ObservePhase",flags).Invoke(screen,null);
+set(screen,"_timer",5f);screen.GetType().GetMethod("Animate",flags).Invoke(screen,null);
+assert((bool)screen.GetType().GetField("_isOpen",flags).GetValue(screen)&&mafiaTitle.activeSelf&&!citizenTitle.activeSelf&&panel.GetComponent<CanvasGroup>().alpha==1f,"existing victory UI opens mafia result after publication");
+var water=UnityEngine.Object.FindFirstObjectByType<Lighthouse.Monsters.Boss.SpecialEndingWaterCurtain>(FindObjectsInactive.Include);var rig=water.GetComponentInParent<Lighthouse.Tower.View.MainSceneSummonPresentation>();var view=root.GetComponent<Lighthouse.Tower.View.SummonCinematicView>();set(view,"_specialRig",rig);set(view,"_isSpecial",true);view.GetType().GetMethod("RestoreVisuals",flags).Invoke(view,null);
+assert(System.Math.Abs(rig.Director.time-31)<0.001&&!rig.Camera.enabled,"special result restoration holds final Timeline pose");set(view,"_specialRig",null);
+assert(!match.IsSummonCinematicPlaying&&match.CinematicPhase!=Lighthouse.Common.Cinematics.SummonCinematicPhase.Combat,"special ending does not return to combat");
+assert(!boss.TryCompleteSpecialEnding()&&!match.TryEnd(Lighthouse.Tower.Rules.TowerOutcome.CitizensWin,Lighthouse.Tower.Rules.TowerEndReason.RepairCompleted)&&ended==1,"duplicate completion and result replacement rejected");
+destroy(root);
+root=create("NormalReservationRegression");match=root.GetComponent<Lighthouse.Tower.Net.TowerMatchNet>();boss=root.GetComponent<Lighthouse.Monsters.Boss.BossTestEnvironment>();assert(match.TryBeginFinalBattle(),"normal summon accepted");boss.BeginBattle(99);match.GetType().GetMethod("TickSummonCinematic",flags).Invoke(match,null);
+assert(!boss.IsSpecialEnding&&System.Math.Abs((match.SummonCinematicEndsAt-match.SummonCinematicStartedAt)-12)<0.001,"normal branch remains12seconds");
+assert(!match.TryEnd(Lighthouse.Tower.Rules.TowerOutcome.MafiaWin,Lighthouse.Tower.Rules.TowerEndReason.SpecialEnding),"unreserved special end rejected");
+set(match,"_summonCinematicEndsAt",Mirror.NetworkTime.time-0.01);match.GetType().GetMethod("TickSummonCinematic",flags).Invoke(match,null);
+assert(match.CinematicPhase==Lighthouse.Common.Cinematics.SummonCinematicPhase.Returning&&match.Outcome==Lighthouse.Tower.Rules.TowerOutcome.None,"normal branch still returns after cinematic");
+assert(match.TryEnd(Lighthouse.Tower.Rules.TowerOutcome.CitizensWin,Lighthouse.Tower.Rules.TowerEndReason.RepairCompleted),"normal citizen result remains available");destroy(root);
+root=create("AlreadyCompleteRepairFixture");match=root.GetComponent<Lighthouse.Tower.Net.TowerMatchNet>();boss=root.GetComponent<Lighthouse.Monsters.Boss.BossTestEnvironment>();tower=root.GetComponent<Lighthouse.Tower.Net.TowerNet>();installed=(Mirror.SyncList<bool>)tower.GetType().GetField("_installed",flags).GetValue(tower);for(int i=0;i<installed.Count;i++)installed[i]=true;
+assert(match.TryBeginFinalBattle()&&match.Outcome==Lighthouse.Tower.Rules.TowerOutcome.CitizensWin,"existing pre-entry complete repair behavior retained");boss.BeginBattle(100);assert(match.Outcome==Lighthouse.Tower.Rules.TowerOutcome.CitizensWin&&!boss.IsSpecialEnding,"special entry cannot replace already ended result");destroy(root);
+root=create("CancelledSpecialFixture");match=root.GetComponent<Lighthouse.Tower.Net.TowerMatchNet>();boss=root.GetComponent<Lighthouse.Monsters.Boss.BossTestEnvironment>();match.TryBeginFinalBattle();boss.BeginBattle(100);match.enabled=false;
+assert(!(bool)match.GetType().GetField("_hasReservedSpecialEnding",flags).GetValue(match)&&match.Outcome==Lighthouse.Tower.Rules.TowerOutcome.None,"disable clears reservation without publishing win");destroy(root);
+report.AppendLine("TOTAL CHECKS="+checks);SessionState.SetString("SpecialEndingReservationQA",report.ToString());return report.ToString();
+}finally{
+foreach(var root in objects)if(root!=null)Mirror.NetworkServer.Destroy(root);
+Mirror.NetworkServer.Shutdown();Mirror.Transport.active=priorTransport;UnityEngine.Object.Destroy(transportObject);UnityEngine.Object.Destroy(settings);if(preview!=null)preview.enabled=previewEnabled;
+}

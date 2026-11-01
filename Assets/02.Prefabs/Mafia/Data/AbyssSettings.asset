@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6ffd3bbf99e51064d86208c77ae61187, type: 3}
   m_Name: AbyssSettings
   m_EditorClassIdentifier: 
-  _dailyBaseGain: 100
-  _sealGainPerSecond: 1
-  _wrongGainPerSecond: 1
-  _minimumAttackPower: 10
+  _dailyBaseGain: 20
+  _sealGainPerSecond: 0.05
+  _wrongGainPerSecond: 0.05
+  _minimumAttackPower: 2
