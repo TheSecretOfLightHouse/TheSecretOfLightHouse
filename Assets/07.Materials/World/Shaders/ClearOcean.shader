@@ -23,6 +23,7 @@ Shader "Lighthouse/World/ClearOcean"
         _Clarity ("Open Sea Clarity", Range(0, 1)) = 0
         _Lagoon_Reach ("Island Lagoon Reach Metres", Range(2, 14)) = 11
         _Shallow_Caustic ("Surface Shallow Caustic", Range(0, 0.4)) = 0.22
+        _Shore_Foam ("Shore Foam Strength", Range(0, 1)) = 1
         _Sky_Light ("Sky Light", Range(0, 2)) = 0
         _Zone_Radii ("Zone Outer Radii + Blend Half Width", Vector) = (200, 360, 490, 60)
         _Zone_Tint0 ("Inner Tint + Clarity Scale", Vector) = (1, 1, 1, 1)
@@ -84,6 +85,7 @@ Shader "Lighthouse/World/ClearOcean"
                 float _Clarity;
                 float _Lagoon_Reach;
                 float _Shallow_Caustic;
+                float _Shore_Foam;
                 float _Sky_Light;
                 float4 _Zone_Radii;
                 float4 _Zone_Tint0;
@@ -328,7 +330,8 @@ Shader "Lighthouse/World/ClearOcean"
                 float shoreDensity = max(crest*0.95,residue*0.6)*shoreWindow*saturate(energy*5);
                 float4 interaction = OceanInteraction(input.positionWS.xz);
                 if (_F3Enabled > 0.5) shoreDensity *= terrain.y * saturate(F3Field(input.restWS.xz).x);
-                float density = max(shoreDensity,interaction.w);
+                shoreDensity *= _Shore_Foam;
+                float density = shoreDensity;
                 float2 foamPoint=input.positionWS.xz-interaction.yz*0.12;
                 float coverage=0;
                 [branch] if(density<=0.01)

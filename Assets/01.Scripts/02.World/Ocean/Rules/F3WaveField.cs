@@ -6,7 +6,11 @@ namespace Lighthouse.World.Ocean.Rules
 {
     public static class F3WaveField
     {
+        // Wave height may not exceed this share of the water depth. Shallow water near islands keeps it low so the
+        // surf stays below the beach; it opens up to the deep value by 8 m of depth. Mirrored in F3Terrain.hlsl.
+        private const float ShoreAmplitudeScale = 0.5f;
         private const float DepthAmplitudeScale = 1.25f;
+        private const float ShoalGain = 0.2f;
         private const float ShortWavelength = 8f;
         private const float LongWavelength = 60f;
         private const float ShortExponent = 1.5f;
@@ -161,7 +165,8 @@ namespace Lighthouse.World.Ocean.Rules
 
         public static float BreakingLimit(float groundDepth)
         {
-            return Mathf.Max(0.25f, groundDepth + 0.05f) * DepthAmplitudeScale;
+            float depth = Mathf.Max(0.25f, groundDepth + 0.05f);
+            return depth * Mathf.Lerp(ShoreAmplitudeScale, DepthAmplitudeScale, Mathf.SmoothStep(0f, 1f, (depth - 2f) / 6f));
         }
 
         // Long swell diffracts around islands (exponent < 1 keeps more), short chop is blocked (exponent > 1 keeps less).
@@ -226,8 +231,8 @@ namespace Lighthouse.World.Ocean.Rules
                 float horizontal = transmission * wave.Steepness / k * Mathf.Cos(phase);
                 displacement.x += wave.Direction.x * horizontal;
                 displacement.z += wave.Direction.y * horizontal;
-                displacement.y += transmission * wave.Amplitude * (1f + 0.65f * shoal) * (Mathf.Sin(phase) - 0.25f * shoal * Mathf.Cos(phase * 2f));
-                envelope += transmission * wave.Amplitude * (1f + 0.65f * shoal) * (1f + 0.25f * shoal);
+                displacement.y += transmission * wave.Amplitude * (1f + ShoalGain * shoal) * (Mathf.Sin(phase) - 0.25f * shoal * Mathf.Cos(phase * 2f));
+                envelope += transmission * wave.Amplitude * (1f + ShoalGain * shoal) * (1f + 0.25f * shoal);
             }
 
             // Bound the combined height in metres, rather than treating the depth limit as an amplitude multiplier.
