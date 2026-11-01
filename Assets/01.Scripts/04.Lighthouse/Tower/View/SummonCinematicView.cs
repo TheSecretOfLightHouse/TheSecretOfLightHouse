@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Lighthouse.Common.Cinematics;
 using Lighthouse.Tower.Net;
+using Lighthouse.Tower.Rules;
 using Mirror;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -285,7 +286,9 @@ namespace Lighthouse.Tower.View
             if (CurrentRig != null)
             {
                 bool completed = _match != null && (_match.CinematicPhase == SummonCinematicPhase.Returning
-                    || _match.CinematicPhase == SummonCinematicPhase.Combat);
+                    || _match.CinematicPhase == SummonCinematicPhase.Combat
+                    || (_isSpecial && _match.Phase == TowerPhase.Ended
+                        && _match.EndReason == TowerEndReason.SpecialEnding));
                 CurrentRig.Finish(completed);
             }
             foreach (KeyValuePair<Behaviour, bool> entry in _saved)

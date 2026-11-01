@@ -15,7 +15,7 @@ namespace Lighthouse.Tower.Net
     //   Summon (JH04 repair-carryover proposal, 2026-10-22): the repair and the installed modules carry over and the
     //   health starts at the same fixed maximum whatever the repair. Citizens win by finishing the repair, the mafia
     //   by bringing the health to 0. A summon at 100% repair is already that citizens' win.
-    //   The boss selects the special presentation branch; its outcome is resolved separately.
+    //   Entering the special presentation reserves the mafia win; its result is published at the server deadline.
     // It reports the result through Ended; in the full game the match result owner (MK06) commits it.
     // Requests: StartRitual targets this object.
     [DisallowMultipleComponent]
@@ -46,6 +46,7 @@ namespace Lighthouse.Tower.Net
         [SyncVar] private double _cinematicLoadDeadline;
         [SyncVar] private double _combatStartsAt;
         private double _returnDeadline;
+        private bool _hasReservedSpecialEnding;
         private readonly HashSet<int> _cinematicParticipants = new HashSet<int>();
         private readonly HashSet<int> _preparedParticipants = new HashSet<int>();
         private readonly HashSet<int> _returnedParticipants = new HashSet<int>();
@@ -75,6 +76,10 @@ namespace Lighthouse.Tower.Net
         public uint CinematicSequence => _cinematicSequence;
         public double CinematicLoadDeadline => _cinematicLoadDeadline;
         public double CombatStartsAt => _combatStartsAt;
+        // Server-only reservation; clients receive the outcome only after the cinematic deadline.
+        public bool IsSpecialEndingCompletionDue => _hasReservedSpecialEnding && _phase == TowerPhase.FinalBattle
+            && _isSummonCinematicPlaying && _cinematicPhase == SummonCinematicPhase.Playing
+            && _summonCinematicEndsAt > 0d && NetworkTime.time >= _summonCinematicEndsAt;
         public bool CanStartRitual => _phase == TowerPhase.Repairing && _tower && _tower.IsComplete;
 
         // Server-only.
@@ -126,6 +131,7 @@ namespace Lighthouse.Tower.Net
             _phase = TowerPhase.Repairing;
             _outcome = TowerOutcome.None;
             _endReason = TowerEndReason.None;
+            _hasReservedSpecialEnding = false;
             _tower.ModuleInstalled += HandleModuleInstalled;
             _isStartRitualRegistered = InteractionRouter.RegisterHandler(InteractionAction.StartRitual, this);
         }
@@ -196,6 +202,21 @@ namespace Lighthouse.Tower.Net
             return true;
         }
 
+        // The accepted special branch locks the server's winner without publishing it to clients yet.
+        [Server]
+        public bool TryReserveSpecialEnding(Lighthouse.Monsters.Boss.BossTestEnvironment source)
+        {
+            if (!isActiveAndEnabled || _phase != TowerPhase.FinalBattle || !_isSummonCinematicPlaying
+                || _cinematicPhase != SummonCinematicPhase.Preparing || _hasReservedSpecialEnding
+                || source == null || source != _boss || !source.IsSpecialEnding
+                || source.Phase != Lighthouse.Monsters.Boss.BossPhase.SpecialEndingReady)
+            {
+                return false;
+            }
+            _hasReservedSpecialEnding = true;
+            return true;
+        }
+
         // One valid hit from the monster side. Health never comes back during the final battle.
         [Server]
         public void ApplyDamage(float amount)
@@ -219,6 +240,19 @@ namespace Lighthouse.Tower.Net
         public bool TryEnd(TowerOutcome outcome, TowerEndReason reason)
         {
             if (_phase == TowerPhase.Ended || outcome == TowerOutcome.None)
+            {
+                return false;
+            }
+            if (_hasReservedSpecialEnding)
+            {
+                // Neither a queued repair nor another end request may reveal or replace the reserved result.
+                if (outcome != TowerOutcome.MafiaWin || reason != TowerEndReason.SpecialEnding
+                    || !IsSpecialEndingCompletionDue)
+                {
+                    return false;
+                }
+            }
+            else if (reason == TowerEndReason.SpecialEnding)
             {
                 return false;
             }
@@ -246,6 +280,7 @@ namespace Lighthouse.Tower.Net
                 _cinematicPhase = SummonCinematicPhase.Cancelled;
             }
             _isSummonCinematicPlaying = false;
+            _hasReservedSpecialEnding = false;
             ServerCinematicProtection.End(this);
         }
 
@@ -269,6 +304,15 @@ namespace Lighthouse.Tower.Net
             }
             else if (_cinematicPhase == SummonCinematicPhase.Playing && now >= _summonCinematicEndsAt)
             {
+                if (_hasReservedSpecialEnding)
+                {
+                    if (_boss != null)
+                    {
+                        _boss.TryCompleteSpecialEnding();
+                    }
+                    TryEnd(TowerOutcome.MafiaWin, TowerEndReason.SpecialEnding);
+                    return;
+                }
                 _returnDeadline = now + _settings.CinematicReturnTimeout;
                 _cinematicPhase = SummonCinematicPhase.Returning;
             }
