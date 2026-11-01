@@ -87,7 +87,8 @@ float4 F3GeometryAt(float2 world);
 #define F3_LONG_EXPONENT 0.5
 float F3BreakingLimit(float groundDepth)
 {
-    return max(0.25,groundDepth+0.05)*1.25;
+    float depth=max(0.25,groundDepth+0.05);
+    return depth*lerp(0.5,1.25,smoothstep(2,8,depth));
 }
 float F3WavelengthTransmission(float baked,float wavelength)
 {
@@ -204,8 +205,8 @@ float3 F3Displacement(float2 rest)
         float phase=k*(dot(a.xy,rest+field.yz)-a.w*(_OceanTime-field.w))+F3PhaseOffset(a.z);
         float transmission=min(F3WavelengthTransmission(field.x,a.z)*swell,breakingLimit);
         displacement.xz+=a.xy*(transmission*b.y/k*cos(phase));
-        displacement.y+=transmission*b.x*(1+0.65*shoal)*(sin(phase)-0.25*shoal*cos(phase*2));
-        envelope+=transmission*b.x*(1+0.65*shoal)*(1+0.25*shoal);
+        displacement.y+=transmission*b.x*(1+0.2*shoal)*(sin(phase)-0.25*shoal*cos(phase*2));
+        envelope+=transmission*b.x*(1+0.2*shoal)*(1+0.25*shoal);
     }
     return displacement*min(1,breakingLimit/max(envelope,0.0001));
 }

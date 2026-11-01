@@ -2,6 +2,7 @@ using System;
 using Lighthouse.World.Clock.Rules;
 using Lighthouse.World.GhostShip.Rules;
 using Lighthouse.World.GhostShip.Server;
+using Lighthouse.World.Ocean;
 using Lighthouse.World.Query.Rules;
 using Mirror;
 using UnityEngine;
@@ -15,9 +16,10 @@ namespace Lighthouse.World.GhostShip.Net
     //   under the sea, and only then hides.
     //   W22 (2026-10-30): the last night brings it for sure if no night has yet, a night after the mafia took the
     //   hint brings it for sure (ForceNextNight), and once the final battle starts it stops for good (Retire).
-    // Vertical wave motion is left to the World buoyancy component: with a non-kinematic Rigidbody assigned, roaming
-    // only sets horizontal velocity and yaw. Rising and sinking switch the body to kinematic so buoyancy cannot
-    // push the ship back up.
+    // Vertical wave motion is left to the World buoyancy component: roaming only sets horizontal velocity and yaw on a
+    // non-kinematic Rigidbody that only the server simulates. Rising and sinking switch the body to kinematic so
+    // buoyancy cannot push the ship back up; rising ends at the local wave height so the hand-over to buoyancy has
+    // no jump.
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkIdentity))]
     public sealed class GhostShipNet : NetworkBehaviour
@@ -43,7 +45,8 @@ namespace Lighthouse.World.GhostShip.Net
         private float _yaw;
         private float _sinkStartY;
         private float _sinkStartSpeed;
-        private bool _wasBodyKinematic;
+        private BuoyancyObject _buoyancy;
+        private IWorldQuery _query;
         // Server-only.
         private bool _hasAppeared;
         private bool _isNextNightForced;
@@ -59,10 +62,8 @@ namespace Lighthouse.World.GhostShip.Net
 
         private void Awake()
         {
-            if (_body != null)
-            {
-                _wasBodyKinematic = _body.isKinematic;
-            }
+            TryGetComponent(out _buoyancy);
+            SetBuoyancySimulating(false);
         }
 
         public override void OnStartServer()
@@ -90,6 +91,11 @@ namespace Lighthouse.World.GhostShip.Net
         public override void OnStartClient()
         {
             base.OnStartClient();
+            if (!isServer)
+            {
+                SetBuoyancySimulating(false);
+            }
+
             PhaseChanged?.Invoke(_phase);
         }
 
@@ -291,13 +297,13 @@ namespace Lighthouse.World.GhostShip.Net
         {
             float t = Mathf.Clamp01(_phaseTime / _config.RiseSeconds);
             Vector3 position = MoveForward(transform.position, _config.Speed, deltaTime);
-            position.y = _seaLevel - _config.RiseDepth * (1f - t);
+            position.y = SeaHeightAt(position) - _config.RiseDepth * (1f - t);
             float pitch = -_config.RisePitch * Mathf.SmoothStep(0f, 1f, (1f - t) * 2f);
             transform.SetPositionAndRotation(position, Quaternion.Euler(pitch, _yaw, 0f));
 
             if (t >= 1f)
             {
-                SetBodyKinematic(_wasBodyKinematic);
+                SetBodyKinematic(false);
                 SetPhase(GhostShipPhase.Roaming);
             }
         }
@@ -317,7 +323,7 @@ namespace Lighthouse.World.GhostShip.Net
             }
 
             Vector3 position = MoveForward(transform.position, speed, deltaTime);
-            position.y = _seaLevel;
+            position.y = SeaHeightAt(position);
             transform.SetPositionAndRotation(position, Quaternion.Euler(0f, _yaw, 0f));
         }
 
@@ -424,6 +430,26 @@ namespace Lighthouse.World.GhostShip.Net
             }
 
             _body.isKinematic = isKinematic;
+            SetBuoyancySimulating(isServer && !isKinematic);
+        }
+
+        private void SetBuoyancySimulating(bool isSimulating)
+        {
+            if (_buoyancy != null)
+            {
+                _buoyancy.IsSimulating = isSimulating;
+            }
+        }
+
+        // The ship rides the live wave surface; the flat sea level is only the fallback before the world query exists.
+        private float SeaHeightAt(Vector3 position)
+        {
+            if (_query == null && !WorldServices.TryGet(out _query))
+            {
+                return _seaLevel;
+            }
+
+            return _query.SampleWaterHeight(position);
         }
 
         private Vector3 MoveForward(Vector3 position, float speed, float deltaTime)

@@ -1,4 +1,5 @@
 using Lighthouse.Monsters.AI.Net;
+using Lighthouse.World.Ocean.Rules;
 using Lighthouse.World.Query.Rules;
 using Lighthouse.World.Weather.View;
 using Mirror;
@@ -110,6 +111,11 @@ public sealed class Cannonball : NetworkBehaviour
     private void RpcWaterImpact(Vector3 position)
     {
         WorldAudioView.PlayCannonWaterImpact(position);
+
+        if (WorldServices.TryGet<IWaterSplashEffects>(out IWaterSplashEffects effects))
+        {
+            effects.Play(new WaterSplashRequest(WaterSplashKind.ImpactColumn, position, Vector3.up, 1f, 1));
+        }
     }
 
     private void OnCollisionEnter(Collision collision)

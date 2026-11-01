@@ -2,6 +2,7 @@ using System;
 using Lighthouse.World.Clock.Rules;
 using Lighthouse.World.Clock.View;
 using Lighthouse.World.MapGeneration.Rules;
+using Lighthouse.World.Ocean.Rules;
 using Lighthouse.World.Query.Rules;
 using Lighthouse.World.Weather.Rules;
 using UnityEngine;
@@ -33,9 +34,12 @@ namespace Lighthouse.World.Environment.View
         private WeatherEnvironmentSampler _weatherSampler;
         private EnvironmentSkyMaterial _material;
 
+        public static EnvironmentSkyView Active { get; private set; }
+
         public SkyEnvironmentState CurrentState { get; private set; }
         public bool HasState { get; private set; }
         public float WeatherLightScale { get; private set; } = 1f;
+        public EnvironmentWeights Weights { get; private set; } = EnvironmentWeights.Default;
 
         private void OnEnable()
         {
@@ -47,6 +51,7 @@ namespace Lighthouse.World.Environment.View
             _ambientDaylight = -1f;
             _ambientLightScale = -1f;
             _ambientNextTime = 0f;
+            Active = this;
 
             if (_gameClock == null || _gameClock.Config == null ||
                 _sunConfig == null ||
@@ -112,11 +117,23 @@ namespace Lighthouse.World.Environment.View
                 in fromDay, in fromNight, in toDay, in toNight,
                 regionBlend, daylight, in appearance, _weatherSampler.AbyssSky);
 
+            DayCycleConfig cycle = _gameClock.Config;
+            float horizonDaylight = OceanOpticsModel.GetDaylight(
+                elapsed, cycle.DaySeconds, cycle.NightSeconds,
+                _sunConfig.HorizonBlend);
+
+            Weights = new EnvironmentWeights(
+                horizonDaylight,
+                daylight,
+                _weatherSampler.GetStormWeight(weather.Snapshot.StormIntensity),
+                appearance.AbyssWeight,
+                appearance.LightScale);
+
             CurrentState = state;
             HasState = true;
             WeatherLightScale = appearance.LightScale;
 
-            float skyDaylight = daylight * (1f - appearance.AbyssWeight);
+            float skyDaylight = Weights.SkyDaylight;
             _material.Apply(in state, skyDaylight, (float)elapsed);
             RefreshAmbient(skyDaylight, state.LightScale);
         }
@@ -139,8 +156,14 @@ namespace Lighthouse.World.Environment.View
 
         private void OnDisable()
         {
+            if (Active == this)
+            {
+                Active = null;
+            }
+
             HasState = false;
             WeatherLightScale = 1f;
+            Weights = EnvironmentWeights.Default;
             CurrentState = default;
 
             if (_material != null)

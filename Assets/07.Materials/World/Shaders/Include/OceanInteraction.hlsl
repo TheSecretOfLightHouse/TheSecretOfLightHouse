@@ -20,7 +20,10 @@ float4 OceanInteraction(float2 p)
     float2 uv = (p-_OceanInteractionArea.xy)/max(0.01,_OceanInteractionArea.z);
     float edge = min(min(uv.x,uv.y),min(1-uv.x,1-uv.y));
     float fade = smoothstep(0.015,0.1,edge);
-    return SAMPLE_TEXTURE2D_LOD(_OceanInteractionState,sampler_OceanInteractionState,saturate(uv),0)*fade;
+    float4 state = SAMPLE_TEXTURE2D_LOD(_OceanInteractionState,sampler_OceanInteractionState,saturate(uv),0);
+    // Non-finite cells must never reach the surface normal or colour.
+    state = all(abs(state) < 1.0e4) ? state : 0;
+    return state*fade;
 }
 
 void OceanInteractionDisplace(inout float3 position,inout float3 normal)
@@ -52,8 +55,8 @@ float OceanFoamCoverage(float2 world,float density,float time)
     float detail=sqrt(SAMPLE_TEXTURE2D(_OceanFoamDetail,sampler_OceanFoamDetail,uv).r);
     float micro=sqrt(SAMPLE_TEXTURE2D(_OceanFoamDetail,sampler_OceanFoamDetail,world*0.47+17.3).r);
     float threshold=lerp(0.68,0.25,saturate(density));
-    float aa=max(0.025,fwidth(detail));
-    float lace=smoothstep(threshold-aa,threshold+aa+0.08,detail);
+    // Fixed soft edge: no screen derivatives, so callers may skip this function for foam-free pixels.
+    float lace=smoothstep(threshold-0.04,threshold+0.2,detail);
     return lace*lerp(0.7,1,micro)*saturate(density*2);
 
 }
