@@ -14,7 +14,6 @@ namespace Lighthouse.World.Weather.View
         private static readonly int DensityId = Shader.PropertyToID("_Density");
         private static readonly int NoiseScaleId = Shader.PropertyToID("_NoiseScale");
         private static readonly int WindTimeId = Shader.PropertyToID("_WindTime");
-        private static readonly int SkyNightBlendId = Shader.PropertyToID("_SkyNightBlend");
         private const float FogOffsetTime = 1f;
         [SerializeField] private Camera _observer;
         [SerializeField] private EnvironmentSkyView _sky;
@@ -27,6 +26,8 @@ namespace Lighthouse.World.Weather.View
         [SerializeField, Min(0f)] private float _volumeExtinction = 0.65f;
         [SerializeField] private Color _fogColor = new Color(0.82f, 0.85f, 0.85f);
         [SerializeField] private Color _nightFogColor = new Color(0.34f, 0.4f, 0.52f);
+        [SerializeField] private Color _stormFogColor = new Color(0.3f, 0.37f, 0.43f);
+        [SerializeField, Range(0f, 1f)] private float _stormNightFogScale = 0.3f;
         [SerializeField] private Color _abyssFogColor = new Color(0.035f, 0.085f, 0.065f);
         [SerializeField, Range(0f, 1f)] private float _fogLightFloor = 0.65f;
         [SerializeField, Min(0f)] private float _densityScale = 0.35f;
@@ -55,6 +56,11 @@ namespace Lighthouse.World.Weather.View
         private Material _volumeMaterial;
         private Vector2 _fogOffset;
         private WorldAudioView _worldAudio;
+        private Color _fogOverrideColor;
+        private float _fogOverrideDensity;
+        private float _fogOverrideWeight;
+
+        public static WeatherPresentationView Active => _active;
 
         public Camera Observer => _observer;
 
@@ -137,17 +143,27 @@ namespace Lighthouse.World.Weather.View
             {
                 _worldAudio.RenderWeather(_observer, system.Target, _rain != null ? _rain.AudioExposure : 1f);
             }
-            float abyss = Mathf.InverseLerp(0.8f, 1f, snapshot.StormIntensity);
-            float light = _sky != null && _sky.HasState ? _sky.WeatherLightScale : 1f;
-            float night = Shader.GetGlobalFloat(SkyNightBlendId);
-            Color baseColor = Color.Lerp(_fogColor, _nightFogColor, night);
-            float lit = Mathf.Lerp(_fogLightFloor, 1f, light);
-            Color color = Color.Lerp(baseColor * lit, _abyssFogColor, abyss);
+            EnvironmentWeights weights = _sky != null && _sky.HasState
+                ? _sky.Weights : EnvironmentWeights.Default;
+            Color baseColor = Color.Lerp(_fogColor, _nightFogColor, weights.Night);
+            Color stormColor = _stormFogColor * Mathf.Lerp(1f, _stormNightFogScale, weights.Night);
+            baseColor = Color.Lerp(baseColor, stormColor, weights.Storm);
+            float lit = Mathf.Lerp(_fogLightFloor, 1f, weights.LightScale);
+            Color color = Color.Lerp(baseColor * lit, _abyssFogColor, weights.Abyss);
             color.a = 1f;
+            float density = Mathf.Max(0f, _density.Evaluate(snapshot.Fog)) * _densityScale;
+
+            if (_fogOverrideWeight > 0f)
+            {
+                color = Color.Lerp(color, _fogOverrideColor, _fogOverrideWeight);
+                color.a = 1f;
+                density = Mathf.Lerp(density, _fogOverrideDensity, _fogOverrideWeight);
+            }
+
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = color;
-            RenderSettings.fogDensity = Mathf.Max(0f, _density.Evaluate(snapshot.Fog)) * _densityScale;
+            RenderSettings.fogDensity = density;
 
             if (_fogVolume != null)
             {
@@ -220,6 +236,18 @@ namespace Lighthouse.World.Weather.View
             {
                 Destroy(_volumeMaterial);
             }
+        }
+
+        public void SetFogOverride(Color color, float density, float weight)
+        {
+            _fogOverrideColor = color;
+            _fogOverrideDensity = Mathf.Max(0f, density);
+            _fogOverrideWeight = Mathf.Clamp01(weight);
+        }
+
+        public void ClearFogOverride()
+        {
+            _fogOverrideWeight = 0f;
         }
 
         public void SetObserver(Camera observer)

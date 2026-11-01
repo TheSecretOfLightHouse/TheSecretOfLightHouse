@@ -67,6 +67,14 @@ namespace Lighthouse.World.Environment.View
             return true;
         }
 
+        public float GetStormWeight(float intensity)
+        {
+            return Mathf.InverseLerp(
+                _intensities[(int)WeatherType.Calm],
+                _intensities[(int)WeatherType.Storm],
+                intensity);
+        }
+
         public bool TryEvaluate(
             float intensity,
             out WeatherEnvironmentState state)

@@ -51,8 +51,11 @@ namespace Lighthouse.World.Ocean.Rules
             OceanOpticsState daytime = OceanOpticsState.Lerp(
                 profile.Day, profile.Storm, stormWeight);
 
+            OceanOpticsState night = OceanOpticsState.Lerp(
+                profile.Night, profile.StormNight, stormWeight);
+
             OceanOpticsState regular = OceanOpticsState.Lerp(
-                profile.Night, daytime, daylight);
+                night, daytime, daylight);
 
             return OceanOpticsState.Lerp(
                 regular, profile.Abyss, abyssWeight);

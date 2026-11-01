@@ -21,6 +21,7 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         [Header("피해 0 프로토타입에서 월드 조회 미연결 허용")]
         [SerializeField] private bool _allowUnmappedPrototype = true;
 
+        private MonsterBehaviourAudio _audio;
         private SeaMonster _monster;
         private SeaMonsterSensor _sensor;
         private MonsterBoatTarget _target;
@@ -43,6 +44,7 @@ namespace Lighthouse.Monsters.MosaWhale.Server
 
         private void Awake()
         {
+            _audio = GetComponent<MonsterBehaviourAudio>();
             _monster = GetComponent<SeaMonster>();
             _sensor = GetComponent<SeaMonsterSensor>();
             _mapWait = new WaitForSeconds(MapRefreshInterval);
@@ -172,6 +174,10 @@ namespace Lighthouse.Monsters.MosaWhale.Server
             _lastTargetPosition = selected.transform.position;
             _lockedAttackPosition = Vector3.zero;
             _hasLockedAttackPosition = false;
+            if (_audio != null)
+            {
+                _audio.PlayCue(0, transform.position);
+            }
             return true;
         }
 

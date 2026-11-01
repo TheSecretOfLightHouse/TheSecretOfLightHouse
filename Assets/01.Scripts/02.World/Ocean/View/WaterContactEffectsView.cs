@@ -48,7 +48,7 @@ namespace Lighthouse.World.Ocean.View
                 enabled = false;
                 return;
             }
-            if (_focus == null || _simulation == null || _foamDetail == null || _crestShader == null || !_crestShader.isSupported || !SystemInfo.supportsComputeShaders
+            if (_focus == null || _simulation == null || _foamDetail == null || !SystemInfo.supportsComputeShaders
                 || !SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.ARGBFloat))
             {
                 Debug.LogError($"[{nameof(WaterContactEffectsView)}] Focus, simulation, foam texture and compute support are required.");
@@ -58,7 +58,10 @@ namespace Lighthouse.World.Ocean.View
             _active = this;
             Shader.SetGlobalTexture("_OceanFoamDetail", _foamDetail);
             _grid = new SurfaceInteractionGrid(_simulation);
-            _crestRenderer = new SurfCrestRenderer(_crestShader);
+            if (_crestShader != null && _crestShader.isSupported)
+            {
+                _crestRenderer = new SurfCrestRenderer(_crestShader);
+            }
             if (_breakerShader != null && _breakerShader.isSupported)
             {
                 _breaker = new BreakerWaveRenderer(_breakerShader);
@@ -89,7 +92,10 @@ namespace Lighthouse.World.Ocean.View
             float seaLevel = _query.SampleWaterHeight(_focus.position);
             _grid.StaticContactFoam = _staticContactFoam;
             _grid.Update(_focus.position, seaLevel, Time.deltaTime, Time.time, _host, (float)_clock.Now);
-            _crestRenderer.Update(_focus.position, gameObject.layer);
+            if (_crestRenderer != null)
+            {
+                _crestRenderer.Update(_focus.position, gameObject.layer);
+            }
             if (_breaker != null)
             {
                 _breaker.Update(_focus.position, seaLevel, _host, _clock.Now, gameObject.layer);

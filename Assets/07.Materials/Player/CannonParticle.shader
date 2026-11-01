@@ -2,7 +2,7 @@ Shader "Lighthouse/Player/CannonParticle"
 {
     Properties
     {
-        [Enum(Smoke,0,Flash,1,MeshSmoke,2)] _EffectType("Effect Type", Float) = 0
+        [Enum(Smoke,0,Flash,1,MeshSmoke,2,MeshFlash,3)] _EffectType("Effect Type", Float) = 0
         [Enum(UnityEngine.Rendering.CullMode)] _Cull("Cull", Float) = 0
     }
     SubShader
@@ -47,7 +47,7 @@ Shader "Lighthouse/Player/CannonParticle"
                 output.uv = input.uv;
                 output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
-                if (_EffectType > 1.5)
+                if (_EffectType > 1.5 && _EffectType < 2.5)
                 {
                     float3 samplePosition = output.positionWS * 9.0;
                     float distortion = sin(samplePosition.x + sin(samplePosition.z))
@@ -83,7 +83,16 @@ Shader "Lighthouse/Player/CannonParticle"
                 float2 p = input.uv * 2.0 - 1.0;
                 float alpha;
                 float3 color;
-                if (_EffectType > 1.5)
+                if (_EffectType > 2.5)
+                {
+                    float3 normal = normalize(input.normalWS);
+                    float3 view = normalize(GetWorldSpaceViewDir(input.positionWS));
+                    float facing = saturate(dot(normal, view));
+                    alpha = pow(facing, 2.4) * 0.8;
+                    float core = smoothstep(0.45, 1.0, facing);
+                    color = lerp(float3(1.5, 0.24, 0.015), float3(2.0, 1.35, 0.45), core);
+                }
+                else if (_EffectType > 1.5)
                 {
                     float3 smokePosition = input.positionWS * 3.0;
                     float drift = _Time.y * 0.25;

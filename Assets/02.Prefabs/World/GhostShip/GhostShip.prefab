@@ -9883,6 +9883,7 @@ GameObject:
   - component: {fileID: 430479479327437149}
   - component: {fileID: 2498033533396567083}
   - component: {fileID: 6157931882847924537}
+  - component: {fileID: 5832650065609431228}
   m_Layer: 0
   m_Name: GhostShip
   m_TagString: Untagged
@@ -10093,6 +10094,49 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &5832650065609431228
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7661092765283775685}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1aafff1b5e63eb849ad57b0e0ed80c20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _isSimulating: 0
+  _profile:
+    _buoyancyRatio: 2
+    _restoreStrength: 0
+    _diveRatio: 0.9
+    _surfaceFollow: 0
+    _submergedFollow: 0.3
+    _plateThickness: 0.2
+    _depthCapScale: 10
+    _verticalDrag: 8
+    _horizontalDrag: 0.3
+    _angularDrag: 0.3
+    _heaveFollow: 0.85
+    _heaveBaselineSeconds: 5
+    _maxSinkDepth: 0
+    _minSinkDepth: 0
+    _targetStrength: 0
+    _targetMaxAcceleration: 40
+  _pool: 1
+  _divisions: {x: 2, y: 2, z: 2}
+  _manualPoints:
+  - {x: -2.8, y: -3, z: -11}
+  - {x: 2.8, y: -3, z: -11}
+  - {x: -2.8, y: -3, z: 11}
+  - {x: 2.8, y: -3, z: 11}
+  - {x: -2.8, y: 3, z: -11}
+  - {x: 2.8, y: 3, z: -11}
+  - {x: -2.8, y: 3, z: 11}
+  - {x: 2.8, y: 3, z: 11}
+  _depthTolerance: 0.1
+  _warnInterval: 2
 --- !u!1001 &780441305358898875
 PrefabInstance:
   m_ObjectHideFlags: 0
