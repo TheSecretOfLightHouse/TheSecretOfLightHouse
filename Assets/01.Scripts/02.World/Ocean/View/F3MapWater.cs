@@ -290,6 +290,11 @@ namespace Lighthouse.World.Ocean.View
                     _coveragePixels[target] = state.Coverage[source];
                 }
             }
+            if (includeGeometry)
+            {
+                F3DockClearance.Clear(_coveragePixels, _size, startX, startZ, _tileSize,
+                    new Vector2(region.x, region.y), _cell, _islands.GetTransform(index));
+            }
             if (includeGeometry && _surfPrefab != null)
             {
                 // Surfs are built inactive, then initialized before OnEnable allocates their mesh.
