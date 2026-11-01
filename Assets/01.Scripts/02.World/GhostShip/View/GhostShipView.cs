@@ -1,11 +1,13 @@
+using Lighthouse.Lantern.View;
 using Lighthouse.World.GhostShip.Net;
 using Lighthouse.World.GhostShip.Rules;
 using UnityEngine;
 
 namespace Lighthouse.World.GhostShip.View
 {
-    // Shows the ship only while it is out. Its fog bank fades out over a second the moment it starts sinking, rather
-    // than lingering on the water while the particles live out their lifetime.
+    // Shows the ship only while it is out. Its fog bank stays off through the diagonal rise and slowly fades in once the
+    // ship levels out and starts roaming (2026-10-31); it fades out over a second the moment the ship starts sinking,
+    // rather than lingering on the water while the particles live out their lifetime.
     // The sea is see-through, so under the surface the lamp dims with depth and the ship is hidden once fully under;
     // otherwise a rising or sinking ship glows from deep water far away.
     [DisallowMultipleComponent]
@@ -16,6 +18,8 @@ namespace Lighthouse.World.GhostShip.View
         [SerializeField] private GhostShipNet _ship;
         [SerializeField] private GameObject _visualRoot;
         [SerializeField] private Light _lamp;
+        [Tooltip("Deck lanterns; they dim with depth like the lamp.")]
+        [SerializeField] private LanternFlameFlicker[] _lanterns;
         [SerializeField] private ParticleSystem[] _fog;
         [Tooltip("Depth below the sea at which the lamp is fully off.")]
         [SerializeField, Min(0.1f)] private float _lampFadeDepth = 6f;
@@ -23,6 +27,8 @@ namespace Lighthouse.World.GhostShip.View
         [SerializeField, Min(0f)] private float _hideDepth = 10f;
         [Tooltip("Seconds the fog takes to fade out once the ship starts sinking.")]
         [SerializeField, Min(0.01f)] private float _fogFadeSeconds = 1f;
+        [Tooltip("Seconds the fog takes to fade in once the ship has risen and levelled out.")]
+        [SerializeField, Min(0.01f)] private float _fogFadeInSeconds = 4f;
 
         private bool _isOut;
         private float _lampIntensity;
@@ -31,6 +37,7 @@ namespace Lighthouse.World.GhostShip.View
         private MaterialPropertyBlock _fogBlock;
         // Seconds into the fog fade; below zero when not fading.
         private float _fogFadeTime = -1f;
+        private bool _isFogFadingIn;
 
         private void Awake()
         {
@@ -83,12 +90,11 @@ namespace Lighthouse.World.GhostShip.View
                 return;
             }
 
-            bool hasFog = phase == GhostShipPhase.Rising || phase == GhostShipPhase.Roaming;
-
-            if (hasFog)
+            if (phase == GhostShipPhase.Roaming)
             {
-                _fogFadeTime = -1f;
-                SetFogAlpha(1f);
+                _fogFadeTime = 0f;
+                _isFogFadingIn = true;
+                SetFogAlpha(0f);
 
                 for (int i = 0; i < _fog.Length; i++)
                 {
@@ -98,14 +104,16 @@ namespace Lighthouse.World.GhostShip.View
                 return;
             }
 
-            for (int i = 0; i < _fog.Length; i++)
-            {
-                _fog[i].Stop(true, ParticleSystemStopBehavior.StopEmitting);
-            }
-
             if (phase == GhostShipPhase.Sinking)
             {
-                _fogFadeTime = 0f;
+                for (int i = 0; i < _fog.Length; i++)
+                {
+                    _fog[i].Stop(true, ParticleSystemStopBehavior.StopEmitting);
+                }
+
+                // A fade-in still under way carries on down from where it is.
+                _fogFadeTime = _isFogFadingIn ? (1f - FogFadeInAlpha()) * _fogFadeSeconds : 0f;
+                _isFogFadingIn = false;
             }
             else
             {
@@ -124,17 +132,45 @@ namespace Lighthouse.World.GhostShip.View
                 _visualRoot.SetActive(isShown);
             }
 
+            float lampScale = 1f - Mathf.Clamp01(depth / _lampFadeDepth);
+
             if (_lamp != null)
             {
-                float intensity = _lampIntensity * (1f - Mathf.Clamp01(depth / _lampFadeDepth));
+                float intensity = _lampIntensity * lampScale;
                 _lamp.intensity = intensity;
                 _lamp.enabled = isShown && intensity > 0f;
+            }
+
+            if (_lanterns != null)
+            {
+                for (int i = 0; i < _lanterns.Length; i++)
+                {
+                    if (_lanterns[i] != null)
+                    {
+                        _lanterns[i].Brightness = lampScale;
+                    }
+                }
             }
         }
 
         private void StepFogFade()
         {
             _fogFadeTime += Time.deltaTime;
+
+            if (_isFogFadingIn)
+            {
+                float fadeIn = FogFadeInAlpha();
+                SetFogAlpha(fadeIn);
+
+                if (fadeIn >= 1f)
+                {
+                    _fogFadeTime = -1f;
+                    _isFogFadingIn = false;
+                }
+
+                return;
+            }
+
             float alpha = 1f - Mathf.Clamp01(_fogFadeTime / _fogFadeSeconds);
             SetFogAlpha(alpha);
 
@@ -144,9 +180,15 @@ namespace Lighthouse.World.GhostShip.View
             }
         }
 
+        private float FogFadeInAlpha()
+        {
+            return Mathf.Clamp01(_fogFadeTime / _fogFadeInSeconds);
+        }
+
         private void ClearFog()
         {
             _fogFadeTime = -1f;
+            _isFogFadingIn = false;
 
             for (int i = 0; i < _fog.Length; i++)
             {

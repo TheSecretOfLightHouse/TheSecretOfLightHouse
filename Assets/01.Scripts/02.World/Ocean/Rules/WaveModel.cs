@@ -7,7 +7,7 @@ namespace Lighthouse.World.Ocean.Rules
     {
         public const int MaxWaves = 8;
         public const float MaxTotalSteepness = 0.8f;
-        public const int InverseIterations = 6;
+        public const int InverseIterations = 12;
 
         private const float TwoPi = Mathf.PI * 2f;
         private const float DirectionTolerance = 0.01f;
@@ -29,13 +29,21 @@ namespace Lighthouse.World.Ocean.Rules
             ReadOnlySpan<Vector4> coasts, ReadOnlySpan<Vector4> edges, ReadOnlySpan<Vector4> profiles,
             float x, float z, float time)
         {
+            return HeightAt(waves, modifiers, coasts, edges, profiles, CoastWaveRegistry.Lagoons, x, z, time);
+        }
+
+        public static float HeightAt(
+            ReadOnlySpan<WaveParams> waves, ReadOnlySpan<WaveModifierData> modifiers,
+            ReadOnlySpan<Vector4> coasts, ReadOnlySpan<Vector4> edges, ReadOnlySpan<Vector4> profiles,
+            ReadOnlySpan<Vector4> lagoons, float x, float z, float time)
+        {
             float height = HeightAt(waves, modifiers, x, z, time);
             float energy = 0f;
             for (int i = 0; i < waves.Length; i++)
             {
                 energy += waves[i].Amplitude;
             }
-            return CoastWaveModel.Apply(coasts, edges, profiles, x, z, time, height, energy, CoastWaveRegistry.Lagoons);
+            return CoastWaveModel.Apply(coasts, edges, profiles, x, z, time, height, energy, lagoons);
         }
 
         public static Vector3 NormalAt(
@@ -52,6 +60,7 @@ namespace Lighthouse.World.Ocean.Rules
             float stretchXX = 0f;
             float stretchZZ = 0f;
             float stretchXZ = 0f;
+            float swell = OpenSeaSwell.FactorAt(restX, restZ, time);
 
             for (int i = 0; i < waves.Length; i++)
             {
@@ -63,8 +72,8 @@ namespace Lighthouse.World.Ocean.Rules
 
                 float waveNumber = TwoPi / wave.Wavelength;
                 float phase = waveNumber * (wave.Direction.x * restX + wave.Direction.y * restZ - wave.Speed * time);
-                float slope = waveNumber * wave.Amplitude * Mathf.Cos(phase);
-                float stretch = wave.Steepness * Mathf.Sin(phase);
+                float slope = waveNumber * wave.Amplitude * swell * Mathf.Cos(phase);
+                float stretch = wave.Steepness * swell * Mathf.Sin(phase);
 
                 slopeX += wave.Direction.x * slope;
                 slopeZ += wave.Direction.y * slope;
@@ -90,6 +99,7 @@ namespace Lighthouse.World.Ocean.Rules
             float displacementX = 0f;
             float displacementY = 0f;
             float displacementZ = 0f;
+            float swell = OpenSeaSwell.FactorAt(restX, restZ, time);
 
             for (int i = 0; i < waves.Length; i++)
             {
@@ -101,11 +111,11 @@ namespace Lighthouse.World.Ocean.Rules
 
                 float waveNumber = TwoPi / wave.Wavelength;
                 float phase = waveNumber * (wave.Direction.x * restX + wave.Direction.y * restZ - wave.Speed * time);
-                float horizontal = wave.Steepness / waveNumber * Mathf.Cos(phase);
+                float horizontal = wave.Steepness * swell / waveNumber * Mathf.Cos(phase);
 
                 displacementX += wave.Direction.x * horizontal;
                 displacementZ += wave.Direction.y * horizontal;
-                displacementY += wave.Amplitude * Mathf.Sin(phase);
+                displacementY += wave.Amplitude * swell * Mathf.Sin(phase);
             }
 
             return new Vector3(displacementX, displacementY, displacementZ);

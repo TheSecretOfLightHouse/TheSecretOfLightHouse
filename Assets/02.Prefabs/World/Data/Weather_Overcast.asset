@@ -13,18 +13,20 @@ MonoBehaviour:
   m_Name: Weather_Overcast
   m_EditorClassIdentifier: 
   _levels:
-  - Amplitude: 0.85
-    Steepness: 0.14
-  - Amplitude: 0.5
-    Steepness: 0.12
-  - Amplitude: 0.23
-    Steepness: 0.1
-  - Amplitude: 0.1
-    Steepness: 0.07
-  - Amplitude: 0.05
-    Steepness: 0.05
-  - Amplitude: 0.02
+  - Amplitude: 0.442
+    Steepness: 0.0195
+  - Amplitude: 0.34
+    Steepness: 0.0164
+  - Amplitude: 0.289
+    Steepness: 0.0272
+  - Amplitude: 0.238
+    Steepness: 0.0245
+  - Amplitude: 0.17
+    Steepness: 0.0343
+  - Amplitude: 0.136
     Steepness: 0.03
+  - Amplitude: 0.085
+    Steepness: 0.0401
   _wind: {x: 4, y: 0}
   _fogDensity: 0.3
   _rainRate: 0

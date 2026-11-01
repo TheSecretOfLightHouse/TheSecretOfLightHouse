@@ -1,4 +1,5 @@
 using UnityEngine;
+using Lighthouse.World.Ocean.View;
 
 namespace Lighthouse.Player.Boat.View
 {
@@ -27,6 +28,7 @@ namespace Lighthouse.Player.Boat.View
 
         private BoatCannon _cannon;
         private BoatController _boat;
+        private StabilizerModule _stabilizer;
         private Vector3 _barrelRestPosition;
         private Vector3 _barrelRecoilDirection;
         private float _elapsed;
@@ -40,11 +42,14 @@ namespace Lighthouse.Player.Boat.View
         private Vector3 _collisionVelocity;
         private float _collisionElapsed;
         private bool _isCollisionRocking;
+        private WaveTiltVisual _waveTilt;
+        private bool _composesHull;
 
         private void Awake()
         {
             _cannon = GetComponent<BoatCannon>();
             _boat = GetComponent<BoatController>();
+            _stabilizer = GetComponent<StabilizerModule>();
             if (_hullVisual)
             {
                 _hullRestRotation = _hullVisual.localRotation;
@@ -82,7 +87,10 @@ namespace Lighthouse.Player.Boat.View
             _isCollisionRocking = false;
             _collisionAngle = Vector3.zero;
             _collisionVelocity = Vector3.zero;
-            if (_hullVisual)
+            bool composed = _composesHull && _waveTilt && _waveTilt.isActiveAndEnabled;
+            if (_waveTilt) _waveTilt.ReleaseRecoil(this);
+            _composesHull = false;
+            if (_hullVisual && !composed)
             {
                 _hullVisual.localRotation = _hullRestRotation;
             }
@@ -144,6 +152,8 @@ namespace Lighthouse.Player.Boat.View
         {
             if ((!_isHullRecoiling && !_isCollisionRocking) || !_hullVisual)
             {
+                if (_waveTilt) _waveTilt.ReleaseRecoil(this);
+                _composesHull = false;
                 return;
             }
 
@@ -162,8 +172,13 @@ namespace Lighthouse.Player.Boat.View
                 collisionRotation = AdvanceCollisionRock(Time.deltaTime);
             }
             // Pitch in boat space so differently oriented art still lifts the bow.
-            _hullVisual.localRotation = collisionRotation
-                * Quaternion.AngleAxis(-_hullPitch * weight, Vector3.right) * _hullRestRotation;
+            Quaternion recoil = collisionRotation * Quaternion.AngleAxis(-_hullPitch * weight, Vector3.right);
+            if (!_waveTilt) TryGetComponent(out _waveTilt);
+            _composesHull = _waveTilt && _waveTilt.TrySetRecoil(this, _hullVisual, recoil);
+            if (!_composesHull)
+            {
+                _hullVisual.localRotation = recoil * _hullRestRotation;
+            }
         }
 
         private Quaternion AdvanceCollisionRock(float deltaTime)
@@ -171,6 +186,10 @@ namespace Lighthouse.Player.Boat.View
             _collisionElapsed += deltaTime;
             float frequency = Mathf.PI * 2f * _collisionOscillations / Mathf.Max(0.01f, _collisionDuration);
             float damping = Mathf.Max(0.01f, _collisionDamping);
+            if (_stabilizer)
+            {
+                damping *= _stabilizer.CollisionDampingMultiplier;
+            }
             float decay = Mathf.Exp(-damping * deltaTime);
             float cosine = Mathf.Cos(frequency * deltaTime);
             float sine = Mathf.Sin(frequency * deltaTime);
@@ -205,10 +224,11 @@ namespace Lighthouse.Player.Boat.View
                 return;
             }
             float frequency = Mathf.PI * 2f * _collisionOscillations / Mathf.Max(0.01f, _collisionDuration);
-            float impulse = _collisionTilt * frequency * Mathf.Lerp(0.65f, 1f, Mathf.Clamp01(strength));
+            float tilt = _collisionTilt * (_stabilizer ? _stabilizer.CollisionTiltMultiplier : 1f);
+            float impulse = tilt * frequency * Mathf.Lerp(0.65f, 1f, Mathf.Clamp01(strength));
             // Preserve the current lean on repeated hits; the new impact adds angular momentum.
             _collisionVelocity = Vector3.ClampMagnitude(_collisionVelocity
-                + Vector3.Cross(Vector3.up, localDirection.normalized) * impulse, _collisionTilt * frequency);
+                + Vector3.Cross(Vector3.up, localDirection.normalized) * impulse, tilt * frequency);
             _collisionElapsed = 0f;
             _isCollisionRocking = true;
         }

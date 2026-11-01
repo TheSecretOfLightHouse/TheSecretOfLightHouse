@@ -22,6 +22,7 @@ namespace Lighthouse.Mafia.SeaSummoning.View
         [SerializeField] private SeaSummonPermissionController _permission;
         [SerializeField] private SeaSummonPointController _points;
         [SerializeField] private SeaSummonSpawnController _spawn;
+        [SerializeField] private SeaIllusionController _illusion;
         [SerializeField] private SeaSummonPointView _pointView;
         [SerializeField] private SeaSummonCameraView _cameraView;
         private readonly int[] _optionIndices = new int[7];
@@ -45,6 +46,7 @@ namespace Lighthouse.Mafia.SeaSummoning.View
         private int _slotCount, _hover = -2, _openedFrame;
         private bool _hasFailure;
         private bool _wasPending;
+        private bool _isIllusionFlow;
         private Font _font;
         public bool IsOpen { get; private set; }
         public string Status { get; private set; } = "F: 마피아 능력";
@@ -127,6 +129,10 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             _spawn.SummonResponded += HandleSummonResponded;
             _spawn.QuotaChanged += HandleQuotaChanged;
             _permission.WeatherResponded += HandleWeatherResponded;
+            if (_illusion != null)
+            {
+                _illusion.IllusionResponded += HandleIllusionResponded;
+            }
         }
 
         private void LateUpdate()
@@ -197,6 +203,11 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             _spawn.SummonResponded -= HandleSummonResponded;
             _spawn.QuotaChanged -= HandleQuotaChanged;
             _permission.WeatherResponded -= HandleWeatherResponded;
+            if (_illusion != null)
+            {
+                _illusion.IllusionResponded -= HandleIllusionResponded;
+            }
+            _isIllusionFlow = false;
             CloseMenu(false);
             if (_cameraView != null && _cameraView.IsAbilityMenuActive)
             {
@@ -216,7 +227,7 @@ namespace Lighthouse.Mafia.SeaSummoning.View
         {
             if (_hasFailure && !IsOpen && _cameraView != null && _cameraView.IsTopViewActive)
             {
-                GUI.Box(new Rect(Screen.width * 0.5f - 300f, Screen.height - 100f, 600f, 60f), "소환 실패: " + Status + "\n지점을 다시 선택해 주세요.");
+                GUI.Box(new Rect(Screen.width * 0.5f - 300f, Screen.height - 100f, 600f, 60f), "요청 실패: " + Status + "\n지점을 다시 선택해 주세요.");
             }
         }
 
@@ -337,15 +348,27 @@ namespace Lighthouse.Mafia.SeaSummoning.View
             {
                 CloseMenu(true);
                 _hasFailure = false;
+                _isIllusionFlow = false;
                 _cameraView.BeginPointSelection();
             }
             else if (slot == 1)
             {
                 OpenPage(MenuPage.Weather, "다음 날 날씨 선택: 안개 / 폭풍우");
             }
+            else if (_illusion == null)
+            {
+                SetStatus("환영섬 기능이 연결되지 않았습니다.");
+            }
+            else if (_illusion.HasOwnQuota && _illusion.OwnRemainingCount <= 0)
+            {
+                SetStatus("오늘 환영섬 생성 횟수를 모두 사용했습니다.");
+            }
             else
             {
-                SetStatus("환영섬 생성은 민서의 기능 연결 준비 중입니다.");
+                CloseMenu(true);
+                _hasFailure = false;
+                _isIllusionFlow = true;
+                _cameraView.BeginPointSelection();
             }
         }
 
@@ -375,6 +398,20 @@ namespace Lighthouse.Mafia.SeaSummoning.View
 
         private void HandleSelectionResponded()
         {
+            if (_isIllusionFlow)
+            {
+                if (_points.HasOwnSelection && _cameraView.IsTopViewActive && _illusion != null && !_illusion.IsPending)
+                {
+                    Status = "환영섬 생성 요청 중…";
+                    _illusion.RequestIllusion();
+                }
+                else if (!_points.HasOwnSelection)
+                {
+                    Status = _points.OwnResult;
+                    _hasFailure = true;
+                }
+                return;
+            }
             if (_points.HasOwnSelection && _cameraView.IsTopViewActive && !_spawn.IsPending)
             {
                 OpenPage(MenuPage.Monster, "몬스터 종류를 클릭하면 즉시 소환합니다.");
@@ -401,6 +438,21 @@ namespace Lighthouse.Mafia.SeaSummoning.View
                 _wasPending = false;
                 UpdateVisuals();
                 SetStatus(result);
+            }
+        }
+
+        private void HandleIllusionResponded(bool success)
+        {
+            if (!_isIllusionFlow || !_cameraView.IsTopViewActive)
+            {
+                return;
+            }
+            Status = _illusion.OwnResult;
+            _hasFailure = !success;
+            if (success)
+            {
+                _isIllusionFlow = false;
+                _cameraView.RequestToggle();
             }
         }
 

@@ -123,7 +123,8 @@ namespace Lighthouse.Tower.View
             // keeps scene objects inactive until spawned, so netIdentity (behind isClient) is still null before that.
             bool isRunning = _match && _match.isActiveAndEnabled && (_match.isClient || _match.isServer)
                 && _match.Phase != TowerPhase.Ended;
-            bool isFinalBattle = isRunning && _match.Phase == TowerPhase.FinalBattle;
+            // The battle group drops in once the summon cinematic is over.
+            bool isFinalBattle = isRunning && _match.IsFinalBattleRevealed;
 
             if (isRunning != _isShown)
             {

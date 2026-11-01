@@ -5,6 +5,8 @@
 float4 _OceanCoastBounds[OCEAN_COAST_CAPACITY];
 float4 _OceanCoastEdges[OCEAN_COAST_CAPACITY * OCEAN_COAST_SEGMENTS];
 float _OceanCoastEnabled;
+float4 _OceanCoastWorldBounds;
+float _OceanCoastBoundsEnabled;
 float4 _OceanCoastProfiles[OCEAN_COAST_CAPACITY];
 float4 _OceanCoastLagoon[OCEAN_COAST_CAPACITY];
 
@@ -41,20 +43,21 @@ float CoastHeight(float d, float width, float time, float height, float energy)
     return CoastHeight(d, width, time, height, energy, 0.0);
 }
 
-void OceanCoastFieldLagoonAt(float2 p, float time, float energy, inout float height, inout float3 normal, out float4 field, out float lagoonReach)
+void OceanCoastMetadataAt(float2 p, out float4 field, out float lagoonReach, out float shoreLift)
 {
     field = 0;
     lagoonReach = 0;
+    shoreLift = 0;
     if (_OceanCoastEnabled < 0.5)
     {
         return;
     }
+    if (_OceanCoastBoundsEnabled > 0.5 && (any(p < _OceanCoastWorldBounds.xy) || any(p > _OceanCoastWorldBounds.zw))) return;
     float best = 1e20;
     float distance = 0.0;
     float width = 0.0;
     float2 gradient = 0.0;
     float nearestLagoon = 0.0;
-    float shoreLift = 0.0;
     [loop] for (int island = 0; island < OCEAN_COAST_CAPACITY; island++)
     {
         float4 area = _OceanCoastBounds[island];
@@ -88,6 +91,15 @@ void OceanCoastFieldLagoonAt(float2 p, float time, float energy, inout float hei
     }
     field = float4(gradient, distance, width);
     lagoonReach = nearestLagoon;
+}
+void OceanCoastFieldLagoonAt(float2 p, float time, float energy, inout float height, inout float3 normal, out float4 field, out float lagoonReach)
+{
+    float shoreLift;
+    OceanCoastMetadataAt(p, field, lagoonReach, shoreLift);
+    if (field.w <= 0) return;
+    float2 gradient = field.xy;
+    float distance = field.z;
+    float width = field.w;
     float stepSize = 0.01;
     float alongDistance = (CoastHeight(distance + stepSize, width, time, height, energy, shoreLift)
         - CoastHeight(distance - stepSize, width, time, height, energy, shoreLift)) / (2.0 * stepSize);

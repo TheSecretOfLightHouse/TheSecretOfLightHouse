@@ -13,21 +13,31 @@ MonoBehaviour:
   m_Name: WaveSlotLayout
   m_EditorClassIdentifier: 
   _slots:
-  - Wavelength: 72
-    Direction: {x: 1, y: 0}
-    Speed: 6.5
-  - Wavelength: 48
-    Direction: {x: 0.81915206, y: -0.57357645}
-    Speed: 5.5
-  - Wavelength: 28
-    Direction: {x: 0.8660254, y: 0.5}
-    Speed: 4.2
-  - Wavelength: 16
-    Direction: {x: 0.42261824, y: 0.9063078}
-    Speed: 3.4
-  - Wavelength: 9
-    Direction: {x: 0.34202015, y: -0.9396926}
-    Speed: 2.8
-  - Wavelength: 5
-    Direction: {x: -0.1736482, y: 0.9848077}
-    Speed: 2.3
+  - Wavelength: 64
+    Direction: {x: 0.9205, y: -0.39073}
+    Speed: 9.996
+    Response: 0.35
+  - Wavelength: 58.5
+    Direction: {x: 0.92718, y: -0.37461}
+    Speed: 9.557
+    Response: 0.4
+  - Wavelength: 30
+    Direction: {x: 0.97815, y: -0.20791}
+    Speed: 6.844
+    Response: 2
+  - Wavelength: 27.5
+    Direction: {x: 0.96593, y: 0.25882}
+    Speed: 6.553
+    Response: 2.2
+  - Wavelength: 14
+    Direction: {x: 0.81915, y: -0.57358}
+    Speed: 4.675
+    Response: 2.6
+  - Wavelength: 12.8
+    Direction: {x: 0.78801, y: 0.61566}
+    Speed: 4.47
+    Response: 2.8
+  - Wavelength: 6
+    Direction: {x: 0.99255, y: 0.12187}
+    Speed: 3.061
+    Response: 3.2

@@ -11,5 +11,6 @@ namespace Lighthouse.World.Ocean.Rules
         public Vector2 Direction;
         public float Steepness;
         public float Speed;
+        public float Response;
     }
 }

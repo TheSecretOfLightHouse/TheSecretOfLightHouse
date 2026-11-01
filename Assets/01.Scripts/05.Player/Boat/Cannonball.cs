@@ -1,4 +1,6 @@
 using Lighthouse.Monsters.AI.Net;
+using Lighthouse.World.Query.Rules;
+using Lighthouse.World.Weather.View;
 using Mirror;
 using UnityEngine;
 
@@ -15,6 +17,9 @@ public sealed class Cannonball : NetworkBehaviour
     private float _damage;
     private double _expireTime;
     private bool _hasHit;
+    private Vector3 _previousPosition;
+    private bool _hasWaterSample;
+    private float _previousWaterOffset;
 
     private void Awake()
     {
@@ -38,6 +43,13 @@ public sealed class Cannonball : NetworkBehaviour
     {
         base.OnStartServer();
         _expireTime = NetworkTime.time + _lifetime;
+        _previousPosition = transform.position;
+        if (WorldServices.TryGet<IWorldQuery>(out IWorldQuery world))
+        {
+            float height = world.SampleWaterHeight(_previousPosition);
+            _hasWaterSample = !float.IsNaN(height) && !float.IsInfinity(height);
+            _previousWaterOffset = _previousPosition.y - height;
+        }
     }
 
     public override void OnStartClient()
@@ -62,6 +74,42 @@ public sealed class Cannonball : NetworkBehaviour
         {
             NetworkServer.Destroy(gameObject);
         }
+    }
+
+    private void FixedUpdate()
+    {
+        if (!isServer || _hasHit || !WorldServices.TryGet<IWorldQuery>(out IWorldQuery world))
+        {
+            return;
+        }
+
+        Vector3 position = _rb.position;
+        float height = world.SampleWaterHeight(position);
+        float offset = position.y - height;
+        if (float.IsNaN(height) || float.IsInfinity(height))
+        {
+            _hasWaterSample = false;
+            return;
+        }
+        if (_hasWaterSample && _previousWaterOffset > 0f && offset <= 0f)
+        {
+            _hasHit = true;
+            float fraction = _previousWaterOffset / (_previousWaterOffset - offset);
+            Vector3 impact = Vector3.Lerp(_previousPosition, position, fraction);
+            RpcWaterImpact(impact);
+            NetworkServer.Destroy(gameObject);
+            return;
+        }
+
+        _hasWaterSample = true;
+        _previousWaterOffset = offset;
+        _previousPosition = position;
+    }
+
+    [ClientRpc]
+    private void RpcWaterImpact(Vector3 position)
+    {
+        WorldAudioView.PlayCannonWaterImpact(position);
     }
 
     private void OnCollisionEnter(Collision collision)

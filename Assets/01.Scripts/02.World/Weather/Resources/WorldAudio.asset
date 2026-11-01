@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 107c384bed6a200458ca099d5d0dbd8e, type: 3}
+  m_Name: WorldAudio
+  m_EditorClassIdentifier: 
+  _calm:
+    _sea: {fileID: 0}
+    _wind: {fileID: 0}
+    _rain: {fileID: 0}
+    _shore: {fileID: 0}
+  _overcast:
+    _sea: {fileID: 0}
+    _wind: {fileID: 0}
+    _rain: {fileID: 0}
+    _shore: {fileID: 0}
+  _rain:
+    _sea: {fileID: 0}
+    _wind: {fileID: 0}
+    _rain: {fileID: 0}
+    _shore: {fileID: 0}
+  _storm:
+    _sea: {fileID: 0}
+    _wind: {fileID: 0}
+    _rain: {fileID: 0}
+    _shore: {fileID: 0}
+  _maelstrom:
+    _sea: {fileID: 0}
+    _wind: {fileID: 0}
+    _rain: {fileID: 0}
+    _shore: {fileID: 0}
+  _islandShores: []
+  _thunder: []
+  _abyssThunder: []
+  _cannonWaterImpact: []
+  _ambienceMixer: {fileID: 0}
+  _effectsMixer: {fileID: 0}
+  _ambienceVolume: 0.35
+  _impactVolume: 0.8
+  _fadeSeconds: 3
+  _shoreFadeDistance: 20
+  _impactRange: 80

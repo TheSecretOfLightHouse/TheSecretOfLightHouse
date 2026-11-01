@@ -21,6 +21,11 @@ namespace Lighthouse.World.Weather.Net
 
         public event Action<WeatherTransitionInfo, bool> TransitionApplied;
 
+        // Server-only. Set once the victory calm is recorded, so the lock holds after the weather leaves Maelstrom.
+        private bool _isReleased;
+
+        public bool IsLocked => _isReleased || _transition.IsSet && _transition.To == WeatherType.Maelstrom;
+
         private void Awake()
         {
             if (!TryGetComponent(out _worldState))
@@ -47,6 +52,7 @@ namespace Lighthouse.World.Weather.Net
         public override void OnStopServer()
         {
             _transition = default;
+            _isReleased = false;
             _binder.Reset();
         }
 
@@ -63,6 +69,29 @@ namespace Lighthouse.World.Weather.Net
         [Server]
         public bool BeginTransition(WeatherType to, float duration)
         {
+            return TryRecord(to, duration, false);
+        }
+
+        // The victory calm: the one transition allowed out of Maelstrom. The schedule stays locked afterwards.
+        [Server]
+        public bool BeginCalmRelease(float duration)
+        {
+            if (_isReleased || !TryRecord(WeatherType.Calm, duration, true))
+            {
+                return false;
+            }
+
+            _isReleased = true;
+            return true;
+        }
+
+        private bool TryRecord(WeatherType to, float duration, bool isRelease)
+        {
+            if (float.IsNaN(duration) || float.IsInfinity(duration))
+            {
+                return false;
+            }
+
             if (_binder == null || !WorldServices.TryGet(out WeatherSystem system))
             {
                 Debug.LogError($"[{nameof(WeatherStateNet)}] WeatherSystem is not registered. Add a WeatherHost to the scene.");
@@ -71,19 +100,40 @@ namespace Lighthouse.World.Weather.Net
 
             WeatherType from = _transition.IsSet ? _transition.To : system.Target;
 
+            if (IsLocked && !isRelease)
+            {
+                return to == WeatherType.Maelstrom;
+            }
+
             if (!system.CanApply(from, to))
             {
                 Debug.LogWarning($"[{nameof(WeatherStateNet)}] Transition {from} -> {to} is not allowed.");
                 return false;
             }
 
+            double startTime = NetworkTime.time + Mathf.Max(0f, _startLeadSeconds);
+            bool isReplacingScheduled = _transition.IsSet && _transition.StartTime > NetworkTime.time;
+            if (isReplacingScheduled)
+            {
+                startTime = _transition.StartTime;
+            }
             var info = new WeatherTransitionInfo
             {
                 From = from,
                 To = to,
-                StartTime = NetworkTime.time + _startLeadSeconds,
+                StartTime = startTime,
                 Duration = Mathf.Max(0f, duration),
-                IsSet = true
+                IsSet = true,
+                HasOrigin = true,
+                Generation = _transition.Generation + 1,
+                Origin = isReplacingScheduled ? _transition.Origin : _transition.IsSet
+                    ? system.Evaluate(in _transition, startTime)
+                    : system.EvaluateAt(startTime),
+                HasPrevious = isReplacingScheduled ? _transition.HasPrevious : _transition.IsSet,
+                PreviousTo = isReplacingScheduled ? _transition.PreviousTo : _transition.To,
+                PreviousStartTime = isReplacingScheduled ? _transition.PreviousStartTime : _transition.StartTime,
+                PreviousDuration = isReplacingScheduled ? _transition.PreviousDuration : _transition.Duration,
+                PreviousOrigin = isReplacingScheduled ? _transition.PreviousOrigin : _transition.Origin
             };
 
             _transition = info;

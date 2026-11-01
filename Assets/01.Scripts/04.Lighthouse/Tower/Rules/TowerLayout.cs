@@ -18,6 +18,10 @@ namespace Lighthouse.Tower.Rules
         [Tooltip("Repair percent at which each reward tier starts, ascending, below 100. Reaching 100% opens the ritual instead.")]
         [SerializeField]
         private int[] _rewardPercents = { 25, 50, 75 };
+        [Tooltip("What each reward tier gives, in the same order as the percents (game design v4 6.1). Shown by the"
+            + " reward window and the unlock notice.")]
+        [SerializeField]
+        private string[] _rewardNames = { "배 이동 속도 상승", "자원 파밍량 증가", "배 대포 피해 상승" };
         [Tooltip("On while the layout is a play-test trial, so UI and docs do not present it as final.")]
         [SerializeField]
         private bool _isTestValue = true;
@@ -37,6 +41,12 @@ namespace Lighthouse.Tower.Rules
         public int GetRewardPercent(int tier)
         {
             return _rewardPercents[tier];
+        }
+
+        public string GetRewardName(int tier)
+        {
+            return _rewardNames != null && tier >= 0 && tier < _rewardNames.Length && !string.IsNullOrEmpty(_rewardNames[tier])
+                ? _rewardNames[tier] : $"보상 {tier + 1}";
         }
 
         public float GetRepairRatio(int installedCount)

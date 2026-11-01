@@ -13,6 +13,7 @@ namespace Lighthouse.World.Query.Rules
         private readonly MapGeometry _map;
         private readonly WaveInputs _waves;
         private readonly IClock _clock;
+        private WaterSamplerHost _sampleHost;
 
         public float NightThreatMultiplier => NeutralThreatMultiplier;
 
@@ -30,6 +31,15 @@ namespace Lighthouse.World.Query.Rules
 
         public float SampleWaterHeight(Vector3 worldPos)
         {
+            if (F3WaveField.IsActive)
+            {
+                if (TryFastHeight(worldPos, (float)_clock.Now, out float height))
+                {
+                    return height;
+                }
+                return F3WaveField.HeightAt(_waves.Waves, _waves.Modifiers,
+                    worldPos.x, worldPos.z, (float)_clock.Now);
+            }
             return WaveModel.HeightAt(
                 _waves.Waves, _waves.Modifiers, CoastWaveRegistry.Bounds, CoastWaveRegistry.Edges, CoastWaveRegistry.Profiles,
                 worldPos.x, worldPos.z, (float)_clock.Now);
@@ -46,6 +56,17 @@ namespace Lighthouse.World.Query.Rules
             for (int i = 0; i < points.Length; i++)
             {
                 Vector3 position = points[i];
+                if (F3WaveField.IsActive)
+                {
+                    if (TryFastHeight(position, time, out float height))
+                    {
+                        heights[i] = height;
+                        continue;
+                    }
+                    heights[i] = F3WaveField.HeightAt(_waves.Waves, _waves.Modifiers,
+                        position.x, position.z, time);
+                    continue;
+                }
                 heights[i] = WaveModel.HeightAt(
                     _waves.Waves, _waves.Modifiers, CoastWaveRegistry.Bounds, CoastWaveRegistry.Edges, CoastWaveRegistry.Profiles,
                     position.x, position.z, time);
@@ -55,6 +76,20 @@ namespace Lighthouse.World.Query.Rules
         public SeaZone GetZoneAt(Vector3 worldPos)
         {
             return _map.GetZoneAt(worldPos);
+        }
+
+        private bool TryFastHeight(Vector3 position, float time, out float height)
+        {
+            if (_sampleHost == null)
+            {
+                WorldServices.TryGet(out _sampleHost);
+            }
+            if (_sampleHost != null && ReferenceEquals(_sampleHost.Inputs, _waves))
+            {
+                return _sampleHost.TrySampleF3Height(position, time, out height);
+            }
+            height = 0f;
+            return false;
         }
 
         public bool IsSafeZone(Vector3 worldPos)

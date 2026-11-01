@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 226136cc1c7e6fc429c5c5836f21ba30, type: 3}
+  m_Name: Island_Lighthouse
+  m_EditorClassIdentifier: 
+  _prefab: {fileID: 6755030615434108263, guid: 6c24bb18f0e9ab647ac79a4e1d46b864, type: 3}
+  _geometry: {fileID: 2800000, guid: c2a5d2f9cf8085f44bcda845307f8d05, type: 2}
+  _coverage: {fileID: 2800000, guid: 1243728a642f6b4488e942741a975c79, type: 2}
+  _directions: {fileID: 4900000, guid: 3aff6c5bff2780e4497b225f9458ab3a, type: 3}
+  _origin: {x: -24, y: -24}
+  _cellSize: 0.125

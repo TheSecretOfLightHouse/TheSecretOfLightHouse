@@ -22,7 +22,7 @@ MonoBehaviour:
   _radius: 11
   _seedVariance: 0.1
   _variants:
-  - _prefab: {fileID: 1794473257997806764, guid: 40a9c5021be0f944ab07ae6d255465d0, type: 3}
+  - _prefab: {fileID: 1794473257997806764, guid: cbc5bd4403c393f47b394705aeade7b8, type: 3}
     _weight: 1
   _resources:
   - _resource: {fileID: 11400000, guid: bb63e31ba972b8c4c9282691c1184be7, type: 2}
@@ -31,18 +31,18 @@ MonoBehaviour:
       _initialAmount: 5
       _maxAmount: 6
       _dailyRegenRate: 0.5
-    _pickupPrefab: {fileID: 6780804901703132423, guid: 7111fddbf276f924fbbeae17c9e0a66a, type: 3}
+    _pickupPrefab: {fileID: 6780804901703132423, guid: 96b4bb8d5762db6479d158d98ebb23fb, type: 3}
   - _resource: {fileID: 11400000, guid: b070c06482ac86642a0faf234b4b6aa1, type: 2}
     _weight: 1
     _deposit:
       _initialAmount: 6
       _maxAmount: 8
       _dailyRegenRate: 0.5
-    _pickupPrefab: {fileID: 8160193022538735030, guid: 39c5806d78650644982823b325015aa3, type: 3}
+    _pickupPrefab: {fileID: 8160193022538735030, guid: b21e3bdc8ab60dd4ab477ce854647ad7, type: 3}
   - _resource: {fileID: 11400000, guid: 5ec8f951fc58f5040b4dae0fc080bdbd, type: 2}
     _weight: 1
     _deposit:
       _initialAmount: 4
       _maxAmount: 5
       _dailyRegenRate: 0.35
-    _pickupPrefab: {fileID: 8476720134014034918, guid: 877f64946d8f2e94c8997ab0cb0d9126, type: 3}
+    _pickupPrefab: {fileID: 8476720134014034918, guid: 97be1d4960c25d140901aba5bb4cd962, type: 3}

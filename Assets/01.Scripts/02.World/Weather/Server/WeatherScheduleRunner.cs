@@ -67,7 +67,7 @@ namespace Lighthouse.World.Weather.Server
 
         public bool Tamper(int day, WeatherType type)
         {
-            return _scheduler != null && _scheduler.Tamper(day, type);
+            return !_sink.IsLocked && _scheduler != null && _scheduler.Tamper(day, type);
         }
 
         private void HandleDayStarted(int day)

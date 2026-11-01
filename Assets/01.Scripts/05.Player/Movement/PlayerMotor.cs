@@ -40,10 +40,27 @@ public sealed class PlayerMotor : MonoBehaviour
     [SerializeField]
     private LayerMask _groundLayers = ~0;
 
+    [SerializeField, Min(0.1f)]
+    private float _shoreClimbReach = 0.6f;
+
+    [SerializeField, Min(0.1f)]
+    private float _shoreClimbHeight = 0.8f;
+
+    [SerializeField, Min(0.1f)]
+    private float _shoreClimbSpeed = 2f;
+
+    [SerializeField, Min(0f)]
+    private float _shoreWaterClearance = 0.1f;
+
+    private readonly Collider[] _shoreOverlaps = new Collider[16];
+    private readonly RaycastHit[] _shoreHits = new RaycastHit[16];
     private Collider _bodyCollider;
     private CapsuleCollider _capsuleCollider;
     private PhysicsScene _physicsScene;
     private readonly RaycastHit[] _groundHits = new RaycastHit[16];
+
+    public float ShoreClimbReach => _shoreClimbReach
+        + (_capsuleCollider ? _capsuleCollider.bounds.extents.x : 0f);
 
     public bool IsJumping { get; private set; }
     public bool IsOffGround => _rb && !_rb.isKinematic && _rb.detectCollisions
@@ -197,6 +214,92 @@ public sealed class PlayerMotor : MonoBehaviour
             horizontalVelocity.x,
             velocity.y,
             horizontalVelocity.z);
+    }
+
+    public bool CanStartShoreClimb(float waterHeight)
+    {
+        return _bodyCollider && !float.IsNaN(waterHeight) && !float.IsInfinity(waterHeight)
+            && _bodyCollider.bounds.min.y <= waterHeight + _shoreWaterClearance
+            && _bodyCollider.bounds.min.y >= waterHeight - _shoreClimbHeight;
+    }
+
+    public bool TryClimbShore(Vector3 direction, float groundHeight, float waterHeight, float fixedDt)
+    {
+        if (!_capsuleCollider || !_capsuleCollider.enabled || _capsuleCollider.direction != 1
+            || !_rb || _rb.isKinematic || !_rb.detectCollisions || IsJumping
+            || fixedDt <= 0f || direction.sqrMagnitude < 0.01f
+            || !CanStartShoreClimb(waterHeight) || float.IsNaN(groundHeight) || float.IsInfinity(groundHeight))
+        {
+            return false;
+        }
+
+        Bounds bounds = _capsuleCollider.bounds;
+        float skin = Mathf.Max(_capsuleCollider.contactOffset, 0.01f);
+        float rise = groundHeight + skin * 2f - bounds.min.y;
+        if (rise <= skin || rise > _shoreClimbHeight)
+        {
+            return false;
+        }
+
+        direction.y = 0f;
+        direction.Normalize();
+        float radius = Mathf.Min(bounds.extents.x, bounds.extents.z) - skin;
+        if (radius <= 0f)
+        {
+            return false;
+        }
+
+        Vector3 lower = new Vector3(bounds.center.x, bounds.min.y + radius, bounds.center.z);
+        Vector3 upper = new Vector3(bounds.center.x, bounds.max.y - radius, bounds.center.z);
+        Vector3 lift = Vector3.up * rise;
+        int overlaps = _physicsScene.OverlapCapsule(
+            lower + lift, upper + lift, radius, _shoreOverlaps,
+            _groundLayers, QueryTriggerInteraction.Ignore);
+        if (overlaps == _shoreOverlaps.Length)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < overlaps; i++)
+        {
+            if (CanUseGround(_shoreOverlaps[i]))
+            {
+                return false;
+            }
+        }
+
+        // Clearance includes the whole capsule, so shore assistance cannot tunnel through a dock or wall.
+        if (IsShorePathBlocked(lower + lift, upper + lift, radius, direction, _shoreClimbReach)
+            || IsShorePathBlocked(lower, upper, radius, Vector3.up, rise))
+        {
+            return false;
+        }
+
+        _rb.position += Vector3.up * Mathf.Min(rise, _shoreClimbSpeed * fixedDt);
+        Vector3 velocity = _rb.linearVelocity;
+        velocity.y = Mathf.Max(0f, velocity.y);
+        _rb.linearVelocity = velocity;
+        return true;
+    }
+
+    private bool IsShorePathBlocked(Vector3 lower, Vector3 upper, float radius, Vector3 direction, float distance)
+    {
+        int hits = _physicsScene.CapsuleCast(lower, upper, radius, direction,
+            _shoreHits, distance, _groundLayers, QueryTriggerInteraction.Ignore);
+        if (hits == _shoreHits.Length)
+        {
+            return true;
+        }
+
+        for (int i = 0; i < hits; i++)
+        {
+            if (CanUseGround(_shoreHits[i].collider))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void SetJumping(bool value)

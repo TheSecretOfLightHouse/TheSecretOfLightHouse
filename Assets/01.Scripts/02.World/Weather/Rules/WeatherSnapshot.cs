@@ -43,7 +43,8 @@ namespace Lighthouse.World.Weather.Rules
                     Wavelength = slot.Wavelength,
                     Direction = slot.Direction,
                     Steepness = level.Steepness,
-                    Speed = slot.Speed
+                    Speed = slot.Speed,
+                    Response = WaveResponse.Normalize(slot.Response)
                 };
             }
 
@@ -72,8 +73,9 @@ namespace Lighthouse.World.Weather.Rules
             for (int i = 0; i < to.Length; i++)
             {
                 WaveParams wave = to[i];
-                wave.Amplitude = Mathf.Lerp(from[i].Amplitude, to[i].Amplitude, k);
-                wave.Steepness = Mathf.Lerp(from[i].Steepness, to[i].Steepness, k);
+                float shaped = WaveResponse.Shape(k, to[i].Response);
+                wave.Amplitude = Mathf.Lerp(from[i].Amplitude, to[i].Amplitude, shaped);
+                wave.Steepness = Mathf.Lerp(from[i].Steepness, to[i].Steepness, shaped);
                 into[i] = wave;
             }
 

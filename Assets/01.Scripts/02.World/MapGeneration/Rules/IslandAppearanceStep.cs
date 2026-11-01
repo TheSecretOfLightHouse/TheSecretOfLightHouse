@@ -30,7 +30,9 @@ namespace Lighthouse.World.MapGeneration.Rules
             }
 
             slot.VariantIndex = archetype.SelectVariantIndex(variantRoll);
-            slot.YawDegrees = yaw;
+            IslandVariant variant = slot.VariantIndex < archetype.Variants.Count ? archetype.Variants[slot.VariantIndex] : null;
+            // Consume both rolls before applying the Terrain rotation contract.
+            slot.YawDegrees = IslandRotationRules.SelectYaw(variant != null ? variant.Prefab : null, yaw);
         }
     }
 }

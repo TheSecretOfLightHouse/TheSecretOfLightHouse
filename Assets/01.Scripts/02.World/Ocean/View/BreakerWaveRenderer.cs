@@ -42,7 +42,7 @@ namespace Lighthouse.World.Ocean.View
         public void Update(Vector3 focus, float seaLevel, WaterSamplerHost host, double time, int layer)
         {
             ActiveCount = 0;
-            if (host == null || !BreakerSwell.TryGet(host.Inputs.Waves, out Vector2 swell, out float energy))
+            if (F3WaveField.IsActive || host == null || !BreakerSwell.TryGet(host.Inputs.Waves, out Vector2 swell, out float energy))
             {
                 return;
             }

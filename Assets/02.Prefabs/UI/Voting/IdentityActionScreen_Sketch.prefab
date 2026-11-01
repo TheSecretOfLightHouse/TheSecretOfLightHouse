@@ -1709,6 +1709,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _voting: {fileID: 0}
+  _soundManagerPrefab: {fileID: 6939255676364778467, guid: 291f5116af82d294792d1145de158327, type: 3}
+  _revealClip: {fileID: 8300000, guid: d3ccedb0fe592cb4f974eadac580cfe4, type: 3}
+  _revealVolume: 1
   _banner: {fileID: 5393358070565439431}
   _bannerGroup: {fileID: 8031807836928468203}
   _frame: {fileID: 2253680969926766390}
@@ -1934,6 +1937,9 @@ MonoBehaviour:
   _pulseScale: 0.08
   _pulseRate: 1.2
   _hurryPulseRate: 3
+  _beatSeconds: 0.12
+  _secondBeatDelay: 0.2
+  _secondBeatStrength: 0.6
   _grantedClip: {fileID: 0}
 --- !u!82 &1978839028611910359
 AudioSource:

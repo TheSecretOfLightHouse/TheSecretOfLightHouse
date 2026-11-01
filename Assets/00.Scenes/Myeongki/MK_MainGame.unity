@@ -1671,9 +1671,9 @@ MonoBehaviour:
   - {fileID: 88936668}
   _resourceIds: 0200000001000000030000000400000005000000060000000000000000000000
   _resourceIcons:
-  - {fileID: 21300000, guid: c90b3fade5eadf741899c497aef4d139, type: 3}
-  - {fileID: 21300000, guid: ccf4cc1296d494f41bc1dc4aac797a82, type: 3}
-  - {fileID: 21300000, guid: 957f594d864c7cf44b72c48be2d23caa, type: 3}
+  - {fileID: 21300000, guid: 09d1cc08d32eb6345b1a2f5a2f473b19, type: 3}
+  - {fileID: 21300000, guid: 2be6836958a2d274fa32c2f8a8a31bd1, type: 3}
+  - {fileID: 21300000, guid: ab775281e197d4542a1716bc99b83faf, type: 3}
   - {fileID: 21300000, guid: 109e153f3e844534484b3489a80da79e, type: 3}
   - {fileID: 21300000, guid: e72b28584dd3cbc48a33d4498b4507e8, type: 3}
   - {fileID: 21300000, guid: efd5597cf1e2ebc4ea66ff22c9072555, type: 3}
@@ -8953,6 +8953,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d90a4ad4bbb6274fb76f0ac68f626b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _selectionPanelWidth: 800
+  _targetRowWidth: 690
+  _actionAreaWidth: 154
   _panelRoot: {fileID: 305869701}
   _playerButtons:
   - {fileID: 1609602918}

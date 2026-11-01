@@ -402,10 +402,11 @@ public sealed class BoatContactBoarding : MonoBehaviour
         }
 
         Bounds bounds = _body.bounds;
+        float approachDistance = _boat ? _boat.BoardingDistance : _contactTolerance;
 
         int count = Physics.OverlapBoxNonAlloc(
             bounds.center,
-            bounds.extents,
+            bounds.extents + Vector3.one * approachDistance,
             _dockCandidates,
             Quaternion.identity,
             Physics.AllLayers,
@@ -416,6 +417,7 @@ public sealed class BoatContactBoarding : MonoBehaviour
             return false;
         }
 
+        float nearestDistanceSquared = approachDistance * approachDistance;
         for (int i = 0; i < count; i++)
         {
             Collider candidate = _dockCandidates[i];
@@ -425,14 +427,18 @@ public sealed class BoatContactBoarding : MonoBehaviour
                 continue;
             }
 
-            if (zone.ContainsPosition(bounds.center))
+            // A dock-sized trigger contains the player, while a moored hull sits beside it.
+            Vector3 dockPoint = candidate.ClosestPoint(bounds.center);
+            Vector3 boatPoint = _body.ClosestPoint(dockPoint);
+            float distanceSquared = (dockPoint - boatPoint).sqrMagnitude;
+            if (distanceSquared <= nearestDistanceSquared)
             {
                 dock = zone;
-                return true;
+                nearestDistanceSquared = distanceSquared;
             }
         }
 
-        return false;
+        return dock != null;
     }
 
     private void ResolveReferences()

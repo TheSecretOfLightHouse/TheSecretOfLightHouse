@@ -115,7 +115,10 @@ public sealed class ResourceDropSpawner : NetworkBehaviour
         int amount,
         bool isCollectionLocked,
         GameObject prefab,
-        out ResourceDropHandle handle)
+        out ResourceDropHandle handle,
+        Vector3? harvestLanding = null,
+        float flightDuration = 0.65f,
+        float flightHeight = 0.85f)
     {
         handle = default;
 
@@ -157,6 +160,11 @@ public sealed class ResourceDropSpawner : NetworkBehaviour
             {
                 body.linearVelocity = Vector3.zero;
                 body.angularVelocity = Vector3.zero;
+            }
+
+            if (harvestLanding.HasValue)
+            {
+                pickup.BeginHarvestFlight(position, harvestLanding.Value, flightDuration, flightHeight);
             }
 
             NetworkServer.Spawn(drop);

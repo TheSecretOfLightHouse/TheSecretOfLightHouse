@@ -1,3 +1,4 @@
+using TMPro;
 using Lighthouse.Player.Abilities.View;
 using Lighthouse.Network.Session.View;
 using Mirror;
@@ -34,13 +35,15 @@ public sealed class NavigatorRouteSelectionPanel : MonoBehaviour
 
     private AbilityTargetPresentation _targetPresentation;
     private UnityEngine.UI.Image[] _targetIcons;
-    private Font _runtimeFont;
+    private TMP_Text[] _nameLabels;
+    private TMP_Text _messageLabel;
     private NetworkIdentity _boundPlayer;
     private NavigatorRouteAbility _ability;
     private NavigatorRouteRequest _request;
     private PlayerInput _playerInput;
 
     private bool _isOpen;
+    private int _openedFrame;
     private bool _wasInputEnabled;
     private CursorLockMode _savedCursorLock;
     private bool _savedCursorVisible;
@@ -49,27 +52,16 @@ public sealed class NavigatorRouteSelectionPanel : MonoBehaviour
     {
         _targetPresentation = Resources.Load<AbilityTargetPresentation>("AbilityTargetPresentation");
         _targetIcons = AbilityTargetPresentation.CreateIcons(_playerButtons, _playerNames);
-        if (_panelRoot)
+        // Preserve serialized scene bindings while rendering every caption with the shipped font.
+        if (_targetPresentation && _panelRoot)
         {
-            // OS fonts must be created separately in each process.
-            _runtimeFont = Font.CreateDynamicFontFromOSFont(
-                new[]
-                {
-                        "Malgun Gothic",
-                        "맑은 고딕",
-                        "Apple SD Gothic Neo",
-                        "Noto Sans CJK KR",
-                        "Arial"
-                },
-                32);
-
-            foreach (UnityEngine.UI.Text label in
-                _panelRoot.GetComponentsInChildren<
-                    UnityEngine.UI.Text>(true))
+            _targetPresentation.UpgradeLabels(_panelRoot);
+            _nameLabels = new TMP_Text[_playerNames != null ? _playerNames.Length : 0];
+            for (int i = 0; i < _nameLabels.Length; i++)
             {
-                label.font = _runtimeFont;
-                label.fontStyle = FontStyle.Bold;
+                _nameLabels[i] = _targetPresentation.UpgradeLabel(_playerNames[i]);
             }
+            _messageLabel = _targetPresentation.UpgradeLabel(_message);
         }
 
         for (int i = 0; i < _clickHandlers.Length; i++)
@@ -92,6 +84,15 @@ public sealed class NavigatorRouteSelectionPanel : MonoBehaviour
 
     private void Update()
     {
+        // Ignore the Q press that opened this panel earlier in the same frame.
+        var keyboard = UnityEngine.InputSystem.Keyboard.current;
+        if (_isOpen && Time.frameCount > _openedFrame && keyboard != null
+            && (keyboard.escapeKey.wasPressedThisFrame || keyboard.qKey.wasPressedThisFrame))
+        {
+            Hide();
+            return;
+        }
+
         NetworkIdentity localPlayer = NetworkClient.localPlayer;
 
         if (_isOpen
@@ -148,10 +149,6 @@ public sealed class NavigatorRouteSelectionPanel : MonoBehaviour
             }
         }
 
-        if (_runtimeFont)
-        {
-            Destroy(_runtimeFont);
-        }
     }
 
     public void Show()
@@ -177,6 +174,7 @@ public sealed class NavigatorRouteSelectionPanel : MonoBehaviour
         _savedCursorVisible = Cursor.visible;
         _wasInputEnabled = _playerInput && _playerInput.enabled;
         _isOpen = true;
+        _openedFrame = Time.frameCount;
 
         SessionScreen.SetGameplayOverlayOpen(this, true);
 
@@ -299,22 +297,22 @@ public sealed class NavigatorRouteSelectionPanel : MonoBehaviour
                     && !_request.IsAwaitingResult;
             }
 
-            if (_playerNames == null
-                || i >= _playerNames.Length
-                || !_playerNames[i])
+            if (_nameLabels == null
+                || i >= _nameLabels.Length
+                || !_nameLabels[i])
             {
                 continue;
             }
 
             if (!player)
             {
-                _playerNames[i].text = string.Empty;
+                _nameLabels[i].text = string.Empty;
                 continue;
             }
 
             string name = AbilityTargetPresentation.GetJobName(player);
 
-            _playerNames[i].text = CanSelectTarget(player)
+            _nameLabels[i].text = CanSelectTarget(player)
                 ? $"{name} · 구조 대기"
                 : $"{name} · 선택 불가";
         }
@@ -436,9 +434,9 @@ public sealed class NavigatorRouteSelectionPanel : MonoBehaviour
 
     private void SetMessage(string message)
     {
-        if (_message)
+        if (_messageLabel)
         {
-            _message.text = message;
+            _messageLabel.text = message;
         }
     }
 }

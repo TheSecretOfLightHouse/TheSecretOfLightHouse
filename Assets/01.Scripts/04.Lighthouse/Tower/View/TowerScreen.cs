@@ -81,6 +81,13 @@ namespace Lighthouse.Tower.View
         private Text _installText;
         [SerializeField]
         private CanvasGroup _installKeycap;
+        [Header("Ritual")]
+        [SerializeField]
+        private Button _ritualButton;
+        [SerializeField]
+        private Image _ritualBackground;
+        [SerializeField]
+        private Text _ritualText;
         [SerializeField]
         private Sprite _installReadySprite;
         [SerializeField]
@@ -126,6 +133,8 @@ namespace Lighthouse.Tower.View
         private float _landingAt;
         private Vector3 _installFrom;
         private Sprite _installIcon;
+        private TowerMatchNet _match;
+        private bool _isRitualPending;
 
         public bool IsOpen => _isOpen;
 
@@ -138,6 +147,11 @@ namespace Lighthouse.Tower.View
 
             _canvas = GetComponent<Canvas>();
             _installButton.onClick.AddListener(HandleInstallClicked);
+            _match = _tower ? _tower.GetComponent<TowerMatchNet>() : null;
+            if (_ritualButton)
+            {
+                _ritualButton.onClick.AddListener(HandleRitualClicked);
+            }
             _effects = new WorkbenchScreenEffects(_effectSettings, (RectTransform)_window.transform, _message.font, null, null);
             _window.SetActive(false);
             _prompt.SetActive(false);
@@ -182,6 +196,7 @@ namespace Lighthouse.Tower.View
             {
                 _effects.Tick(Time.unscaledDeltaTime);
                 TickLanding();
+                RefreshRitualButton();
             }
 
             // The workbench shares the open key and stands within reach, so only the nearer one answers it.
@@ -240,9 +255,11 @@ namespace Lighthouse.Tower.View
             }
 
             _tower = tower;
+            _match = tower ? tower.GetComponent<TowerMatchNet>() : null;
             _target = target;
             _isInRange = false;
             _isPending = false;
+            _isRitualPending = false;
             _prompt.SetActive(false);
 
             if (isActiveAndEnabled && _tower)
@@ -265,6 +282,7 @@ namespace Lighthouse.Tower.View
             _isOpen = true;
             SessionScreen.SetGameplayOverlayOpen(this, true);
             _isPending = false;
+            _isRitualPending = false;
             _prompt.SetActive(false);
             SetMessage(string.Empty, _messageSuccessColor);
             LockPlayer(true);
@@ -501,6 +519,38 @@ namespace Lighthouse.Tower.View
             _installBackground.sprite = canInstall ? _installReadySprite : _installBlockedSprite;
             _installText.color = canInstall ? _installReadyTextColor : _installBlockedTextColor;
             _installKeycap.alpha = canInstall ? 1f : _blockedKeycapAlpha;
+            RefreshRitualButton();
+        }
+
+        private void RefreshRitualButton()
+        {
+            if (!_ritualButton)
+            {
+                return;
+            }
+
+            bool canStart = _match && _match.CanStartRitual && _relay && !_isPending;
+            _ritualButton.interactable = canStart;
+            _ritualBackground.sprite = canStart ? _installReadySprite : _installBlockedSprite;
+            _ritualText.color = canStart ? _installReadyTextColor : _installBlockedTextColor;
+        }
+
+        private void HandleRitualClicked()
+        {
+            if (!_isOpen || !_window.activeSelf || _isPending || !_match || !_match.CanStartRitual || !_relay)
+            {
+                return;
+            }
+
+            if (!_relay.TrySendToNetworkTarget(_match.netId, InteractionAction.StartRitual))
+            {
+                SetMessage("이전 요청을 처리하는 중입니다. 잠시 후 다시 시도하세요.", _messageRejectColor);
+                return;
+            }
+
+            _isRitualPending = true;
+            _isPending = true;
+            Refresh();
         }
 
         private int GetCarriedRecipeId()
@@ -567,6 +617,22 @@ namespace Lighthouse.Tower.View
             }
 
             _isPending = false;
+
+            if (_isRitualPending)
+            {
+                _isRitualPending = false;
+                if (result.IsSuccess)
+                {
+                    Close();
+                }
+                else if (_isOpen)
+                {
+                    SetMessage(DescribeRejection(result.Code), _messageRejectColor);
+                    Refresh();
+                }
+
+                return;
+            }
 
             if (!_isOpen || !result.IsSuccess)
             {

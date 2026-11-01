@@ -35,6 +35,7 @@ namespace Lighthouse.World.Environment.View
 
         public SkyEnvironmentState CurrentState { get; private set; }
         public bool HasState { get; private set; }
+        public float WeatherLightScale { get; private set; } = 1f;
 
         private void OnEnable()
         {
@@ -113,6 +114,7 @@ namespace Lighthouse.World.Environment.View
 
             CurrentState = state;
             HasState = true;
+            WeatherLightScale = appearance.LightScale;
 
             float skyDaylight = daylight * (1f - appearance.AbyssWeight);
             _material.Apply(in state, skyDaylight, (float)elapsed);
@@ -138,6 +140,7 @@ namespace Lighthouse.World.Environment.View
         private void OnDisable()
         {
             HasState = false;
+            WeatherLightScale = 1f;
             CurrentState = default;
 
             if (_material != null)

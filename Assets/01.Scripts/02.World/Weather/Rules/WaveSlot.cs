@@ -9,5 +9,6 @@ namespace Lighthouse.World.Weather.Rules
         public float Wavelength;
         public Vector2 Direction;
         public float Speed;
+        public float Response;
     }
 }

@@ -17,7 +17,6 @@ namespace Lighthouse.UI.SharedMap.Net
         private static SharedMapRuntime _instance;
         [SerializeField, Min(1f)] private float _editSeconds = 60f;
         [SerializeField, Min(1f)] private float _interactionRange = 3f;
-        [SerializeField] private Vector2 _tableOffset = new Vector2(3f, 3f);
         private readonly List<SharedMapOperation> _serverOperations = new List<SharedMapOperation>();
         private readonly List<SharedMapOperation> _operations = new List<SharedMapOperation>();
         private readonly List<SharedMapOperation> _pendingOperations = new List<SharedMapOperation>();
@@ -36,7 +35,6 @@ namespace Lighthouse.UI.SharedMap.Net
         private Vector3 _tablePosition;
         private SharedMapUpdate _state;
         private SharedMapScreen _screen;
-        private GameObject _table;
         private double _nextBatch;
         private uint _nextSample;
 
@@ -70,7 +68,6 @@ namespace Lighthouse.UI.SharedMap.Net
             {
                 _instance._editSeconds = settings.EditSeconds;
                 _instance._interactionRange = settings.InteractionRange;
-                _instance._tableOffset = settings.TableOffset;
             }
         }
 
@@ -135,7 +132,6 @@ namespace Lighthouse.UI.SharedMap.Net
                 _state = default;
                 _operations.Clear();
                 ClearPreview();
-                DestroyTable();
                 Changed?.Invoke();
             }
         }
@@ -150,7 +146,6 @@ namespace Lighthouse.UI.SharedMap.Net
             {
                 NetworkClient.UnregisterHandler<SharedMapUpdate>();
             }
-            DestroyTable();
         }
 
         public bool IsNearTable(PlayerController player)
@@ -246,16 +241,10 @@ namespace Lighthouse.UI.SharedMap.Net
                         continue;
                     }
                     found = data.TryNormalize(island.Position, out _lighthouse);
-                    _tablePosition = new Vector3(island.Position.x + _tableOffset.x, 0f, island.Position.y + _tableOffset.y);
-                    // Prefer the authored table marker if a level designer supplied one.
-                    SharedMapTable marker = FindFirstObjectByType<SharedMapTable>();
-                    if (marker)
+                    // Wait for the island's real chart instead of exposing an invisible fallback table.
+                    if (!SharedMapTable.TryGetPosition(island.Position, out _tablePosition))
                     {
-                        _tablePosition = marker.transform.position;
-                    }
-                    else if (Physics.Raycast(_tablePosition + Vector3.up * 40f, Vector3.down, out RaycastHit hit, 80f, ~0, QueryTriggerInteraction.Ignore))
-                    {
-                        _tablePosition.y = hit.point.y;
+                        return;
                     }
                     break;
                 }
@@ -444,7 +433,6 @@ namespace Lighthouse.UI.SharedMap.Net
             {
                 _operations.Clear();
                 ClearPreview();
-                DestroyTable();
             }
             _state = update;
             if (update.Operations != null && update.Offset == _operations.Count)
@@ -472,20 +460,7 @@ namespace Lighthouse.UI.SharedMap.Net
             {
                 ClearPreview();
             }
-            if (update.Epoch != 0 && !_table)
-            {
-                _table = SharedMapTable.CreateVisual(update.TablePosition);
-            }
             Changed?.Invoke();
-        }
-
-        private void DestroyTable()
-        {
-            if (_table)
-            {
-                Destroy(_table);
-            }
-            _table = null;
         }
     }
 }

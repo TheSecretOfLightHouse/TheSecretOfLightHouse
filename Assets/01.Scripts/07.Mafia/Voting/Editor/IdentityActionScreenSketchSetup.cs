@@ -260,6 +260,10 @@ namespace Lighthouse.Mafia.Voting.Editor
             CenterPivot(sparkleBottom.rectTransform);
 
             Set(serialized, "_banner", group);
+            Set(serialized, "_soundManagerPrefab", AssetDatabase.LoadAssetAtPath<Lighthouse.Systems.Audio.SoundManager>(
+                "Assets/02.Prefabs/Player/PlayerSoundManager.prefab"));
+            Set(serialized, "_revealClip", AssetDatabase.LoadAssetAtPath<AudioClip>(
+                "Assets/08.Audio/IdentityCheck/Ambience_Clock_Strike_Loop_First4Seconds.wav"));
             Set(serialized, "_bannerGroup", groupFade);
             Set(serialized, "_frame", frame.rectTransform);
             Set(serialized, "_frameGroup", Fade(frame.rectTransform));

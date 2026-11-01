@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Lighthouse.World.Harvest.Rules;
 using Lighthouse.World.Islands.Rules;
+using Lighthouse.World.Weather.View;
 using UnityEngine;
 
 namespace Lighthouse.World.Islands.View
@@ -26,6 +27,12 @@ namespace Lighthouse.World.Islands.View
 
         public void Build(IReadOnlyList<IslandSpawnPlan> plans)
         {
+            for (int i = 0; i < plans.Count; i++)
+            {
+                IslandRotationRules.GetRotation(plans[i].Prefab, plans[i].YawDegrees);
+                IslandRotationRules.ValidateParent(plans[i].Prefab, transform);
+            }
+
             Clear();
             for (int i = 0; i < plans.Count; i++)
             {
@@ -48,10 +55,8 @@ namespace Lighthouse.World.Islands.View
                     $"Island {plan.Index} already exists.");
             }
 
-            // Unity Terrain ignores rotation. Keep terrain and its authored props in the same frame.
-            Quaternion rotation = plan.Prefab.GetComponentInChildren<Terrain>(true)
-                ? Quaternion.identity
-                : Quaternion.Euler(0f, plan.YawDegrees, 0f);
+            IslandRotationRules.ValidateParent(plan.Prefab, transform);
+            Quaternion rotation = IslandRotationRules.GetRotation(plan.Prefab, plan.YawDegrees);
 
             GameObject instance = Instantiate(
                 plan.Prefab,
@@ -62,6 +67,17 @@ namespace Lighthouse.World.Islands.View
             _indices.Add(plan.Index);
             _instances.Add(instance);
             instance.name = $"Island_{plan.Index}_{plan.Archetype.name}_v{plan.VariantIndex}";
+            var audioZone = instance.GetComponent<WorldIslandAudioZone>();
+            if (audioZone == null)
+            {
+                audioZone = instance.AddComponent<WorldIslandAudioZone>();
+            }
+            audioZone.Initialize(plan.Archetype, plan.Index);
+
+            if (!instance.TryGetComponent<TerrainCoastWaveView>(out _) && instance.GetComponentInChildren<Terrain>() != null)
+            {
+                instance.AddComponent<TerrainCoastWaveView>();
+            }
 
             if (_coastalShelfMaterial != null && _coastalShelfWidth > 0f && !HasOwnCoastWaves(instance))
             {

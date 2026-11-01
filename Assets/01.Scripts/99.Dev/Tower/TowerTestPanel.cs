@@ -1,5 +1,6 @@
 using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
+using Lighthouse.Modules.Server;
 using Lighthouse.Tower.Net;
 using Lighthouse.Tower.Rules;
 using Lighthouse.Workbench.Net;
@@ -67,6 +68,13 @@ namespace Lighthouse.Dev.Tower
             GUILayout.Label($"등대{(layout.IsTestValue ? " (시험안)" : string.Empty)}  마지막 결과: {_lastResult}");
             int carriedRecipeId = DrawCarry();
             GUILayout.Label($"수리도 {_tower.RepairRatio * 100f:0.#}%  ({_tower.InstalledCount}/{layout.SlotCount})");
+            bool wasEnabled = GUI.enabled;
+            GUI.enabled = wasEnabled && NetworkServer.active && !_tower.IsComplete;
+            if (GUILayout.Button("[호스트] 등대 모듈 전체 장착 (시험)"))
+            {
+                FillTowerForTesting();
+            }
+            GUI.enabled = wasEnabled;
             DrawRewards(layout);
 
             for (int floor = layout.FloorCount - 1; floor >= 0; floor--)
@@ -92,6 +100,26 @@ namespace Lighthouse.Dev.Tower
             {
                 _relay.ResultReceived += HandleResultReceived;
             }
+        }
+
+        private void FillTowerForTesting()
+        {
+            if (!NetworkServer.active)
+            {
+                return;
+            }
+
+            // Only a local host click can reach this helper; no remote cheat command is registered.
+            foreach (NetworkIdentity identity in NetworkServer.spawned.Values)
+            {
+                if (identity && identity.TryGetComponent(out ModuleInteractionHandler modules) && modules.Ledger != null)
+                {
+                    _lastResult = _tower.FillForTesting(modules.Ledger) ? "전체 장착 완료" : "숨은 단계에서만 전체 장착할 수 있습니다.";
+                    return;
+                }
+            }
+
+            _lastResult = "모듈 서버가 준비되지 않았습니다.";
         }
 
         // The local player's own module and the bench stock. Who else holds what is private (2026-10-21).

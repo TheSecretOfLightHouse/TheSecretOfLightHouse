@@ -21,7 +21,8 @@ namespace Lighthouse.World.Weather.Net
         private WorldStateNet _worldState;
         private WeatherScheduleRunner _runner;
 
-        public bool IsLocked => WorldServices.TryGet(out WeatherSystem system) && system.Target == WeatherType.Maelstrom;
+        public bool IsLocked => _weatherNet != null && _weatherNet.IsLocked ||
+            WorldServices.TryGet(out WeatherSystem system) && system.Target == WeatherType.Maelstrom;
 
         private void Awake()
         {
