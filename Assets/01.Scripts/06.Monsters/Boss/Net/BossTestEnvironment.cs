@@ -135,7 +135,8 @@ namespace Lighthouse.Monsters.Boss
         [Server]
         public bool TryStartSpecialEnding()
         {
-            if (!isActiveAndEnabled || _phase != BossPhase.SpecialEndingReady)
+            if (!isActiveAndEnabled || _phase != BossPhase.SpecialEndingReady || _towerMatch == null
+                || !_towerMatch.TryReserveSpecialEnding(this))
             {
                 return false;
             }
@@ -148,12 +149,13 @@ namespace Lighthouse.Monsters.Boss
         [Server]
         public bool TryCompleteSpecialEnding()
         {
-            if (!isActiveAndEnabled || _phase != BossPhase.SpecialEndingPlaying)
+            if (!isActiveAndEnabled || _phase != BossPhase.SpecialEndingPlaying || _towerMatch == null
+                || !_towerMatch.IsSpecialEndingCompletionDue)
             {
                 return false;
             }
 
-            // 서버에서 특수 종료 연출이 완료되면 승패 연결을 위해 상태를 갱신한다.
+            // The server deadline, not a client animation callback, releases the reserved result.
             _phase = BossPhase.SpecialEndingCompleted;
             SpecialEndingCompleted?.Invoke();
             return true;
@@ -183,7 +185,7 @@ namespace Lighthouse.Monsters.Boss
             _phase = _isSpecialEnding ? BossPhase.SpecialEndingReady : BossPhase.NormalBattleReady;
             if (_isSpecialEnding)
             {
-                // 표현이 준비될 때까지 자동 완료하지 않고 서버 완료 연결을 기다린다.
+                // Reserve the winner on entry; the tower publishes it when the synchronized cinematic ends.
                 TryStartSpecialEnding();
             }
             if (_phase == BossPhase.NormalBattleReady)

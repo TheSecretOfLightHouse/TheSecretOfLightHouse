@@ -11,6 +11,8 @@ namespace Lighthouse.Tower.Rules
         // Summoned at 100% repair, or the carried-over repair reached 100% before the lighthouse fell.
         RepairCompleted = 3,
         LighthouseDestroyed = 4,
-        Deadline = 6
+        Deadline = 6,
+        // Reserved when the special ending starts, revealed only after its server-side cinematic deadline.
+        SpecialEnding = 7
     }
 }

@@ -75,7 +75,9 @@ void Flow(uint3 id : SV_DispatchThreadID)
     flow *= exp(-0.45*_Step);
     if(d.x>0.5 || dr.x>0.5) flow.x = (d.x>0.5?d.y:dr.y)-incident.x;
     if(d.x>0.5 || dt.x>0.5) flow.y = (d.x>0.5?d.z:dt.z)-incident.y;
-    _Write[p] = float4(s.x,clamp(flow,-2.5,2.5),s.w);
+    float4 result = float4(s.x,clamp(flow,-2.5,2.5),s.w);
+    // A single non-finite cell would be advected and read by the surface shader as a black speck; drop it here.
+    _Write[p] = all(abs(result) < 1.0e4) ? result : 0;
 }
 
 float Impact(int2 p,int2 offset,float2 normal)
@@ -125,5 +127,6 @@ void Integrate(uint3 id : SV_DispatchThreadID)
     float breaking = max(0,abs(divergence)-0.25)*0.2;
     float surf = saturate((Background(p).x-0.012)*40)*(1-smoothstep(0.3,0.65,d.w));
     foam = saturate(foam + _Step*(impact*5+breaking+surf*1.8+StaticContactFoam(p)*3));
-    _Write[p] = float4(clamp(height,-0.14,0.14)*sponge,s.yz*sponge,foam*sponge);
+    float4 result = float4(clamp(height,-0.14,0.14)*sponge,s.yz*sponge,foam*sponge);
+    _Write[p] = all(abs(result) < 1.0e4) ? result : 0;
 }

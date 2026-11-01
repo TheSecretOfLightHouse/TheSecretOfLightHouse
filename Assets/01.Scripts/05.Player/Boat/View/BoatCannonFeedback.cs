@@ -1,5 +1,7 @@
 using UnityEngine;
+using Lighthouse.World.Ocean.Rules;
 using Lighthouse.World.Ocean.View;
+using Lighthouse.World.Query.Rules;
 
 namespace Lighthouse.Player.Boat.View
 {
@@ -25,6 +27,8 @@ namespace Lighthouse.Player.Boat.View
         [SerializeField, Min(0.01f)] private float _collisionDuration = 1.8f;
         [SerializeField, Min(1f)] private float _collisionOscillations = 2f;
         [SerializeField, Min(0.01f)] private float _collisionDamping = 3f;
+        [SerializeField, Min(0f)] private float _splashHullPitchForFullStrength = 6f;
+        [SerializeField, Range(0f, 1f)] private float _splashMinStrength = 0.35f;
 
         private BoatCannon _cannon;
         private BoatController _boat;
@@ -44,12 +48,14 @@ namespace Lighthouse.Player.Boat.View
         private bool _isCollisionRocking;
         private WaveTiltVisual _waveTilt;
         private bool _composesHull;
+        private Collider _hullCollider;
 
         private void Awake()
         {
             _cannon = GetComponent<BoatCannon>();
             _boat = GetComponent<BoatController>();
             _stabilizer = GetComponent<StabilizerModule>();
+            _hullCollider = GetComponent<Collider>();
             if (_hullVisual)
             {
                 _hullRestRotation = _hullVisual.localRotation;
@@ -131,6 +137,7 @@ namespace Lighthouse.Player.Boat.View
             _isRecoiling = _barrelVisual;
             _hullElapsed = 0f;
             _isHullRecoiling = _hullVisual;
+            PlayHullSplash();
 
             PlayerController owner = _boat.Owner;
             if (!owner || !owner.isOwned || owner.CurrentBoat != _boat)
@@ -146,6 +153,31 @@ namespace Lighthouse.Player.Boat.View
             {
                 _camera.PlayCannonRecoil(_cameraPitch, _cameraDistance, _returnDuration);
             }
+        }
+
+        private void PlayHullSplash()
+        {
+            if (!_hullCollider || !WorldServices.TryGet<IWaterSplashEffects>(out IWaterSplashEffects effects)
+                || !WorldServices.TryGet<IWorldQuery>(out IWorldQuery world))
+            {
+                return;
+            }
+
+            // One surface sample per shot; the recoil dips the stern, so spray where the hull meets the water behind the boat.
+            Vector3 probe = _hullCollider.bounds.center - transform.forward * _hullCollider.bounds.extents.magnitude;
+            float height = world.SampleWaterHeight(probe);
+            if (float.IsNaN(height) || float.IsInfinity(height))
+            {
+                return;
+            }
+            probe.y = height;
+            Vector3 contact = _hullCollider.ClosestPoint(probe);
+            contact.y = height;
+            float strength = _splashHullPitchForFullStrength > 0f
+                ? Mathf.Clamp01(_hullPitch / _splashHullPitchForFullStrength)
+                : 1f;
+            strength = Mathf.Max(_splashMinStrength, strength);
+            effects.Play(new WaterSplashRequest(WaterSplashKind.MuzzleSpray, contact, Vector3.up, strength, 1));
         }
 
         private void LateUpdate()

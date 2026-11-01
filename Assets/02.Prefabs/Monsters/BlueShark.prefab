@@ -407,6 +407,7 @@ GameObject:
   - component: {fileID: 6337314374640879190}
   - component: {fileID: 5808683288747807475}
   - component: {fileID: 5637260660129229626}
+  - component: {fileID: 4790651952270730369}
   m_Layer: 2
   m_Name: BlueShark
   m_TagString: Untagged
@@ -819,6 +820,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _suppressPhysicalPush: 1
+--- !u!114 &4790651952270730369
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3061826974098303317}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f174fef924a91d04d86404ef7bc793f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _attackClip: {fileID: 8300000, guid: 6347f8761f57a804fa0333bcec1a0632, type: 3}
+  _soundManagerPrefab: {fileID: 6939255676364778467, guid: 291f5116af82d294792d1145de158327, type: 3}
+  _volume: 0.7
+  _minDistance: 2
+  _maxDistance: 40
 --- !u!1 &3577697292619952690
 GameObject:
   m_ObjectHideFlags: 0

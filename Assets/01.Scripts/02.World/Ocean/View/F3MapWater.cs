@@ -78,7 +78,7 @@ namespace Lighthouse.World.Ocean.View
         public void Begin(MapGenerationConfig config, MapLayout layout, MapSeedInfo info)
         {
             Cancel();
-            if (!isActiveAndEnabled || _islands == null || _waves == null || _surfPrefab == null
+            if (!isActiveAndEnabled || _islands == null || _waves == null
                 || _data == null || _data.Length == 0 || _data.Length > MaxRegions
                 || layout == null || _islands.Count != layout.Islands.Count || _islands.Count == 0
                 || _islands.Count > MaxRegions || (_active != null && _active != this) || F3WaveField.IsActive)
@@ -291,6 +291,11 @@ namespace Lighthouse.World.Ocean.View
                 }
             }
             if (includeGeometry)
+            {
+                F3DockClearance.Clear(_coveragePixels, _size, startX, startZ, _tileSize,
+                    new Vector2(region.x, region.y), _cell, _islands.GetTransform(index));
+            }
+            if (includeGeometry && _surfPrefab != null)
             {
                 // Surfs are built inactive, then initialized before OnEnable allocates their mesh.
                 WaterF3Surf surf = Instantiate(_surfPrefab, Vector3.zero, Quaternion.identity, transform);

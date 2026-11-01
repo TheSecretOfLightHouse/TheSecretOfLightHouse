@@ -10,6 +10,9 @@ namespace Lighthouse.World.Weather.View
     {
         private const int GridWidth = 5;
         private const int CellCount = GridWidth * GridWidth;
+        private const float UnderwaterHideWeight = 0.5f;
+        // Written by UnderwaterCameraState (x = blend); read here so Weather does not reference Ocean.
+        private static readonly int UnderwaterId = Shader.PropertyToID("_OceanUnderwater");
         [SerializeField] private Material _dropMaterial;
         [SerializeField] private Material _splashMaterial;
         [SerializeField] private AudioClip _rainClip;
@@ -79,6 +82,13 @@ namespace Lighthouse.World.Weather.View
         public void RenderWeather(Camera observer, in WeatherSnapshot snapshot)
         {
             if (!isActiveAndEnabled || observer == null || _drops == null)
+            {
+                Clear();
+                return;
+            }
+
+            // Rain falls on the surface; below it the streaks would hang in the water.
+            if (Shader.GetGlobalVector(UnderwaterId).x > UnderwaterHideWeight)
             {
                 Clear();
                 return;

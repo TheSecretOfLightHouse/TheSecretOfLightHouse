@@ -1,104 +1,99 @@
 using System;
-using Lighthouse.World.Clock.Rules;
-using Lighthouse.World.Clock.View;
+using Lighthouse.World.Environment.View;
 using Lighthouse.World.MapGeneration.Rules;
 using Lighthouse.World.Ocean.Rules;
-using Lighthouse.World.Query.Rules;
-using Lighthouse.World.Weather.Rules;
 using UnityEngine;
 
 namespace Lighthouse.World.Ocean.View
 {
     [DisallowMultipleComponent]
-    [DefaultExecutionOrder(1001)]
+    [DefaultExecutionOrder(1101)]
     public sealed class OceanAppearanceView : MonoBehaviour
     {
         private const int ZoneCount = 3;
+        private const float MoonEpsilon = 0.002f;
 
-        [SerializeField] private GameClock _gameClock;
-        [SerializeField] private DayNightSunConfig _sunConfig;
-        [SerializeField] private WeatherCatalog _weatherCatalog;
+        private const float StormFloorLoss = 0.45f;
+        private const float AbyssFloorLoss = 0.5f;
+
+        private static readonly int OceanMoonId = Shader.PropertyToID("_OceanMoon");
+        private static readonly int OceanNightFloorId = Shader.PropertyToID("_OceanNightFloor");
+        private static readonly Vector3 MoonDirection = new Vector3(0.4f, 0.55f, 0.7f).normalized;
+
+        [SerializeField] private EnvironmentSkyView _environment;
         [SerializeField] private OceanOpticsProfile _profile;
         [SerializeField] private MapGenerationConfig _mapConfig;
         [SerializeField] private Material _sourceMaterial;
         [SerializeField] private Renderer[] _renderers;
 
-        private IClock _clock;
-        private IWeatherService _weather;
         private OceanOpticsMaterial _material;
-        private float _calmIntensity;
-        private float _stormIntensity;
-        private float _abyssIntensity;
+        private float _moonWeight = -1f;
+        private float _floorWeight = -1f;
 
         private void OnEnable()
         {
-            _clock = null;
-            _weather = null;
-
             if (!TryPrepare())
             {
                 Debug.LogError(
-                    $"[{nameof(OceanAppearanceView)}] Check clock, sun config, optics profile, weather catalog and single-material ocean renderers.");
+                    $"[{nameof(OceanAppearanceView)}] Check optics profile and single-material ocean renderers.");
                 enabled = false;
             }
         }
 
         private void LateUpdate()
         {
-            if (_material == null || _gameClock == null ||
-                _profile == null || _sunConfig == null)
+            EnvironmentSkyView environment = _environment != null
+                ? _environment : EnvironmentSkyView.Active;
+
+            if (_material == null || environment == null ||
+                !environment.HasState)
             {
                 return;
             }
 
-            if (_clock == null || _weather == null)
-            {
-                if (!WorldServices.TryGet<IClock>(out _clock) ||
-                    !WorldServices.TryGet<IWeatherService>(out _weather))
-                {
-                    return;
-                }
-            }
-
-            if (!_gameClock.IsRunning)
-            {
-                return;
-            }
-
-            DayCycleConfig cycle = _gameClock.Config;
-
-            if (cycle == null)
-            {
-                return;
-            }
-
-            float daylight = OceanOpticsModel.GetDaylight(
-                _clock.Now - _gameClock.GameStartTime,
-                cycle.DaySeconds,
-                cycle.NightSeconds,
-                _sunConfig.HorizonBlend);
-
-            float intensity = _weather.Snapshot.StormIntensity;
-
-            float stormWeight = Mathf.InverseLerp(
-                _calmIntensity, _stormIntensity, intensity);
-
-            float abyssWeight = 0f;
-
-            if (_weather.Target == WeatherType.Maelstrom)
-            {
-                abyssWeight = Mathf.InverseLerp(
-                    _stormIntensity, _abyssIntensity, intensity);
-            }
+            EnvironmentWeights weights = environment.Weights;
 
             OceanOpticsState state = OceanOpticsModel.Evaluate(
-                _profile, daylight, stormWeight, abyssWeight);
+                _profile, weights.Daylight, weights.Storm, weights.Abyss);
 
             _material.Apply(in state);
+            ApplyMoon(weights.Night * (1f - weights.Storm) * (1f - weights.Abyss));
+            ApplyNightFloor(weights.Night * (1f - StormFloorLoss * weights.Storm) * (1f - AbyssFloorLoss * weights.Abyss));
+        }
+
+        // The silhouette floor outlives the moon: storms and the abyss at night must still separate hulls and shores from the water.
+        private void ApplyNightFloor(float weight)
+        {
+            if (Mathf.Abs(weight - _floorWeight) < MoonEpsilon &&
+                (weight > 0f) == (_floorWeight > 0f))
+            {
+                return;
+            }
+
+            _floorWeight = weight;
+            Shader.SetGlobalVector(OceanNightFloorId, new Vector4(weight, 0f, 0f, 0f));
+        }
+
+        private void ApplyMoon(float weight)
+        {
+            if (Mathf.Abs(weight - _moonWeight) < MoonEpsilon &&
+                (weight > 0f) == (_moonWeight > 0f))
+            {
+                return;
+            }
+
+            _moonWeight = weight;
+            Shader.SetGlobalVector(OceanMoonId, new Vector4(
+                MoonDirection.x, MoonDirection.y, MoonDirection.z, weight));
         }
 
         private void OnDisable()
         {
+            _moonWeight = -1f;
+            _floorWeight = -1f;
+            Shader.SetGlobalVector(OceanMoonId, Vector4.zero);
+            Shader.SetGlobalVector(OceanNightFloorId, Vector4.zero);
+
             if (_material != null)
             {
                 _material.Dispose();
@@ -108,29 +103,7 @@ namespace Lighthouse.World.Ocean.View
 
         private bool TryPrepare()
         {
-            if (_gameClock == null || _gameClock.Config == null ||
-                _sunConfig == null || _profile == null ||
-                _weatherCatalog == null)
-            {
-                return false;
-            }
-
-            if (!_weatherCatalog.TryGetProfile(
-                    WeatherType.Calm, out WeatherProfile calm) ||
-                !_weatherCatalog.TryGetProfile(
-                    WeatherType.Storm, out WeatherProfile storm) ||
-                !_weatherCatalog.TryGetProfile(
-                    WeatherType.Maelstrom, out WeatherProfile abyss))
-            {
-                return false;
-            }
-
-            _calmIntensity = calm.StormIntensity;
-            _stormIntensity = storm.StormIntensity;
-            _abyssIntensity = abyss.StormIntensity;
-
-            if (!(_calmIntensity < _stormIntensity &&
-                _stormIntensity < _abyssIntensity))
+            if (_profile == null)
             {
                 return false;
             }

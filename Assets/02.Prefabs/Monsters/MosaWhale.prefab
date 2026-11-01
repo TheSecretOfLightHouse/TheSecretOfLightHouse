@@ -803,6 +803,7 @@ GameObject:
   - component: {fileID: 3989167474782042258}
   - component: {fileID: 1432386339912275038}
   - component: {fileID: 3380897839116650891}
+  - component: {fileID: 2224342384637643239}
   m_Layer: 0
   m_Name: MosaWhale
   m_TagString: Untagged
@@ -1288,6 +1289,30 @@ MonoBehaviour:
   - {x: -0.0069167316, y: -0.19750841, z: -0.15239984}
   - {x: -0.0069167316, y: 0.010914996, z: -0.15239984}
   - {x: -0.0069167316, y: 0.2193384, z: -0.15239984}
+--- !u!114 &2224342384637643239
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6674311751177937813}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e51842015cc50944a55096249bdd1d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _clips:
+  - {fileID: 8300000, guid: c9e0a808909152b45b71bce9908b3a04, type: 3}
+  - {fileID: 8300000, guid: 9aa62e56b12bd2447bdd40e522864ea3, type: 3}
+  - {fileID: 8300000, guid: 4e8f9d974d109924baf6677a3b617e37, type: 3}
+  _volumes:
+  - 0.3701
+  - 0.2436
+  - 0.2436
+  _soundManagerPrefab: {fileID: 6939255676364778467, guid: 291f5116af82d294792d1145de158327, type: 3}
 --- !u!1 &6853744608551770706
 GameObject:
   m_ObjectHideFlags: 0
