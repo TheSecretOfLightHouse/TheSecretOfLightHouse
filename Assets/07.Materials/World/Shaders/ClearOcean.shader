@@ -48,6 +48,9 @@ Shader "Lighthouse/World/ClearOcean"
             #pragma multi_compile_fog
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS
+            #pragma multi_compile _ _FORWARD_PLUS
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
@@ -136,6 +139,16 @@ Shader "Lighthouse/World/ClearOcean"
                 float footprint = max(length(ddx(positionWS.xz)), length(ddy(positionWS.xz)));
                 float fade = 1.0 - smoothstep(0.08, 0.8, footprint);
                 return normalize(normalWS + float3(-slope.x, 0, -slope.y) * _Ripple_Strength * 2.5 * fade);
+            }
+
+            void AccumulateOceanLight(Light light, float3 normalWS, float3 viewWS,
+                float specularPower, inout float3 diffuse, inout float3 specular)
+            {
+                float3 radiance = light.color * light.distanceAttenuation * light.shadowAttenuation;
+                float nDotL = saturate(dot(normalWS, light.direction));
+                diffuse += radiance * nDotL;
+                float3 halfway = SafeNormalize(light.direction + viewWS);
+                specular += radiance * nDotL * pow(saturate(dot(normalWS, halfway)), specularPower);
             }
 
             half4 Frag(Varyings input) : SV_Target
@@ -238,6 +251,28 @@ Shader "Lighthouse/World/ClearOcean"
                 color += OceanAmbientGlow(waterColor, _Shallow_Color.rgb * zoneTint, fresnel, skyLightZ);
                 float3 halfway = SafeNormalize(sun.direction + viewWS);
                 float specularPower = exp2(4 + _Smoothness * 7);
+                float3 additionalDiffuse = 0;
+                float3 additionalSpecular = 0;
+                #if defined(_ADDITIONAL_LIGHTS)
+                // Forward+ resolves its clustered light list from this fragment's screen/world position.
+                InputData inputData = (InputData)0;
+                inputData.positionWS = input.positionWS;
+                inputData.normalizedScreenSpaceUV = uv;
+                #if USE_FORWARD_PLUS
+                UNITY_LOOP for (uint lightIndex = 0; lightIndex < min(URP_FP_DIRECTIONAL_LIGHTS_COUNT, MAX_VISIBLE_LIGHTS); lightIndex++)
+                {
+                    Light light = GetAdditionalLight(lightIndex, input.positionWS, half4(1, 1, 1, 1));
+                    AccumulateOceanLight(light, normalWS, viewWS, specularPower, additionalDiffuse, additionalSpecular);
+                }
+                #endif
+                uint pixelLightCount = GetAdditionalLightsCount();
+                LIGHT_LOOP_BEGIN(pixelLightCount)
+                    Light light = GetAdditionalLight(lightIndex, input.positionWS, half4(1, 1, 1, 1));
+                    AccumulateOceanLight(light, normalWS, viewWS, specularPower, additionalDiffuse, additionalSpecular);
+                LIGHT_LOOP_END
+                #endif
+                color += waterColor * additionalDiffuse * (1 - transmission) * (1 - reflectionWeight);
+                color += additionalSpecular * 0.05;
                 float specular = pow(saturate(dot(normalWS, halfway)), specularPower);
                 color += sun.color * sun.shadowAttenuation * specular * 0.05 * clarityZ;
                 float causticFade = 1.0 - smoothstep(0.3, 1.2, footprint);
@@ -271,6 +306,7 @@ Shader "Lighthouse/World/ClearOcean"
                 float density = max(shoreDensity,interaction.w);
                 float coverage = OceanFoamCoverage(input.positionWS.xz-interaction.yz*0.12-(_F3Enabled>0.5 ? F3Current(input.positionWS.xz)*_OceanTime : float2(0,0)),density,_OceanTime);
                 float3 foamLight = max(0.025,sun.color*0.85+SampleSH(float3(0,1,0))*0.4);
+                foamLight += additionalDiffuse * 0.85;
                 color = lerp(color,foamLight,coverage*saturate(density)*0.82);
                 return half4(MixFog(color, input.fogFactor), 1);
             }

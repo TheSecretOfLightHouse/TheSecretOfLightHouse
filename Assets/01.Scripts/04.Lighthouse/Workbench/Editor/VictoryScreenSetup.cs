@@ -109,6 +109,11 @@ namespace Lighthouse.Workbench.Editor
                 Set(serialized, "_citizensSymbol", citizensSymbol);
                 Set(serialized, "_citizensTitle", citizensTitle);
                 Set(serialized, "_citizensSubtitle", citizensSubtitle);
+                Set(serialized, "_soundManagerPrefab", AssetDatabase.LoadAssetAtPath<Lighthouse.Systems.Audio.SoundManager>(
+                    "Assets/02.Prefabs/Player/PlayerSoundManager.prefab"));
+                Set(serialized, "_citizensVictoryClip", AssetDatabase.LoadAssetAtPath<AudioClip>(
+                    "Assets/08.Audio/Victory/MS01triumph3NL.wav"));
+                serialized.FindProperty("_citizensVictoryVolume").floatValue = 0.9f;
                 Set(serialized, "_mafiaSymbol", mafiaSymbol);
                 Set(serialized, "_mafiaTitle", mafiaTitle);
                 Set(serialized, "_mafiaSubtitle", mafiaSubtitle);

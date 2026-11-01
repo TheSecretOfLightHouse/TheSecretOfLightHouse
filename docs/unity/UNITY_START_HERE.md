@@ -36,7 +36,7 @@ PR·이슈 게시 권한은 계정의 저장소 접근 권한을 따르며, 접�
 ## 3. 프로젝트 설정과 첫 실행
 
 1. Visible Meta Files와 Force Text를 확인한다. 저장소 설정 파일에서 `ProjectSettings/EditorSettings.asset`의 `m_SerializationMode`는 2(Force Text), `ProjectSettings/VersionControlSettings.asset`의 `m_Mode`는 `Visible Meta Files`다. 에디터 화면에서는 확인하지 않았다.
-2. 담당 씬과 변경 범위를 확인한다. 현재 확인한 씬은 `Assets/00.Scenes/SampleScene.unity`, `Assets/00.Scenes/Myeongki/Player.unity`, `Assets/00.Scenes/Jihun/JH01TestScene.unity`, `Assets/00.Scenes/Jihun/JH07Offline.unity`·`JH07Lobby.unity`·`JH07Game.unity`다. 빌드 0번(시작 씬)은 판 시작·종료 시험용 `JH07Offline`(2026-10-13부터, 0~2번이 JH07 씬)이며 통합 씬이 정해지면 바뀐다([테스트 씬 기록](../ai/04_MULTIPLAYER_TEST_PROTOCOL.md#테스트-씬-기록)). 이름만으로 통합 시작 씬이나 담당자를 확정하지 않는다.
+2. 담당 씬과 변경 범위를 확인한다. 본편 시작 씬은 `Assets/00.Scenes/Main/MainOffline.unity`다(2026-10-31 최신 결정). 빌드 0~2번은 `MainOffline`(첫 버튼 화면과 생성·참가 패널을 같은 씬에서 전환) → `MainLobby`(선원 대기실) → `MainGame` 순서다. 첫 실행은 `MainOffline`에서 Play한다. 기존 사람별 개발 씬은 각 담당 범위에서 사용한다. 프리팹·배경·meta와 빌드 설정을 함께 받아야 하며 수동 연결이나 별도 UI 재생성은 필요 없다. [본편 접속 흐름](SESSION_FLOW.md)을 따른다.
 3. Console의 컴파일·임포트 오류를 확인한 뒤 해당 씬에서 Play 검증을 한다.
 4. 오류가 생기면 로그와 재현 경로를 보존하고 환경 문제·코드 문제를 구분한다.
 

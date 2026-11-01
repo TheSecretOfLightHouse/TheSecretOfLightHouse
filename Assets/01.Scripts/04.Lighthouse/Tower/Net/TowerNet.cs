@@ -188,6 +188,32 @@ namespace Lighthouse.Tower.Net
             return true;
         }
 
+        // Host-only test input keeps the ledger and normal install notifications consistent, without scene edits.
+        [Server]
+        public bool FillForTesting(ModuleLedger ledger)
+        {
+            TowerMatchNet match = GetComponent<TowerMatchNet>();
+            if (!_isLayoutValid || ledger == null || !match || match.Phase != TowerPhase.Repairing || IsComplete)
+            {
+                return false;
+            }
+
+            for (int slot = 0; slot < _installed.Count; slot++)
+            {
+                if (_installed[slot])
+                {
+                    continue;
+                }
+
+                uint moduleId = ledger.Create(_layout[slot].RecipeId, ModuleState.Installed);
+                _installedModuleIds[slot] = moduleId;
+                _installed[slot] = true;
+                ModuleInstalled?.Invoke(0, slot, moduleId);
+            }
+
+            return IsComplete;
+        }
+
         // OP_SET passes the old item, so the new one is read from the list itself.
         private void HandleInstalledChanged(SyncList<bool>.Operation operation, int index, bool value)
         {

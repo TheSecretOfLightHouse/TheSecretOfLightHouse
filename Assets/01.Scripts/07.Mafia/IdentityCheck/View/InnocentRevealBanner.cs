@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Lighthouse.Mafia.Voting.Net;
 using Lighthouse.Network.Connections.Net;
 using Lighthouse.Player.Abilities.Net;
+using Lighthouse.Systems.Audio;
 using Mirror;
 using UnityEngine;
 using UnityEngine.UI;
@@ -33,6 +34,15 @@ namespace Lighthouse.Mafia.IdentityCheck.View
         [Tooltip("Found in the scene when empty. Mirror keeps scene network objects inactive until they spawn.")]
         [SerializeField]
         private VotingNetworkController _voting;
+
+        [Header("Reveal Audio")]
+        [SerializeField]
+        private SoundManager _soundManagerPrefab;
+        [Tooltip("The first four seconds only, ending after two bell strikes.")]
+        [SerializeField]
+        private AudioClip _revealClip;
+        [SerializeField, Range(0f, 1f)]
+        private float _revealVolume = 1f;
 
         [Header("Parts")]
         [SerializeField]
@@ -178,6 +188,25 @@ namespace Lighthouse.Mafia.IdentityCheck.View
             _isShowing = true;
             _banner.gameObject.SetActive(true);
             Animate(0f);
+            PlayRevealSound();
+        }
+
+        private void PlayRevealSound()
+        {
+            if (!_revealClip)
+            {
+                return;
+            }
+
+            if (!SoundManager.Instance && _soundManagerPrefab)
+            {
+                Instantiate(_soundManagerPrefab);
+            }
+
+            if (SoundManager.Instance)
+            {
+                SoundManager.Instance.PlayEffect(_revealClip, _revealVolume);
+            }
         }
 
         private void Hide()

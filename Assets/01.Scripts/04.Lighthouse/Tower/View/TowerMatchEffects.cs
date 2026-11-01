@@ -328,6 +328,8 @@ namespace Lighthouse.Tower.View
                 if (phase == TowerPhase.Repairing && _tower && _tower.IsComplete)
                 {
                     ShowTitle("등대를 밝힐 준비가 끝났다", false);
+                    ScreenNotice.Show(new ScreenNoticeRequest(
+                        "탈출하려면 마지막으로 마피아를 색출해야 합니다.\n투표를 마친 뒤 등대에서 의식을 시작하세요.", ScreenNoticeStyle.Gold));
                     FlashEdge(_readyColor, 0.55f, 1.6f);
                     Play(_readyClip);
                 }
