@@ -94,7 +94,7 @@ namespace Lighthouse.World.Clock.View
 
             _sun.transform.rotation = Quaternion.Euler(angle, _config.Azimuth, 0f);
             float weatherScale = _environment != null && _environment.HasState
-                ? _environment.WeatherLightScale : 1f;
+                ? _environment.Weights.LightScale : 1f;
             _sun.intensity = Mathf.Lerp(
                 _config.NightIntensity, _config.DayIntensity, daylight) * weatherScale +
                 Mathf.Clamp(_flashIntensity, 0f, _maxFlashIntensity);

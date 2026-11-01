@@ -29,6 +29,17 @@ namespace Lighthouse.World.Ocean.Rules
             1f);
 
         [SerializeField]
+        private OceanOpticsState _stormNight = new OceanOpticsState(
+            new Color(0.03f, 0.06f, 0.09f, 1f),
+            new Color(0.015f, 0.035f, 0.055f, 1f),
+            new Color(0.007f, 0.015f, 0.03f, 1f),
+            0.97f,
+            0.7f,
+            0.55f,
+            0f,
+            0.05f);
+
+        [SerializeField]
         private OceanOpticsState _storm = new OceanOpticsState(
             new Color(0.18f, 0.30f, 0.29f, 1f),
             new Color(0.055f, 0.145f, 0.16f, 1f),
@@ -67,6 +78,7 @@ namespace Lighthouse.World.Ocean.Rules
 
         public OceanOpticsState Day => _day;
         public OceanOpticsState Night => _night;
+        public OceanOpticsState StormNight => _stormNight;
         public OceanOpticsState Storm => _storm;
         public OceanOpticsState Abyss => _abyss;
         public OceanZoneOptics InnerZone => _innerZone;
