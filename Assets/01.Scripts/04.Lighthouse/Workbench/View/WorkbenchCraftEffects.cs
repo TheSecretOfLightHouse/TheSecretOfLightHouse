@@ -25,7 +25,7 @@ namespace Lighthouse.Workbench.View
         [SerializeField]
         private AudioClip _hammerClip;
         [SerializeField, Range(0f, 1f)]
-        private float _hammerVolume = 1f;
+        private float _hammerVolume = 0.5f;
         [SerializeField, Min(1f)]
         private float _visibleDistance = 30f;
 

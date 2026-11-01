@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Lighthouse.Network.Session.Net;
 using Lighthouse.Network.Session.Rules;
+using Lighthouse.Systems.Audio;
 using Mirror;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -47,9 +48,12 @@ namespace Lighthouse.Network.Session.View
         private bool _useOsFont = true;
         [SerializeField]
         private string[] _osFontNames = { "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Arial" };
+        [SerializeField] private AudioClip _menuMusic;
+        [SerializeField] private SoundManager _soundManagerPrefab;
 
         private Mode _mode;
         private bool _hasMode;
+        private bool _isMenuMusicPlaying;
 
         // Join attempt tracking: a client that never reached the lobby gets no end record from the manager.
         private bool _isAttempting;
@@ -114,6 +118,7 @@ namespace Lighthouse.Network.Session.View
         {
             LighthouseNetworkManager manager = LighthouseNetworkManager.Instance;
             Mode mode = ResolveMode(manager);
+            UpdateMenuMusic(manager, mode);
 
             if (!_hasMode || mode != _mode)
             {
@@ -272,6 +277,42 @@ namespace Lighthouse.Network.Session.View
             }
         }
 
+        private void UpdateMenuMusic(LighthouseNetworkManager manager, Mode mode)
+        {
+            if (!manager || !_menuMusic)
+            {
+                return;
+            }
+
+            Scene scene = SceneManager.GetActiveScene();
+            bool isGameScene = !string.IsNullOrEmpty(manager.GameScene)
+                && (scene.path == manager.GameScene || scene.name == manager.GameScene);
+            if (isGameScene)
+            {
+                if (_isMenuMusicPlaying && SoundManager.Instance != null)
+                {
+                    SoundManager.Instance.StopMusic();
+                }
+                _isMenuMusicPlaying = false;
+                return;
+            }
+
+            if (_isMenuMusicPlaying || (mode != Mode.Title && mode != Mode.Lobby && mode != Mode.Loading))
+            {
+                return;
+            }
+
+            if (SoundManager.Instance == null && _soundManagerPrefab != null)
+            {
+                Instantiate(_soundManagerPrefab);
+            }
+            if (SoundManager.Instance != null)
+            {
+                SoundManager.Instance.PlayMusic(_menuMusic, true);
+                _isMenuMusicPlaying = true;
+            }
+        }
+
         private void ApplyOsFont()
         {
             Font font = Font.CreateDynamicFontFromOSFont(_osFontNames, 32);
@@ -377,6 +418,7 @@ namespace Lighthouse.Network.Session.View
             else if (mode == Mode.InGame)
             {
                 ShowLeaveMatch();
+                UiButtonAudio.PlayClick();
             }
         }
 

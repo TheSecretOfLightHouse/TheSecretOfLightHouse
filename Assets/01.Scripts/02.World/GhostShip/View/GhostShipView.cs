@@ -1,4 +1,5 @@
 using Lighthouse.Lantern.View;
+using Lighthouse.Systems.Audio;
 using Lighthouse.World.GhostShip.Net;
 using Lighthouse.World.GhostShip.Rules;
 using UnityEngine;
@@ -30,7 +31,33 @@ namespace Lighthouse.World.GhostShip.View
         [Tooltip("Seconds the fog takes to fade in once the ship has risen and levelled out.")]
         [SerializeField, Min(0.01f)] private float _fogFadeInSeconds = 4f;
 
+        // Rising starts the two ambience clips together and the horn sounds once it has fully risen (2026-11-01).
+        // While it sinks the ambience fades with depth and stops when the ship is hidden. The sources ride on the ship,
+        // so it is heard only nearby and from where it is; SoundManager's volume and mute settings still apply.
+        [Header("Audio")]
+        [Tooltip("Created if missing, for the player's volume settings.")]
+        [SerializeField] private SoundManager _soundManagerPrefab;
+        [SerializeField] private AudioClip _hauntClip;
+        [SerializeField, Range(0f, 1f)] private float _hauntVolume = 0.684f;
+        [SerializeField] private AudioClip _rumbleClip;
+        [SerializeField, Range(0f, 1f)] private float _rumbleVolume = 0.684f;
+        [SerializeField] private AudioClip _hornClip;
+        [SerializeField, Range(0f, 1f)] private float _hornVolume = 0.24624f;
+        [Tooltip("Ambience is at full volume within this distance and fades linearly to silence at the max distance.")]
+        [SerializeField, Min(0f)] private float _ambienceMinDistance = 15f;
+        [SerializeField, Min(0.01f)] private float _ambienceMaxDistance = 90f;
+        [Tooltip("The horn carries further than the ambience.")]
+        [SerializeField, Min(0f)] private float _hornMinDistance = 20f;
+        [SerializeField, Min(0.01f)] private float _hornMaxDistance = 150f;
+
         private bool _isOut;
+        private GhostShipPhase _soundPhase;
+        private AudioSource _haunt;
+        private AudioSource _rumble;
+        private AudioSource _horn;
+        // Ambience gain, lowered with depth while sinking.
+        private float _ambienceFade = 1f;
+        private bool _isAmbienceFading;
         private float _lampIntensity;
         private ParticleSystemRenderer[] _fogRenderers;
         private Color[] _fogColors;
@@ -43,6 +70,9 @@ namespace Lighthouse.World.GhostShip.View
         {
             _lampIntensity = _lamp != null ? _lamp.intensity : 0f;
             CacheFog();
+            _haunt = CreateSource("HauntAudio", _hauntClip, _ambienceMinDistance, _ambienceMaxDistance);
+            _rumble = CreateSource("RumbleAudio", _rumbleClip, _ambienceMinDistance, _ambienceMaxDistance);
+            _horn = CreateSource("HornAudio", _hornClip, _hornMinDistance, _hornMaxDistance);
             Apply(GhostShipPhase.Hidden);
         }
 
@@ -73,11 +103,137 @@ namespace Lighthouse.World.GhostShip.View
             {
                 StepFogFade();
             }
+
+            if (_isAmbienceFading)
+            {
+                StepAmbienceFade();
+            }
+
+            ApplyAudioVolumes();
         }
 
         private void HandlePhaseChanged(GhostShipPhase phase)
         {
             Apply(phase);
+            PlayPhaseSound(phase);
+        }
+
+        // Keyed on the previous phase so a late joiner's first notice of a ship already out does not sound the horn.
+        private void PlayPhaseSound(GhostShipPhase phase)
+        {
+            GhostShipPhase previous = _soundPhase;
+            _soundPhase = phase;
+
+            if (phase == previous)
+            {
+                return;
+            }
+
+            if (!SoundManager.Instance && _soundManagerPrefab)
+            {
+                Instantiate(_soundManagerPrefab);
+            }
+
+            if (phase == GhostShipPhase.Rising)
+            {
+                _ambienceFade = 1f;
+                _isAmbienceFading = false;
+                ApplyAudioVolumes();
+                Play(_haunt);
+                Play(_rumble);
+            }
+            else if (phase == GhostShipPhase.Roaming && previous == GhostShipPhase.Rising)
+            {
+                ApplyAudioVolumes();
+                Play(_horn);
+            }
+            else if (phase == GhostShipPhase.Sinking)
+            {
+                _isAmbienceFading = true;
+            }
+            else if (phase == GhostShipPhase.Hidden)
+            {
+                StopAmbience();
+            }
+        }
+
+        // Fades down as the ship goes under and ends the moment it is hidden (_hideDepth), not at the start of the sink.
+        // Never climbs back, so a wave lifting the hull does not swell the sound again.
+        private void StepAmbienceFade()
+        {
+            float seaLevel = _ship != null ? _ship.SeaLevel : 0f;
+            float depth = seaLevel - transform.position.y;
+            _ambienceFade = Mathf.Min(_ambienceFade, 1f - Mathf.Clamp01(depth / Mathf.Max(0.01f, _hideDepth)));
+
+            if (_ambienceFade <= 0f)
+            {
+                StopAmbience();
+            }
+        }
+
+        private void StopAmbience()
+        {
+            _isAmbienceFading = false;
+
+            if (_haunt)
+            {
+                _haunt.Stop();
+            }
+
+            if (_rumble)
+            {
+                _rumble.Stop();
+            }
+        }
+
+        private void ApplyAudioVolumes()
+        {
+            SoundManager sound = SoundManager.Instance;
+            float settings = !sound ? 1f : sound.IsMuted ? 0f : sound.MasterVolume * sound.EffectVolume;
+
+            if (_haunt)
+            {
+                _haunt.volume = _hauntVolume * _ambienceFade * settings;
+            }
+
+            if (_rumble)
+            {
+                _rumble.volume = _rumbleVolume * _ambienceFade * settings;
+            }
+
+            if (_horn)
+            {
+                _horn.volume = _hornVolume * settings;
+            }
+        }
+
+        private static void Play(AudioSource source)
+        {
+            if (source && source.clip)
+            {
+                source.Play();
+            }
+        }
+
+        // On a child of the ship root, which moves with the ship and is never hidden (the visual root is).
+        private AudioSource CreateSource(string objectName, AudioClip clip, float minDistance, float maxDistance)
+        {
+            if (!clip)
+            {
+                return null;
+            }
+
+            var child = new GameObject(objectName);
+            child.transform.SetParent(transform, false);
+            var source = child.AddComponent<AudioSource>();
+            source.clip = clip;
+            source.playOnAwake = false;
+            source.spatialBlend = 1f;
+            source.dopplerLevel = 0f;
+            source.rolloffMode = AudioRolloffMode.Linear;
+            source.minDistance = minDistance;
+            source.maxDistance = Mathf.Max(minDistance + 0.01f, maxDistance);
+            return source;
         }
 
         private void Apply(GhostShipPhase phase)

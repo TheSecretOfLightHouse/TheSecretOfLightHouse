@@ -1,7 +1,7 @@
 # 대포 Synty 발사 효과 교체
 작성자: 최명기
 작성일: 2026-10-29
-갱신일: 2026-10-29
+갱신일: 2026-11-01
 상태: 구현됨(미검증)
 브랜치·기준 커밋: feature/myeongki / 0d3773bd
 
@@ -56,3 +56,12 @@
 - 배4종 연기2층을 Mesh 모드/CannonShot_RoundSmoke 메시로 교체. 새 CannonSmokeVolume.mat(에디터 생성/meta 포함)의 MeshSmoke 모드를 사용한다. CannonParticle.shader에 세계 공간3축 노이즈·표면 방향 명암/가장자리 투명화·작은 표면 변형을 추가해 UV 평면 마스크 없이 입체 메시를 표시한다. 구체 겹침을 완화하기 위해 경계 알파와 밀도 노이즈를 조정했다. 연기2층 각18입자,3축 무작위 회전. 기존 서버 승인/소리/반동/피해 계약은 유지.
 - 검증: 첫 셰이더 컴파일은 HLSL 예약어 point 사용으로 실패, smokePosition으로 수정 후 오류0 확인. PreviewScene 옆/위2시점 렌더에서 두께 있는 덩어리 확인(초기 메시버전), 후속 경계/표면 조정 뒤 셰이더 오류false. 미리보기 대포연기-입체-미리보기.png는 초기 메시버전이며 최종 시각 검증으로 확대하지 않는다.
 - 실제 게임 사격/연속발사/낮밤·원격 M2 미검증. 다음은 사용자 시점에서 평면 현상 제거와 연기 외형 확인.
+
+## 2026-11-01 측면 불꽃 길이·경계 보완
+- 요청: 측면 발사 이펙트가 이상하다는 조사 후, 긴 불꽃을 줄이고 가장자리를 부드럽게 바꾸라는 사용자 승인. 작성 담당자 최명기 확인. 기준 feature/myeongki / 8e2c2742.
+- 조사: 실제 연결된 효과의 0.033초 측면 격리 렌더에서 SM_Flame_FX가 긴 삼각형으로 표시됨. Flash의 3축 크기 중 Y=20, Z=8이 남아 있었고 기존 URP Unlit 머티리얼이 메시 윤곽을 그대로 표시했다. v4 대포 전투·기술설계 Fired 재생 계약과 대조했으며 이번 변경에 필요한 추가 게임 규칙 없음. R11 몬스터 연결 검증과 별개 표현 수정.
+- 변경: Unity Prefab API로 Boat/captainBoat/TankerBoat/gardenBoat의 Flash를 본편 CannonShot_RoundSmoke 메시로 교체. 크기 XYZ=0.55/0.55/1, 입자 회전0, 포구 앞 로컬 Z=0.45, Shape 방출 영역 해제. 수명0.055초 유지, 알파0.9→0.8→0 페이드. CannonShot_FX_Default_01.mat에 CannonParticle의 MeshFlash=3/Cull Back 적용. 셰이더에서 표면·시선 각도로 경계 알파를 감쇠하고 주황→노랑 중심을 표시한다. 기존 MeshSmoke 분기는 보존.
+- 변경 파일: 배4종 프리팹, Assets/07.Materials/Player/CannonShot_FX_Default_01.mat, CannonParticle.shader 및 이 원문/pointer. 기존 GUID/meta 유지. ThirdParty 원본·씬·C# 발사/피해/소리/반동 코드 변경 없음.
+- 검증: 저장 프리팹4종 재조회로 크기/메시/셰이더 모드 일치, Missing Script0. 각 Flash 0.02초 입자2개/0.08초0개, 셰이더 메시지0. 최종 정면/측면 격리 렌더에서 긴 삼각형 제거·입체형 경계 페이드 확인. 효과 전체0.55초 연기36입자와 StopEmittingAndClear 후 잔여0 확인. 5초 Simulate의 IsAlive는 true여서 자연 종료 통과로 보고하지 않음. 임시 복제·카메라·렌더 자원 정리.
+- git diff --check: 셰이더/머티리얼 문제 없음. Unity가 프리팹 메시 참조 override에 생성한 `value: ` 빈 값 공백4개 경고는 YAML 직접 수정 금지에 따라 유지.
+- 상태: 구현됨(미검증). 에디터 연결/격리 렌더 확인이며 실제 입력 사격·낮밤·원격 M2는 미실행. 조사 시작 때 Play였으나 마무리 조회는 비Play 상태. 플레이 종료/씬 저장 명령은 실행하지 않음. 다음 생성 배부터 저장 설정 적용. 커밋/push 없음.

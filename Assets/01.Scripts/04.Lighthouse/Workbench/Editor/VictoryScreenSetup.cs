@@ -113,7 +113,7 @@ namespace Lighthouse.Workbench.Editor
                     "Assets/02.Prefabs/Player/PlayerSoundManager.prefab"));
                 Set(serialized, "_citizensVictoryClip", AssetDatabase.LoadAssetAtPath<AudioClip>(
                     "Assets/08.Audio/Victory/MS01triumph3NL.wav"));
-                serialized.FindProperty("_citizensVictoryVolume").floatValue = 0.9f;
+                serialized.FindProperty("_citizensVictoryVolume").floatValue = 0.684f;
                 Set(serialized, "_mafiaSymbol", mafiaSymbol);
                 Set(serialized, "_mafiaTitle", mafiaTitle);
                 Set(serialized, "_mafiaSubtitle", mafiaSubtitle);

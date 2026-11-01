@@ -3,6 +3,7 @@ using Lighthouse.Mafia.Voting.Net;
 using Lighthouse.Network.Session.Net;
 using Lighthouse.Network.Session.Rules;
 using Lighthouse.Network.Session.View;
+using Lighthouse.Systems.Audio;
 using Mirror;
 using TMPro;
 using UnityEngine;
@@ -217,6 +218,11 @@ namespace Lighthouse.UI.Hud
             {
                 _isOpen = !_isShown;
                 _peekEndsAt = 0f;
+
+                if (_isOpen)
+                {
+                    UiButtonAudio.PlayClick();
+                }
             }
 
             SetShown(_isOpen || _isPinned || Time.unscaledTime < _peekEndsAt);
@@ -610,7 +616,6 @@ namespace Lighthouse.UI.Hud
             labelRect.pivot = new Vector2(1f, 0.5f);
             labelRect.sizeDelta = new Vector2(labelWidth, rowHeight);
             labelRect.anchoredPosition = Vector2.zero;
-            _roleMarkLabel.alignment = TextAlignmentOptions.MidlineLeft;
             _roleMarkLabel.enableAutoSizing = false;
             _roleMarkLabel.raycastTarget = false;
 

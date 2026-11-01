@@ -48,7 +48,7 @@ namespace Lighthouse.Tower.View
         [SerializeField]
         private AudioClip _citizensVictoryClip;
         [SerializeField, Range(0f, 1f)]
-        private float _citizensVictoryVolume = 0.9f;
+        private float _citizensVictoryVolume = 0.684f;
 
         [Header("Mafia")]
         [SerializeField]

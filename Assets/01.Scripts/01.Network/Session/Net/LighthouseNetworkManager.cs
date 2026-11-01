@@ -103,6 +103,7 @@ namespace Lighthouse.Network.Session.Net
 #endif
 
         public bool IsSessionFlowEnabled => _lobbyPlayerPrefab && !string.IsNullOrEmpty(_gameScene);
+        public string GameScene => _gameScene;
         public int StartPlayerCount => _startPlayerCount;
 
         // Server-only session state. In direct mode the phase stays Lobby.
