@@ -1,4 +1,5 @@
 using Lighthouse.Mafia.SeaSummoning.Rules;
+using Lighthouse.World.IllusionIsland.Rules;
 using Lighthouse.World.Query.Rules;
 using UnityEngine;
 
@@ -46,6 +47,12 @@ namespace Lighthouse.Mafia.SeaSummoning.Server
             }
             reason = "안전지대에는 소환할 수 없음";
             if (world.IsSafeZone(point))
+            {
+                return false;
+            }
+
+            reason = "환영섬 위에는 소환할 수 없음";
+            if (WorldServices.TryGet<IIllusionFootprint>(out var illusions) && illusions.IsOnIllusion(point))
             {
                 return false;
             }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using Lighthouse.World.Ocean.View;
 
 namespace Lighthouse.Player.Boat.View
 {
@@ -41,6 +42,8 @@ namespace Lighthouse.Player.Boat.View
         private Vector3 _collisionVelocity;
         private float _collisionElapsed;
         private bool _isCollisionRocking;
+        private WaveTiltVisual _waveTilt;
+        private bool _composesHull;
 
         private void Awake()
         {
@@ -84,7 +87,10 @@ namespace Lighthouse.Player.Boat.View
             _isCollisionRocking = false;
             _collisionAngle = Vector3.zero;
             _collisionVelocity = Vector3.zero;
-            if (_hullVisual)
+            bool composed = _composesHull && _waveTilt && _waveTilt.isActiveAndEnabled;
+            if (_waveTilt) _waveTilt.ReleaseRecoil(this);
+            _composesHull = false;
+            if (_hullVisual && !composed)
             {
                 _hullVisual.localRotation = _hullRestRotation;
             }
@@ -146,6 +152,8 @@ namespace Lighthouse.Player.Boat.View
         {
             if ((!_isHullRecoiling && !_isCollisionRocking) || !_hullVisual)
             {
+                if (_waveTilt) _waveTilt.ReleaseRecoil(this);
+                _composesHull = false;
                 return;
             }
 
@@ -164,8 +172,13 @@ namespace Lighthouse.Player.Boat.View
                 collisionRotation = AdvanceCollisionRock(Time.deltaTime);
             }
             // Pitch in boat space so differently oriented art still lifts the bow.
-            _hullVisual.localRotation = collisionRotation
-                * Quaternion.AngleAxis(-_hullPitch * weight, Vector3.right) * _hullRestRotation;
+            Quaternion recoil = collisionRotation * Quaternion.AngleAxis(-_hullPitch * weight, Vector3.right);
+            if (!_waveTilt) TryGetComponent(out _waveTilt);
+            _composesHull = _waveTilt && _waveTilt.TrySetRecoil(this, _hullVisual, recoil);
+            if (!_composesHull)
+            {
+                _hullVisual.localRotation = recoil * _hullRestRotation;
+            }
         }
 
         private Quaternion AdvanceCollisionRock(float deltaTime)

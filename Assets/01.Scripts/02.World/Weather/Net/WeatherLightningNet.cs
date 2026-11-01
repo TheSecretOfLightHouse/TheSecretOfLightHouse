@@ -32,7 +32,7 @@ namespace Lighthouse.World.Weather.Net
             }
             double now = NetworkTime.time;
             double interval = 60d / Math.Max(0.1f, rate);
-            if (_nextAt == 0d)
+            if (_nextAt == 0d || _nextAt > now + interval)
             {
                 _nextAt = now + interval;
             }

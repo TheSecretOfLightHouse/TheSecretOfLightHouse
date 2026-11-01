@@ -8,9 +8,14 @@ float4 _F3Layout;
 float4 _F3Regions[32];
 int _F3RegionCount;
 float _F3RegionExtent;
+float4 _F3WorldBounds;
+TEXTURE2D_ARRAY(_F3Directions); SAMPLER(sampler_F3Directions);
+float4 _F3DirectionInfo[32];
+float _F3DirectionsEnabled;
 bool F3MapPoint(inout float2 samplePosition)
 {
     if (_F3RegionExtent <= 0) return true;
+    if (any(samplePosition < _F3WorldBounds.xy) || any(samplePosition >= _F3WorldBounds.zw)) return false;
     int selected = -1;
     float nearest = 1e20;
     for (int i = 0; i < _F3RegionCount; i++)
@@ -30,6 +35,7 @@ bool F3MapPoint(inout float2 samplePosition)
 
 float4 _F3Flow;
 float4 _F3CurrentLayout;
+float _F3CurrentWorld;
 TEXTURE2D(_F3CurrentBasis);
 float _F3Enabled;
 float _F3GeometrySize;
@@ -116,33 +122,106 @@ float4 F3GeometryAt(float2 world)
     data.w=filtered.w;
     return data;
 }
+float4 F3DirectionAt(float2 world, float2 direction, float4 fallback)
+{
+    if (_F3DirectionsEnabled < 0.5 || _F3RegionExtent <= 0) return fallback;
+    if (any(world < _F3WorldBounds.xy) || any(world >= _F3WorldBounds.zw)) return float4(1,0,0,0);
+    float4 result = float4(1,0,0,0);
+    float angle = atan2(direction.y, direction.x) * (180.0 / 3.14159265359);
+    for (int i = 0; i < _F3RegionCount; i++)
+    {
+        float2 local = world - _F3Regions[i].xy;
+        float edge = min(min(local.x,local.y),min(_F3RegionExtent-local.x,_F3RegionExtent-local.y));
+        if (edge <= 0) continue;
+        float4 info = _F3DirectionInfo[i];
+        float relative = frac((angle - info.z) / 360.0) * info.y;
+        float first = floor(relative);
+        float second = fmod(first + 1, info.y);
+        float2 uv = clamp(local / _F3RegionExtent, 0.5 / info.w, 1 - 0.5 / info.w);
+        float4 field = lerp(SAMPLE_TEXTURE2D_ARRAY_LOD(_F3Directions, sampler_F3Directions, uv, info.x + first, 0),
+            SAMPLE_TEXTURE2D_ARRAY_LOD(_F3Directions, sampler_F3Directions, uv, info.x + second, 0), frac(relative));
+        float weight = smoothstep(0,1,saturate(edge/(2*_F3Layout.z)));
+        result.x *= lerp(1,field.x,weight);
+        result.yzw += field.yzw*weight;
+    }
+    return result;
+}
+float F3PhaseOffset(float wavelength) { return wavelength*2.39996323; }
+void F3OpenSeaSurface(float2 rest,out float3 displacement,out float3 normal)
+{
+    displacement=0;
+    float3 derivativeX=0, derivativeZ=0;
+    float envelope=0;
+    float2 envelopeSlope=0;
+    for(int i=0;i<min((int)_OceanWaveCount,OCEAN_MAX_WAVES);i++)
+    {
+        float4 a=_OceanWaveA[i], b=_OceanWaveB[i];
+        if(a.z<=0) continue;
+        float swell;
+        float2 swellSlope;
+        OpenSeaSwellAndGradient(rest+float2(a.y,-a.x)*a.z,_OceanTime,swell,swellSlope);
+        float k=OCEAN_TWO_PI/a.z;
+        float phase=k*(dot(a.xy,rest)-a.w*_OceanTime)+F3PhaseOffset(a.z);
+        float sine=sin(phase), cosine=cos(phase);
+        float horizontal=swell*b.y/k*cosine;
+        float2 horizontalSlope=b.y/k*(swellSlope*cosine-swell*k*a.xy*sine);
+        float2 heightSlope=b.x*(swellSlope*sine+swell*k*a.xy*cosine);
+        displacement+=float3(a.x*horizontal,swell*b.x*sine,a.y*horizontal);
+        derivativeX+=float3(a.x*horizontalSlope.x,heightSlope.x,a.y*horizontalSlope.x);
+        derivativeZ+=float3(a.x*horizontalSlope.y,heightSlope.y,a.y*horizontalSlope.y);
+        envelope+=swell*b.x;
+        envelopeSlope+=swellSlope*b.x;
+    }
+    float limit=F3BreakingLimit(4);
+    if(envelope>limit)
+    {
+        float scale=limit/envelope;
+        float2 scaleSlope=-scale/envelope*envelopeSlope;
+        derivativeX=derivativeX*scale+displacement*scaleSlope.x;
+        derivativeZ=derivativeZ*scale+displacement*scaleSlope.y;
+        displacement*=scale;
+    }
+    normal=normalize(cross(float3(0,0,1)+derivativeZ,float3(1,0,0)+derivativeX));
+}
 float3 F3Displacement(float2 rest)
 {
     float4 geometry=F3GeometryAt(rest);
-    float4 field=F3FieldRaw(rest,geometry);
+    float4 fallback=0;
+    [branch] if(_F3DirectionsEnabled<0.5 || _F3RegionExtent<=0) fallback=F3FieldRaw(rest,geometry);
     float breakingLimit=F3BreakingLimit(geometry.x);
     float3 displacement=0;
-    float swell=OpenSeaSwellAt(rest,_OceanTime);
+    float envelope=0;
     float depth=max(0.25,geometry.x+0.05);
     float shoal=(1-smoothstep(0.6,2.5,depth))*smoothstep(0.08,0.35,depth);
     for(int i=0;i<min((int)_OceanWaveCount,OCEAN_MAX_WAVES);i++)
     {
         float4 a=_OceanWaveA[i], b=_OceanWaveB[i];
         if(a.z<=0) continue;
+        float4 field=F3DirectionAt(rest,a.xy,fallback);
+        if(geometry.w<=0 || geometry.y<=0) field=0;
+        float swell=OpenSeaSwellAt(rest+float2(a.y,-a.x)*a.z,_OceanTime);
         float k=OCEAN_TWO_PI/a.z;
-        float phase=k*(dot(a.xy,rest+field.yz)-a.w*(_OceanTime-field.w));
+        float phase=k*(dot(a.xy,rest+field.yz)-a.w*(_OceanTime-field.w))+F3PhaseOffset(a.z);
         float transmission=min(F3WavelengthTransmission(field.x,a.z)*swell,breakingLimit);
         displacement.xz+=a.xy*(transmission*b.y/k*cos(phase));
         displacement.y+=transmission*b.x*(1+0.65*shoal)*(sin(phase)-0.25*shoal*cos(phase*2));
+        envelope+=transmission*b.x*(1+0.65*shoal)*(1+0.25*shoal);
     }
-    return displacement;
+    return displacement*min(1,breakingLimit/max(envelope,0.0001));
+}
+float3 F3RestNormal(float2 rest)
+{
+    const float stepSize=0.1;
+    float3 tangentX=float3(2*stepSize,0,0)+F3Displacement(rest+float2(stepSize,0))-F3Displacement(rest-float2(stepSize,0));
+    float3 tangentZ=float3(0,0,2*stepSize)+F3Displacement(rest+float2(0,stepSize))-F3Displacement(rest-float2(0,stepSize));
+    return normalize(cross(tangentZ,tangentX));
 }
 float F3Height(float2 world)
 {
     float4 geometry=F3GeometryAt(world);
     if(geometry.w<=0 || geometry.y<=0) return 0;
     float2 rest=world;
-    [unroll] for(int i=0;i<6;i++) rest=world-F3Displacement(rest).xz;
+    [loop] for(int i=0;i<12;i++) rest=world-F3Displacement(rest).xz;
     float height=F3Displacement(rest).y;
     float modifierHeight; float2 modifierSlope;
     OceanModifiersAt(world,_OceanTime,modifierHeight,modifierSlope);
@@ -158,9 +237,11 @@ float3 F3Normal(float2 world)
 float2 F3Current(float2 world)
 {
     if(_F3Enabled<0.5) return float2(-0.08,0.06);
+    float4 geometry=F3GeometryAt(world);
+    if(geometry.x<=0 || geometry.y<=0 || geometry.w<=0) return 0;
     float2 drive=_F3Flow.xy*_F3Flow.z;
     float2 uv=(world-_F3CurrentLayout.xy)/max(_F3CurrentLayout.z,0.001);
-    if (_F3RegionExtent > 0)
+    if (_F3RegionExtent > 0 && _F3CurrentWorld < 0.5)
     {
         float2 mapped = world;
         uv = F3MapPoint(mapped) ? (mapped - _F3Layout.xy) / _F3Layout.w : float2(-1,-1);
@@ -173,6 +254,20 @@ float2 F3Current(float2 world)
     }
     float speed=length(flow);
     return speed>_F3Flow.w && speed>1e-5 ? flow*(_F3Flow.w/speed) : flow;
+}
+float2 F3Advect(float2 source, float duration)
+{
+    float2 samplePosition=source;
+    float stepTime=duration*0.25;
+    [unroll] for(int i=0;i<4;i++)
+    {
+        float2 midpoint=samplePosition+F3Current(samplePosition)*(stepTime*0.5);
+        float2 next=samplePosition+F3Current(midpoint)*stepTime;
+        float4 geometry=F3GeometryAt(next);
+        if(_F3Enabled>0.5 && (geometry.y<=0 || geometry.w<=0 || geometry.x<=0)) break;
+        samplePosition=next;
+    }
+    return samplePosition;
 }
 float F3WakeGate(float2 source,float2 target)
 {

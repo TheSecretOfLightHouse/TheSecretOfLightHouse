@@ -12,20 +12,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 767b65b37e513754d93cde661638196c, type: 3}
   m_Name: SpawnerPlacementConfig_Test
   m_EditorClassIdentifier: 
-  _minDistance: 20
+  _spreadFactor: 0.6
+  _minSpacingFloor: 25
   _queryCellSize: 50
-  _obstacleClearance: 10
+  _obstacleClearance: 15
   _safeRadius: 25
   _allocations:
   - _zone: 1
     _profile: {fileID: 11400000, guid: 3abb74b7b5b59e2479e6c4332576ebe6, type: 2}
-    _minCount: 3
-    _maxCount: 3
+    _minCount: 6
+    _maxCount: 6
   - _zone: 2
     _profile: {fileID: 11400000, guid: 1b8f4547dee8547418c4c41c996fe1d5, type: 2}
-    _minCount: 3
-    _maxCount: 3
+    _minCount: 6
+    _maxCount: 6
   - _zone: 4
     _profile: {fileID: 11400000, guid: 957103557a1d2cd418ac00e2c7636955, type: 2}
-    _minCount: 3
-    _maxCount: 3
+    _minCount: 6
+    _maxCount: 6

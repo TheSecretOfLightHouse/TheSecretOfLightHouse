@@ -34,14 +34,27 @@ namespace Lighthouse.World.Ocean
 
         private void Update()
         {
+            if (_service == null || _waves == null) return;
             ReadOnlySpan<WaveParams> waves = _waves.Inputs.Waves;
             Vector2 sum = Vector2.zero;
+            float energy = 0f;
             for (int i = 0; i < waves.Length; i++)
             {
-                sum += waves[i].Direction * Mathf.Abs(waves[i].Amplitude);
+                float amplitude = Mathf.Abs(waves[i].Amplitude);
+                sum += waves[i].Direction * amplitude;
+                energy += amplitude;
             }
 
-            _service.SetDrive(sum.sqrMagnitude > Mathf.Epsilon ? sum : _fallbackDirection, _speed);
+            // Opposing seas cancel continuously instead of snapping to the fallback at zero resultant.
+            // The configured speed remains a tuning value, not a weather-strength table.
+            if (energy > Mathf.Epsilon)
+            {
+                _service.SetDrive(sum, _speed * Mathf.Clamp01(sum.magnitude / energy));
+            }
+            else
+            {
+                _service.SetDrive(_fallbackDirection, _speed);
+            }
         }
 
         private void OnDestroy()

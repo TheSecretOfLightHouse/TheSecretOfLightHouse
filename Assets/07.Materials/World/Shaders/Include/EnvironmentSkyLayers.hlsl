@@ -33,7 +33,8 @@ float EnvironmentCloudLayer(
     float coverage,
     float scale,
     float3 sunDirection,
-    out float light)
+    out float light,
+    out float depth)
 {
     float2 uv = direction.xz / (saturate(direction.y) + 0.15);
     float2 drift = float2(time * 0.008, time * 0.003);
@@ -52,9 +53,22 @@ float EnvironmentCloudLayer(
     float core = smoothstep(threshold, threshold + 0.3, density);
 
     light = saturate(0.55 + (density - sunSide) * 5.0) * lerp(1.0, 0.78, core);
+    depth = smoothstep(0.3, 0.9, density);
 
     mask *= smoothstep(0.0, 0.12, direction.y);
     return mask * saturate(coverage * 8.0);
+}
+
+float EnvironmentCloudLayer(
+    float3 direction,
+    float time,
+    float coverage,
+    float scale,
+    float3 sunDirection,
+    out float light)
+{
+    float depth;
+    return EnvironmentCloudLayer(direction, time, coverage, scale, sunDirection, light, depth);
 }
 
 float EnvironmentCloudMask(

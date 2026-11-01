@@ -21,7 +21,10 @@ namespace Lighthouse.World.Weather.Net
 
         public event Action<WeatherTransitionInfo, bool> TransitionApplied;
 
-        public bool IsLocked => _transition.IsSet && _transition.To == WeatherType.Maelstrom;
+        // Server-only. Set once the victory calm is recorded, so the lock holds after the weather leaves Maelstrom.
+        private bool _isReleased;
+
+        public bool IsLocked => _isReleased || _transition.IsSet && _transition.To == WeatherType.Maelstrom;
 
         private void Awake()
         {
@@ -49,6 +52,7 @@ namespace Lighthouse.World.Weather.Net
         public override void OnStopServer()
         {
             _transition = default;
+            _isReleased = false;
             _binder.Reset();
         }
 
@@ -65,6 +69,24 @@ namespace Lighthouse.World.Weather.Net
         [Server]
         public bool BeginTransition(WeatherType to, float duration)
         {
+            return TryRecord(to, duration, false);
+        }
+
+        // The victory calm: the one transition allowed out of Maelstrom. The schedule stays locked afterwards.
+        [Server]
+        public bool BeginCalmRelease(float duration)
+        {
+            if (_isReleased || !TryRecord(WeatherType.Calm, duration, true))
+            {
+                return false;
+            }
+
+            _isReleased = true;
+            return true;
+        }
+
+        private bool TryRecord(WeatherType to, float duration, bool isRelease)
+        {
             if (float.IsNaN(duration) || float.IsInfinity(duration))
             {
                 return false;
@@ -78,7 +100,7 @@ namespace Lighthouse.World.Weather.Net
 
             WeatherType from = _transition.IsSet ? _transition.To : system.Target;
 
-            if (IsLocked)
+            if (IsLocked && !isRelease)
             {
                 return to == WeatherType.Maelstrom;
             }

@@ -11,6 +11,18 @@ namespace Lighthouse.World.Ocean.Rules
         private readonly float _maxSpeed;
         private int _count;
         private Vector2 _drive;
+        private WaterCurrentField _mapField;
+
+        public void SetMapField(WaterCurrentField field)
+        {
+            _mapField = field;
+            if (field != null) field.SetDrive(_drive, _drive.magnitude);
+        }
+
+        public void RemoveMapField(WaterCurrentField field)
+        {
+            if (_mapField == field) _mapField = null;
+        }
 
         public WaterCurrentService(float maxSpeed)
         {
@@ -25,6 +37,7 @@ namespace Lighthouse.World.Ocean.Rules
 
         public Vector4 SampleBasis(Vector3 worldPos)
         {
+            if (_mapField != null) return _mapField.SampleBasis(worldPos.x, worldPos.z);
             for (int i = 0; i < _count; i++)
             {
                 WaterCurrentField region = _regions[i];
@@ -41,6 +54,7 @@ namespace Lighthouse.World.Ocean.Rules
         public void SetDrive(Vector2 direction, float speed)
         {
             _drive = direction.sqrMagnitude > Mathf.Epsilon ? direction.normalized * speed : Vector2.zero;
+            if (_mapField != null) _mapField.SetDrive(direction, speed);
             for (int i = 0; i < _count; i++)
             {
                 _regions[i].SetDrive(direction, speed);
@@ -76,6 +90,13 @@ namespace Lighthouse.World.Ocean.Rules
 
         public Vector2 GetCurrent(Vector3 worldPos)
         {
+            if (F3WaveField.IsActive)
+            {
+                Vector4 geometry = F3WaveField.GeometryAt(F3WaveField.Geometry, F3WaveField.Layout,
+                    F3WaveField.GeometrySize, worldPos.x, worldPos.z, F3WaveField.Regions, F3WaveField.RegionExtent);
+                if (geometry.x <= 0f || geometry.y <= 0f || geometry.w <= 0f) return Vector2.zero;
+            }
+            if (_mapField != null) return Vector2.ClampMagnitude(_mapField.GetCurrent(worldPos), _maxSpeed);
             for (int i = 0; i < _count; i++)
             {
                 WaterCurrentField region = _regions[i];

@@ -46,6 +46,9 @@ Shader "Lighthouse/World/EnvironmentSky"
                 float _EnvironmentTime;
             CBUFFER_END
 
+            float _SkyLightning;
+            float4 _SkyLightningDir;
+
             struct Attributes
             {
                 float4 positionOS : POSITION;
@@ -110,9 +113,10 @@ Shader "Lighthouse/World/EnvironmentSky"
                     sunVisibility * _Daylight * _EnvironmentValues.w;
 
                 float cloudLight;
+                float cloudDepth;
                 float cloudMask = EnvironmentCloudLayer(
                     direction, time, _EnvironmentValues.z, _PatternScale,
-                    lightDirection, cloudLight);
+                    lightDirection, cloudLight, cloudDepth);
 
                 float3 nightCloud = _Horizon.rgb * 0.55;
                 float3 dayCloud = lerp(float3(0.92, 0.9, 0.96), _Horizon.rgb * 1.25, 0.3) *
@@ -122,7 +126,15 @@ Shader "Lighthouse/World/EnvironmentSky"
                 float3 cloudColor = lerp(nightCloud, dayCloud, _Daylight);
                 float warmCloud = sunset * (0.3 + 0.7 * azimuth) * (1.0 - cloudLight * 0.4);
                 cloudColor = lerp(cloudColor, warm * 1.1, saturate(warmCloud * 0.85));
+
+                float heavyCover = smoothstep(0.5, 0.95, _EnvironmentValues.z);
+                cloudColor *= lerp(1.0, lerp(1.6, 0.35, cloudDepth), heavyCover);
                 sky = lerp(sky, cloudColor, cloudMask * 0.9);
+
+                float boltFacing = pow(saturate(dot(direction, _SkyLightningDir.xyz)), 14.0);
+                float3 lightningColor = float3(0.5, 0.3, 1.0);
+                sky += lightningColor * _SkyLightning * boltFacing *
+                    (cloudMask * 1.5 + 0.03);
 
                 float below = saturate(-direction.y * 5.0);
                 sky = lerp(sky, _Horizon.rgb * 0.35, below);

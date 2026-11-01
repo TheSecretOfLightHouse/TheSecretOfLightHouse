@@ -26,7 +26,11 @@ namespace Lighthouse.World.Weather.View
         [SerializeField, Min(1f)] private float _fogCloudSize = 22f;
         [SerializeField, Min(0f)] private float _volumeExtinction = 0.65f;
         [SerializeField] private Color _fogColor = new Color(0.82f, 0.85f, 0.85f);
+        [SerializeField] private Color _nightFogColor = new Color(0.34f, 0.4f, 0.52f);
         [SerializeField] private Color _abyssFogColor = new Color(0.035f, 0.085f, 0.065f);
+        [SerializeField, Range(0f, 1f)] private float _fogLightFloor = 0.65f;
+        [SerializeField, Min(0f)] private float _densityScale = 0.35f;
+        [SerializeField, Range(0f, 1f)] private float _cloudAlpha = 0.3f;
         [SerializeField] private AnimationCurve _density = new AnimationCurve(
             new Keyframe(0f, 0f), new Keyframe(0.1f, 0.001f),
             new Keyframe(0.3f, 0.006f), new Keyframe(0.9f, 0.015f));
@@ -136,15 +140,14 @@ namespace Lighthouse.World.Weather.View
             float abyss = Mathf.InverseLerp(0.8f, 1f, snapshot.StormIntensity);
             float light = _sky != null && _sky.HasState ? _sky.WeatherLightScale : 1f;
             float night = Shader.GetGlobalFloat(SkyNightBlendId);
-            Color baseColor = _sky != null && _sky.HasState
-                ? Color.Lerp(_fogColor, _sky.CurrentState.Horizon, night)
-                : _fogColor * Mathf.Lerp(1f, 0.08f, night);
-            Color color = Color.Lerp(baseColor * Mathf.Max(0.12f, light), _abyssFogColor, abyss);
+            Color baseColor = Color.Lerp(_fogColor, _nightFogColor, night);
+            float lit = Mathf.Lerp(_fogLightFloor, 1f, light);
+            Color color = Color.Lerp(baseColor * lit, _abyssFogColor, abyss);
             color.a = 1f;
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = color;
-            RenderSettings.fogDensity = Mathf.Max(0f, _density.Evaluate(snapshot.Fog));
+            RenderSettings.fogDensity = Mathf.Max(0f, _density.Evaluate(snapshot.Fog)) * _densityScale;
 
             if (_fogVolume != null)
             {
@@ -171,7 +174,7 @@ namespace Lighthouse.World.Weather.View
                 velocity.x = snapshot.Wind.x * 0.2f;
                 velocity.z = snapshot.Wind.y * 0.2f;
                 var main = _clouds.main;
-                color.a = Mathf.Clamp01(snapshot.Fog) * 0.8f;
+                color.a = Mathf.Clamp01(snapshot.Fog) * _cloudAlpha;
                 main.startColor = color;
             }
         }

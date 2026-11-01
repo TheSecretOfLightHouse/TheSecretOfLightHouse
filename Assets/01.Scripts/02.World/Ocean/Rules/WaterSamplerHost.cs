@@ -120,6 +120,24 @@ namespace Lighthouse.World.Ocean.Rules
             }
         }
 
+        public bool TrySampleF3Height(Vector3 position, float time, out float height)
+        {
+            if (_sampler != null && F3WaveField.IsActive)
+            {
+                height = _sampler.SampleF3Height(_inputs.Waves, _inputs.Modifiers, position, time);
+                return true;
+            }
+            height = 0f;
+            return false;
+        }
+
+        public Vector3 SampleSurfaceNormal(Vector3 position)
+        {
+            return _sampler != null && F3WaveField.IsActive
+                ? _sampler.SampleF3Normal(_inputs.Waves, _inputs.Modifiers, position, (float)CurrentTime)
+                : F3WaveField.NormalAt(_inputs.Waves, _inputs.Modifiers, position.x, position.z, (float)CurrentTime);
+        }
+
         public void UnregisterSource(IWaterSampleSource source)
         {
             _sources.Remove(source);

@@ -10,7 +10,6 @@ namespace Lighthouse.World.Spawning.Server
     public static class SpawnerPlacementStep
     {
         private const int MaxAllocationCount = 4096;
-        private const long MaxGridCells = 4000000L;
 
         public static SpawnerRegistry Build(MapLayout layout,
             MapGenerationConfig mapConfig, SpawnerPlacementConfig config, ulong seed)
@@ -21,7 +20,8 @@ namespace Lighthouse.World.Spawning.Server
                 throw new ArgumentException("Map and spawning settings are required.");
             }
 
-            if (!IsFinite(config.MinDistance) || config.MinDistance < 1f
+            if (!IsFinite(config.SpreadFactor) || config.SpreadFactor <= 0f
+                || !IsFinite(config.MinSpacingFloor) || config.MinSpacingFloor < 1f
                 || !IsFinite(config.QueryCellSize) || config.QueryCellSize < 1f
                 || !IsFinite(config.ObstacleClearance) || config.ObstacleClearance < 0f
                 || !IsFinite(config.SafeRadius) || config.SafeRadius < 0f
@@ -57,7 +57,7 @@ namespace Lighthouse.World.Spawning.Server
                 var ring = new RingDomain(Vector2.zero,
                     zone.InnerRadius * mapConfig.RadiusScale,
                     zone.OuterRadius * mapConfig.RadiusScale);
-                ValidateRing(ring, config.MinDistance);
+                ValidateRing(ring);
 
                 int target = random.NextInt(allocation.MinCount, allocation.MaxCount + 1);
                 if (target == 0)
@@ -68,11 +68,11 @@ namespace Lighthouse.World.Spawning.Server
                 var domain = new SpawnerSampleDomain(ring, layout,
                     config.ObstacleClearance, config.SafeRadius);
 
-                if (!PoissonDiskSampler.TrySample(random, domain, config.MinDistance,
-                    target, candidates, positions))
-                {
-                    throw new InvalidOperationException($"Sampling failed at allocation {i}.");
-                }
+                float spacing = SpawnerSpacingEstimator.Estimate(random, domain, target,
+                    config.SpreadFactor, config.MinSpacingFloor);
+
+                SpawnerRandomPlacer.TryPlace(random, domain, spacing,
+                    config.MinSpacingFloor, target, candidates, positions);
 
                 if (candidates.Count < allocation.MinCount)
                 {
@@ -120,21 +120,12 @@ namespace Lighthouse.World.Spawning.Server
             return found;
         }
 
-        private static void ValidateRing(RingDomain ring, float minDistance)
+        private static void ValidateRing(RingDomain ring)
         {
             if (!IsFinite(ring.InnerRadius) || !IsFinite(ring.OuterRadius)
                 || ring.InnerRadius < 0f || ring.OuterRadius <= ring.InnerRadius)
             {
                 throw new ArgumentException("Invalid spawning ring.");
-            }
-
-            double cellSize = minDistance / (double)1.41421356f;
-            double side = Math.Ceiling(
-                (ring.OuterRadius * 2d + minDistance * 2d) / cellSize) + 1d;
-
-            if (side * side > MaxGridCells)
-            {
-                throw new ArgumentException("Spawning grid exceeds the supported size.");
             }
         }
 
