@@ -41,6 +41,7 @@ public sealed class NavigatorRouteSelectionPanel : MonoBehaviour
     private PlayerInput _playerInput;
 
     private bool _isOpen;
+    private int _openedFrame;
     private bool _wasInputEnabled;
     private CursorLockMode _savedCursorLock;
     private bool _savedCursorVisible;
@@ -92,6 +93,15 @@ public sealed class NavigatorRouteSelectionPanel : MonoBehaviour
 
     private void Update()
     {
+        // Ignore the Q press that opened this panel earlier in the same frame.
+        var keyboard = UnityEngine.InputSystem.Keyboard.current;
+        if (_isOpen && Time.frameCount > _openedFrame && keyboard != null
+            && (keyboard.escapeKey.wasPressedThisFrame || keyboard.qKey.wasPressedThisFrame))
+        {
+            Hide();
+            return;
+        }
+
         NetworkIdentity localPlayer = NetworkClient.localPlayer;
 
         if (_isOpen
@@ -177,6 +187,7 @@ public sealed class NavigatorRouteSelectionPanel : MonoBehaviour
         _savedCursorVisible = Cursor.visible;
         _wasInputEnabled = _playerInput && _playerInput.enabled;
         _isOpen = true;
+        _openedFrame = Time.frameCount;
 
         SessionScreen.SetGameplayOverlayOpen(this, true);
 

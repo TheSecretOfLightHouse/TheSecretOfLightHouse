@@ -10,6 +10,10 @@ using UnityEngine.InputSystem;
 
 public sealed class EmergencyRepairSelectionPanel : MonoBehaviour
 {
+    [SerializeField] private float _selectionPanelWidth = 800f;
+    [SerializeField] private float _targetRowWidth = 690f;
+    [SerializeField] private float _actionAreaWidth = 154f;
+
     [SerializeField]
     private GameObject _panelRoot;
 
@@ -36,6 +40,7 @@ public sealed class EmergencyRepairSelectionPanel : MonoBehaviour
     private EmergencyRepairAbility _boundAbility;
     private NetworkIdentity _boundPlayer;
     private bool _isOpen;
+    private int _openedFrame;
     private CursorLockMode _savedCursorLock;
     private bool _savedCursorVisible;
     private PlayerInput _playerInput;
@@ -48,6 +53,7 @@ public sealed class EmergencyRepairSelectionPanel : MonoBehaviour
     {
         _targetPresentation = Resources.Load<AbilityTargetPresentation>("AbilityTargetPresentation");
         _targetIcons = AbilityTargetPresentation.CreateIcons(_playerButtons, _playerNames);
+        ConfigureLayout();
         if (_panelRoot)
         {
             // Dynamic OS fonts must be created in each process.
@@ -89,6 +95,15 @@ public sealed class EmergencyRepairSelectionPanel : MonoBehaviour
 
     private void Update()
     {
+        // Ignore the Q press that opened this panel earlier in the same frame.
+        var keyboard = UnityEngine.InputSystem.Keyboard.current;
+        if (_isOpen && Time.frameCount > _openedFrame && keyboard != null
+            && (keyboard.escapeKey.wasPressedThisFrame || keyboard.qKey.wasPressedThisFrame))
+        {
+            Hide();
+            return;
+        }
+
         NetworkIdentity localPlayer = NetworkClient.localPlayer;
 
         if (_isOpen && (!localPlayer || !_boundAbility
@@ -175,6 +190,7 @@ public sealed class EmergencyRepairSelectionPanel : MonoBehaviour
         _savedCursorLock = Cursor.lockState;
         _savedCursorVisible = Cursor.visible;
         _isOpen = true;
+        _openedFrame = Time.frameCount;
 
         _wasInputEnabled = _playerInput && _playerInput.enabled;
 
@@ -253,6 +269,46 @@ public sealed class EmergencyRepairSelectionPanel : MonoBehaviour
         if (_request)
         {
             _request.Responded += HandleRepairResponse;
+        }
+    }
+
+    private void ConfigureLayout()
+    {
+        if (!_panelRoot)
+        {
+            return;
+        }
+
+        Transform panel = _panelRoot.transform.Find("SelectionPanel");
+        if (panel is RectTransform panelRect)
+        {
+            panelRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _selectionPanelWidth);
+        }
+
+        for (int i = 0; _playerButtons != null && i < _playerButtons.Length; i++)
+        {
+            if (!_playerButtons[i])
+            {
+                continue;
+            }
+
+            var row = (RectTransform)_playerButtons[i].transform;
+            row.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _targetRowWidth);
+
+            Transform action = row.Find("ActionLabel");
+            if (action is RectTransform actionRect)
+            {
+                actionRect.anchorMin = actionRect.anchorMax = new Vector2(1f, 0.5f);
+                actionRect.anchoredPosition = new Vector2(-85f, 0f);
+            }
+
+            if (_playerNames != null && i < _playerNames.Length && _playerNames[i])
+            {
+                RectTransform label = _playerNames[i].rectTransform;
+                label.offsetMax = new Vector2(-_actionAreaWidth, label.offsetMax.y);
+                _playerNames[i].horizontalOverflow = HorizontalWrapMode.Wrap;
+                _playerNames[i].verticalOverflow = VerticalWrapMode.Truncate;
+            }
         }
     }
 

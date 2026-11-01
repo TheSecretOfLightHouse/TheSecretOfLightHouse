@@ -1,3 +1,4 @@
+using Lighthouse.World.Ocean.View;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -9,10 +10,35 @@ public sealed class StabilizerModule : BoatModule
     [SerializeField, Min(0f)]
     private float _maxAngularAcceleration = 5f;
 
+    [SerializeField, Range(0f, 1f)]
+    private float _waveTiltReduction = 0.3f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float _collisionTiltReduction = 0.5f;
+
+    [SerializeField, Min(1f)]
+    private float _collisionDampingMultiplier = 1.5f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float _collisionPushReduction = 0.5f;
+
     private BoatController _boat;
     private Rigidbody _body;
+    private WaveTiltVisual _waveTilt;
 
     public override BoatModuleType ModuleType => BoatModuleType.Stabilizer;
+
+    public bool IsVisualStabilizing => isActiveAndEnabled && isClient && IsApplied
+        && _boat && _boat.isActiveAndEnabled && _boat.IsOccupied && !_boat.IsWrecked;
+
+    public float CollisionTiltMultiplier => IsVisualStabilizing
+        ? 1f - Mathf.Clamp01(_collisionTiltReduction) : 1f;
+
+    public float CollisionDampingMultiplier => IsVisualStabilizing
+        ? Mathf.Max(1f, _collisionDampingMultiplier) : 1f;
+
+    public float CollisionPushMultiplier => IsVisualStabilizing
+        ? 1f - Mathf.Clamp01(_collisionPushReduction) : 1f;
 
     public bool CanStabilize
     {
@@ -44,6 +70,29 @@ public sealed class StabilizerModule : BoatModule
         _body = GetComponent<Rigidbody>();
     }
 
+    private void Start()
+    {
+        // WaterBody may add the visual during Awake, after this module has initialized.
+        _waveTilt = GetComponent<WaveTiltVisual>();
+    }
+
+    private void Update()
+    {
+        if (!_waveTilt)
+        {
+            return;
+        }
+
+        // Observers use the same replicated equipment and occupancy, not local input authority.
+        _waveTilt.TiltMultiplier = IsVisualStabilizing ? 1f - Mathf.Clamp01(_waveTiltReduction) : 1f;
+    }
+
+    protected override void OnDisable()
+    {
+        base.OnDisable();
+        ResetWaveTilt();
+    }
+
     private void FixedUpdate()
     {
         if (!CanStabilize)
@@ -69,8 +118,17 @@ public sealed class StabilizerModule : BoatModule
 
     protected override void RemoveEffect()
     {
+        ResetWaveTilt();
         Debug.Log(
             $"[{nameof(StabilizerModule)}] Stabilizer effect removed.",
             this);
+    }
+
+    private void ResetWaveTilt()
+    {
+        if (_waveTilt)
+        {
+            _waveTilt.TiltMultiplier = 1f;
+        }
     }
 }
