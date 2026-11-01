@@ -3299,8 +3299,9 @@ MonoBehaviour:
   _workbench: {fileID: 1781499503}
   _sparks: {fileID: 1818405647}
   _dust: {fileID: 1188569112}
-  _audio: {fileID: 867420695}
+  _soundManagerPrefab: {fileID: 0}
   _hammerClip: {fileID: 0}
+  _hammerVolume: 0.5
   _visibleDistance: 30
 --- !u!82 &867420695
 AudioSource:
