@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Lighthouse.Network.Session.Net;
 using Lighthouse.Network.Session.Rules;
+using Lighthouse.Systems.Audio;
 using Mirror;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -377,6 +378,7 @@ namespace Lighthouse.Network.Session.View
             else if (mode == Mode.InGame)
             {
                 ShowLeaveMatch();
+                UiButtonAudio.PlayClick();
             }
         }
 

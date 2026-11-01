@@ -7,6 +7,7 @@ using Lighthouse.Interaction.Requests.Rules;
 using Lighthouse.Interaction.Targets.Net;
 using Lighthouse.Network.Session.View;
 using Lighthouse.Stations.View;
+using Lighthouse.Systems.Audio;
 using Lighthouse.Tower.Net;
 using Lighthouse.Tower.Rules;
 using Lighthouse.Workbench.Rules;
@@ -220,6 +221,11 @@ namespace Lighthouse.Tower.View
             else if (!_isOpen && isFocused && keyboard[_openKey].wasPressedThisFrame && !SessionScreen.IsGameplayOverlayOpen)
             {
                 Open();
+
+                if (_isOpen)
+                {
+                    UiButtonAudio.PlayClick();
+                }
             }
         }
 

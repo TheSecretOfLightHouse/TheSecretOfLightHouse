@@ -9,6 +9,7 @@ using Lighthouse.Network.Session.Net;
 using Lighthouse.Network.Session.Rules;
 using Lighthouse.Network.Session.View;
 using Lighthouse.Stations.View;
+using Lighthouse.Systems.Audio;
 using Lighthouse.Tower.Rules;
 using Lighthouse.Workbench.Net;
 using Lighthouse.Workbench.Rules;
@@ -416,6 +417,11 @@ namespace Lighthouse.Workbench.View
             else if (!_isOpen && isFocused && keyboard[_openKey].wasPressedThisFrame && !SessionScreen.IsGameplayOverlayOpen)
             {
                 Open();
+
+                if (_isOpen)
+                {
+                    UiButtonAudio.PlayClick();
+                }
             }
         }
 
@@ -508,9 +514,13 @@ namespace Lighthouse.Workbench.View
         {
             if (keyboard.eKey.wasPressedThisFrame)
             {
+                // Keys skip the button, so they play its click themselves, only for a request that went out.
                 if (_isStockFocused)
                 {
-                    HandleSelectedTakeClicked();
+                    if (TakeSelected())
+                    {
+                        UiButtonAudio.PlayClick();
+                    }
                 }
                 else
                 {
@@ -530,7 +540,10 @@ namespace Lighthouse.Workbench.View
             }
             else if (keyboard.gKey.wasPressedThisFrame)
             {
-                HandleReturnClicked();
+                if (SendReturn())
+                {
+                    UiButtonAudio.PlayClick();
+                }
             }
             else if (keyboard.rKey.wasPressedThisFrame)
             {
@@ -1255,11 +1268,13 @@ namespace Lighthouse.Workbench.View
 
         private void HandleSelectedTakeClicked()
         {
-            if (_selectedStoredRecipeId != 0 && _workbench.OwnCarriedRecipe == 0
-                && ShownStoredCount(_selectedStoredRecipeId) > 0)
-            {
-                HandleTakeClicked(_selectedStoredRecipeId);
-            }
+            TakeSelected();
+        }
+
+        private bool TakeSelected()
+        {
+            return _selectedStoredRecipeId != 0 && _workbench.OwnCarriedRecipe == 0
+                && ShownStoredCount(_selectedStoredRecipeId) > 0 && SendTake(_selectedStoredRecipeId);
         }
 
         private void HandlePreviousStockPageClicked()
@@ -1334,37 +1349,54 @@ namespace Lighthouse.Workbench.View
 
         private void HandleTakeClicked(int recipeId)
         {
-            if (_workbench.Catalog.TryGetById(recipeId, out ModuleRecipe recipe) && Send(InteractionAction.TakeModule, recipeId, 0, 0))
+            SendTake(recipeId);
+        }
+
+        private bool SendTake(int recipeId)
+        {
+            if (!_workbench.Catalog.TryGetById(recipeId, out ModuleRecipe recipe) || !Send(InteractionAction.TakeModule, recipeId, 0, 0))
             {
-                _pendingRecipeName = recipe.DisplayName;
-                WorkbenchItemSlot slot = FindStoredSlot(recipeId);
-                RectTransform from = slot ? slot.IconRect : _takeButton ? (RectTransform)_takeButton.transform : null;
-                _carryMoveRecipeId = from && _carryIcon ? recipeId : 0;
-                _isCarryMoveTake = true;
-                _carryMoveFrom = from ? WorkbenchScreenEffects.CenterOf(from) : Vector3.zero;
-                _isCarryHeld = _carryMoveRecipeId != 0;
+                return false;
             }
+
+            _pendingRecipeName = recipe.DisplayName;
+            WorkbenchItemSlot slot = FindStoredSlot(recipeId);
+            RectTransform from = slot ? slot.IconRect : _takeButton ? (RectTransform)_takeButton.transform : null;
+            _carryMoveRecipeId = from && _carryIcon ? recipeId : 0;
+            _isCarryMoveTake = true;
+            _carryMoveFrom = from ? WorkbenchScreenEffects.CenterOf(from) : Vector3.zero;
+            _isCarryHeld = _carryMoveRecipeId != 0;
+            return true;
         }
 
         private void HandleReturnClicked()
         {
+            SendReturn();
+        }
+
+        private bool SendReturn()
+        {
             // Not before a module being taken has landed in hand.
             int carriedId = _isCarryHeld ? 0 : _workbench.OwnCarriedRecipe;
 
-            if (carriedId != 0 && _workbench.Catalog.TryGetById(carriedId, out ModuleRecipe recipe) && Send(InteractionAction.ReturnModule, 0, 0, 0))
+            if (carriedId == 0 || !_workbench.Catalog.TryGetById(carriedId, out ModuleRecipe recipe) || !Send(InteractionAction.ReturnModule, 0, 0, 0))
             {
-                _pendingRecipeName = recipe.DisplayName;
-                _carryMoveRecipeId = _carryIcon ? carriedId : 0;
-                _isCarryMoveTake = false;
-                _carryMoveFrom = _carryIcon ? WorkbenchScreenEffects.CenterOf(_carryIcon.rectTransform) : Vector3.zero;
-
-                if (_carryMoveRecipeId != 0)
-                {
-                    _returnReservedRecipeId = carriedId;
-                    _returnReservedBaseline = _workbench.GetStoredCount(carriedId);
-                    _isReturnLanding = false;
-                }
+                return false;
             }
+
+            _pendingRecipeName = recipe.DisplayName;
+            _carryMoveRecipeId = _carryIcon ? carriedId : 0;
+            _isCarryMoveTake = false;
+            _carryMoveFrom = _carryIcon ? WorkbenchScreenEffects.CenterOf(_carryIcon.rectTransform) : Vector3.zero;
+
+            if (_carryMoveRecipeId != 0)
+            {
+                _returnReservedRecipeId = carriedId;
+                _returnReservedBaseline = _workbench.GetStoredCount(carriedId);
+                _isReturnLanding = false;
+            }
+
+            return true;
         }
 
         private void HandleResultReceived(InteractionResult result)

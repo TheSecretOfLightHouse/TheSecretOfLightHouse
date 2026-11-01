@@ -1,4 +1,5 @@
 using Lighthouse.Network.Session.View;
+using Lighthouse.Systems.Audio;
 using Lighthouse.UI.SharedMap.Net;
 using Lighthouse.UI.SharedMap.Rules;
 using Lighthouse.World.MapGeneration.Net;
@@ -91,6 +92,10 @@ namespace Lighthouse.UI.SharedMap.View
                     if (_open || !SessionScreen.IsGameplayOverlayOpen)
                     {
                         SetOpen(!_open);
+                        if (_open)
+                        {
+                            UiButtonAudio.PlayClick();
+                        }
                     }
                 }
                 if (_open && !editing && Keyboard.current.escapeKey.wasPressedThisFrame)
