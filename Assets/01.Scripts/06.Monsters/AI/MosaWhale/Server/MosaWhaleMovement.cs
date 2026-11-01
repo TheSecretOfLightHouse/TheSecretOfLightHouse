@@ -21,6 +21,9 @@ namespace Lighthouse.Monsters.MosaWhale.Server
         [SyncVar] private bool _hasAttackCenter;
         [SyncVar] private bool _isTelegraphVisible;
 
+        private MonsterBehaviourAudio _audio;
+        private bool _hasExitedWater;
+        private bool _hasReenteredWater;
         private MosaWhaleCycle _cycle;
         private MosaWhaleTargeting _targeting;
         private MonsterMotion _motion;
@@ -73,6 +76,7 @@ namespace Lighthouse.Monsters.MosaWhale.Server
 
         private void Awake()
         {
+            _audio = GetComponent<MonsterBehaviourAudio>();
             _cycle = GetComponent<MosaWhaleCycle>();
             _targeting = GetComponent<MosaWhaleTargeting>();
             _motion = GetComponent<MonsterMotion>();
@@ -190,6 +194,32 @@ namespace Lighthouse.Monsters.MosaWhale.Server
                 }
                 _body.linearVelocity = velocity;
             }
+            bool breachPhase = _cycle.Phase == MosaWhalePhase.Rising
+                || _cycle.Phase == MosaWhalePhase.Apex || _cycle.Phase == MosaWhalePhase.Reentering;
+            if (breachPhase && HasValidDamagePose)
+            {
+                float audioProgress = Mathf.Clamp01((float)(NetworkTime.time - _cycle.BreachStartedAt)
+                    / Mathf.Max(0.01f, _cycle.BreachDuration));
+                Vector3 audioHead = position + rotation * Vector3.Scale(
+                    _poseProfile.EvaluateHeadLocalPosition(audioProgress), transform.lossyScale);
+                float surface = SampleSurface(audioHead);
+                if (!_hasExitedWater && audioHead.y >= surface)
+                {
+                    _hasExitedWater = true;
+                    if (_audio != null)
+                    {
+                        _audio.PlayCue(2, new Vector3(audioHead.x, surface, audioHead.z));
+                    }
+                }
+                else if (_hasExitedWater && !_hasReenteredWater && audioHead.y < surface)
+                {
+                    _hasReenteredWater = true;
+                    if (_audio != null)
+                    {
+                        _audio.PlayCue(1, new Vector3(audioHead.x, surface, audioHead.z));
+                    }
+                }
+            }
             if (_cycle.Phase == MosaWhalePhase.Rising && HasValidDamagePose)
             {
                 float breach = Mathf.Clamp01((float)(NetworkTime.time - _cycle.BreachStartedAt)
@@ -244,6 +274,11 @@ namespace Lighthouse.Monsters.MosaWhale.Server
                 }
             }
             _body.constraints = _savedConstraints & ~RigidbodyConstraints.FreezePositionY;
+            if (phase == MosaWhalePhase.Rising || phase == MosaWhalePhase.Patrol)
+            {
+                _hasExitedWater = false;
+                _hasReenteredWater = false;
+            }
             _hasCrossedSurface = false;
             _surfaceCrossedAt = 0d;
             _isDescending = false;
