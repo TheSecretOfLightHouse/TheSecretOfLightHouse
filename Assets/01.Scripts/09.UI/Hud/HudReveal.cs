@@ -616,7 +616,6 @@ namespace Lighthouse.UI.Hud
             labelRect.pivot = new Vector2(1f, 0.5f);
             labelRect.sizeDelta = new Vector2(labelWidth, rowHeight);
             labelRect.anchoredPosition = Vector2.zero;
-            _roleMarkLabel.alignment = TextAlignmentOptions.MidlineLeft;
             _roleMarkLabel.enableAutoSizing = false;
             _roleMarkLabel.raycastTarget = false;
 
