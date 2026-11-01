@@ -271,9 +271,23 @@ public sealed class PlayerController : NetworkBehaviour, IPlayerAbilityContext
             SetDowned(true);
         }
 
-        if (!IsDowned && !_isRescuePromptOpen && !SessionScreen.IsGameplayOverlayOpen)
+        if (!IsDowned && !_isRescuePromptOpen && !SessionScreen.IsGameplayOverlayOpen
+            && !Lighthouse.Common.Cinematics.CinematicPresentationLock.IsLocked)
         {
-            Vector2 look = _lookAction != null ? _lookAction.ReadValue<Vector2>() : Vector2.zero;
+            Keyboard keyboard = Keyboard.current;
+            if (_camera && keyboard != null && keyboard.backquoteKey.wasPressedThisFrame)
+            {
+                // Resume on-foot input from the visible direction rather than an older target heading.
+                if (!IsOnBoat)
+                {
+                    _heading = _camera.ViewYaw;
+                }
+                _camera.ToggleViewLock();
+            }
+
+            Vector2 look = _camera && _camera.IsViewLocked
+                ? Vector2.zero
+                : _lookAction != null ? _lookAction.ReadValue<Vector2>() : Vector2.zero;
             if (IsOnBoat)
             {
                 if (_camera)

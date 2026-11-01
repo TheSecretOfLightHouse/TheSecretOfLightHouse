@@ -64,6 +64,9 @@ public sealed class PlayerCamera : MonoBehaviour
     private float _recoilElapsed;
     private bool _hasRecoil;
 
+    public bool IsViewLocked { get; private set; }
+    public float ViewYaw => _viewYaw;
+
     private void Awake()
     {
         _player = GetComponent<PlayerController>();
@@ -112,6 +115,7 @@ public sealed class PlayerCamera : MonoBehaviour
 
     public void Release()
     {
+        IsViewLocked = false;
         SetCharacterHidden(false);
         _hasRecoil = false;
         if (!_attachedCamera)
@@ -145,18 +149,18 @@ public sealed class PlayerCamera : MonoBehaviour
     {
         if (_attachedCamera && _cameraPivot)
         {
-            if (_isBoatOrbit)
+            if (_isBoatOrbit && !IsViewLocked)
             {
                 UpdateBoatLookReturn(transform.eulerAngles.y, Time.deltaTime);
             }
 
             // Cancel inherited body yaw before the camera anchor is rendered.
             float yaw = _isBoatOrbit ? _orbitYaw : _onFootYaw;
-            if (_lookSmoothTime <= 0f)
+            if (!IsViewLocked && _lookSmoothTime <= 0f)
             {
                 ResetLookSmoothing(yaw);
             }
-            else if (Time.deltaTime > 0f)
+            else if (!IsViewLocked && Time.deltaTime > 0f)
             {
                 _viewYaw = Mathf.SmoothDampAngle(
                     _viewYaw, yaw, ref _yawVelocity, _lookSmoothTime, Mathf.Infinity, Time.deltaTime);
@@ -212,6 +216,10 @@ public sealed class PlayerCamera : MonoBehaviour
     public void SetBoatOrbit(bool isBoatOrbit, float heading)
     {
         _isBoatOrbit = isBoatOrbit;
+        if (IsViewLocked)
+        {
+            return;
+        }
         _orbitYaw = heading;
         _lastLookTime = Time.time - _boatLookReturnDelay;
         ResetLookSmoothing(heading);
@@ -224,11 +232,36 @@ public sealed class PlayerCamera : MonoBehaviour
 
     public void SetOnFootHeading(float heading)
     {
+        if (IsViewLocked)
+        {
+            return;
+        }
         _onFootYaw = heading;
+    }
+
+    public void ToggleViewLock()
+    {
+        if (!_attachedCamera || !_cameraPivot)
+        {
+            return;
+        }
+
+        IsViewLocked = !IsViewLocked;
+        // Freeze the displayed direction, including any unfinished look smoothing.
+        _pitch = _viewPitch;
+        _onFootYaw = _viewYaw;
+        _orbitYaw = _viewYaw;
+        _pitchVelocity = 0f;
+        _yawVelocity = 0f;
+        _lastLookTime = Time.time;
     }
 
     public void ApplyHorizontalLook(float delta)
     {
+        if (IsViewLocked)
+        {
+            return;
+        }
         if (_isBoatOrbit && _attachedCamera)
         {
             _orbitYaw = Mathf.Repeat(_orbitYaw + delta, 360f);
@@ -241,6 +274,10 @@ public sealed class PlayerCamera : MonoBehaviour
 
     public void ApplyVerticalLook(float delta)
     {
+        if (IsViewLocked)
+        {
+            return;
+        }
         if(!_attachedCamera||!_cameraPivot)
         {
             return;
