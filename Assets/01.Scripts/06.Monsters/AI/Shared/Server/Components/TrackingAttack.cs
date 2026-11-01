@@ -24,6 +24,7 @@ namespace Lighthouse.Monsters.AI.Server
         private MonsterMotion _motion;
         private SeaMonsterSensor _sensor;
         private BlueSharkAnimation _animation;
+        private MonsterAttackAudio _attackAudio;
         private CapsuleCollider _bodyCollider;
         private MonsterBoatTarget _target;
         private Collider[] _targetColliders;
@@ -60,6 +61,7 @@ namespace Lighthouse.Monsters.AI.Server
             _motion = GetComponent<MonsterMotion>();
             _sensor = GetComponent<SeaMonsterSensor>();
             _animation = GetComponent<BlueSharkAnimation>();
+            _attackAudio = GetComponent<MonsterAttackAudio>();
             _bodyCollider = GetComponent<CapsuleCollider>();
         }
 
@@ -240,6 +242,10 @@ namespace Lighthouse.Monsters.AI.Server
                 _isBiteHolding = true;
                 _motion.Stop();
                 bool succeeded = _target.TryApplyDamage(_monster.Profile.AttackDamage);
+                if (succeeded && _attackAudio != null)
+                {
+                    _attackAudio.PlayImpact(collision.GetContact(i).point);
+                }
                 if (!_isAttacking)
                 {
                     return;

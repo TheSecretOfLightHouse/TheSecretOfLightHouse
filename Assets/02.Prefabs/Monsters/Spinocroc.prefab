@@ -1542,6 +1542,7 @@ GameObject:
   - component: {fileID: 5452663876403159479}
   - component: {fileID: 2888506595527642154}
   - component: {fileID: 4680650189440435196}
+  - component: {fileID: 9013023024042260772}
   m_Layer: 0
   m_Name: Spinocroc
   m_TagString: Untagged
@@ -1605,7 +1606,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sceneId: 0
-  _assetId: 0
+  _assetId: 1800373155
   serverOnly: 0
   visibility: 0
   hasSpawned: 0
@@ -1980,6 +1981,30 @@ MonoBehaviour:
   - {x: 0, y: 0.099999994, z: 0}
   - {x: 0, y: 0.25, z: 0}
   - {x: 0, y: 0.4, z: 0}
+--- !u!114 &9013023024042260772
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7725306694323598128}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e51842015cc50944a55096249bdd1d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _clips:
+  - {fileID: 8300000, guid: 904691ec8151dc849bf3ba65208a8c4d, type: 3}
+  - {fileID: 8300000, guid: aa2eb1d5f986f7c43890317b2dc643e5, type: 3}
+  - {fileID: 8300000, guid: ae0db5c6dabfaf340a5a6a8866498005, type: 3}
+  _volumes:
+  - 0.2013
+  - 0.2436
+  - 0.4264
+  _soundManagerPrefab: {fileID: 6939255676364778467, guid: 291f5116af82d294792d1145de158327, type: 3}
 --- !u!1 &8182945717647611537
 GameObject:
   m_ObjectHideFlags: 0

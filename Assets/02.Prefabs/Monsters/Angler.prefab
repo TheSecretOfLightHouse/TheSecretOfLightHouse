@@ -2104,6 +2104,7 @@ GameObject:
   - component: {fileID: 8635961924789318197}
   - component: {fileID: 699037553262968599}
   - component: {fileID: 5282535066368088737}
+  - component: {fileID: 1817577798607806272}
   m_Layer: 2
   m_Name: Angler
   m_TagString: Untagged
@@ -2523,6 +2524,26 @@ MonoBehaviour:
   - {x: 0, y: -0.4, z: -0.30000007}
   - {x: 0, y: 0.4, z: -0.30000007}
   - {x: 0, y: 1.2, z: -0.30000007}
+--- !u!114 &1817577798607806272
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5239930098807933430}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f174fef924a91d04d86404ef7bc793f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  _attackClip: {fileID: 8300000, guid: def77834d684d2240b9d060737fcd9df, type: 3}
+  _soundManagerPrefab: {fileID: 6939255676364778467, guid: 291f5116af82d294792d1145de158327, type: 3}
+  _volume: 0.7
+  _minDistance: 2
+  _maxDistance: 40
 --- !u!1 &5248825745824852146
 GameObject:
   m_ObjectHideFlags: 0

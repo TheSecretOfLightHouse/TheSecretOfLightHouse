@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9195cb85cc0c6ce40af160cd9286f73e, type: 3}
   m_Name: AbilityTargetPresentation
   m_EditorClassIdentifier: 
+  _font: {fileID: 11400000, guid: 501e76fb473247d4788f8b901c278146, type: 2}
+  _fontMaterial: {fileID: 2100000, guid: bf1b46203d2500447a0328d4fea05799, type: 2}
   _navigator: {fileID: 21300000, guid: 0597dc9eb80c60748b4bdc84d7931c4e, type: 3}
   _mechanic: {fileID: 21300000, guid: 9bc71fa71b77c37488db8c5e3cc49e5e, type: 3}
   _guard: {fileID: 21300000, guid: f1de8c5e28e03c1418d4b6a1a127e53c, type: 3}

@@ -12,6 +12,8 @@ namespace Lighthouse.Tower.View
         private Renderer[] _renderers;
         private bool[] _rendererEnabled;
         private bool _started;
+        private Lighthouse.Monsters.Boss.SpecialEndingIslandBinding _islandBinding;
+        private Lighthouse.Monsters.Boss.SpecialEndingLighting _lighting;
 
         public bool IsReady => _director != null && _camera != null && _director.playableAsset != null
             && _director.duration > 0d && !double.IsNaN(_director.duration) && !double.IsInfinity(_director.duration);
@@ -20,6 +22,8 @@ namespace Lighthouse.Tower.View
 
         private void Awake()
         {
+            _islandBinding = GetComponent<Lighthouse.Monsters.Boss.SpecialEndingIslandBinding>();
+            _lighting = GetComponent<Lighthouse.Monsters.Boss.SpecialEndingLighting>();
             _renderers = GetComponentsInChildren<Renderer>(true);
             _rendererEnabled = new bool[_renderers.Length];
             for (int i = 0; i < _renderers.Length; i++)
@@ -105,6 +109,10 @@ namespace Lighthouse.Tower.View
 
         private void SetCamera(bool value)
         {
+            if (_lighting != null)
+            {
+                _lighting.SetPlaying(value);
+            }
             if (_camera != null)
             {
                 _camera.enabled = value;
@@ -117,6 +125,10 @@ namespace Lighthouse.Tower.View
 
         private void SetVisible(bool value)
         {
+            if (_islandBinding != null)
+            {
+                _islandBinding.SetReplacing(value);
+            }
             if (_renderers == null)
             {
                 return;

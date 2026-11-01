@@ -1,3 +1,5 @@
+using TMPro;
+using Lighthouse.Player.Abilities.View;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -13,13 +15,23 @@ namespace Lighthouse.Player.Inventory.View
         [SerializeField] private int _moduleIndex = -1;
         [SerializeField] private float _liftHeight = 10f;
 
+        private TMP_Text _countLabel;
         private bool _isHovered;
         private bool _isSelected;
 
-        public void Configure(Image icon, Text count, GameObject highlight, InventoryChestScreen screen, int moduleIndex = -1)
+        private void Awake()
+        {
+            if (_count)
+            {
+                var presentation = Resources.Load<AbilityTargetPresentation>("AbilityTargetPresentation");
+                _countLabel = presentation.UpgradeLabel(_count);
+            }
+        }
+
+        public void Configure(Image icon, TMP_Text count, GameObject highlight, InventoryChestScreen screen, int moduleIndex = -1)
         {
             _icon = icon;
-            _count = count;
+            _countLabel = count;
             _highlight = highlight;
             _screen = screen;
             _moduleIndex = moduleIndex;
@@ -29,7 +41,7 @@ namespace Lighthouse.Player.Inventory.View
         {
             _icon.sprite = icon;
             _icon.enabled = icon;
-            _count.text = count;
+            _countLabel.text = count;
         }
 
         public void SetSelected(bool selected)
