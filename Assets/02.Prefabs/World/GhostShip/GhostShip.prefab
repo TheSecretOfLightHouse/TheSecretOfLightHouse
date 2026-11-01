@@ -10010,6 +10010,17 @@ MonoBehaviour:
   _hideDepth: 10
   _fogFadeSeconds: 1
   _fogFadeInSeconds: 4
+  _soundManagerPrefab: {fileID: 6939255676364778467, guid: 291f5116af82d294792d1145de158327, type: 3}
+  _hauntClip: {fileID: 8300000, guid: e586314057c31104b8a8b2670a652b48, type: 3}
+  _hauntVolume: 0.684
+  _rumbleClip: {fileID: 8300000, guid: 98758359ba46d80459a55ae57dc72772, type: 3}
+  _rumbleVolume: 0.684
+  _hornClip: {fileID: 8300000, guid: 0d6de70a23b3f324b8bff043f0fdb7fc, type: 3}
+  _hornVolume: 0.24624
+  _ambienceMinDistance: 15
+  _ambienceMaxDistance: 90
+  _hornMinDistance: 20
+  _hornMaxDistance: 150
 --- !u!114 &1517402764973720135
 MonoBehaviour:
   m_ObjectHideFlags: 0
