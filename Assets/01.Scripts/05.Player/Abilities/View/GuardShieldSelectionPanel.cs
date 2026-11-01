@@ -1,3 +1,4 @@
+using TMPro;
 using Lighthouse.Player.Abilities.View;
 using UnityEngine;
 using Lighthouse.Network.Session.View;
@@ -29,7 +30,8 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
 
     private AbilityTargetPresentation _targetPresentation;
     private UnityEngine.UI.Image[] _targetIcons;
-    private Font _runtimeFont;
+    private TMP_Text[] _nameLabels;
+    private TMP_Text _messageLabel;
     private GuardShieldAbility _boundAbility;
     private PlayerController _boundController;
     private Mirror.NetworkIdentity _boundPlayer;
@@ -47,17 +49,16 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
     {
         _targetPresentation = Resources.Load<AbilityTargetPresentation>("AbilityTargetPresentation");
         _targetIcons = AbilityTargetPresentation.CreateIcons(_playerButtons, _playerNames);
-        if (_panelRoot)
+        // Preserve serialized scene bindings while rendering every caption with the shipped font.
+        if (_targetPresentation && _panelRoot)
         {
-            // Dynamic OS fonts must be created in each process rather than saved into the scene.
-            _runtimeFont = Font.CreateDynamicFontFromOSFont(
-                new[] { "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Arial" }, 32);
-
-            foreach (UnityEngine.UI.Text label in _panelRoot.GetComponentsInChildren<UnityEngine.UI.Text>(true))
+            _targetPresentation.UpgradeLabels(_panelRoot);
+            _nameLabels = new TMP_Text[_playerNames != null ? _playerNames.Length : 0];
+            for (int i = 0; i < _nameLabels.Length; i++)
             {
-                label.font = _runtimeFont;
-                label.fontStyle = FontStyle.Bold;
+                _nameLabels[i] = _targetPresentation.UpgradeLabel(_playerNames[i]);
             }
+            _messageLabel = _targetPresentation.UpgradeLabel(_message);
         }
 
         for (int i = 0; i < _clickHandlers.Length; i++)
@@ -135,10 +136,6 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
             {
                 _playerButtons[i].onClick.RemoveListener(_clickHandlers[i]);
             }
-        }
-        if (_runtimeFont)
-        {
-            Destroy(_runtimeFont);
         }
     }
 
@@ -264,18 +261,18 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
             _playerButtons[i].gameObject.SetActive(player != null);
             _playerButtons[i].interactable = false;
 
-            if (_playerNames == null || i >= _playerNames.Length || !_playerNames[i])
+            if (_nameLabels == null || i >= _nameLabels.Length || !_nameLabels[i])
             {
                 continue;
             }
 
             if (!player)
             {
-                _playerNames[i].text = string.Empty;
+                _nameLabels[i].text = string.Empty;
                 continue;
             }
 
-            _playerNames[i].text = AbilityTargetPresentation.GetJobName(player);
+            _nameLabels[i].text = AbilityTargetPresentation.GetJobName(player);
 
             BoatController boat = player.OwnedBoat;
             bool canProtect = GuardShieldAbility.IsAboardOwnedBoat(player)
@@ -287,7 +284,7 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
 
             if (!canProtect)
             {
-                _playerNames[i].text += " · 보호 가능한 배 없음";
+                _nameLabels[i].text += " · 보호 가능한 배 없음";
             }
         }
     }
@@ -417,9 +414,9 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
 
     private void SetMessage(string message)
     {
-        if (_message)
+        if (_messageLabel)
         {
-            _message.text = message;
+            _messageLabel.text = message;
         }
     }
 }

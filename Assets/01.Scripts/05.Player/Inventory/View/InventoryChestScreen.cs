@@ -1,3 +1,5 @@
+using TMPro;
+using Lighthouse.Player.Abilities.View;
 using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Network.Session.View;
@@ -27,7 +29,8 @@ namespace Lighthouse.Player.Inventory.View
         private InventoryDebugPanel _debugPanel;
         private InteractionRelay _relay;
         private PlayerInput _input;
-        private Font _font;
+        private AbilityTargetPresentation _textPresentation;
+        private TMP_Text _messageLabel;
         private bool _isOpen;
         private bool _isInstalling;
         private bool _wasInputEnabled;
@@ -39,13 +42,7 @@ namespace Lighthouse.Player.Inventory.View
 
         private void Awake()
         {
-            _font = Font.CreateDynamicFontFromOSFont(
-                new[] { "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Arial" }, 32);
-            foreach (Text text in _window.GetComponentsInChildren<Text>(true))
-            {
-                text.font = _font;
-                text.fontStyle = FontStyle.Bold;
-            }
+            _textPresentation = Resources.Load<AbilityTargetPresentation>("AbilityTargetPresentation");
             BuildTabbedLayout();
             BuildCarriedModuleHud();
             _window.SetActive(false);
@@ -66,10 +63,6 @@ namespace Lighthouse.Player.Inventory.View
 
         private void OnDestroy()
         {
-            if (_font)
-            {
-                Destroy(_font);
-            }
             DisposeLayout();
         }
 
@@ -130,7 +123,7 @@ namespace Lighthouse.Player.Inventory.View
             }
             SessionScreen.SetGameplayOverlayOpen(this, true);
             _window.SetActive(true);
-            _message.text = "";
+            _messageLabel.text = "";
             RefreshResources();
             RefreshModules();
             SelectTab(0);
@@ -158,7 +151,7 @@ namespace Lighthouse.Player.Inventory.View
         public void SelectModule(int index)
         {
             _selectedModule = index;
-            _message.text = GetModuleName();
+            _messageLabel.text = GetModuleName();
             RefreshModules();
         }
 
@@ -279,12 +272,12 @@ namespace Lighthouse.Player.Inventory.View
                 return;
             }
             _isInstalling = true;
-            _message.text = "장착 요청 중...";
+            _messageLabel.text = "장착 요청 중...";
             if (!_relay.TrySendToNetworkTarget(_player.CurrentBoat.netId,
                 InteractionAction.InstallModule, _inventory.ModuleRecipeId))
             {
                 _isInstalling = false;
-                _message.text = "요청을 보내지 못했습니다.";
+                _messageLabel.text = "요청을 보내지 못했습니다.";
             }
         }
 
@@ -293,7 +286,7 @@ namespace Lighthouse.Player.Inventory.View
             if (_isRepairing)
             {
                 _isRepairing = false;
-                _message.text = result.IsSuccess ? "재료를 투입했습니다. 할당량이 모이면 자동으로 수리됩니다." : $"수리 요청 거절: {result.Code}";
+                _messageLabel.text = result.IsSuccess ? "재료를 투입했습니다. 할당량이 모이면 자동으로 수리됩니다." : $"수리 요청 거절: {result.Code}";
                 UpdateShipPanels(true);
                 return;
             }
@@ -302,7 +295,7 @@ namespace Lighthouse.Player.Inventory.View
                 return;
             }
             _isInstalling = false;
-            _message.text = result.IsSuccess ? "배에 모듈을 장착했습니다." : $"장착 거절: {result.Code}";
+            _messageLabel.text = result.IsSuccess ? "배에 모듈을 장착했습니다." : $"장착 거절: {result.Code}";
             RefreshModules();
             UpdateShipPanels(true);
         }
