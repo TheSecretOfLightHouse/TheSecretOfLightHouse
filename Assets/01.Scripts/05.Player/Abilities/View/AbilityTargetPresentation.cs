@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using Lighthouse.Player.Abilities.Net;
 
@@ -6,10 +7,74 @@ namespace Lighthouse.Player.Abilities.View
     [CreateAssetMenu(menuName = "TheLightHouse/Player/Ability Target Presentation")]
     public sealed class AbilityTargetPresentation : ScriptableObject
     {
+        [SerializeField] private TMP_FontAsset _font;
+        [SerializeField] private Material _fontMaterial;
         [SerializeField] private Sprite _navigator;
         [SerializeField] private Sprite _mechanic;
         [SerializeField] private Sprite _guard;
         [SerializeField] private Sprite _gatherer;
+
+        public void ApplyFont(TMP_Text label)
+        {
+            label.font = _font;
+            label.fontSharedMaterial = _fontMaterial;
+        }
+
+        public void UpgradeLabels(GameObject root)
+        {
+            foreach (UnityEngine.UI.Text label in root.GetComponentsInChildren<UnityEngine.UI.Text>(true))
+            {
+                UpgradeLabel(label);
+            }
+        }
+
+        public TMP_Text UpgradeLabel(UnityEngine.UI.Text source)
+        {
+            if (!source)
+            {
+                return null;
+            }
+            TMP_Text existing = source.GetComponentInChildren<TMP_Text>(true);
+            if (existing)
+            {
+                return existing;
+            }
+
+            // Keep serialized scene bindings while the TMP child follows the original layout.
+            var item = new GameObject("TmpCaption", typeof(RectTransform), typeof(TextMeshProUGUI));
+            item.transform.SetParent(source.transform, false);
+            TMP_Text label = item.GetComponent<TextMeshProUGUI>();
+            label.rectTransform.anchorMin = Vector2.zero;
+            label.rectTransform.anchorMax = Vector2.one;
+            label.rectTransform.offsetMin = Vector2.zero;
+            label.rectTransform.offsetMax = Vector2.zero;
+            ApplyFont(label);
+            label.text = source.text;
+            label.color = source.color;
+            label.fontSize = source.fontSize;
+            label.enableAutoSizing = true;
+            label.fontSizeMin = source.fontSize * 0.7f;
+            label.fontSizeMax = source.fontSize;
+            label.richText = source.supportRichText;
+            label.raycastTarget = false;
+            label.textWrappingMode = source.horizontalOverflow == HorizontalWrapMode.Wrap
+                ? TextWrappingModes.Normal : TextWrappingModes.NoWrap;
+            label.overflowMode = TextOverflowModes.Truncate;
+            label.alignment = source.alignment switch
+            {
+                TextAnchor.UpperLeft => TextAlignmentOptions.TopLeft,
+                TextAnchor.UpperCenter => TextAlignmentOptions.Top,
+                TextAnchor.UpperRight => TextAlignmentOptions.TopRight,
+                TextAnchor.MiddleLeft => TextAlignmentOptions.Left,
+                TextAnchor.MiddleRight => TextAlignmentOptions.Right,
+                TextAnchor.LowerLeft => TextAlignmentOptions.BottomLeft,
+                TextAnchor.LowerCenter => TextAlignmentOptions.Bottom,
+                TextAnchor.LowerRight => TextAlignmentOptions.BottomRight,
+                _ => TextAlignmentOptions.Center
+            };
+            source.enabled = false;
+            return label;
+        }
 
         public static string GetJobName(PlayerController player)
         {

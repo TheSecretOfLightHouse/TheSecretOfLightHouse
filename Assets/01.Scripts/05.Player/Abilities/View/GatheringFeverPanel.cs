@@ -1,3 +1,4 @@
+using TMPro;
 using Lighthouse.Network.Session.View;
 using Lighthouse.UI.SharedMap.Rules;
 using Mirror;
@@ -16,8 +17,8 @@ namespace Lighthouse.Player.Abilities.View
         private PlayerInput _input;
         private GameObject _canvas;
         private UnityEngine.UI.Button _useButton;
-        private UnityEngine.UI.Text _message;
-        private Font _font;
+        private TMP_Text _message;
+        private AbilityTargetPresentation _presentation;
         private SharedMapSettings _skin;
         private bool _isOpen;
         private int _openedFrame;
@@ -74,10 +75,6 @@ namespace Lighthouse.Player.Abilities.View
             if (_canvas)
             {
                 Destroy(_canvas);
-            }
-            if (_font)
-            {
-                Destroy(_font);
             }
         }
 
@@ -175,8 +172,7 @@ namespace Lighthouse.Player.Abilities.View
         {
             // Reuse the shipped brown/cream skins without changing a shared UI asset.
             _skin = Resources.Load<SharedMapSettings>("SharedMapSettings");
-            _font = Font.CreateDynamicFontFromOSFont(
-                new[] { "Malgun Gothic", "맑은 고딕", "Noto Sans CJK KR", "Arial" }, 32);
+            _presentation = Resources.Load<AbilityTargetPresentation>("AbilityTargetPresentation");
             _canvas = new GameObject("GatheringFeverCanvas", typeof(RectTransform),
                 typeof(Canvas), typeof(UnityEngine.UI.CanvasScaler), typeof(UnityEngine.UI.GraphicRaycaster));
             _canvas.SetActive(false);
@@ -220,18 +216,20 @@ namespace Lighthouse.Player.Abilities.View
             return image;
         }
 
-        private UnityEngine.UI.Text Label(string name, Transform parent, Vector2 position, Vector2 size, int fontSize)
+        private TMP_Text Label(string name, Transform parent, Vector2 position, Vector2 size, int fontSize)
         {
-            var item = new GameObject(name, typeof(RectTransform), typeof(UnityEngine.UI.Text));
+            var item = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
             item.transform.SetParent(parent, false);
-            UnityEngine.UI.Text label = item.GetComponent<UnityEngine.UI.Text>();
+            TMP_Text label = item.GetComponent<TextMeshProUGUI>();
             label.rectTransform.sizeDelta = size;
             label.rectTransform.anchoredPosition = position;
-            label.font = _font;
+            _presentation.ApplyFont(label);
             label.fontSize = fontSize;
-            label.fontStyle = FontStyle.Bold;
+            label.enableAutoSizing = true;
+            label.fontSizeMin = fontSize * 0.7f;
+            label.fontSizeMax = fontSize;
             label.color = new Color(0.96f, 0.92f, 0.79f);
-            label.alignment = TextAnchor.MiddleCenter;
+            label.alignment = TextAlignmentOptions.Center;
             label.raycastTarget = false;
             return label;
         }

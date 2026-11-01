@@ -1,3 +1,4 @@
+using TMPro;
 using Lighthouse.Network.Session.View;
 using Lighthouse.Workbench.Rules;
 using Mirror;
@@ -13,7 +14,7 @@ namespace Lighthouse.Player.Inventory.View
 
         private RectTransform _carriedHud;
         private UnityEngine.UI.Image _carriedHudIcon;
-        private UnityEngine.UI.Text _carriedHudName;
+        private TMP_Text _carriedHudName;
         private int _carriedHudRecipeId = -1;
         private ModuleRecipe _carriedHudRecipe;
         private Rect _carriedHudSafeArea;
@@ -31,9 +32,9 @@ namespace Lighthouse.Player.Inventory.View
             _carriedHudIcon.preserveAspect = true;
             MakeText("CarryingLabel", _carriedHud, "운반 중", 82f, 10f, 135f, 25f, 16, Gold);
             _carriedHudName = MakeText("ModuleName", _carriedHud, "", 82f, 36f, 135f, 27f, 17, Cream);
-            _carriedHudName.resizeTextForBestFit = true;
-            _carriedHudName.resizeTextMinSize = 12;
-            _carriedHudName.resizeTextMaxSize = 17;
+            _carriedHudName.enableAutoSizing = true;
+            _carriedHudName.fontSizeMin = 12;
+            _carriedHudName.fontSizeMax = 17;
             UpdateCarriedHudAnchor();
             _carriedHud.gameObject.SetActive(false);
         }

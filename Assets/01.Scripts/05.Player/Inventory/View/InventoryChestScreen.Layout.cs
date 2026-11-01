@@ -1,3 +1,4 @@
+using TMPro;
 using Lighthouse.Interaction.Requests.Net;
 using Mirror;
 using UnityEngine;
@@ -29,26 +30,26 @@ namespace Lighthouse.Player.Inventory.View
 
         private readonly GameObject[] _pages = new GameObject[3];
         private readonly UnityEngine.UI.Image[] _tabImages = new UnityEngine.UI.Image[3];
-        private readonly UnityEngine.UI.Text[] _tabLabels = new UnityEngine.UI.Text[3];
-        private readonly UnityEngine.UI.Text[] _moduleStates = new UnityEngine.UI.Text[4];
+        private readonly TMP_Text[] _tabLabels = new TMP_Text[3];
+        private readonly TMP_Text[] _moduleStates = new TMP_Text[4];
         private readonly UnityEngine.UI.Image[] _moduleCards = new UnityEngine.UI.Image[4];
         private readonly UnityEngine.UI.Button[] _moduleButtons = new UnityEngine.UI.Button[4];
         private readonly InventoryFrameGraphic[] _moduleFrames = new InventoryFrameGraphic[4];
         private readonly UnityEngine.UI.Image[] _installedIcons = new UnityEngine.UI.Image[4];
         private readonly GameObject[] _tabUnderlines = new GameObject[3];
         private readonly UnityEngine.UI.Image[] _repairIcons = new UnityEngine.UI.Image[8];
-        private readonly UnityEngine.UI.Text[] _repairRows = new UnityEngine.UI.Text[8];
-        private readonly UnityEngine.UI.Text[] _repairAmounts = new UnityEngine.UI.Text[8];
+        private readonly TMP_Text[] _repairRows = new TMP_Text[8];
+        private readonly TMP_Text[] _repairAmounts = new TMP_Text[8];
         private readonly UnityEngine.UI.Button[] _repairRecipeButtons = new UnityEngine.UI.Button[3];
-        private readonly UnityEngine.UI.Text[] _repairRecipeLabels = new UnityEngine.UI.Text[3];
+        private readonly TMP_Text[] _repairRecipeLabels = new TMP_Text[3];
         private readonly InventoryFrameGraphic[] _repairRecipeFrames = new InventoryFrameGraphic[3];
-        private UnityEngine.UI.Text _capacityLabel;
-        private UnityEngine.UI.Text _carriedLabel;
-        private UnityEngine.UI.Text _loadoutCarriedLabel;
+        private TMP_Text _capacityLabel;
+        private TMP_Text _carriedLabel;
+        private TMP_Text _loadoutCarriedLabel;
 
-        private UnityEngine.UI.Text _durabilityLabel;
-        private UnityEngine.UI.Text _repairDescription;
-        private UnityEngine.UI.Text _repairStatus;
+        private TMP_Text _durabilityLabel;
+        private TMP_Text _repairDescription;
+        private TMP_Text _repairStatus;
         private UnityEngine.UI.Image _durabilityFill;
         private UnityEngine.UI.Button _repairButton;
         private BoatController _displayBoat;
@@ -106,8 +107,9 @@ namespace Lighthouse.Player.Inventory.View
                 int index = i;
                 UnityEngine.UI.Button tab = MakeButton("Tab" + i, window, names[i], 35f + i * 298f, 13f, 278f, 68f, () => SelectTab(index));
                 _tabImages[i] = tab.GetComponent<UnityEngine.UI.Image>();
-                _tabLabels[i] = tab.GetComponentInChildren<UnityEngine.UI.Text>();
-                _tabLabels[i].fontSize = 26;
+                _tabLabels[i] = tab.GetComponentInChildren<TMP_Text>();
+                _tabLabels[i].fontSize = _tabLabels[i].fontSizeMax = 26;
+                _tabLabels[i].fontSizeMin = 18;
                 _tabLabels[i].rectTransform.anchoredPosition = new Vector2(35f, 0f);
                 _tabLabels[i].rectTransform.sizeDelta = new Vector2(230f, 68f);
                 InventoryTabGlyph glyph = MakeRect("Glyph", tab.transform, 17f, 15f, 38f, 38f).gameObject.AddComponent<InventoryTabGlyph>();
@@ -120,9 +122,11 @@ namespace Lighthouse.Player.Inventory.View
             BuildInventoryPage(_pages[0].transform);
             BuildRepairPage(_pages[1].transform);
             BuildLoadoutPage(_pages[2].transform);
-            _message = MakeText("Message", window, "", 40f, 551f, 920f, 34f, 14, Gold);
+            _messageLabel = MakeText("Message", window, "", 40f, 551f, 920f, 34f, 14, Gold);
             _closeButton = MakeButton("Close", window, "×", 939f, 15f, 43f, 43f, null);
-            _closeButton.GetComponentInChildren<UnityEngine.UI.Text>().fontSize = 34;
+            TMP_Text closeLabel = _closeButton.GetComponentInChildren<TMP_Text>();
+            closeLabel.fontSize = closeLabel.fontSizeMax = 34;
+            closeLabel.fontSizeMin = 24;
             SelectTab(0);
         }
 
@@ -141,7 +145,7 @@ namespace Lighthouse.Player.Inventory.View
             Transform carry = MakeFrame("Carried", page, 655f, 80f, 240f, 238f, Color.clear, Muted).transform;
             _moduleSlots = new InventoryChestSlot[1];
             _moduleSlots[0] = MakeSlot(carry, 0f, 0f, 240f, 238f, 0);
-            _carriedLabel = MakeText("Name", page, "", 635f, 331f, 275f, 35f, 16, Muted, TextAnchor.MiddleCenter);
+            _carriedLabel = MakeText("Name", page, "", 635f, 331f, 275f, 35f, 16, Muted, TextAlignmentOptions.Center);
         }
 
         private void BuildRepairPage(Transform page)
@@ -150,7 +154,7 @@ namespace Lighthouse.Player.Inventory.View
             RectTransform boat = MakeBoat(page, 120f, -85f, 285f, 455f);
             boat.localRotation = Quaternion.Euler(0f, 0f, 90f);
             MakeText("DurabilityHeading", page, "내구도", 20f, 316f, 250f, 36f, 22, Cream);
-            _durabilityLabel = MakeText("Durability", page, "배 정보 없음", 265f, 316f, 305f, 36f, 22, Cream, TextAnchor.MiddleRight);
+            _durabilityLabel = MakeText("Durability", page, "배 정보 없음", 265f, 316f, 305f, 36f, 22, Cream, TextAlignmentOptions.Right);
             Transform bar = MakeFrame("Track", page, 20f, 359f, 550f, 26f, Color.clear, Muted).transform;
             _durabilityFill = MakePanel("Fill", bar, 4f, 4f, 542f, 18f, Gold);
             MakeText("RecipeHeading", page, "수리 레시피", 640f, 0f, 270f, 38f, 25, Cream);
@@ -161,8 +165,9 @@ namespace Lighthouse.Player.Inventory.View
                 UnityEngine.UI.Button button = MakeButton("RepairRecipe" + i, page, "", 640f + i * 92f, 62f, 86f, 54f,
                     () => SelectRepairRecipe(recipeIndex));
                 _repairRecipeButtons[i] = button;
-                _repairRecipeLabels[i] = button.GetComponentInChildren<UnityEngine.UI.Text>();
-                _repairRecipeLabels[i].fontSize = 16;
+                _repairRecipeLabels[i] = button.GetComponentInChildren<TMP_Text>();
+                _repairRecipeLabels[i].fontSize = _repairRecipeLabels[i].fontSizeMax = 16;
+                _repairRecipeLabels[i].fontSizeMin = 12;
                 _repairRecipeFrames[i] = MakeFrame("Border", button.transform, 0f, 0f, 86f, 54f, Color.clear, Muted);
             }
             for (int i = 0; i < _repairRows.Length; i++)
@@ -173,8 +178,8 @@ namespace Lighthouse.Player.Inventory.View
                 _repairIcons[i] = MakePanel("Icon", cell, 4f, 0f, 56f, 56f, Color.white);
                 _repairIcons[i].type = UnityEngine.UI.Image.Type.Simple;
                 _repairIcons[i].preserveAspect = true;
-                _repairRows[i] = MakeText("Name", cell, "", 0f, 56f, 64f, 19f, 11, Muted, TextAnchor.MiddleCenter);
-                _repairAmounts[i] = MakeText("Amount", cell, "", 0f, 76f, 64f, 24f, 17, Cream, TextAnchor.MiddleCenter);
+                _repairRows[i] = MakeText("Name", cell, "", 0f, 56f, 64f, 19f, 11, Muted, TextAlignmentOptions.Center);
+                _repairAmounts[i] = MakeText("Amount", cell, "", 0f, 76f, 64f, 24f, 17, Cream, TextAlignmentOptions.Center);
             }
             _repairDescription = MakeText("RepairAmount", page, "", 640f, 244f, 270f, 76f, 17, Gold);
             _repairButton = MakeButton("Repair", page, "수리", 650f, 334f, 250f, 56f, HandleRepairClicked);
@@ -207,8 +212,8 @@ namespace Lighthouse.Player.Inventory.View
                 button.onClick.AddListener(() => HandleModuleClicked(index));
                 card.gameObject.AddComponent<Lighthouse.Common.UI.UiButtonFeedback>();
                 _moduleButtons[i] = button;
-                MakeText("Name", page, ModuleNames[i], x - 5f, y + 128f, 150f, 30f, 17, Cream, TextAnchor.MiddleCenter);
-                _moduleStates[i] = MakeText("State", page, "", x - 5f, y + 157f, 150f, 25f, 13, Muted, TextAnchor.MiddleCenter);
+                MakeText("Name", page, ModuleNames[i], x - 5f, y + 128f, 150f, 30f, 17, Cream, TextAlignmentOptions.Center);
+                _moduleStates[i] = MakeText("State", page, "", x - 5f, y + 157f, 150f, 25f, 13, Muted, TextAlignmentOptions.Center);
                 _installedIcons[i] = MakePanel("Installed" + i, boat, positions[i].x, positions[i].y, 70f, 70f, Color.white);
                 _installedIcons[i].sprite = GetRecipeIcon(BoatRecipeIds[i]);
                 _installedIcons[i].type = UnityEngine.UI.Image.Type.Simple;
@@ -289,7 +294,7 @@ namespace Lighthouse.Player.Inventory.View
             icon.rectTransform.anchorMin = icon.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             icon.rectTransform.pivot = new Vector2(0.5f, 0.5f);
             icon.rectTransform.anchoredPosition = Vector2.zero;
-            UnityEngine.UI.Text count = MakeText("Count", root, "", 10f, height - 37f, width - 24f, 30f, 21, Cream, TextAnchor.MiddleRight);
+            TMP_Text count = MakeText("Count", root, "", 10f, height - 37f, width - 24f, 30f, 21, Cream, TextAlignmentOptions.Right);
             InventoryChestSlot slot = root.gameObject.AddComponent<InventoryChestSlot>();
             slot.Configure(icon, count, highlight, this, moduleIndex);
             return slot;
@@ -305,9 +310,9 @@ namespace Lighthouse.Player.Inventory.View
                 _tabLabels[i].color = i == _selectedTab ? Gold : Cream;
                 _tabUnderlines[i].SetActive(i == _selectedTab);
             }
-            if (_message)
+            if (_messageLabel)
             {
-                _message.text = "";
+                _messageLabel.text = "";
             }
             UpdateShipPanels(true);
         }
@@ -459,11 +464,11 @@ namespace Lighthouse.Player.Inventory.View
             }
             _isRepairing = true;
             _repairButton.interactable = false;
-            _message.text = "수리 재료 투입 요청 중...";
+            _messageLabel.text = "수리 재료 투입 요청 중...";
             if (!_relay.TrySendToNetworkTarget(_displayBoat.netId, InteractionAction.RepairBoat, _selectedRepairRecipe))
             {
                 _isRepairing = false;
-                _message.text = "요청을 보내지 못했습니다.";
+                _messageLabel.text = "요청을 보내지 못했습니다.";
             }
         }
 
@@ -540,13 +545,16 @@ namespace Lighthouse.Player.Inventory.View
             return image;
         }
 
-        private UnityEngine.UI.Text MakeText(string name, Transform parent, string value, float x, float y, float width, float height, int size, Color color, TextAnchor alignment = TextAnchor.MiddleLeft)
+        private TMP_Text MakeText(string name, Transform parent, string value, float x, float y, float width, float height, int size, Color color, TextAlignmentOptions alignment = TextAlignmentOptions.Left)
         {
-            UnityEngine.UI.Text text = MakeRect(name, parent, x, y, width, height).gameObject.AddComponent<UnityEngine.UI.Text>();
+            TMP_Text text = MakeRect(name, parent, x, y, width, height).gameObject.AddComponent<TextMeshProUGUI>();
             text.text = value;
-            text.font = _font;
-            text.fontStyle = FontStyle.Bold;
+            _textPresentation.ApplyFont(text);
             text.fontSize = size;
+            text.enableAutoSizing = true;
+            text.fontSizeMin = size * 0.7f;
+            text.fontSizeMax = size;
+            text.overflowMode = TextOverflowModes.Truncate;
             text.color = color;
             text.alignment = alignment;
             text.raycastTarget = false;
@@ -573,7 +581,7 @@ namespace Lighthouse.Player.Inventory.View
             {
                 button.onClick.AddListener(clicked);
             }
-            MakeText("Label", image.transform, label, 0f, 0f, width, height, 23, Cream, TextAnchor.MiddleCenter);
+            MakeText("Label", image.transform, label, 0f, 0f, width, height, 23, Cream, TextAlignmentOptions.Center);
             image.gameObject.AddComponent<Lighthouse.Common.UI.UiButtonFeedback>();
             return button;
         }
