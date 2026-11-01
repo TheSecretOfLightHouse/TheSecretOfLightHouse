@@ -317,8 +317,9 @@ namespace Lighthouse.World.GhostShip.Net
                 Vector3 forward = Quaternion.Euler(0f, _yaw, 0f) * Vector3.forward;
                 Vector3 velocity = _body.linearVelocity;
                 _body.linearVelocity = new Vector3(forward.x * speed, velocity.y, forward.z * speed);
-                Vector3 euler = _body.rotation.eulerAngles;
-                _body.MoveRotation(Quaternion.Euler(euler.x, _yaw, euler.z));
+                // Keep the hull level while roaming; rising and sinking use their own scripted pitch.
+                _body.angularVelocity = Vector3.Project(_body.angularVelocity, Vector3.up);
+                _body.MoveRotation(Quaternion.Euler(0f, _yaw, 0f));
                 return;
             }
 
