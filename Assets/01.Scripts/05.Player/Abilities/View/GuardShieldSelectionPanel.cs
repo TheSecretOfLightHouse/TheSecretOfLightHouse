@@ -34,6 +34,7 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
     private PlayerController _boundController;
     private Mirror.NetworkIdentity _boundPlayer;
     private bool _isOpen;
+    private int _openedFrame;
     private CursorLockMode _savedCursorLock;
     private bool _savedCursorVisible;
     private UnityEngine.InputSystem.PlayerInput _playerInput;
@@ -78,6 +79,15 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
 
     private void Update()
     {
+        // Ignore the Q press that opened this panel earlier in the same frame.
+        var keyboard = UnityEngine.InputSystem.Keyboard.current;
+        if (_isOpen && Time.frameCount > _openedFrame && keyboard != null
+            && (keyboard.escapeKey.wasPressedThisFrame || keyboard.qKey.wasPressedThisFrame))
+        {
+            Hide();
+            return;
+        }
+
         Mirror.NetworkIdentity localPlayer =
             Mirror.NetworkClient.localPlayer;
 
@@ -171,6 +181,7 @@ public sealed class GuardShieldSelectionPanel : MonoBehaviour
         _savedCursorLock = Cursor.lockState;
         _savedCursorVisible = Cursor.visible;
         _isOpen = true;
+        _openedFrame = Time.frameCount;
 
         _wasInputEnabled = _playerInput && _playerInput.enabled;
         SessionScreen.SetGameplayOverlayOpen(this, true);

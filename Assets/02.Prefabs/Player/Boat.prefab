@@ -535,6 +535,10 @@ MonoBehaviour:
   _hullPitch: 6
   _hullRiseDuration: 0.07
   _hullReturnDuration: 0.38
+  _collisionTilt: 7
+  _collisionDuration: 1.8
+  _collisionOscillations: 2
+  _collisionDamping: 3
 --- !u!114 &710578436772986291
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -724,7 +728,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3423564241269539416}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.06975647, y: 0, z: 0, w: 0.9975641}
+  m_LocalRotation: {x: 0.034899496, y: 0, z: 0, w: 0.99939084}
   m_LocalPosition: {x: 0, y: 0.4, z: 0.65}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -743,10 +747,10 @@ Light:
   serializedVersion: 11
   m_Type: 0
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 1000
-  m_Range: 20
-  m_SpotAngle: 65
-  m_InnerSpotAngle: 45
+  m_Intensity: 450
+  m_Range: 40
+  m_SpotAngle: 110
+  m_InnerSpotAngle: 85
   m_CookieSize: 10
   m_Shadows:
     m_Type: 2
@@ -1243,7 +1247,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _source: {fileID: 4352435221421980176}
-  _widthMultiplier: 0.55
+  _widthMultiplier: 0.9
 --- !u!1001 &2438046656891925870
 PrefabInstance:
   m_ObjectHideFlags: 0
