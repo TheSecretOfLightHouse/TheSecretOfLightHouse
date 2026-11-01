@@ -1,5 +1,4 @@
 using Lighthouse.Monsters.AI.Net;
-using Lighthouse.World.Ocean.Rules;
 using Lighthouse.World.Query.Rules;
 using Lighthouse.World.Weather.View;
 using Mirror;
@@ -22,6 +21,15 @@ public sealed class Cannonball : NetworkBehaviour
     private bool _hasWaterSample;
     private float _previousWaterOffset;
 
+    [SyncVar]
+    private Vector3 _launchVelocity;
+
+    [SyncVar]
+    private double _launchTime;
+
+    private Vector3 _clientOrigin;
+    private bool _isClientSimulating;
+
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
@@ -38,6 +46,9 @@ public sealed class Cannonball : NetworkBehaviour
 
         _rb.isKinematic = false;
         _rb.linearVelocity = velocity;
+
+        _launchVelocity = velocity;
+        _launchTime = NetworkTime.time;
     }
 
     public override void OnStartServer()
@@ -61,6 +72,15 @@ public sealed class Cannonball : NetworkBehaviour
         {
             _rb.isKinematic = true;
             _collider.enabled = false;
+
+            // The flight is a pure ballistic arc from the host's launch data, so remote clients replay it without transform interpolation.
+            if (TryGetComponent(out NetworkTransformBase syncedTransform))
+            {
+                syncedTransform.enabled = false;
+            }
+
+            _clientOrigin = transform.position;
+            _isClientSimulating = true;
         }
     }
 
@@ -68,6 +88,11 @@ public sealed class Cannonball : NetworkBehaviour
     {
         if (!isServer)
         {
+            if (_isClientSimulating)
+            {
+                float elapsed = Mathf.Clamp((float)(NetworkTime.time - _launchTime), 0f, _lifetime);
+                transform.position = _clientOrigin + _launchVelocity * elapsed + 0.5f * elapsed * elapsed * Physics.gravity;
+            }
             return;
         }
 
@@ -111,11 +136,6 @@ public sealed class Cannonball : NetworkBehaviour
     private void RpcWaterImpact(Vector3 position)
     {
         WorldAudioView.PlayCannonWaterImpact(position);
-
-        if (WorldServices.TryGet<IWaterSplashEffects>(out IWaterSplashEffects effects))
-        {
-            effects.Play(new WaterSplashRequest(WaterSplashKind.ImpactColumn, position, Vector3.up, 1f, 1));
-        }
     }
 
     private void OnCollisionEnter(Collision collision)
