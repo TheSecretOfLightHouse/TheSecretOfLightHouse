@@ -1052,6 +1052,8 @@ MonoBehaviour:
   _volumeExtinction: 0.04
   _fogColor: {r: 0.82, g: 0.85, b: 0.85, a: 1}
   _nightFogColor: {r: 0.34, g: 0.4, b: 0.52, a: 1}
+  _stormFogColor: {r: 0.3, g: 0.37, b: 0.43, a: 1}
+  _stormNightFogScale: 0.3
   _abyssFogColor: {r: 0.035, g: 0.085, b: 0.065, a: 1}
   _fogLightFloor: 0.65
   _densityScale: 0.2
@@ -4111,6 +4113,7 @@ GameObject:
   m_Component:
   - component: {fileID: 392147386}
   - component: {fileID: 392147385}
+  - component: {fileID: 392147387}
   m_Layer: 0
   m_Name: OceanAppearance
   m_TagString: Untagged
@@ -4130,9 +4133,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f0f9dc76421d89c428e0199ec97bea3d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _gameClock: {fileID: 548526264}
-  _sunConfig: {fileID: 11400000, guid: 6e7d02c1c6174cc458fd68ce7733d6d0, type: 2}
-  _weatherCatalog: {fileID: 11400000, guid: eeed1fbcc6118034d8c53be253eeaae6, type: 2}
+  _environment: {fileID: 0}
   _profile: {fileID: 11400000, guid: b5701cd29d0663f4693b56ee38cf8e7f, type: 2}
   _mapConfig: {fileID: 11400000, guid: 178d035fad71e444fbae3510572569c0, type: 2}
   _sourceMaterial: {fileID: 2100000, guid: abc4bd81471290b49876eed7762855d4, type: 2}
@@ -4192,6 +4193,28 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &392147387
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 392147384}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6696cd0bb27569d418a3ba98b2077f91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _profile: {fileID: 11400000, guid: b5701cd29d0663f4693b56ee38cf8e7f, type: 2}
+  _environment: {fileID: 0}
+  _enterDepth: 0.1
+  _exitDepth: -0.1
+  _blendSeconds: 0.35
+  _shallowDensity: 0.05
+  _deepDensity: 0.09
+  _deepDepth: 40
+  _absorptionPerMetre: {x: 0.3, y: 0.06, z: 0.02}
+  _nightLight: 0.15
 --- !u!1 &394664997
 GameObject:
   m_ObjectHideFlags: 0
