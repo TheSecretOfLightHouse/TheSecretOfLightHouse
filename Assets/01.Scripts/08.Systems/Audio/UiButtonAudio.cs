@@ -13,6 +13,8 @@ namespace Lighthouse.Systems.Audio
         private const string ResourcePath = "Audio/UiButtonAudio";
         private static readonly Predicate<UnityEngine.UI.Button> DestroyedButton = IsDestroyed;
 
+        private static UiButtonAudio _current;
+
         [SerializeField] private AudioClip _clickClip;
         [SerializeField] private SoundManager _soundManagerPrefab;
         [SerializeField, Range(0f, 1f)] private float _volume = 0.5f;
@@ -31,8 +33,18 @@ namespace Lighthouse.Systems.Audio
             }
         }
 
+        // Screens opened by a shortcut key call this, so they sound like a button click.
+        public static void PlayClick()
+        {
+            if (_current != null)
+            {
+                _current.HandleClicked();
+            }
+        }
+
         private void Awake()
         {
+            _current = this;
             DontDestroyOnLoad(gameObject);
             _clicked = HandleClicked;
             SceneManager.sceneLoaded += HandleSceneLoaded;
@@ -45,6 +57,10 @@ namespace Lighthouse.Systems.Audio
 
         private void OnDestroy()
         {
+            if (_current == this)
+            {
+                _current = null;
+            }
             SceneManager.sceneLoaded -= HandleSceneLoaded;
             foreach (UnityEngine.UI.Button button in _buttons)
             {

@@ -3,6 +3,7 @@ using Lighthouse.Player.Abilities.View;
 using Lighthouse.Interaction.Relay.Net;
 using Lighthouse.Interaction.Requests.Net;
 using Lighthouse.Network.Session.View;
+using Lighthouse.Systems.Audio;
 using Lighthouse.Workbench.Rules;
 using Mirror;
 using UnityEngine;
@@ -129,6 +130,7 @@ namespace Lighthouse.Player.Inventory.View
             SelectTab(0);
             UpdateShipPanels(true);
             RefreshModuleButtons();
+            UiButtonAudio.PlayClick();
         }
 
         public void Close()

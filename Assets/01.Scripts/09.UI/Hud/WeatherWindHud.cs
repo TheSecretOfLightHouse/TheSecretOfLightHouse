@@ -1,36 +1,36 @@
 using Lighthouse.World.Clock.Rules;
 using Lighthouse.World.Query.Rules;
 using Lighthouse.World.Weather.Rules;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Lighthouse.UI.Hud
 {
+    // Weather and wind part of the top status bar (2026-11-01 mockup): the weather icon with its name, and the wind's
+    // heading as one of eight icons with "바람 → 동". Only the heading shows, not the speed.
     [DisallowMultipleComponent]
     public sealed class WeatherWindHud : MonoBehaviour
     {
-        private const float SpeedPrecision = 10f;
-
         [SerializeField] private GameObject _display;
         [SerializeField] private Image _weatherIcon;
+        [Tooltip("In WeatherType order.")]
         [SerializeField] private Sprite[] _weatherSprites = new Sprite[0];
-        [SerializeField] private Text _weatherText;
-        [SerializeField] private RectTransform _windArrow;
-        [SerializeField] private Text _windSpeedText;
-        [SerializeField] private Text _windDirectionText;
-        [SerializeField] private Text _windStrengthText;
+        [SerializeField] private TMP_Text _weatherText;
+        [SerializeField] private Image _windIcon;
+        [Tooltip("In CompassPoint order (N, NE, E, ... NW). Each points the way the wind blows to.")]
+        [SerializeField] private Sprite[] _windSprites = new Sprite[0];
+        [SerializeField] private TMP_Text _windText;
         [SerializeField] private string[] _weatherNames = { "맑음", "흐림", "비", "폭풍", "소용돌이" };
         [SerializeField] private string[] _compassNames = { "북", "북동", "동", "남동", "남", "남서", "서", "북서" };
-        [SerializeField] private string[] _strengthNames = { "무풍", "약풍", "보통", "강풍", "폭풍" };
+        [SerializeField] private string _stillText = "바람 없음";
 
         private IWeatherService _weather;
         private GameClock _gameClock;
         private WeatherType _shownWeather;
         private bool _hasShownWeather;
-        private int _shownSpeed = -1;
-        private int _shownAngle = -1;
         private CompassPoint _shownCompass;
-        private WindStrength _shownStrength;
+        private bool _hadWind;
         private bool _hasShownWind;
 
         private void LateUpdate()
@@ -69,7 +69,8 @@ namespace Lighthouse.UI.Hud
             }
         }
 
-        private void RefreshWeather(WeatherType type)
+        // The editor preview uses the same path as the synchronized weather.
+        public void RefreshWeather(WeatherType type)
         {
             if (_hasShownWeather && type == _shownWeather)
             {
@@ -79,57 +80,30 @@ namespace Lighthouse.UI.Hud
             _hasShownWeather = true;
             _shownWeather = type;
             int index = (int)type;
-
-            if (_weatherText)
-            {
-                _weatherText.text = GetName(_weatherNames, index);
-            }
-
-            if (_weatherIcon)
-            {
-                Sprite sprite = index < _weatherSprites.Length ? _weatherSprites[index] : null;
-                _weatherIcon.sprite = sprite;
-                _weatherIcon.enabled = sprite;
-            }
+            _weatherText.text = GetName(_weatherNames, index);
+            SetIcon(_weatherIcon, _weatherSprites, index);
         }
 
-        private void RefreshWind(WindDisplay wind)
+        public void RefreshWind(WindDisplay wind)
         {
-            int speed = Mathf.RoundToInt(wind.Speed * SpeedPrecision);
-            int angle = Mathf.RoundToInt(wind.AngleDegrees);
-
-            if (_hasShownWind && speed == _shownSpeed && angle == _shownAngle
-                && wind.Compass == _shownCompass && wind.Strength == _shownStrength)
+            if (_hasShownWind && wind.HasWind == _hadWind && wind.Compass == _shownCompass)
             {
                 return;
             }
 
             _hasShownWind = true;
-            _shownSpeed = speed;
-            _shownAngle = angle;
+            _hadWind = wind.HasWind;
             _shownCompass = wind.Compass;
-            _shownStrength = wind.Strength;
+            int index = (int)wind.Compass;
+            _windText.text = wind.HasWind ? $"바람 → {GetName(_compassNames, index)}" : _stillText;
+            SetIcon(_windIcon, _windSprites, wind.HasWind ? index : -1);
+        }
 
-            if (_windArrow)
-            {
-                _windArrow.gameObject.SetActive(wind.HasWind);
-                _windArrow.localRotation = Quaternion.Euler(0f, 0f, -wind.AngleDegrees);
-            }
-
-            if (_windSpeedText)
-            {
-                _windSpeedText.text = $"{wind.Speed:0.0} m/s";
-            }
-
-            if (_windDirectionText)
-            {
-                _windDirectionText.text = wind.HasWind ? GetName(_compassNames, (int)wind.Compass) : string.Empty;
-            }
-
-            if (_windStrengthText)
-            {
-                _windStrengthText.text = GetName(_strengthNames, (int)wind.Strength);
-            }
+        private static void SetIcon(Image icon, Sprite[] sprites, int index)
+        {
+            Sprite sprite = index >= 0 && index < sprites.Length ? sprites[index] : null;
+            icon.sprite = sprite;
+            icon.enabled = sprite;
         }
 
         private static string GetName(string[] names, int index)

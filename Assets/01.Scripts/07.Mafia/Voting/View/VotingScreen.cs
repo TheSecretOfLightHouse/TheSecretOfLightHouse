@@ -7,6 +7,7 @@ using Lighthouse.Network.Session.Net;
 using Lighthouse.Network.Session.Rules;
 using Lighthouse.Network.Session.View;
 using Lighthouse.Player.Abilities.Net;
+using Lighthouse.Systems.Audio;
 using Lighthouse.UI.Hud;
 using Mirror;
 using TMPro;
@@ -325,6 +326,11 @@ namespace Lighthouse.Mafia.Voting.View
                 if (keyboard[_openKey].wasPressedThisFrame && HudReveal.AllowsShortcuts)
                 {
                     Open();
+
+                    if (_isOpen)
+                    {
+                        UiButtonAudio.PlayClick();
+                    }
                 }
 
                 return;

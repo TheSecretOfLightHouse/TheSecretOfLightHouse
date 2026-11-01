@@ -2780,7 +2780,6 @@ MonoBehaviour:
   _openKey: 19
   _window: {fileID: 6151957943200275384}
   _prompt: {fileID: 4431036039558629065}
-  _promptText: {fileID: 4367866718480596695}
   _closeButtons:
   - {fileID: 4177196054005892272}
   - {fileID: 3012408396748269868}
@@ -2798,6 +2797,7 @@ MonoBehaviour:
   _craftButton: {fileID: 4194186450650151815}
   _isSketchLayout: 0
   _depositButton: {fileID: 0}
+  _withdrawButton: {fileID: 0}
   _overallFill: {fileID: 0}
   _takeButton: {fileID: 0}
   _previousStockPageButton: {fileID: 0}
@@ -2838,7 +2838,6 @@ MonoBehaviour:
   _carryIcon: {fileID: 3514661701538870418}
   _carryText: {fileID: 752204777976895024}
   _returnButton: {fileID: 6529257031072443030}
-  _returnShortcutButton: {fileID: 0}
   _sectionHeaderTemplate: {fileID: 1114842203350239804}
   _sectionHeaderView: {fileID: 3693498763054444288}
   _lighthouseSectionIcon: {fileID: 21300000, guid: 5ea70ff6aeedd254a84fdb117c3d4d79, type: 3}
@@ -2857,6 +2856,48 @@ MonoBehaviour:
   - Apple SD Gothic Neo
   - Noto Sans CJK KR
   - Arial
+  _effectSettings:
+    FlightSeconds: 0.45
+    FlightArc: 70
+    FlightIconSize: 56
+    PunchSeconds: 0.28
+    PunchStrength: 0.25
+    BadgePunchStrength: 0.4
+    GlowPeriod: 1.1
+    GlowAlpha: 0.5
+    GlowOutset: 6
+    GlowColor: {r: 1, g: 0.86, b: 0.45, a: 1}
+    ShakeSeconds: 0.35
+    ShakeAmplitude: 10
+    ShakeCycles: 3.5
+    FlashSeconds: 0.6
+    FlashBlinks: 3
+    FlashColor: {r: 1, g: 0.25, b: 0.2, a: 1}
+    FloaterSeconds: 0.9
+    FloaterRise: 48
+    FloaterFontSize: 26
+    FloaterColor: {r: 1, g: 0.86, b: 0.45, a: 1}
+    FillSpeed: 1.6
+    OwnDepositSeconds: 1.5
+    GatherSeconds: 0.4
+    BurstSeconds: 0.55
+    BurstHoldSeconds: 0.45
+    BurstLightSize: 260
+    BurstColor: {r: 1, g: 0.9, b: 0.62, a: 1}
+    ModuleIconSize: 96
+    HighlightColor: {r: 1, g: 0.86, b: 0.45, a: 1}
+    CraftWaitSeconds: 1.5
+    DropGraceSeconds: 0.3
+    SweepSeconds: 0.6
+    SweepWidth: 90
+  _soundManagerPrefab: {fileID: 6939255676364778467, guid: 291f5116af82d294792d1145de158327, type: 3}
+  _depositClip: {fileID: 8300000, guid: 997a051e7efc9ae449c8354a1d9bb435, type: 3}
+  _depositVolume: 1
+  _holdDelay: 0.35
+  _holdStartRate: 5
+  _holdMaxRate: 25
+  _holdRampSeconds: 1.5
+  _holdMaxBatch: 10
 --- !u!1 &1971130018399612201
 GameObject:
   m_ObjectHideFlags: 0
@@ -4644,6 +4685,7 @@ MonoBehaviour:
   _isShortageTinted: 0
   _shortageColor: {r: 0.85, g: 0.3, b: 0.22, a: 1}
   _sufficientColor: {r: 0.96, g: 0.91, b: 0.76, a: 1}
+  _fillSpeed: 1.6
 --- !u!1 &3256191461030373654
 GameObject:
   m_ObjectHideFlags: 0
