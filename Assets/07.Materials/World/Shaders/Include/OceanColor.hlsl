@@ -9,8 +9,13 @@ float3 OceanBodyColor(float3 shallow, float3 deep, float3 veryDeep,
 {
     float nearEnd = shallowEnd * 4.0;
     float nearMix = 1.0 - exp(-depth / (shallowEnd * 1.6));
-    float farMix = 1.0 - exp(-max(0.0, depth - nearEnd) * falloff / max(deepEnd, 0.1));
+    nearMix = nearMix * nearMix * (3.0 - 2.0 * nearMix);
+    float farT = saturate(max(0.0, depth - nearEnd) * falloff / max(deepEnd, 0.1) * 0.5);
+    float farMix = farT * farT * (3.0 - 2.0 * farT);
     float3 body = lerp(shallow, deep, nearMix);
+    // Thin water over sand scatters light back: a pale aqua lift that fades within the first metres.
+    float lift = exp(-depth / (shallowEnd * 0.9));
+    body = lerp(body, body * 0.55 + float3(0.45, 0.62, 0.58) * 0.9, lift * 0.28);
     return lerp(body, veryDeep, farMix);
 }
 
@@ -91,8 +96,8 @@ float2 OceanRippleSlope(float2 p, float time)
         float3 n = OceanNoiseD(q);
         float2 g = n.yz * freq * amp;
         slope += float2(c * g.x + s * g.y, -s * g.x + c * g.y);
-        amp *= 0.5;
-        freq *= 2.2;
+        amp *= 0.4;
+        freq *= 1.9;
         angle += 1.1;
     }
     return slope;
@@ -106,14 +111,16 @@ float OceanSparkle(float3 positionWS, float3 normalWS, float3 halfway, float tim
     float footprint)
 {
     float2 p = positionWS.xz;
-    float3 n1 = OceanNoiseD(p * 7.0 + float2(time * 0.6, -time * 0.4));
+    // n1 is a slow patch noise: it gathers the fine glints into small clusters and also tilts the facets.
+    float3 n1 = OceanNoiseD(p * 2.5 + float2(time * 0.25, -time * 0.18));
     float3 n2 = OceanNoiseD(p * 15.0 + float2(-time * 0.9, time * 0.5) + 3.7);
-    float2 g = n1.yz * 0.05 + n2.yz * 0.03;
+    float2 g = n1.yz * 0.03 + n2.yz * 0.045;
     float3 facet = normalize(normalWS + float3(g.x, 0.0, g.y));
-    float fine = smoothstep(0.9988, 0.9999, dot(facet, halfway));
-    float sheen = pow(saturate(dot(normalWS, halfway)), 140.0) * 0.22;
-    float grain = saturate(footprint / 0.2);
-    return lerp(fine * 1.3, sheen, grain);
+    float cluster = lerp(0.3, 1.7, smoothstep(0.3, 0.7, n1.x));
+    float fine = smoothstep(0.9985, 0.9999, dot(facet, halfway)) * cluster;
+    float sheen = pow(saturate(dot(normalWS, halfway)), 140.0) * 0.3;
+    float grain = smoothstep(0.04, 0.25, footprint);
+    return lerp(fine * 1.2, sheen, grain);
 }
 
 // Fake open-sea depth variation: slow large patches, 0..1.
@@ -127,11 +134,11 @@ float OceanClarityPatch(float2 p, float time)
 // Net-like light lines on the faked seabed; ridges of two warped noise layers.
 float OceanCaustic(float2 p, float2 warp, float time)
 {
-    float2 a = p * 0.55 + warp * 1.6 + float2(time * 0.09, time * 0.06);
-    float2 b = p * 0.8 - warp * 1.2 + float2(-time * 0.07, time * 0.1) + 9.0;
+    float2 a = p * 0.55 + warp * 1.0 + float2(time * 0.09, time * 0.06);
+    float2 b = p * 0.8 - warp * 0.8 + float2(-time * 0.07, time * 0.1) + 9.0;
     float ra = 1.0 - abs(OceanNoiseD(a).x * 2.0 - 1.0);
     float rb = 1.0 - abs(OceanNoiseD(b).x * 2.0 - 1.0);
-    return pow(saturate(ra * rb), 5.0);
+    return pow(saturate(ra * rb), 4.0);
 }
 
 #endif

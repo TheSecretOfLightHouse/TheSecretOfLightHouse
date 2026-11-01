@@ -156,7 +156,7 @@ Shader "Lighthouse/World/ClearOcean"
             {
                 float2 slope = OceanRippleSlope(positionWS.xz, _OceanTime);
                 float footprint = max(length(ddx(positionWS.xz)), length(ddy(positionWS.xz)));
-                float fade = 1.0 - smoothstep(0.08, 0.8, footprint);
+                float fade = 1.0 - smoothstep(0.05, 0.6, footprint);
                 return normalize(normalWS + float3(-slope.x, 0, -slope.y) * _Ripple_Strength * 2.5 * fade);
             }
 
@@ -238,10 +238,10 @@ Shader "Lighthouse/World/ClearOcean"
                 OceanInteractionDisplace(surfacePosition, interactionNormal);
                 float3 normalWS = RippleNormal(input.positionWS, interactionNormal);
                 float cameraDistance = length(input.positionWS - _WorldSpaceCameraPos);
-                normalWS = normalize(lerp(normalWS, float3(0, 1, 0), smoothstep(250, 900, cameraDistance) * _Far_Smooth));
+                normalWS = normalize(lerp(normalWS, float3(0, 1, 0), smoothstep(200, 800, cameraDistance) * _Far_Smooth));
                 float footprint = max(length(ddx(input.positionWS.xz)), length(ddy(input.positionWS.xz)));
                 float3 viewWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
-                float2 offset = normalWS.xz * _Refraction_Strength * saturate(thickness) / (1.0 + cameraDistance * _Refraction_Falloff);
+                float2 offset = normalWS.xz * _Refraction_Strength * saturate(thickness) * (1.0 - smoothstep(3.0, 10.0, depth)) / (1.0 + cameraDistance * _Refraction_Falloff);
                 float2 refractedUV = saturate(uv + offset);
                 float refractedEye = LinearEyeDepth(SampleSceneDepth(refractedUV), _ZBufferParams);
                 float edgeFade = saturate(min(min(uv.x, uv.y), min(1 - uv.x, 1 - uv.y)) * 40);
@@ -254,8 +254,8 @@ Shader "Lighthouse/World/ClearOcean"
                 float turbidity = saturate((_Shallows_Opacity - 0.14) * 0.65);
                 transmission *= 1 - turbidity;
                 transmission *= bottomValid;
-                // Vertical depth fade: steep drop-offs and island skirts must sink into the water colour.
-                transmission *= exp(-depth * _Depth_Fade);
+                // Vertical depth fade: the first half metre stays fully readable, then blue persists longest so drop-offs sink into turquoise.
+                transmission *= exp(-max(0.0, depth - 0.5) * _Depth_Fade * float3(1.0, 0.7, 0.5));
 
                 Light sun = GetMainLight(TransformWorldToShadowCoord(input.positionWS));
                 float diffuse = 0.45 + 0.55 * saturate(dot(normalWS, sun.direction));
@@ -263,8 +263,10 @@ Shader "Lighthouse/World/ClearOcean"
                 illumination += SampleSH(normalWS) * 0.35;
                 float luminance = dot(waterColor, float3(0.2126, 0.7152, 0.0722));
                 float3 color = sceneColor * transmission + waterColor * illumination * (1 - transmission);
-                float fresnel = 0.02 + 0.98 * pow(1 - saturate(dot(normalWS, viewWS)), 5);
-                float3 reflected = GlossyEnvironmentReflection(reflect(-viewWS, normalWS), input.positionWS, 1 - _Smoothness, 1, uv);
+                float fresnel = 0.02 + 0.98 * pow(1 - saturate(dot(lerp(interactionNormal, normalWS, 0.5), viewWS)), 5);
+                // Sky reflection uses a calmer normal than the lighting one, so ripples read as soft bends of the sky.
+                float3 reflectNormal = normalize(lerp(interactionNormal, normalWS, 0.5));
+                float3 reflected = GlossyEnvironmentReflection(reflect(-viewWS, reflectNormal), input.positionWS, 1 - _Smoothness, 1, uv);
                 float reflectionWeight = fresnel * _Reflection_Strength * saturate(luminance * 6);
                 color = lerp(color, reflected, reflectionWeight);
                 color += OceanAmbientGlow(waterColor, _Shallow_Color.rgb * zoneTint, fresnel, skyLightZ);
@@ -328,8 +330,11 @@ Shader "Lighthouse/World/ClearOcean"
                 if (_F3Enabled > 0.5) shoreDensity *= terrain.y * saturate(F3Field(input.restWS.xz).x);
                 float density = max(shoreDensity,interaction.w);
                 float2 foamPoint=input.positionWS.xz-interaction.yz*0.12;
-                float coverage;
-                if(_F3Enabled>0.5)
+                float coverage=0;
+                [branch] if(density<=0.01)
+                {
+                }
+                else if(_F3Enabled>0.5)
                 {
                     // Two bounded backtraces avoid a time*velocity jump when the drive turns.
                     float cycleTime=frac(_OceanTime/8.0);
@@ -341,8 +346,10 @@ Shader "Lighthouse/World/ClearOcean"
                 }
                 else coverage=OceanFoamCoverage(foamPoint,density,_OceanTime);
                 float3 foamLight = max(0.025,sun.color*0.85+SampleSH(float3(0,1,0))*0.4);
+                // Soft, slightly translucent foam: a hint of shallow turquoise keeps it from reading as pure white.
+                foamLight *= lerp(float3(1,1,1),saturate(_Shallow_Color.rgb*1.1+0.4),0.3);
                 foamLight += additionalDiffuse * 0.85;
-                color = lerp(color,foamLight,coverage*saturate(density)*0.82);
+                color = lerp(color,foamLight,coverage*smoothstep(0.0,0.5,density)*0.72);
                 return half4(MixFog(color, input.fogFactor), 1);
             }
             ENDHLSL

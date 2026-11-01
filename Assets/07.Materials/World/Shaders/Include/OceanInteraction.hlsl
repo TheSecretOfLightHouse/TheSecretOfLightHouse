@@ -52,8 +52,8 @@ float OceanFoamCoverage(float2 world,float density,float time)
     float detail=sqrt(SAMPLE_TEXTURE2D(_OceanFoamDetail,sampler_OceanFoamDetail,uv).r);
     float micro=sqrt(SAMPLE_TEXTURE2D(_OceanFoamDetail,sampler_OceanFoamDetail,world*0.47+17.3).r);
     float threshold=lerp(0.68,0.25,saturate(density));
-    float aa=max(0.025,fwidth(detail));
-    float lace=smoothstep(threshold-aa,threshold+aa+0.08,detail);
+    // Fixed soft edge: no screen derivatives, so callers may skip this function for foam-free pixels.
+    float lace=smoothstep(threshold-0.04,threshold+0.2,detail);
     return lace*lerp(0.7,1,micro)*saturate(density*2);
 
 }

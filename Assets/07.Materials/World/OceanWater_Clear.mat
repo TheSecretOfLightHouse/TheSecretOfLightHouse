@@ -25,24 +25,24 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Absorption: 0.12
+    - _Absorption: 0.1
     - _Base_Opacity: 0.96
     - _Clarity: 1
     - _Deep_Falloff: 8
     - _Deep_Height: 1.25
-    - _Depth_Fade: 0.35
-    - _Far_Smooth: 0.65
+    - _Depth_Fade: 0.3
+    - _Far_Smooth: 0.85
     - _Lagoon_Reach: 11
     - _Path_Tint: 0.35
-    - _Reflection_Strength: 0.25
+    - _Reflection_Strength: 0.7
     - _Refraction_Falloff: 0.02
     - _Refraction_Strength: 0.006
-    - _Ripple_Strength: 0.055
+    - _Ripple_Strength: 0.04
     - _Shallow_Caustic: 0.22
     - _Shallows_Opacity: 0.14
     - _Sky_Light: 0
-    - _Smoothness: 0.75
-    - _Sparkle_Strength: 1
+    - _Smoothness: 0.9
+    - _Sparkle_Strength: 1.3
     - _Very_Deep_Height: 22
     m_Colors:
     - _Deep_Color: {r: 0.03, g: 0.7, b: 0.95, a: 1}
