@@ -32,9 +32,10 @@ namespace Lighthouse.World.Weather.View
             _index = index;
         }
 
-        public static float GetNearest(Vector3 position, float fadeDistance, out IslandArchetype archetype, out short index)
+        public static float GetNearest(Vector3 position, float fadeDistance, float inlandRatio,
+            out IslandArchetype archetype, out short index)
         {
-            float nearest = float.PositiveInfinity;
+            float best = 0f;
             archetype = null;
             index = -1;
             for (int i = 0; i < Zones.Count; i++)
@@ -45,15 +46,21 @@ namespace Lighthouse.World.Weather.View
                     continue;
                 }
                 Vector3 delta = position - zone.transform.position;
-                float distance = Mathf.Max(0f, new Vector2(delta.x, delta.z).magnitude - zone._archetype.Radius);
-                if (distance < nearest)
+                float radius = Mathf.Max(1f, zone._archetype.Radius);
+                float distance = new Vector2(delta.x, delta.z).magnitude;
+                // Peaks at the coastline (radius), fades toward the island centre and out to sea.
+                float proximity = distance >= radius
+                    ? 1f - (distance - radius) / Mathf.Max(1f, fadeDistance)
+                    : Mathf.InverseLerp(radius * Mathf.Clamp01(inlandRatio), radius, distance);
+                proximity = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(proximity));
+                if (archetype == null || proximity > best)
                 {
-                    nearest = distance;
+                    best = proximity;
                     archetype = zone._archetype;
                     index = zone._index;
                 }
             }
-            return Mathf.Clamp01(1f - nearest / Mathf.Max(1f, fadeDistance));
+            return best;
         }
     }
 }

@@ -77,7 +77,13 @@ namespace Lighthouse.World.Weather.View
         [SerializeField, Min(0.05f)] private float _fadeSeconds = 3f;
         [SerializeField, Min(1f)] private float _shoreFadeDistance = 20f;
         [SerializeField, Min(1f)] private float _impactRange = 80f;
+        [SerializeField, Range(0f, 1f), Tooltip("Shore wave loudness relative to the weather bed.")]
+        private float _shoreVolumeRatio = 0.4f;
+        [SerializeField, Range(0f, 0.95f), Tooltip("Island radius ratio below which the shore waves are silent.")]
+        private float _shoreInlandRatio = 0.3f;
 
+        public float ShoreVolumeRatio => _shoreVolumeRatio;
+        public float ShoreInlandRatio => _shoreInlandRatio;
         public AudioMixerGroup AmbienceMixer => _ambienceMixer;
         public AudioMixerGroup EffectsMixer => _effectsMixer;
         public float AmbienceVolume => _ambienceVolume;

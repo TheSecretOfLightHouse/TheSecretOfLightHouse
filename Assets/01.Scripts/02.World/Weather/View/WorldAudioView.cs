@@ -1,5 +1,6 @@
 using Lighthouse.World.Islands.Rules;
 using Lighthouse.World.Weather.Rules;
+using Mirror;
 using UnityEngine;
 
 namespace Lighthouse.World.Weather.View
@@ -14,6 +15,8 @@ namespace Lighthouse.World.Weather.View
         private readonly AudioSource[] _loops = new AudioSource[WeatherCount * LayerCount * 2];
         private readonly AudioSource[] _impacts = new AudioSource[ImpactCapacity];
         private WorldAudioProfile _profile;
+        private NetworkIdentity _localIdentity;
+        private PlayerController _localPlayer;
         private int _nextImpact;
         private bool _isInitialized;
         private bool _hasObserver;
@@ -64,7 +67,12 @@ namespace Lighthouse.World.Weather.View
             }
             _hasObserver = true;
             float shore = WorldIslandAudioZone.GetNearest(observer.transform.position,
-                _profile.ShoreFadeDistance, out IslandArchetype island, out short index);
+                _profile.ShoreFadeDistance, _profile.ShoreInlandRatio, out IslandArchetype island, out short index);
+            // Sailing has its own sea loop; shore waves play only after disembarking.
+            if (IsLocalPlayerOnBoat())
+            {
+                shore = 0f;
+            }
             float step = Time.deltaTime * _profile.AmbienceVolume / _profile.FadeSeconds;
             for (int w = 0; w < WeatherCount; w++)
             {
@@ -84,7 +92,7 @@ namespace Lighthouse.World.Weather.View
                         incoming.volume = 0f;
                     }
                     float target = w == (int)weather && clip != null
-                        ? _profile.AmbienceVolume * (layer == 3 ? shore : 1f) : 0f;
+                        ? _profile.AmbienceVolume * (layer == 3 ? shore * _profile.ShoreVolumeRatio : 1f) : 0f;
                     if (layer == 2)
                     {
                         target *= Mathf.Clamp01(rainExposure);
@@ -132,6 +140,17 @@ namespace Lighthouse.World.Weather.View
             source.clip = clip;
             source.volume = _active._profile.ImpactVolume;
             source.Play();
+        }
+
+        private bool IsLocalPlayerOnBoat()
+        {
+            NetworkIdentity local = NetworkClient.localPlayer;
+            if (local != _localIdentity)
+            {
+                _localIdentity = local;
+                _localPlayer = local != null ? local.GetComponent<PlayerController>() : null;
+            }
+            return _localPlayer != null && _localPlayer.IsOnBoat;
         }
 
         private AudioSource CreateSource(string sourceName, bool isLoop)
