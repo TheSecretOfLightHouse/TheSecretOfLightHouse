@@ -25,6 +25,7 @@ namespace Lighthouse.Monsters.Boss
         [SerializeField] private Transform _previewIsland;
         [SerializeField] private Vector3 _sourceBasePoint = new Vector3(-1.1897792f, -0.475369f, 0.67f);
         [SerializeField] private float _decorationClearanceRadius = 6.5f;
+        [SerializeField] private float _destructionTime = 18.25f;
         private Renderer[] _originals = new Renderer[0];
         private bool[] _savedEnabled = new bool[0];
         private Renderer[] _details = new Renderer[0];
@@ -216,6 +217,6 @@ namespace Lighthouse.Monsters.Boss
             }
         }
 
-        private bool IsIntact => _director == null || _director.time < 18.25d;
+        private bool IsIntact => _director == null || _director.time < _destructionTime;
     }
 }

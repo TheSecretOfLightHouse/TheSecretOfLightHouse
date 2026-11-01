@@ -26,6 +26,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _BoltWidth: 0.0018
+    - _CinematicTime: -1
     - _CloudCoverage: 0.78
     - _CloudOpacity: 0.95
     - _CloudScale: 1.5
@@ -33,6 +34,7 @@ Material:
     - _CloudSoftness: 0.22
     - _GradientHeight: 0.5
     - _HorizonFogBlend: 1
+    - _LightningFlash: 0
     - _MistHeight: 0.16
     - _MistOpacity: 0.65
     - _MoonGlowFalloff: 3
@@ -46,17 +48,20 @@ Material:
     - _StarBrightness: 0
     - _StarDensity: 0.2
     - _StarTwinkleSpeed: 3
+    - _WeatherProgress: 1
     m_Colors:
     - _BoltColor: {r: 3.2, g: 3.6, b: 4.2, a: 1}
-    - _CloudDarkColor: {r: 0.015, g: 0.026, b: 0.045, a: 1}
-    - _CloudLitColor: {r: 0.17, g: 0.23, b: 0.32, a: 1}
+    - _CloudDarkColor: {r: 0.018, g: 0.03, b: 0.05, a: 1}
+    - _CloudLitColor: {r: 0.12, g: 0.17, b: 0.24, a: 1}
     - _CloudWind: {r: 0.025, g: 0.006, b: 0, a: 0}
     - _FlashColor: {r: 0.54999995, g: 0.65, b: 0.8, a: 1}
-    - _HorizonColor: {r: 0.07, g: 0.1, b: 0.14, a: 1}
+    - _HorizonColor: {r: 0.05, g: 0.075, b: 0.105, a: 1}
+    - _LightningBolt: {r: 0, g: 1, b: 0, a: 0.7}
     - _MoonColor: {r: 0.8, g: 0.86, b: 0.9, a: 1}
     - _MoonDirection: {r: 0.2, g: 0.4, b: 0.9, a: 0}
-    - _MoonHaloColor: {r: 0.14, g: 0.22, b: 0.34, a: 1}
-    - _ScudColor: {r: 0.02, g: 0.035, b: 0.055, a: 1}
-    - _ZenithColor: {r: 0.025, g: 0.045, b: 0.075, a: 1}
+    - _MoonHaloColor: {r: 0.085, g: 0.13, b: 0.19, a: 1}
+    - _ScudColor: {r: 0.018, g: 0.03, b: 0.05, a: 1}
+    - _WeatherFrontDirection: {r: -0.75, g: 0.65, b: 0, a: 0}
+    - _ZenithColor: {r: 0.025, g: 0.042, b: 0.065, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

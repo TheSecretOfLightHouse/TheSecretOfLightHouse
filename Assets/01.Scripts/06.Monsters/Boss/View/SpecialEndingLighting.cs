@@ -3,6 +3,7 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
+using UnityEngine.Playables;
 
 namespace Lighthouse.Monsters.Boss
 {
@@ -10,9 +11,15 @@ namespace Lighthouse.Monsters.Boss
     [DisallowMultipleComponent]
     public sealed class SpecialEndingLighting : MonoBehaviour
     {
+        private static readonly int WeatherProgressId = Shader.PropertyToID("_WeatherProgress");
+        private static readonly int CinematicTimeId = Shader.PropertyToID("_CinematicTime");
+        [SerializeField] private PlayableDirector _director;
+        [SerializeField] private float _weatherStart = 0.6f;
+        [SerializeField] private float _weatherEnd = 4.8f;
         [SerializeField] private Camera _camera;
         [SerializeField] private Material _skybox;
         [SerializeField] private Light[] _lights = new Light[0];
+        [SerializeField] private float[] _stormLightMultipliers = new float[0];
         [SerializeField] private Behaviour _volume;
         private readonly Dictionary<Light, bool> _savedLights = new Dictionary<Light, bool>();
         private bool _isPlaying;
@@ -34,6 +41,8 @@ namespace Lighthouse.Monsters.Boss
         private PropertyInfo _volumeMaskProperty;
         private bool _postProcessing;
         private LayerMask _volumeMask;
+        private float[] _lightIntensities;
+        private Color[] _lightColors;
 
         private void LateUpdate()
         {
@@ -58,6 +67,16 @@ namespace Lighthouse.Monsters.Boss
             if (value)
             {
                 _previousSkybox = RenderSettings.skybox;
+                _lightIntensities = new float[_lights.Length];
+                _lightColors = new Color[_lights.Length];
+                for (int i = 0; i < _lights.Length; i++)
+                {
+                    if (_lights[i] != null)
+                    {
+                        _lightIntensities[i] = _lights[i].intensity;
+                        _lightColors[i] = _lights[i].color;
+                    }
+                }
                 if (_skybox != null)
                 {
                     _runtimeSkybox = new Material(_skybox);
@@ -145,6 +164,14 @@ namespace Lighthouse.Monsters.Boss
                     }
                 }
                 _savedLights.Clear();
+                for (int i = 0; i < _lights.Length; i++)
+                {
+                    if (_lights[i] != null && _lightIntensities != null)
+                    {
+                        _lights[i].intensity = _lightIntensities[i];
+                        _lights[i].color = _lightColors[i];
+                    }
+                }
             }
             if (_volume != null)
             {
@@ -161,16 +188,35 @@ namespace Lighthouse.Monsters.Boss
 
         private void ApplyLook()
         {
+            float time = _director != null ? (float)_director.time : _weatherEnd;
+            float progress = Mathf.InverseLerp(_weatherStart, _weatherEnd, time);
+            float weather = Mathf.SmoothStep(0f, 1f, progress);
+            if (_runtimeSkybox != null)
+            {
+                _runtimeSkybox.SetFloat(WeatherProgressId, progress);
+                _runtimeSkybox.SetFloat(CinematicTimeId, time);
+            }
             RenderSettings.skybox = _runtimeSkybox;
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.035f, 0.055f, 0.09f);
-            RenderSettings.ambientEquatorColor = new Color(0.018f, 0.03f, 0.05f);
-            RenderSettings.ambientGroundColor = new Color(0.008f, 0.012f, 0.02f);
-            RenderSettings.ambientIntensity = 0.45f;
+            RenderSettings.ambientSkyColor = Color.Lerp(new Color(0.52f, 0.68f, 0.88f), new Color(0.007f, 0.012f, 0.022f), weather);
+            RenderSettings.ambientEquatorColor = Color.Lerp(new Color(0.4f, 0.49f, 0.58f), new Color(0.003f, 0.005f, 0.009f), weather);
+            RenderSettings.ambientGroundColor = Color.Lerp(new Color(0.16f, 0.18f, 0.2f), new Color(0.001f, 0.002f, 0.004f), weather);
+            RenderSettings.ambientIntensity = Mathf.Lerp(1f, 0.18f, weather);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Exponential;
-            RenderSettings.fogColor = new Color(0.035f, 0.055f, 0.085f);
-            RenderSettings.fogDensity = 0.0045f;
+            RenderSettings.fogColor = Color.Lerp(new Color(0.52f, 0.68f, 0.8f), new Color(0.007f, 0.012f, 0.022f), weather);
+            RenderSettings.fogDensity = Mathf.Lerp(0.0007f, 0.0045f, weather);
+            for (int i = 0; i < _lights.Length; i++)
+            {
+                Light light = _lights[i];
+                if (light == null)
+                {
+                    continue;
+                }
+                float multiplier = i < _stormLightMultipliers.Length ? _stormLightMultipliers[i] : 1f;
+                light.intensity = _lightIntensities[i] * Mathf.Lerp(0.7f, multiplier, weather);
+                light.color = Color.Lerp(new Color(1f, 0.93f, 0.8f), _lightColors[i], weather);
+            }
             if (_camera != null)
             {
                 _camera.clearFlags = CameraClearFlags.Skybox;

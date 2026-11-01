@@ -4,6 +4,7 @@ Shader "Lighthouse/Boss/WaterCurtain"
     {
         _FlowTime ("Time", Float) = 0
         _Strength ("Strength", Float) = 1
+        _Illumination ("Storm Illumination", Float) = 1
     }
     SubShader
     {
@@ -21,6 +22,7 @@ Shader "Lighthouse/Boss/WaterCurtain"
             CBUFFER_START(UnityPerMaterial)
                 float _FlowTime;
                 float _Strength;
+                float _Illumination;
             CBUFFER_END
             struct A { float3 positionOS : POSITION; float2 uv : TEXCOORD0; };
             struct V { float4 positionCS : SV_POSITION; float2 uv : TEXCOORD0; float3 world : TEXCOORD1; float fog : TEXCOORD2; };
@@ -52,7 +54,7 @@ Shader "Lighthouse/Boss/WaterCurtain"
                 clip(alpha-0.012);
                 float streak=Noise(float2(i.uv.x*32,i.uv.y*1.8-_FlowTime*3));
                 half3 color=lerp(half3(0.12,0.23,0.3),half3(0.5,0.68,0.76),streak*0.75+n*0.25);
-                return half4(MixFog(color,i.fog),alpha);
+                return half4(MixFog(color * _Illumination,i.fog),alpha);
             }
             ENDHLSL
         }

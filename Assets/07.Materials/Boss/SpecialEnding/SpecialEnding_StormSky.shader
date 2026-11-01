@@ -6,6 +6,9 @@ Shader "Lighthouse/Boss/SpecialEndingStormSky"
 {
     Properties
     {
+        _WeatherProgress ("Clear To Storm", Range(0, 1)) = 1
+        _CinematicTime ("Timeline Time", Float) = -1
+        _WeatherFrontDirection ("Diagonal Cloud Front", Vector) = (-0.75, 0.65, 0, 0)
         [Header(Gradient)]
         _ZenithColor ("Zenith Color", Color) = (0.07, 0.09, 0.11, 1)
         _HorizonColor ("Horizon Color", Color) = (0.17, 0.22, 0.25, 1)
@@ -71,6 +74,9 @@ Shader "Lighthouse/Boss/SpecialEndingStormSky"
             #define TAU 6.2831853
 
             CBUFFER_START(UnityPerMaterial)
+                float _WeatherProgress;
+                float _CinematicTime;
+                float4 _WeatherFrontDirection;
                 float4 _ZenithColor;
                 float4 _HorizonColor;
                 float _HorizonFogBlend;
@@ -228,13 +234,20 @@ Shader "Lighthouse/Boss/SpecialEndingStormSky"
             {
                 float3 dir = normalize(input.positionWS - _WorldSpaceCameraPos);
                 float h = dir.y;
-                float time = _Time.y;
+                float time = _CinematicTime >= 0 ? _CinematicTime : _Time.y;
+                // A moving front covers the sky from one side before closing overhead.
+                float frontEdge = (Fbm(dir.xz * 4.0 + float2(time * 0.05, 0)) - 0.5) * 0.8;
+                float front = smoothstep(-0.65, 0.65, _WeatherProgress * 3.0 - 1.5
+                    + dot(dir, normalize(_WeatherFrontDirection.xyz)) + frontEdge);
+                front = _WeatherProgress <= 0 ? 0 : (_WeatherProgress >= 1 ? 1 : front);
 
                 // Horizon follows the fog colour so islands fade into the sky without a seam.
                 float3 horizon = lerp(_HorizonColor.rgb, unity_FogColor.rgb, _HorizonFogBlend);
                 float g = saturate(h / _GradientHeight);
                 g = 1.0 - (1.0 - g) * (1.0 - g);
                 float3 col = lerp(horizon, _ZenithColor.rgb, g);
+                float3 clearSky = lerp(float3(0.55, 0.74, 0.9), float3(0.08, 0.3, 0.62), g);
+                col = lerp(clearSky, col, front);
 
                 float3 moonDir = normalize(_MoonDirection.xyz);
                 float md = dot(dir, moonDir);
@@ -257,7 +270,7 @@ Shader "Lighthouse/Boss/SpecialEndingStormSky"
                 float star = isStar * smoothstep(0.3, 0.0, starDist) * twinkle * (0.3 + 0.7 * rnd.y)
                     * _StarBrightness * smoothstep(0.02, 0.3, h);
 
-                col += _MoonHaloColor.rgb * (glow + halo);
+                col += _MoonHaloColor.rgb * (glow + halo) * front;
                 col += _FlashColor.rgb * flash * 0.15;
 
                 // Overcast deck projected on a flat ceiling so it compresses toward the horizon.
@@ -267,7 +280,7 @@ Shader "Lighthouse/Boss/SpecialEndingStormSky"
                 float n = Fbm(uv + wind + warp * 0.8);
                 float threshold = lerp(0.72, 0.28, _CloudCoverage);
                 float cloud = smoothstep(threshold - _CloudSoftness, threshold + _CloudSoftness, n);
-                cloud *= smoothstep(-0.02, 0.08, h);
+                cloud *= smoothstep(-0.02, 0.08, h) * front;
 
                 // Cheap self-shadowing: density sampled a step toward the moon. Thinning toward the light = lit rim.
                 float2 lightStep = normalize(moonDir.xz + 1e-4) * 0.12;
@@ -289,7 +302,7 @@ Shader "Lighthouse/Boss/SpecialEndingStormSky"
                 float3 rel = (dir - moonDir) / _MoonSize;
                 float mottle = Fbm(rel.xy * 1.5 + rel.z);
                 float3 moon = _MoonColor.rgb * (0.75 + 0.35 * mottle);
-                col = lerp(col, moon, disc * _MoonOpacity * (1.0 - cloud * _CloudOpacity * 0.85));
+                col = lerp(col, moon, disc * _MoonOpacity * front * (1.0 - cloud * _CloudOpacity * 0.85));
 
                 // Low, fast, dark scud under the deck sells the wind.
                 float2 scudUv = dir.xz / (max(h, 0.0) + 0.05) * _ScudScale;
@@ -297,7 +310,7 @@ Shader "Lighthouse/Boss/SpecialEndingStormSky"
                 float scudThreshold = lerp(0.72, 0.28, _ScudCoverage);
                 float scud = smoothstep(scudThreshold - 0.15, scudThreshold + 0.2, scudN) * smoothstep(-0.02, 0.12, h);
                 float3 scudCol = _ScudColor.rgb + _FlashColor.rgb * flash * 0.25;
-                col = lerp(col, scudCol, scud * _ScudOpacity);
+                col = lerp(col, scudCol, scud * _ScudOpacity * front);
 
                 col += Lightning(dir, h);
 
@@ -305,7 +318,7 @@ Shader "Lighthouse/Boss/SpecialEndingStormSky"
                 float2 around = normalize(dir.xz + 1e-5) * 3.0;
                 float mistNoise = Fbm(around + float2(time * 0.01, h * 10.0 - time * 0.02));
                 float mist = (1.0 - smoothstep(0.0, _MistHeight, h)) * _MistOpacity * (0.6 + 0.4 * mistNoise);
-                float3 mistCol = horizon + _FlashColor.rgb * flash * 0.2;
+                float3 mistCol = lerp(float3(0.55, 0.74, 0.9), horizon, front) + _FlashColor.rgb * flash * 0.2;
                 col = lerp(col, mistCol, saturate(mist + step(h, 0.0)));
 
                 // Dark gradients band badly in 8-bit; dither them.
